@@ -49,6 +49,10 @@
 
 昼夜／声音验证入口为 `tests/atmosphere_test.gd`（独立41项）和 `tests/atmosphere_scene_test.gd`（正式场景23项）。前后台观察不暂停农场计时；后台音频暂停、帧率最多15，回来恢复用户设置。`day_night.gd` 接管水面的 `material_override` 并同步远景色，不能只替换被 override 遮住的表面材质。音轨来源、响度与循环证据见 [3.4交接](task/首个可发布版本/handoffs/3.4-handoff.md)；主观听感未由模型验收。
 
+焦点细节入口：`tests/focus_detail_audit.gd` 读取实际导入网格的 LOD 索引，`tests/focus_detail_test.gd -- --output=<隔离证据目录> --uncapped` 做真实4K的三组对照与输入回归。Godot 4.7.2 本机实测表明，所有环境网格强制 `lod_bias=0` 会让低面数程序模块的石路、篱柱和桥栏消失；当前按稳定资源路径保留这些模块原层级，复杂模型与非目标作物用自动低档，目标田在镜头到达前恢复高档。只设置导入开关不能代替实际索引、绘制图元和画面检查。
+
+3.5 最终51项检查通过：54株成熟作物和三件装饰的同场景，全景可见图元772486→432307，聚焦548605→342508；360帧短测中聚焦GPU中位全高2.155ms、仅LOD2.069ms、LOD＋景深2.436ms。标准4×MSAA，低画质2×MSAA且暂不使用景深，保留景深偏好。景深清晰带随整田深度范围变化，同深度旁田不会因身份不同而被强行模糊。数字仅属于本机短测，不能替代4.2的60秒条件采样与30分钟持续验收；详见 [3.5交接](task/首个可发布版本/handoffs/3.5-handoff.md)。
+
 普通发行程序验证入口：`./tests/start-isolated-game.ps1 -Directory (Join-Path $PWD '.local/verification/<本次目录>') -Phase sow`。该入口只给子进程设置 APPDATA／LOCALAPPDATA，持有该进程直到实际关窗并保存日志、退出码和快照；先核对隔离目录中产生了预期主档，再执行操作。Godot 4.7.2 release 本次静默忽略外部 `--script`，不能拿这个参数宣称已跑测试驱动。实际采用普通发行窗口的原生点击与关闭；需截图时 `tests/native-game-window.ps1 -ProcessId <启动器返回PID> -Action capture -Output <绝对PNG路径>`，其 `click` 使用已观察到的客户区坐标，`close` 请求程序正常退出，均限定已知进程。离线夹具仅在隔离进程退出后调整副本UTC基准并保留原件，不能改系统时钟或玩家档。
 
 原型交互检查可在仓库根目录的 PowerShell 会话运行：`& ./scripts/godot.ps1 Run -ExtraArgs @('--headless', '--script', (Join-Path $PWD 'tests/prototype_smoke.gd'))`。不带 `--headless` 可跑有画面的同一组检查。截图参数放在 `--` 后传入 `--screenshots=<已有输出目录>`；截图需有渲染窗口。

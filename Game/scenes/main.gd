@@ -9,6 +9,7 @@ const DecorationLayout = preload("res://scenes/decoration_layout.gd")
 const FarmAudio = preload("res://audio/farm_audio.gd")
 const DayNight = preload("res://atmosphere/day_night.gd")
 const WindowActivity = preload("res://atmosphere/window_activity.gd")
+const FocusDetail = preload("res://presentation/focus_detail.gd")
 const HUD = preload("res://scenes/farm_hud.gd")
 
 @onready var farm: FarmLayout = $Farm
@@ -21,6 +22,7 @@ var decoration_layout: DecorationLayout
 var farm_audio: FarmAudio
 var atmosphere: DayNight
 var window_activity: WindowActivity
+var focus_detail: FocusDetail
 var store: FarmStore
 var hud: HUD
 var selected_field: int = -1
@@ -94,6 +96,10 @@ func _ready() -> void:
 	farm_audio.set_foreground(window_activity.is_foreground())
 	decoration_layout.confirmed.connect(_refresh_lanterns)
 	_refresh_lanterns()
+	focus_detail = FocusDetail.new()
+	focus_detail.name = "FocusDetail"
+	add_child(focus_detail)
+	focus_detail.configure(camera, farm.fields, courtyard, decoration_layout)
 	var timer := Timer.new()
 	timer.name = "SettlementTimer"
 	timer.wait_time = 1.0
@@ -338,6 +344,7 @@ func _focus_field(index: int) -> void:
 	selected_tool = ""
 	selected_field = index
 	farm.select_field(index)
+	focus_detail.set_focus(farm.fields[index])
 	camera.focus_field(farm.fields[index].global_position)
 	hud.clear_feedback()
 	_refresh_hud()
@@ -397,6 +404,7 @@ func _return_overview() -> void:
 	selected_tool = ""
 	selected_field = -1
 	farm.select_field(-1)
+	focus_detail.set_focus()
 	camera.return_overview()
 	hud.clear_feedback()
 	_refresh_hud()
