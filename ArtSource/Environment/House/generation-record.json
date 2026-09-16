@@ -1,0 +1,46 @@
+{
+  "asset": "jiangnan-house-v1",
+  "recorded_local_date": "2026-09-17",
+  "image": {
+    "tool": "built-in image_gen",
+    "prompt_file": "image-request.txt",
+    "input_order": [
+      "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ],
+    "output": "house-concept-v1.png",
+    "original_output_name": "exec-adaae7bd-92da-481f-9ca0-36b356733107.png",
+    "model_version": null,
+    "seed": null,
+    "fee": null,
+    "review": "Complete three-bay farmhouse, consistent roof and gable, clear ground contact, neutral background, restrained pale pigment. Adopted for 3D reconstruction by development review. No user approval is claimed.",
+    "sha256": "E6A803DA07D1915CB4C104D238FEA8A99F705502D53B55DBC5134F151690EFB2"
+  },
+  "tripo": {
+    "cli_version": "0.4.0",
+    "task_id": "f1e5f71d-c66f-458f-8171-82e733946c14",
+    "endpoint": "image_to_model",
+    "model_version": "v3.1-20260211",
+    "parameters": {
+      "face_limit": 18000,
+      "smart_low_poly": true,
+      "texture": true,
+      "pbr": false,
+      "texture_quality": "standard",
+      "geometry_quality": "standard",
+      "texture_alignment": "original_image",
+      "enable_image_autofix": false,
+      "generate_parts": false,
+      "quad": false
+    },
+    "status": "success",
+    "credits_consumed": 40
+  },
+  "contributions": {
+    "Codex": "Reference interpretation, prompt, workflow, source preparation script and Godot sample code",
+    "image_gen": "House single-object input image",
+    "Tripo": "House reconstruction geometry and color texture",
+    "Blender": "Metric scale, ground pivot, material adjustment, same-source LOD and GLB export",
+    "Godot": "Real 3D scene rendering and visual validation"
+  }
+}

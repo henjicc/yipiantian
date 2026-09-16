@@ -1,0 +1,55 @@
+{
+  "source": "ArtSource\\Environment\\House\\tripo-original\\model.glb",
+  "blender": "5.2.2 LTS",
+  "requested_triangles": 18000,
+  "raw_triangles": 20961,
+  "meshes": {
+    "house_high": {
+      "triangles": 20961,
+      "materials": 1,
+      "dimensions_blender_xyz": [
+        7.199999809265137,
+        4.653831481933594,
+        4.795284748077393
+      ],
+      "uv_layers": 1,
+      "non_manifold_edges": 1575,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "size": [
+            2048,
+            2048
+          ],
+          "name": "Color_f1e5f71d-c66f-458f-8171-82e733946c14"
+        }
+      ]
+    },
+    "house_low": {
+      "triangles": 6499,
+      "materials": 1,
+      "dimensions_blender_xyz": [
+        7.214400291442871,
+        4.660612106323242,
+        4.803595066070557
+      ],
+      "uv_layers": 1,
+      "non_manifold_edges": 796,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "size": [
+            2048,
+            2048
+          ],
+          "name": "Color_f1e5f71d-c66f-458f-8171-82e733946c14"
+        }
+      ]
+    }
+  },
+  "crop_low_triangles": 1494
+}
