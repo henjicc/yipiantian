@@ -13,6 +13,13 @@ var _picks: Array[Dictionary] = []
 
 func _ready() -> void:
 	_build_hud()
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--record-session="):
+			var recording: Node = load("res://development/recording_session.gd").new()
+			recording.session_dir = argument.trim_prefix("--record-session=")
+			recording.farm_scene = self
+			add_child(recording)
+			break
 
 
 func _input(event: InputEvent) -> void:

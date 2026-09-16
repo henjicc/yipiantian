@@ -53,7 +53,7 @@ Godot 4.7.2 本次验证：headless 测试须显式设置根窗口 / Viewport �
 | MCP 中文乱码 | Python 客户端与服务使用 UTF-8；本机 `PYTHONUTF8=1` 已解决路径和名称乱码 |
 | 多个工具实例 | 核实工程 / 文件路径、保存状态和端口归属；不凭相似窗口标题操作，不批量关闭进程 |
 | Windows 截图接口失败 | 本机 `SetIsBorderRequired / 0x80004002` 后使用 Blender 官方截图接口成功；不外推所有 Windows 均不支持，不关闭安全功能 |
-| 双屏坐标不一致 | 先查当前排列、分辨率与实际窗口；本机两屏均 2560×1440，副屏在右。坐标不写成跨机器保证 |
+| 双屏坐标不一致 | 先用 DPI 感知的实际应用核对；2026-09-17 Godot 检测两屏均为 3840×2160，Windows DPI 为 144（150%），先前 2560×1440 属于缩放坐标，不能当作物理像素 |
 | PowerShell 长时间无输出 | 先用不加载个人 profile 的调用排查；本机 `login=false` 有效，未擅自修改用户 profile |
 | Git LFS 本地可用 | 已完成本地 clean / smudge 往返；真实模型与远端对象上传仍未验证，不等同云端备份成功 |
 
@@ -77,7 +77,7 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 - 日常入口：桌面 **Blender AI** 快捷方式，调用该目录下 `Open-Blender-AI.ps1`。启动时使用独立 profile、加载 MCP，并将窗口放到右侧屏幕；重复启动会提示使用已有实例，避免两个服务抢同一端口。
 - 官方插件要求 online mode 才能启动本机桥接，因此仅该启动入口带 `--online-mode` 参数，不修改用户普通 Blender 的全局联网偏好。桥接实测只监听 `127.0.0.1:9876`，没有开放公网端口。
 - Codex 已通过自身 CLI 注册全局 MCP 条目 `blender-lab`，以 stdio 启动 `venv/Scripts/blender-mcp.exe`；环境明确指定 Blender 路径、回环地址、端口与 `PYTHONUTF8=1`。当前任务的动态工具列表未自动刷新，本次使用标准 MCP 客户端完成真实协议测试；后续重新加载 Codex 使新增工具进入任务列表。
-- 两块屏幕均检测为 2560×1440，副屏在主屏右侧。实测 AI 窗口位置为 x=2640、y=100，大小 1200×1000；Windows 缩放可能导致应用坐标与物理像素有差异，后续按实际窗口核对。
+- 最初窗口工具报告双屏 2560×1440、副屏在右，AI 窗口坐标为 x=2640、y=100、大小 1200×1000；这些是当时的缩放坐标。2026-09-17 Godot 录制入口实际核验两屏物理像素均为 3840×2160，DPI 144。后续不要混用逻辑坐标与录制分辨率。
 
 已通过的验证：读取场景与中文名称、创建七个测试网格并配置材质、保存中文路径 `.blend`、导出 FBX、重开保存文件、完整关闭并重启 AI 工作区后自动连接，以及调用 Blender 自身截图接口检查模型。重启后七个对象保留且文件无未保存修改，端口归属为本次 AI Blender 实例。此前导出的是 FBX；Godot 当前采用 GLB，现已另用 Tripo 青菜完成 Blender 整理 → GLB → Godot 原型导入与真实画面检查；这只验证该静态资产路径，不涵盖骨骼、复杂材质或所有模型。
 
@@ -105,6 +105,33 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 详细接口按需读取本机包内文档：`tripo.cmd docs --topic commands/make`、`tripo.cmd docs --topic examples/game-asset`。本机帮助显示无交互模式会自动跳过 CLI 确认，因此不能把工具自身的提示当作费用边界。
 
 插件配置核验所得经验：技能以 CLI 为执行入口时，先复用已验证的运行时和账号，再做健康检查；不因安装插件重复登录或另起服务。技能标明部分预设会附带收费转换步骤，生成时核对最终需要的格式及完整处理链；输出位置以实际结果中的 `model_file` / `output_dir` 为准。插件说明中的参数和服务限制不能仅凭本次健康检查视为已实测，首次使用对应能力时再核对并验证。
+
+## 开发录屏
+
+录制属于开发工具，普通运行不加载录制节点或启动编码进程。用户要求在关键变化时保留过程素材，触发与镜头节奏统一见 [测试规则](../rules/testing.md#关键节点录屏)。
+
+在仓库根目录的 PowerShell 7 运行，例如：
+
+```powershell
+./scripts/record.ps1 -Title '农场原型_全景与青菜聚焦' -Description '展示全景、青菜田近景与三维转动。' -Contribution 'Tripo 生成青菜模型与颜色纹理；Codex 编写场景和镜头；Blender 整理模型。' -Demo
+```
+
+- `-Demo` 是当前农场的 24 秒慢镜头演示：停留 4 秒，聚焦用 1.8 秒，停稳后转动约 15°，再次停留，再返回全景收尾。普通操作仍使用 0.75 秒过渡。自动演示是实机场景拍摄，不冒充人工操作测试；未来玩法变化时按实际展示点维护这段演示。
+- 去掉 `-Demo` 即可手动操作，`-Seconds 40` 设置最大录制时长（2–120 秒，自动演示至少 24 秒）；在游戏中按 F9 可提前结束。Esc 仍用于返回全景。录制结束会关闭此次专用实例，不关闭用户原先运行的游戏或编辑器。
+- 默认自动选择一块 3840×2160 屏幕；`-Screen 1` 指定 Godot 的第二块屏幕，索引从 0 开始。必须有真实 4K 屏幕，不自动改系统分辨率或放大小画面。使用独占全屏，捕获 HWND 指向本次游戏实例，画面含游戏界面、不含标题栏和鼠标指针。
+- 固定输出 MP4 / H.264 High / yuv420p / 3840×2160 / 60 CFR，NVIDIA NVENC `p5`、`hq`、VBR `CQ18`、每 120 帧关键帧、BT.709 标记与 faststart。恒定的是帧率，码率按画面复杂度变化；不承诺每秒固定文件大小。GPU 捕获纹理直接交给硬件编码，不逐帧回读到 GDScript，不使用 Godot 离线 Movie Maker。当前项目没有声音，本入口不录麦克风、桌面音频或游戏音轨；有游戏声音后再按需求补入。
+- 成片、中文编号 / 时间 / 节点文件名、`剪辑说明.md`、`录制信息.json`、规格和编码日志保存到 `制作留档/05_开发录屏/`。成功后更新 `录屏索引.md`；失败 / 中断保留候选和诊断，不加入成片清单。逐条录制记录、视频与校验值不入 Git。辅助握手文件在 `.local/recordings/`，不是游戏存档。
+- 不支持 NVENC 或窗口捕获时明确报错，无 CPU 编码或整个桌面捕获的静默兜底。窗口关闭、最小化或尺寸改变会结束本次录制并保留中断证据。不要强杀进程；正常 F9 / 时长到期会封装可播放文件。
+
+**本机依赖与复现。** 原系统 FFmpeg 8.0.1 保留；它支持 NVENC 但没有 `gfxcapture`。本项目另放置 Gyan FFmpeg 9.0.1 essentials 于 `.local/tools/ffmpeg/ffmpeg-9.0.1-essentials_build/bin/`，不修改 PATH，不打包进游戏。下载自 [Gyan Windows builds](https://www.gyan.dev/ffmpeg/builds/) 的 release essentials 7z，并核对对应 SHA-256（本次 `49a73bdf0850092a252ac4641d922f3048d63ed113e196cc65ce1e4f7fb33e85`）；压缩包、许可和 README 同目录保留。构建为 GPLv3 开发工具。新机器从该来源准备包含 `gfxcapture` 与 `h264_nvenc` 的版本，并保留同目录 `ffprobe.exe`；不同路径用 `-FFmpegPath '绝对路径/ffmpeg.exe'` 指定。Godot 沿用固定版本控制台入口做版本检查，再直接启动匹配的 GUI 程序，避免控制台 wrapper 与游戏进程 PID 不同导致窗口归属误判。
+
+**本机验证与经验（2026-09-17）。** Godot 4.7.2、FFmpeg 9.0.1、RTX 4090 下完成 24 秒实机示范，1440 帧；每帧展示时间戳相差 1/60 秒，H.264 / 4K / yuv420p 检查通过，已解码查看全景、近景与结尾。F9 输入路径检查通过，普通原型交互回归保持通过。此证据不替代低配性能测试，CFR 允许补帧 / 丢帧，不保证原始渲染一直达到 60 fps。
+
+F9 原生窗口检查入口为 `tests/recording_controls_smoke.gd`，通过 `--script` 启动并在 `--` 后传入 `--record-session=<隔离目录>`；目录内先准备 `config.json`（`{"demo":false,"screen":0}`）。已分别验证该键生成停止请求、编码进程接受请求并提前封装有效视频、缺少捕获能力 / 无效屏幕时明确失败。Windows release 也已在 `.local/builds/recording-validation/` 导出并通过 4K 录制节点启动 / 退出检查；用户原有 `.local/builds/windows/Farm.exe` 实例仍运行，未覆盖或关闭它。
+
+在本机普通全屏模式下，窗口捕获曾得到 3840×2162，不能仅凭游戏自报尺寸宣称 4K；使用独占全屏后实际输出 3840×2160。`canvas_items` 缩放时 `ViewportTexture.get_size()` 曾返回 11520×6480，实际 `get_image().get_size()` 是 3840×2160，因此只在录制准备时做一次图像尺寸核验，再由 ffprobe 检查最终文件；不依赖前者做录制尺寸验收，也不据此误称引擎正在超采样。
+
+依据：[Godot 全屏与分辨率](https://docs.godotengine.org/en/4.7/tutorials/rendering/multiple_resolutions.html)、[Godot Movie Maker 的离线录制边界](https://docs.godotengine.org/en/4.7/tutorials/animation/creating_movies.html)、[FFmpeg gfxcapture](https://ffmpeg.org/ffmpeg-filters.html#gfxcapture)、[FFmpeg 恒定帧率](https://ffmpeg.org/ffmpeg.html#Advanced-options)。`gfxcapture` 本身不保证固定帧率，因此链路明确加 `fps=60` 和 `-fps_mode cfr`，验收还检查全部视频包的展示时间戳，不能只看 FPS 标签。
 
 ## 后续需要用户准备的内容
 

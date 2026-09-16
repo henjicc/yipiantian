@@ -7,6 +7,7 @@ const DEFAULT_VIEW := Vector3(32.0, 34.0, 26.0)
 var focus_point: Vector3 = DEFAULT_POINT
 var view: Vector3 = DEFAULT_VIEW # yaw, pitch, distance
 var focused: bool = false
+var transition_seconds: float = 0.75
 var _saved_point: Vector3 = DEFAULT_POINT
 var _saved_view: Vector3 = DEFAULT_VIEW
 var _anchor: Vector3 = DEFAULT_POINT
@@ -79,8 +80,8 @@ func _move_to(point: Vector3, target_view: Vector3) -> void:
 	_destination_view = target_view
 	_transition = create_tween().set_parallel(true)
 	_transition.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
-	_transition.tween_property(self, "focus_point", point, 0.75)
-	_transition.tween_property(self, "view", target_view, 0.75)
+	_transition.tween_property(self, "focus_point", point, transition_seconds)
+	_transition.tween_property(self, "view", target_view, transition_seconds)
 
 
 func _stop_transition() -> void:

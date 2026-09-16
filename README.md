@@ -23,6 +23,8 @@ pwsh -NoProfile -File scripts/godot.ps1 ExportWindows
 
 Windows 导出后可直接运行 `.local/builds/windows/Farm.exe`，同目录 `Farm.pck` 必须保留。原型的真实截图、处理后模型和贡献报告副本在本地 `制作留档/`，不参与 Git 同步。
 
+开发留档录屏使用 `scripts/record.ps1`：按需打开 4K 全屏窗口，使用显卡录制 H.264 / 60 fps，视频和中文索引保存到 `制作留档/05_开发录屏/`。自动慢镜头、手动操作和 F9 提前结束的用法见 [开发准备](docs/development-setup.md#开发录屏)。普通启动不录制。
+
 本机桌面已有 **我有一片田 - Godot** 快捷方式，可直接打开正式工程。
 
 引擎安装在仓库外。启动脚本按固定版本查找 `%LOCALAPPDATA%/Godot/<版本>/`；其他机器可设置 `GODOT_EXE` 指向对应 console 可执行文件。安装、模板位置和验证边界见 [开发准备](docs/development-setup.md)。
