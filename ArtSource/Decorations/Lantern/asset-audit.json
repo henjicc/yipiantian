@@ -1,0 +1,55 @@
+{
+  "source": "ArtSource/Decorations/Lantern/tripo-original/model.glb",
+  "blender": "5.2.2 LTS",
+  "root": "top hanging loop",
+  "raw_triangles": 6165,
+  "requested_triangles": 5000,
+  "meshes": {
+    "lantern_high": {
+      "triangles": 6165,
+      "dimensions_godot_xyz": [
+        0.29129156470298767,
+        0.6499999761581421,
+        0.2938355803489685
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 157,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_11312e36-481f-4c9a-bf66-883c1ae14095",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "lantern_low": {
+      "triangles": 2774,
+      "dimensions_godot_xyz": [
+        0.29129156470298767,
+        0.650119423866272,
+        0.2944437861442566
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 120,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_11312e36-481f-4c9a-bf66-883c1ae14095",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

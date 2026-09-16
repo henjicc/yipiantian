@@ -1,0 +1,17 @@
+{
+  "image_tool": "built-in image_gen",
+  "image_version_seed_cost": "Not returned; not invented",
+  "references": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+  ],
+  "image_calls": 1,
+  "image_refinement": "none",
+  "tripo_task_id": "a0f3e09e-51bc-4eb1-8a51-36d3a084914e",
+  "tripo_model": "v3.1-20260211",
+  "credits_consumed": 40,
+  "blender": "5.2.2 LTS; prepare_assets.py normalization, bottom/top pivot, merge doubles, same-source decimation, normals, validation, editable source and GLB export",
+  "godot": "4.7.2 Forward+; independent instance composition, shared lighting test, high/low image comparison",
+  "adoption": "Development-side visual acceptance recorded in task 3.2; not user aesthetic approval",
+  "licensing_review": "Deferred by explicit user instruction; not represented as completed"
+}

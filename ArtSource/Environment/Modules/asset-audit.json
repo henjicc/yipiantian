@@ -1,0 +1,134 @@
+{
+  "island_bank": {
+    "triangles": 192,
+    "dimensions_godot_xyz": [
+      14.539403915405273,
+      1.126021385192871,
+      15.169239044189453
+    ],
+    "lod": "single measured module",
+    "materials": 2,
+    "reimport_verified": true
+  },
+  "stone_0": {
+    "triangles": 200,
+    "dimensions_godot_xyz": [
+      0.940729022026062,
+      0.21082308888435364,
+      0.7397313117980957
+    ],
+    "lod": "single measured module",
+    "materials": 1,
+    "reimport_verified": true
+  },
+  "stone_1": {
+    "triangles": 200,
+    "dimensions_godot_xyz": [
+      0.8624054789543152,
+      0.22984817624092102,
+      0.7038712501525879
+    ],
+    "lod": "single measured module",
+    "materials": 1,
+    "reimport_verified": true
+  },
+  "stone_2": {
+    "triangles": 216,
+    "dimensions_godot_xyz": [
+      0.9256402254104614,
+      0.21921180188655853,
+      0.7327604293823242
+    ],
+    "lod": "single measured module",
+    "materials": 1,
+    "reimport_verified": true
+  },
+  "stone_3": {
+    "triangles": 184,
+    "dimensions_godot_xyz": [
+      1.0240449905395508,
+      0.2305281162261963,
+      0.7192822694778442
+    ],
+    "lod": "single measured module",
+    "materials": 1,
+    "reimport_verified": true
+  },
+  "stone_4": {
+    "triangles": 200,
+    "dimensions_godot_xyz": [
+      0.8645843863487244,
+      0.24798895418643951,
+      0.6428540945053101
+    ],
+    "lod": "single measured module",
+    "materials": 1,
+    "reimport_verified": true
+  },
+  "stone_bridge": {
+    "triangles": 8600,
+    "dimensions_godot_xyz": [
+      4.789999961853027,
+      1.977434754371643,
+      1.9300000667572021
+    ],
+    "lod": "single measured module",
+    "materials": 5,
+    "reimport_verified": true
+  },
+  "bamboo_fence": {
+    "triangles": 504,
+    "dimensions_godot_xyz": [
+      2.1599998474121094,
+      0.8500000238418579,
+      0.12800000607967377
+    ],
+    "lod": "single measured module",
+    "materials": 2,
+    "reimport_verified": true
+  },
+  "entrance_canopy": {
+    "triangles": 3060,
+    "dimensions_godot_xyz": [
+      2.640000104904175,
+      2.6710000038146973,
+      1.389666199684143
+    ],
+    "lod": "single measured module",
+    "materials": 3,
+    "reimport_verified": true
+  },
+  "side_wing": {
+    "triangles": 6962,
+    "dimensions_godot_xyz": [
+      3.4893994331359863,
+      3.0799999237060547,
+      3.1560001373291016
+    ],
+    "lod": "single measured module",
+    "materials": 7,
+    "reimport_verified": true
+  },
+  "veranda": {
+    "triangles": 1656,
+    "dimensions_godot_xyz": [
+      6.900000095367432,
+      2.424999952316284,
+      1.7649998664855957
+    ],
+    "lod": "single measured module",
+    "materials": 4,
+    "reimport_verified": true
+  },
+  "field_frame": {
+    "triangles": 432,
+    "dimensions_godot_xyz": [
+      2.755000114440918,
+      0.07500000298023224,
+      2.2049999237060547
+    ],
+    "lod": "single measured module",
+    "materials": 1,
+    "reimport_verified": true
+  }
+}

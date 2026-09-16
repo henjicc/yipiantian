@@ -5,8 +5,8 @@
   "raw_triangles": 20961,
   "meshes": {
     "house_high": {
-      "triangles": 20961,
-      "materials": 1,
+      "triangles": 20985,
+      "materials": 2,
       "dimensions_blender_xyz": [
         7.199999809265137,
         4.653831481933594,
@@ -28,8 +28,8 @@
       ]
     },
     "house_low": {
-      "triangles": 6499,
-      "materials": 1,
+      "triangles": 6523,
+      "materials": 2,
       "dimensions_blender_xyz": [
         7.214400291442871,
         4.660612106323242,
@@ -51,5 +51,9 @@
       ]
     }
   },
-  "crop_low_triangles": 1494
+  "crop_low_triangles": 1494,
+  "ridge_repair": {
+    "method": "Two fitted 12 triangle clay closures inside the raised ridge ends; raw unchanged",
+    "date": "2026-09-17"
+  }
 }

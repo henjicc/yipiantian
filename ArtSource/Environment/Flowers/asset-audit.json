@@ -1,0 +1,55 @@
+{
+  "source": "ArtSource/Environment/Flowers/tripo-original/model.glb",
+  "blender": "5.2.2 LTS",
+  "root": "ground bottom centre",
+  "raw_triangles": 10845,
+  "requested_triangles": 6500,
+  "meshes": {
+    "flowers_high": {
+      "triangles": 10845,
+      "dimensions_godot_xyz": [
+        0.6499999761581421,
+        0.47411760687828064,
+        0.1631372570991516
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 81,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_e5b37a67-804b-4e5e-9fe3-eff19b8f5bee",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "flowers_low": {
+      "triangles": 4879,
+      "dimensions_godot_xyz": [
+        0.6503156423568726,
+        0.4744134843349457,
+        0.16276241838932037
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 65,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_e5b37a67-804b-4e5e-9fe3-eff19b8f5bee",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

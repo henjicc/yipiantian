@@ -1,0 +1,83 @@
+[
+  {
+    "id": "boat",
+    "folder": "ArtSource/Environment/Boat",
+    "prompt": "Use case: stylized-concept. Single complete game asset in the approved gongbi light-colour Jiangnan miniature farm style. Input 1 is the approved rounded bok choy style: broad continuous sculpted volumes, fine selective tea-brown and moss-green contour accents, layered pale painted washes and gentle pigment mottling, matte natural materials, no photoreal microtexture. Input 2 is approved world: warm ivory, moss and sage green, grey tiles, tea-brown timber, subtle pale colour and ink detail. Preserve each object's own material colours, no yellow paper filter, no glossy plastic, no heavy outlines. Create one connected dimensional object. Weak perspective three-quarter view from slightly above, clear complete silhouette with all parts and base within the frame, 10% margin. Plain uniform cool light-grey background, neutral diffuse lighting, absolutely no ground shadows, no landscape or decorative base, no text, collage or watermark. One traditional Jiangnan wooden sampan with a curved warm straw-bamboo canopy over the middle half, open bow and stern decks, curved pointed timber hull, readable rim, narrow plank seats, two simple short docking posts. No passengers, no water, no sail, no oars outside the object, no lantern or cargo. Length 4.8m, width1.5m, canopy height1.5m above hull. Show hull thickness and smooth longitudinal curves, restrained handpainted plank lines and grouped woven roof ribs. Canopy is a rounded arch across the boat, not a house roof.",
+    "size": 4.8,
+    "axis": "long",
+    "faces": 15000,
+    "low": 6000
+  },
+  {
+    "id": "tree",
+    "folder": "ArtSource/Environment/Tree",
+    "prompt": "Use case: stylized-concept. Single complete game asset in the approved gongbi light-colour Jiangnan miniature farm style. Input 1 is the approved rounded bok choy style: broad continuous sculpted volumes, fine selective tea-brown and moss-green contour accents, layered pale painted washes and gentle pigment mottling, matte natural materials, no photoreal microtexture. Input 2 is approved world: warm ivory, moss and sage green, grey tiles, tea-brown timber, subtle pale colour and ink detail. Preserve each object's own material colours, no yellow paper filter, no glossy plastic, no heavy outlines. Create one connected dimensional object. Weak perspective three-quarter view from slightly above, clear complete silhouette with all parts and base within the frame, 10% margin. Plain uniform cool light-grey background, neutral diffuse lighting, absolutely no ground shadows, no landscape or decorative base, no text, collage or watermark. One complete small broadleaf Jiangnan courtyard tree, a beautifully curved branching grey-brown trunk with 3 visible main boughs and a spreading asymmetrical crown of many broad rounded jade-sage leaves arranged in airy overlapping layered sprays. Individual leaf groups should read as leaves, never spheres or cloud blobs. A few pale yellow-green new leaves and tiny cream blossoms, subdued olive-green main crown, clear gaps between boughs, thick root flare without soil. Height4.7m, spreading crown width4.1m. No pot or ground island, no separate loose leaves.",
+    "size": 4.7,
+    "axis": "height",
+    "faces": 16000,
+    "low": 6000
+  },
+  {
+    "id": "bamboo",
+    "folder": "ArtSource/Environment/Bamboo",
+    "prompt": "Use case: stylized-concept. Single complete game asset in the approved gongbi light-colour Jiangnan miniature farm style. Input 1 is the approved rounded bok choy style: broad continuous sculpted volumes, fine selective tea-brown and moss-green contour accents, layered pale painted washes and gentle pigment mottling, matte natural materials, no photoreal microtexture. Input 2 is approved world: warm ivory, moss and sage green, grey tiles, tea-brown timber, subtle pale colour and ink detail. Preserve each object's own material colours, no yellow paper filter, no glossy plastic, no heavy outlines. Create one connected dimensional object. Weak perspective three-quarter view from slightly above, clear complete silhouette with all parts and base within the frame, 10% margin. Plain uniform cool light-grey background, neutral diffuse lighting, absolutely no ground shadows, no landscape or decorative base, no text, collage or watermark. One coherent small rooted bamboo clump with five slender jointed dull sage bamboo canes of varying height, gracefully spreading sprays of broad lance-shaped muted grey-green leaves, airy readable spaces, tallest cane2.8m high. Visible solid leaf forms, stems connected into a compact stable ground-level base, no pot, soil clump or exposed sprawling roots. Simplified rounded joints and restrained painted contour accents; no high contrast black brush splatters.",
+    "size": 2.8,
+    "axis": "height",
+    "faces": 10000,
+    "low": 3500
+  },
+  {
+    "id": "flowers",
+    "folder": "ArtSource/Environment/Flowers",
+    "prompt": "Use case: stylized-concept. Single complete game asset in the approved gongbi light-colour Jiangnan miniature farm style. Input 1 is the approved rounded bok choy style: broad continuous sculpted volumes, fine selective tea-brown and moss-green contour accents, layered pale painted washes and gentle pigment mottling, matte natural materials, no photoreal microtexture. Input 2 is approved world: warm ivory, moss and sage green, grey tiles, tea-brown timber, subtle pale colour and ink detail. Preserve each object's own material colours, no yellow paper filter, no glossy plastic, no heavy outlines. Create one connected dimensional object. Weak perspective three-quarter view from slightly above, clear complete silhouette with all parts and base within the frame, 10% margin. Plain uniform cool light-grey background, neutral diffuse lighting, absolutely no ground shadows, no landscape or decorative base, no text, collage or watermark. One compact garden-edge clump: a low mound of rounded sage-green leaves with slender connected stems carrying 9 small cream-white daisy-like five-petal flowers with muted ochre centres and a few butter-yellow blossoms. Small naturally irregular group, width0.65m height0.42m, grounded connected root base, no pot, soil mound, floating foliage or scenery. Broad handpainted petals and leaf faces, recognizable soft flower silhouette without photographic pollen detail.",
+    "size": 0.65,
+    "axis": "width",
+    "faces": 6500,
+    "low": 2200
+  },
+  {
+    "id": "lotus",
+    "folder": "ArtSource/Environment/Lotus",
+    "prompt": "Use case: stylized-concept. Single complete game asset in the approved gongbi light-colour Jiangnan miniature farm style. Input 1 is the approved rounded bok choy style: broad continuous sculpted volumes, fine selective tea-brown and moss-green contour accents, layered pale painted washes and gentle pigment mottling, matte natural materials, no photoreal microtexture. Input 2 is approved world: warm ivory, moss and sage green, grey tiles, tea-brown timber, subtle pale colour and ink detail. Preserve each object's own material colours, no yellow paper filter, no glossy plastic, no heavy outlines. Create one connected dimensional object. Weak perspective three-quarter view from slightly above, clear complete silhouette with all parts and base within the frame, 10% margin. Plain uniform cool light-grey background, neutral diffuse lighting, absolutely no ground shadows, no landscape or decorative base, no text, collage or watermark. One small connected water-plant cluster of three broad rounded muted jade-green lotus leaves on short arcing stems and one pale dusty-pink lotus flower just above the leaves. Compact width0.9m, height0.45m. Leaves have a gentle cupped disk shape with a little natural edge notch, simple broad petals and restrained pale washes. No water surface, pot, rocks, soil disk or long exposed roots; lower stems gather to one low base. Matte softly sculpted surface, not glossy plastic.",
+    "size": 0.9,
+    "axis": "width",
+    "faces": 7000,
+    "low": 2400
+  },
+  {
+    "id": "trellis",
+    "folder": "ArtSource/Environment/Trellis",
+    "prompt": "Use case: stylized-concept. Single complete game asset in the approved gongbi light-colour Jiangnan miniature farm style. Input 1 is the approved rounded bok choy style: broad continuous sculpted volumes, fine selective tea-brown and moss-green contour accents, layered pale painted washes and gentle pigment mottling, matte natural materials, no photoreal microtexture. Input 2 is approved world: warm ivory, moss and sage green, grey tiles, tea-brown timber, subtle pale colour and ink detail. Preserve each object's own material colours, no yellow paper filter, no glossy plastic, no heavy outlines. Create one connected dimensional object. Weak perspective three-quarter view from slightly above, clear complete silhouette with all parts and base within the frame, 10% margin. Plain uniform cool light-grey background, neutral diffuse lighting, absolutely no ground shadows, no landscape or decorative base, no text, collage or watermark. One small freestanding bamboo gourd trellis with two vertical pairs of slender attached posts, a simple horizontal top lattice, lush rounded sage-green vine leaves climbing one side and across the top, and five pale golden-ochre bottle gourds hanging beneath the top on short stems. Width2.2m height2.0m depth0.55m. Posts have complete grounded feet, bamboo crossbars connected and visibly supported. Asymmetric foliage with intentional openings, rounded broad leaf volumes with pale painted colour variation. No soil, yard, pots or background landscape.",
+    "size": 2.2,
+    "axis": "width",
+    "faces": 15000,
+    "low": 6000
+  },
+  {
+    "id": "jar",
+    "folder": "ArtSource/Decorations/Jar",
+    "prompt": "Use case: stylized-concept. Single complete game asset in the approved gongbi light-colour Jiangnan miniature farm style. Input 1 is the approved rounded bok choy style: broad continuous sculpted volumes, fine selective tea-brown and moss-green contour accents, layered pale painted washes and gentle pigment mottling, matte natural materials, no photoreal microtexture. Input 2 is approved world: warm ivory, moss and sage green, grey tiles, tea-brown timber, subtle pale colour and ink detail. Preserve each object's own material colours, no yellow paper filter, no glossy plastic, no heavy outlines. Create one connected dimensional object. Weak perspective three-quarter view from slightly above, clear complete silhouette with all parts and base within the frame, 10% margin. Plain uniform cool light-grey background, neutral diffuse lighting, absolutely no ground shadows, no landscape or decorative base, no text, collage or watermark. One squat unglazed earthenware water jar, rounded broad belly, thick dark open rim and deep visible opening, two short attached loop handles, narrow stable flat foot. Muted warm tea-brown and ochre clay with soft grey-green pigment variation in a small shoulder band, height0.68m width0.55m. No lid, contents, plant or ornament. Handpainted matte clay, simple sturdy silhouette, handles have genuine readable holes.",
+    "size": 0.68,
+    "axis": "height",
+    "faces": 5000,
+    "low": 1800
+  },
+  {
+    "id": "flowerpot",
+    "folder": "ArtSource/Decorations/Flowerpot",
+    "prompt": "Use case: stylized-concept. Single complete game asset in the approved gongbi light-colour Jiangnan miniature farm style. Input 1 is the approved rounded bok choy style: broad continuous sculpted volumes, fine selective tea-brown and moss-green contour accents, layered pale painted washes and gentle pigment mottling, matte natural materials, no photoreal microtexture. Input 2 is approved world: warm ivory, moss and sage green, grey tiles, tea-brown timber, subtle pale colour and ink detail. Preserve each object's own material colours, no yellow paper filter, no glossy plastic, no heavy outlines. Create one connected dimensional object. Weak perspective three-quarter view from slightly above, clear complete silhouette with all parts and base within the frame, 10% margin. Plain uniform cool light-grey background, neutral diffuse lighting, absolutely no ground shadows, no landscape or decorative base, no text, collage or watermark. One low warm terracotta flower pot with an integral small broad-leaf plant and five simple cream-white blossoms, muted sage-green rounded leaves, ochre flower centres, visible thick pot rim and soil inside pot, flat stable pot base. Total height0.62m and width0.55m. A compact charming household potted flower matching Jiangnan courtyard reference, no saucer or surrounding loose petals, no glossy glaze. The rim, stem connections and substantial leaf shapes must remain clear.",
+    "size": 0.62,
+    "axis": "height",
+    "faces": 6500,
+    "low": 2500
+  },
+  {
+    "id": "lantern",
+    "folder": "ArtSource/Decorations/Lantern",
+    "prompt": "Use case: stylized-concept. Single complete game asset in the approved gongbi light-colour Jiangnan miniature farm style. Input 1 is the approved rounded bok choy style: broad continuous sculpted volumes, fine selective tea-brown and moss-green contour accents, layered pale painted washes and gentle pigment mottling, matte natural materials, no photoreal microtexture. Input 2 is approved world: warm ivory, moss and sage green, grey tiles, tea-brown timber, subtle pale colour and ink detail. Preserve each object's own material colours, no yellow paper filter, no glossy plastic, no heavy outlines. Create one connected dimensional object. Weak perspective three-quarter view from slightly above, clear complete silhouette with all parts and base within the frame, 10% margin. Plain uniform cool light-grey background, neutral diffuse lighting, absolutely no ground shadows, no landscape or decorative base, no text, collage or watermark. One modest traditional hanging oval red-orange paper lantern, rounded vertically ribbed paper body, short dark-brown wooden top and bottom collars, a simple small solid loop above for hanging, one short dull ochre tassel below. Total height0.65m and width0.30m, softly layered warm coral paper washes with restrained red-brown ribs. Unlit neutral soft lighting: no emitted light, bloom, glow, bright central hotspot or baked illumination. No writing, decoration or long detached threads.",
+    "size": 0.65,
+    "axis": "height",
+    "faces": 5000,
+    "low": 1800
+  }
+]

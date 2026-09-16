@@ -1,0 +1,55 @@
+{
+  "source": "ArtSource/Environment/Lotus/tripo-original/model.glb",
+  "blender": "5.2.2 LTS",
+  "root": "ground bottom centre",
+  "raw_triangles": 9315,
+  "requested_triangles": 7000,
+  "meshes": {
+    "lotus_high": {
+      "triangles": 9315,
+      "dimensions_godot_xyz": [
+        0.8999999761581421,
+        0.5864970684051514,
+        0.6534246206283569
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 57,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_a45b0f40-621c-4de7-9e56-db86766c3687",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "lotus_low": {
+      "triangles": 4190,
+      "dimensions_godot_xyz": [
+        0.899135947227478,
+        0.5868481993675232,
+        0.6541010141372681
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 48,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_a45b0f40-621c-4de7-9e56-db86766c3687",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

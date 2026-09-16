@@ -1,0 +1,533 @@
+[
+  {
+    "id": "boat",
+    "runtime_root": "res://art/environment/boat",
+    "audit": {
+      "source": "ArtSource/Environment/Boat/tripo-original/model.glb",
+      "blender": "5.2.2 LTS",
+      "root": "ground bottom centre",
+      "raw_triangles": 17561,
+      "requested_triangles": 15000,
+      "meshes": {
+        "boat_high": {
+          "triangles": 17561,
+          "dimensions_godot_xyz": [
+            4.800000190734863,
+            1.7471625804901123,
+            1.5874756574630737
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 500,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_a0f3e09e-51bc-4eb1-8a51-36d3a084914e",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        },
+        "boat_low": {
+          "triangles": 7902,
+          "dimensions_godot_xyz": [
+            4.8011627197265625,
+            1.7485440969467163,
+            1.5880787372589111
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 433,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_a0f3e09e-51bc-4eb1-8a51-36d3a084914e",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        }
+      }
+    }
+  },
+  {
+    "id": "tree",
+    "runtime_root": "res://art/environment/tree",
+    "audit": {
+      "source": "ArtSource/Environment/Tree/tripo-original/model.glb",
+      "blender": "5.2.2 LTS",
+      "root": "ground bottom centre",
+      "raw_triangles": 24718,
+      "requested_triangles": 16000,
+      "meshes": {
+        "tree_high": {
+          "triangles": 24718,
+          "dimensions_godot_xyz": [
+            4.983367919921875,
+            4.699999809265137,
+            1.9835759401321411
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 83,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_ee749963-053d-4c7e-895b-b1acd498bc7d",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        },
+        "tree_low": {
+          "triangles": 11123,
+          "dimensions_godot_xyz": [
+            4.976743698120117,
+            4.693188667297363,
+            1.9781651496887207
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 82,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_ee749963-053d-4c7e-895b-b1acd498bc7d",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        }
+      }
+    }
+  },
+  {
+    "id": "bamboo",
+    "runtime_root": "res://art/environment/bamboo",
+    "audit": {
+      "source": "ArtSource/Environment/Bamboo/tripo-original/model.glb",
+      "blender": "5.2.2 LTS",
+      "root": "ground bottom centre",
+      "raw_triangles": 13649,
+      "requested_triangles": 10000,
+      "meshes": {
+        "bamboo_high": {
+          "triangles": 13649,
+          "dimensions_godot_xyz": [
+            2.4931507110595703,
+            2.799999952316284,
+            1.3041095733642578
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 113,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_8f2acec3-9488-4a67-9c87-daa3b3305722",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        },
+        "bamboo_low": {
+          "triangles": 6142,
+          "dimensions_godot_xyz": [
+            2.4921693801879883,
+            2.800257921218872,
+            1.297194480895996
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 98,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_8f2acec3-9488-4a67-9c87-daa3b3305722",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        }
+      }
+    }
+  },
+  {
+    "id": "flowers",
+    "runtime_root": "res://art/environment/flowers",
+    "audit": {
+      "source": "ArtSource/Environment/Flowers/tripo-original/model.glb",
+      "blender": "5.2.2 LTS",
+      "root": "ground bottom centre",
+      "raw_triangles": 10845,
+      "requested_triangles": 6500,
+      "meshes": {
+        "flowers_high": {
+          "triangles": 10845,
+          "dimensions_godot_xyz": [
+            0.6499999761581421,
+            0.47411760687828064,
+            0.1631372570991516
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 81,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_e5b37a67-804b-4e5e-9fe3-eff19b8f5bee",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        },
+        "flowers_low": {
+          "triangles": 4879,
+          "dimensions_godot_xyz": [
+            0.6503156423568726,
+            0.4744134843349457,
+            0.16276241838932037
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 65,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_e5b37a67-804b-4e5e-9fe3-eff19b8f5bee",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        }
+      }
+    }
+  },
+  {
+    "id": "lotus",
+    "runtime_root": "res://art/environment/lotus",
+    "audit": {
+      "source": "ArtSource/Environment/Lotus/tripo-original/model.glb",
+      "blender": "5.2.2 LTS",
+      "root": "ground bottom centre",
+      "raw_triangles": 9315,
+      "requested_triangles": 7000,
+      "meshes": {
+        "lotus_high": {
+          "triangles": 9315,
+          "dimensions_godot_xyz": [
+            0.8999999761581421,
+            0.5864970684051514,
+            0.6534246206283569
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 57,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_a45b0f40-621c-4de7-9e56-db86766c3687",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        },
+        "lotus_low": {
+          "triangles": 4190,
+          "dimensions_godot_xyz": [
+            0.899135947227478,
+            0.5868481993675232,
+            0.6541010141372681
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 48,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_a45b0f40-621c-4de7-9e56-db86766c3687",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        }
+      }
+    }
+  },
+  {
+    "id": "trellis",
+    "runtime_root": "res://art/environment/trellis",
+    "audit": {
+      "source": "ArtSource/Environment/Trellis/tripo-original/model.glb",
+      "blender": "5.2.2 LTS",
+      "root": "ground bottom centre",
+      "raw_triangles": 21232,
+      "requested_triangles": 15000,
+      "meshes": {
+        "trellis_high": {
+          "triangles": 21232,
+          "dimensions_godot_xyz": [
+            2.200000047683716,
+            1.8894116878509521,
+            0.8325490355491638
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 391,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_5da23785-bf80-4573-b991-842ee8e9f2e3",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        },
+        "trellis_low": {
+          "triangles": 9553,
+          "dimensions_godot_xyz": [
+            2.200416088104248,
+            1.8847134113311768,
+            0.827993631362915
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 290,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_5da23785-bf80-4573-b991-842ee8e9f2e3",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        }
+      }
+    }
+  },
+  {
+    "id": "jar",
+    "runtime_root": "res://art/decorations/jar",
+    "audit": {
+      "source": "ArtSource/Decorations/Jar/tripo-original/model.glb",
+      "blender": "5.2.2 LTS",
+      "root": "ground bottom centre",
+      "raw_triangles": 5589,
+      "requested_triangles": 5000,
+      "meshes": {
+        "jar_high": {
+          "triangles": 5589,
+          "dimensions_godot_xyz": [
+            0.6923387050628662,
+            0.6800000071525574,
+            0.6923387050628662
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 43,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_65bced48-34ff-4c21-9a87-fec4e54a1398",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        },
+        "jar_low": {
+          "triangles": 2515,
+          "dimensions_godot_xyz": [
+            0.6923387050628662,
+            0.6800394058227539,
+            0.6923387050628662
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 43,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_65bced48-34ff-4c21-9a87-fec4e54a1398",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        }
+      }
+    }
+  },
+  {
+    "id": "flowerpot",
+    "runtime_root": "res://art/decorations/flowerpot",
+    "audit": {
+      "source": "ArtSource/Decorations/Flowerpot/tripo-original/model.glb",
+      "blender": "5.2.2 LTS",
+      "root": "ground bottom centre",
+      "raw_triangles": 9614,
+      "requested_triangles": 6500,
+      "meshes": {
+        "flowerpot_high": {
+          "triangles": 9614,
+          "dimensions_godot_xyz": [
+            0.5496281385421753,
+            0.6200000047683716,
+            0.4416438639163971
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 34,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_dfaff462-cd49-4d22-8beb-657cebc303b8",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        },
+        "flowerpot_low": {
+          "triangles": 4326,
+          "dimensions_godot_xyz": [
+            0.5494289398193359,
+            0.6197038888931274,
+            0.441428542137146
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 30,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_dfaff462-cd49-4d22-8beb-657cebc303b8",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        }
+      }
+    }
+  },
+  {
+    "id": "lantern",
+    "runtime_root": "res://art/decorations/lantern",
+    "audit": {
+      "source": "ArtSource/Decorations/Lantern/tripo-original/model.glb",
+      "blender": "5.2.2 LTS",
+      "root": "top hanging loop",
+      "raw_triangles": 6165,
+      "requested_triangles": 5000,
+      "meshes": {
+        "lantern_high": {
+          "triangles": 6165,
+          "dimensions_godot_xyz": [
+            0.29129156470298767,
+            0.6499999761581421,
+            0.2938355803489685
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 157,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_11312e36-481f-4c9a-bf66-883c1ae14095",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        },
+        "lantern_low": {
+          "triangles": 2774,
+          "dimensions_godot_xyz": [
+            0.29129156470298767,
+            0.650119423866272,
+            0.2944437861442566
+          ],
+          "materials": 1,
+          "uv_layers": 1,
+          "non_manifold_edges": 120,
+          "loose_vertices": 0,
+          "zero_area_faces": 0,
+          "textures": [
+            {
+              "name": "Color_11312e36-481f-4c9a-bf66-883c1ae14095",
+              "size": [
+                2048,
+                2048
+              ]
+            }
+          ],
+          "reimport_verified": true
+        }
+      }
+    }
+  }
+]

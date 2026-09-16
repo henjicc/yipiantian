@@ -1,0 +1,17 @@
+{
+  "image_tool": "built-in image_gen",
+  "image_version_seed_cost": "Not returned; not invented",
+  "references": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+  ],
+  "image_calls": 2,
+  "image_refinement": "Replace fleshy white vegetable stalks with narrow ordinary green flower stems/leaves; preserve flowers and paint; plain cool grey background.",
+  "tripo_task_id": "e5b37a67-804b-4e5e-9fe3-eff19b8f5bee",
+  "tripo_model": "v3.1-20260211",
+  "credits_consumed": 40,
+  "blender": "5.2.2 LTS; prepare_assets.py normalization, bottom/top pivot, merge doubles, same-source decimation, normals, validation, editable source and GLB export",
+  "godot": "4.7.2 Forward+; independent instance composition, shared lighting test, high/low image comparison",
+  "adoption": "Development-side visual acceptance recorded in task 3.2; not user aesthetic approval",
+  "licensing_review": "Deferred by explicit user instruction; not represented as completed"
+}

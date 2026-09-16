@@ -1,0 +1,12 @@
+{
+  "tool": "built-in image_gen",
+  "reference": "docs/design-baseline/images/approved/farm-gongbi-v1.png",
+  "output": "river-distance.png",
+  "dimensions": [
+    2172,
+    724
+  ],
+  "calls": 1,
+  "version_seed_cost": "not returned",
+  "contribution": "new standalone distant mountain/river/shore image; not a copy of the interactive farm reference"
+}

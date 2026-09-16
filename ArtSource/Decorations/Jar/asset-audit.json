@@ -1,0 +1,55 @@
+{
+  "source": "ArtSource/Decorations/Jar/tripo-original/model.glb",
+  "blender": "5.2.2 LTS",
+  "root": "ground bottom centre",
+  "raw_triangles": 5589,
+  "requested_triangles": 5000,
+  "meshes": {
+    "jar_high": {
+      "triangles": 5589,
+      "dimensions_godot_xyz": [
+        0.6923387050628662,
+        0.6800000071525574,
+        0.6923387050628662
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 43,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_65bced48-34ff-4c21-9a87-fec4e54a1398",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "jar_low": {
+      "triangles": 2515,
+      "dimensions_godot_xyz": [
+        0.6923387050628662,
+        0.6800394058227539,
+        0.6923387050628662
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 43,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_65bced48-34ff-4c21-9a87-fec4e54a1398",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

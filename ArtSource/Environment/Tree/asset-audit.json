@@ -1,0 +1,55 @@
+{
+  "source": "ArtSource/Environment/Tree/tripo-original/model.glb",
+  "blender": "5.2.2 LTS",
+  "root": "ground bottom centre",
+  "raw_triangles": 24718,
+  "requested_triangles": 16000,
+  "meshes": {
+    "tree_high": {
+      "triangles": 24718,
+      "dimensions_godot_xyz": [
+        4.983367919921875,
+        4.699999809265137,
+        1.9835759401321411
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 83,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_ee749963-053d-4c7e-895b-b1acd498bc7d",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "tree_low": {
+      "triangles": 11123,
+      "dimensions_godot_xyz": [
+        4.976743698120117,
+        4.693188667297363,
+        1.9781651496887207
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 82,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_ee749963-053d-4c7e-895b-b1acd498bc7d",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

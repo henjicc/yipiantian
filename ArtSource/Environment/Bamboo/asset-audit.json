@@ -1,0 +1,55 @@
+{
+  "source": "ArtSource/Environment/Bamboo/tripo-original/model.glb",
+  "blender": "5.2.2 LTS",
+  "root": "ground bottom centre",
+  "raw_triangles": 13649,
+  "requested_triangles": 10000,
+  "meshes": {
+    "bamboo_high": {
+      "triangles": 13649,
+      "dimensions_godot_xyz": [
+        2.4931507110595703,
+        2.799999952316284,
+        1.3041095733642578
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 113,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_8f2acec3-9488-4a67-9c87-daa3b3305722",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "bamboo_low": {
+      "triangles": 6142,
+      "dimensions_godot_xyz": [
+        2.4921693801879883,
+        2.800257921218872,
+        1.297194480895996
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 98,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_8f2acec3-9488-4a67-9c87-daa3b3305722",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

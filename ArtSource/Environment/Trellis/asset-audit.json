@@ -1,0 +1,55 @@
+{
+  "source": "ArtSource/Environment/Trellis/tripo-original/model.glb",
+  "blender": "5.2.2 LTS",
+  "root": "ground bottom centre",
+  "raw_triangles": 21232,
+  "requested_triangles": 15000,
+  "meshes": {
+    "trellis_high": {
+      "triangles": 21232,
+      "dimensions_godot_xyz": [
+        2.200000047683716,
+        1.8894116878509521,
+        0.8325490355491638
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 391,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_5da23785-bf80-4573-b991-842ee8e9f2e3",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "trellis_low": {
+      "triangles": 9553,
+      "dimensions_godot_xyz": [
+        2.200416088104248,
+        1.8847134113311768,
+        0.827993631362915
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 290,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_5da23785-bf80-4573-b991-842ee8e9f2e3",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

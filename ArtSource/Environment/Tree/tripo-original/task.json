@@ -1,0 +1,28 @@
+{
+  "type": "image_to_model",
+  "status": "success",
+  "progress": 100,
+  "input": {
+    "pbr": false,
+    "file": {
+      "local": "concept.png"
+    },
+    "texture": true,
+    "export_uv": true,
+    "face_limit": 16000,
+    "model_version": "v3.1-20260211",
+    "smart_low_poly": true,
+    "texture_quality": "standard",
+    "geometry_quality": "standard",
+    "texture_alignment": "original_image",
+    "enable_image_autofix": false
+  },
+  "output": {
+    "model": "tripo-original/model.glb",
+    "preview": "tripo-original/preview.png"
+  },
+  "task_id": "ee749963-053d-4c7e-895b-b1acd498bc7d",
+  "created_at": "2026-09-16T21:59:34.215292Z",
+  "completed_at": "2026-09-16T22:10:55.848677Z",
+  "credits_consumed": 40
+}

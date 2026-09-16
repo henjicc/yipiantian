@@ -1,0 +1,55 @@
+{
+  "source": "ArtSource/Environment/Boat/tripo-original/model.glb",
+  "blender": "5.2.2 LTS",
+  "root": "ground bottom centre",
+  "raw_triangles": 17561,
+  "requested_triangles": 15000,
+  "meshes": {
+    "boat_high": {
+      "triangles": 17561,
+      "dimensions_godot_xyz": [
+        4.800000190734863,
+        1.7471625804901123,
+        1.5874756574630737
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 500,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_a0f3e09e-51bc-4eb1-8a51-36d3a084914e",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "boat_low": {
+      "triangles": 7902,
+      "dimensions_godot_xyz": [
+        4.8011627197265625,
+        1.7485440969467163,
+        1.5880787372589111
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 433,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_a0f3e09e-51bc-4eb1-8a51-36d3a084914e",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

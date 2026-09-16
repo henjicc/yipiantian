@@ -1,0 +1,55 @@
+{
+  "source": "ArtSource/Decorations/Flowerpot/tripo-original/model.glb",
+  "blender": "5.2.2 LTS",
+  "root": "ground bottom centre",
+  "raw_triangles": 9614,
+  "requested_triangles": 6500,
+  "meshes": {
+    "flowerpot_high": {
+      "triangles": 9614,
+      "dimensions_godot_xyz": [
+        0.5496281385421753,
+        0.6200000047683716,
+        0.4416438639163971
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 34,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_dfaff462-cd49-4d22-8beb-657cebc303b8",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "flowerpot_low": {
+      "triangles": 4326,
+      "dimensions_godot_xyz": [
+        0.5494289398193359,
+        0.6197038888931274,
+        0.441428542137146
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 30,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_dfaff462-cd49-4d22-8beb-657cebc303b8",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}
