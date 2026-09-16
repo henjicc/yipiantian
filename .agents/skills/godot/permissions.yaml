@@ -1,0 +1,9 @@
+# Capability manifest, read by trust-card (capability layer) and any
+# capability-based sandbox. Declares what this skill's shipped files do
+# when run. Edits the agent makes while following the guidance are the
+# agent's capability, not this artifact's.
+model: knowledge
+executes: false
+network: none
+shell: false
+filesystem_writes: false

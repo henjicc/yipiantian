@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Blender 3D asset skill</title>
+  <desc id="desc">An orange low-poly cube surrounded by a cyan orbit</desc>
+  <defs>
+    <linearGradient id="cube" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ffb347"/>
+      <stop offset="1" stop-color="#ff6b00"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="52" fill="#0b1020"/>
+  <ellipse cx="128" cy="132" rx="94" ry="54" fill="none" stroke="#45d7ff" stroke-width="12" transform="rotate(-18 128 132)"/>
+  <path d="M128 50 194 88v76l-66 38-66-38V88z" fill="url(#cube)" stroke="#ffe0b3" stroke-width="6"/>
+  <path d="m62 88 66 39 66-39M128 127v75" fill="none" stroke="#7c2d00" stroke-width="6" stroke-linejoin="round"/>
+  <circle cx="49" cy="153" r="13" fill="#a8ff60" stroke="#0b1020" stroke-width="5"/>
+</svg>

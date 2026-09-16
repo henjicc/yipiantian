@@ -1,0 +1,8 @@
+interface:
+  display_name: "Blender 3D Asset Generation"
+  short_description: "Create and validate game-ready Blender assets"
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+  default_prompt: "Use $blender-3d-asset-generation to create and verify a game-ready 3D asset for my project."
+policy:
+  allow_implicit_invocation: true

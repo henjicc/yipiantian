@@ -1,0 +1,30 @@
+# Local references, experiments, downloads, builds, logs and test saves
+/docs/ref/
+/.local/
+/Builds/
+/Logs/
+
+# Godot cache, editor state, export credentials and build outputs
+/Game/.godot/
+/Game/export_credentials.cfg
+/Game/builds/
+
+# Personal IDE state; shared .vscode configuration is versioned
+/.vs/
+/.idea/
+/Game/.vs/
+/Game/.idea/
+
+# Blender rotating backups; actual source files are versioned
+*.blend[0-9]
+*.blend[0-9][0-9]
+
+# Local credentials
+.env
+.env.*
+!.env.example
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,106 @@
+[
+  {
+    "path": "MAINTENANCE.md",
+    "sha256": "d3000e9fee14e42b74ff0a22ec6f4f5259cfd144c09c82291d00c4da66d112fd"
+  },
+  {
+    "path": "SKILL.md",
+    "sha256": "9d5ec313088aca7da0a7bb3ea05a82f271e8cda3d40f6259846945113cf6e73a"
+  },
+  {
+    "path": "permissions.yaml",
+    "sha256": "a59c33d37ea2d14fbd0b443829a952a6a6ff099c8ffcdc1f12ff6a8e9c8112aa"
+  },
+  {
+    "path": "references/3d.md",
+    "sha256": "8081a04139781831b1b4a34929abb824ca0c72d48bf82ab2d8b5fe6f87822d34"
+  },
+  {
+    "path": "references/animation.md",
+    "sha256": "e529cf8af9451d91be0f972e9085ceda458fb3077df1df6852ef456c2cb99970"
+  },
+  {
+    "path": "references/architecture.md",
+    "sha256": "7c19f5d0ea561deb7c22412899ed586f2cda642b7696b0f7bce3f4f9d02d3ae5"
+  },
+  {
+    "path": "references/audio.md",
+    "sha256": "7478d00f4a0a3a7bff61b22b75cd2fb5ff42a462095d62b6b15b52749916e308"
+  },
+  {
+    "path": "references/editor-tooling.md",
+    "sha256": "177ddd973510c0b5519168d4422c7897bcb982af3cb60ab15eb8e489bfdfaa74"
+  },
+  {
+    "path": "references/file-formats.md",
+    "sha256": "e84d6bb109ab91f5cdfa8a861b1de599c20a8964143c7ea1c378f22d46e845a7"
+  },
+  {
+    "path": "references/gdscript.md",
+    "sha256": "6dab0f978781ba0bc6f1b2e9c1f06b14290849050196bcabbf19938a3a8008bc"
+  },
+  {
+    "path": "references/index.md",
+    "sha256": "63b94ae8904f2eb5af044c244d05f13aeb30010a242dec068a416b67044934d8"
+  },
+  {
+    "path": "references/input.md",
+    "sha256": "924e13c82f44b186b8709fb9982bfbee1db3a110b46e562903d6b43a17bfd3f0"
+  },
+  {
+    "path": "references/math.md",
+    "sha256": "fff4d325fbbcf7e043639a2446779326b7054065bce80a96e592ac75ee5dfa9b"
+  },
+  {
+    "path": "references/multiplayer.md",
+    "sha256": "6c3c6414a90bb5d6400ef90c6e6897e89ce9b2bf1b6672428c22efc67bc4cb46"
+  },
+  {
+    "path": "references/navigation.md",
+    "sha256": "bd0a14a24bbe4d358605761af2c45999e4b04d91a6750bfee825a60494b80889"
+  },
+  {
+    "path": "references/particles.md",
+    "sha256": "ca5418a3d38fdf11760680b1cb6f21165a7d4a2689165ea5b5f2a8d88283754d"
+  },
+  {
+    "path": "references/performance.md",
+    "sha256": "1b0fbb16d0cb9b4962de3ac7709b8fa6b12b8bbb9b86d1400b226c39d7e42aa7"
+  },
+  {
+    "path": "references/persistence.md",
+    "sha256": "9f1dd68eeeb88368c324078d3e6021b100342f2d449e7663b4bdf0b6bc78e488"
+  },
+  {
+    "path": "references/physics.md",
+    "sha256": "57572f478151dfe2334e6dabbf094d8e5c26c3fb0c5ea9b31c5f88df2ad918a9"
+  },
+  {
+    "path": "references/pitfalls.md",
+    "sha256": "e615ec219970172b2a29e81158c9106313bc378f1f11c01912682b5db9feb66d"
+  },
+  {
+    "path": "references/scene-tree.md",
+    "sha256": "6d9d4f2f1fa1863c831a10556a85aadc1fede04fe340afbd5f5f0aaa61133295"
+  },
+  {
+    "path": "references/shaders.md",
+    "sha256": "922b71f693b3bbf1f9ff51c9774f206e23bdb95c7397b9c2699b93411dff77e7"
+  },
+  {
+    "path": "references/testing.md",
+    "sha256": "032500f9c8afb9f37bbec9062bff284f07afbd24e7afd7906576f879fbc7040f"
+  },
+  {
+    "path": "references/tilemaplayer.md",
+    "sha256": "4729016cc484cbd9f91090d422da4fc3a045fc1511d908c8615e7f5bda04fe40"
+  },
+  {
+    "path": "references/ui.md",
+    "sha256": "2e42a9b765702c534b3625edb9dbbfe8b9faccdc4df4c7540092eb26d7390abe"
+  },
+  {
+    "path": "references/workflow.md",
+    "sha256": "2fbe3dd97569dfb2f3bcff54bfdfba9f3c8785bc2caef6784ad73609b351ddca"
+  }
+]
