@@ -1,0 +1,656 @@
+{
+  "title": "\u7530\u95f4\u6162\u58f0",
+  "tempo_bpm": 60,
+  "duration": 128,
+  "scale": "D major pentatonic",
+  "events": [
+    {
+      "time": 1,
+      "midi_note": 66,
+      "duration": 2,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 4,
+      "midi_note": 69,
+      "duration": 2,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 7,
+      "midi_note": 71,
+      "duration": 2.5,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 11,
+      "midi_note": 69,
+      "duration": 3,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 17,
+      "midi_note": 66,
+      "duration": 2.2,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 20,
+      "midi_note": 64,
+      "duration": 2,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 23,
+      "midi_note": 62,
+      "duration": 4,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 33,
+      "midi_note": 69,
+      "duration": 2,
+      "instrument": "flute"
+    },
+    {
+      "time": 36,
+      "midi_note": 74,
+      "duration": 2.3,
+      "instrument": "flute"
+    },
+    {
+      "time": 39,
+      "midi_note": 76,
+      "duration": 2,
+      "instrument": "flute"
+    },
+    {
+      "time": 42,
+      "midi_note": 74,
+      "duration": 3.4,
+      "instrument": "flute"
+    },
+    {
+      "time": 49,
+      "midi_note": 71,
+      "duration": 2.8,
+      "instrument": "flute"
+    },
+    {
+      "time": 53,
+      "midi_note": 69,
+      "duration": 2.3,
+      "instrument": "flute"
+    },
+    {
+      "time": 57,
+      "midi_note": 66,
+      "duration": 4,
+      "instrument": "flute"
+    },
+    {
+      "time": 65,
+      "midi_note": 66,
+      "duration": 1.6,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 67,
+      "midi_note": 69,
+      "duration": 2,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 70,
+      "midi_note": 71,
+      "duration": 3,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 74,
+      "midi_note": 74,
+      "duration": 3,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 81,
+      "midi_note": 76,
+      "duration": 2.4,
+      "instrument": "flute"
+    },
+    {
+      "time": 85,
+      "midi_note": 74,
+      "duration": 2.2,
+      "instrument": "flute"
+    },
+    {
+      "time": 88,
+      "midi_note": 71,
+      "duration": 3,
+      "instrument": "flute"
+    },
+    {
+      "time": 92,
+      "midi_note": 69,
+      "duration": 2,
+      "instrument": "flute"
+    },
+    {
+      "time": 97,
+      "midi_note": 66,
+      "duration": 2,
+      "instrument": "flute"
+    },
+    {
+      "time": 100,
+      "midi_note": 69,
+      "duration": 2.3,
+      "instrument": "flute"
+    },
+    {
+      "time": 104,
+      "midi_note": 64,
+      "duration": 3.2,
+      "instrument": "flute"
+    },
+    {
+      "time": 113,
+      "midi_note": 66,
+      "duration": 2.4,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 117,
+      "midi_note": 64,
+      "duration": 2.4,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 121,
+      "midi_note": 62,
+      "duration": 4.5,
+      "instrument": "plucked_zither"
+    },
+    {
+      "time": 0.0,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 1.64,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 3.006,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 4.039,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 5.61,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 6.963,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 8.021,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 9.565,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 10.975,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 11.972,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 15.965,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 17.62,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 19.038,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 20.009,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 21.639,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 22.997,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 24.04,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 25.601,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 26.961,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 28.013,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 31.967,
+      "midi_note": 59,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 33.579,
+      "midi_note": 71,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 35.03,
+      "midi_note": 66,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 35.97,
+      "midi_note": 59,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 37.627,
+      "midi_note": 71,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 39.034,
+      "midi_note": 66,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 40.017,
+      "midi_note": 59,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 41.636,
+      "midi_note": 71,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 42.988,
+      "midi_note": 66,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 44.039,
+      "midi_note": 59,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 48.004,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 49.56,
+      "midi_note": 69,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 50.99,
+      "midi_note": 64,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 51.963,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 53.586,
+      "midi_note": 69,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 55.035,
+      "midi_note": 64,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 55.976,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 57.633,
+      "midi_note": 69,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 59.028,
+      "midi_note": 64,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 60.024,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 64.037,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 65.584,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 66.961,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 67.996,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 69.56,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 70.999,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 71.961,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 73.595,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 75.038,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 75.983,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 80.031,
+      "midi_note": 54,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 81.625,
+      "midi_note": 66,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 82.973,
+      "midi_note": 61,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 84.033,
+      "midi_note": 54,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 85.577,
+      "midi_note": 66,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 86.964,
+      "midi_note": 61,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 87.987,
+      "midi_note": 54,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 89.562,
+      "midi_note": 66,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 91.007,
+      "midi_note": 61,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 91.96,
+      "midi_note": 54,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 95.991,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 97.639,
+      "midi_note": 69,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 99.014,
+      "midi_note": 64,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 100.035,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 101.618,
+      "midi_note": 69,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 102.968,
+      "midi_note": 64,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 104.027,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 105.57,
+      "midi_note": 69,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 106.969,
+      "midi_note": 64,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 107.979,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 111.961,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 113.612,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 115.04,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 116.0,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 117.64,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 119.006,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 120.039,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 121.61,
+      "midi_note": 62,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 122.963,
+      "midi_note": 57,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    },
+    {
+      "time": 124.021,
+      "midi_note": 50,
+      "duration": 6,
+      "instrument": "accompaniment_zither"
+    }
+  ]
+}

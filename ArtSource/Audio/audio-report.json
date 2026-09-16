@@ -1,0 +1,86 @@
+[
+  {
+    "name": "courtyard_theme",
+    "file": "Game\\art\\audio\\courtyard_theme.ogg",
+    "seconds": 128.0,
+    "rate": 48000,
+    "channels": 2,
+    "loop": true,
+    "rms_dbfs": -29.68,
+    "peak_dbfs": -13.08,
+    "loop_boundary_delta": 7.689371705055237e-05,
+    "origin": "original score and deterministic synthesis; no external samples"
+  },
+  {
+    "name": "ambience_day",
+    "file": "Game\\art\\audio\\ambience_day.ogg",
+    "seconds": 64.0,
+    "rate": 48000,
+    "channels": 2,
+    "loop": true,
+    "rms_dbfs": -37.47,
+    "peak_dbfs": -22.52,
+    "loop_boundary_delta": 0.0025060176849365234,
+    "origin": "original score and deterministic synthesis; no external samples"
+  },
+  {
+    "name": "ambience_night",
+    "file": "Game\\art\\audio\\ambience_night.ogg",
+    "seconds": 64.0,
+    "rate": 48000,
+    "channels": 2,
+    "loop": true,
+    "rms_dbfs": -37.28,
+    "peak_dbfs": -22.81,
+    "loop_boundary_delta": 0.003275614231824875,
+    "origin": "original score and deterministic synthesis; no external samples"
+  },
+  {
+    "name": "sow",
+    "file": "Game\\art\\audio\\sow.wav",
+    "seconds": 0.48,
+    "rate": 48000,
+    "channels": 2,
+    "loop": false,
+    "rms_dbfs": -31.81,
+    "peak_dbfs": -13.15,
+    "loop_boundary_delta": 0.0,
+    "origin": "original score and deterministic synthesis; no external samples"
+  },
+  {
+    "name": "water",
+    "file": "Game\\art\\audio\\water.wav",
+    "seconds": 1.1499791666666668,
+    "rate": 48000,
+    "channels": 2,
+    "loop": false,
+    "rms_dbfs": -30.0,
+    "peak_dbfs": -13.15,
+    "loop_boundary_delta": 0.0,
+    "origin": "original score and deterministic synthesis; no external samples"
+  },
+  {
+    "name": "harvest",
+    "file": "Game\\art\\audio\\harvest.wav",
+    "seconds": 0.65,
+    "rate": 48000,
+    "channels": 2,
+    "loop": false,
+    "rms_dbfs": -27.97,
+    "peak_dbfs": -16.5,
+    "loop_boundary_delta": 0.0,
+    "origin": "original score and deterministic synthesis; no external samples"
+  },
+  {
+    "name": "ui",
+    "file": "Game\\art\\audio\\ui.wav",
+    "seconds": 0.13,
+    "rate": 48000,
+    "channels": 2,
+    "loop": false,
+    "rms_dbfs": -29.98,
+    "peak_dbfs": -16.29,
+    "loop_boundary_delta": 0.0,
+    "origin": "original score and deterministic synthesis; no external samples"
+  }
+]

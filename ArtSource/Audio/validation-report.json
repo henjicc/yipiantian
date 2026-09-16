@@ -1,0 +1,86 @@
+[
+  {
+    "file": "Game\\art\\audio\\ambience_day.ogg",
+    "duration": 64.0,
+    "integrated_lufs": "-35.22",
+    "true_peak_dbfs": -22.515828194040957,
+    "dc_peak": 2.483927035476757e-06,
+    "loop_seam_delta": 0.0025060176849365234,
+    "max_adjacent_delta": 0.007041599601507187,
+    "seam_below_normal_peak_delta": true,
+    "clipped_samples": 0,
+    "finite": true
+  },
+  {
+    "file": "Game\\art\\audio\\ambience_night.ogg",
+    "duration": 64.0,
+    "integrated_lufs": "-35.04",
+    "true_peak_dbfs": -22.79850530209004,
+    "dc_peak": 5.780700875362745e-07,
+    "loop_seam_delta": 0.003275614231824875,
+    "max_adjacent_delta": 0.0069391559809446335,
+    "seam_below_normal_peak_delta": true,
+    "clipped_samples": 0,
+    "finite": true
+  },
+  {
+    "file": "Game\\art\\audio\\courtyard_theme.ogg",
+    "duration": 128.0,
+    "integrated_lufs": "-26.95",
+    "true_peak_dbfs": -13.067493204353784,
+    "dc_peak": 4.8189184882666e-07,
+    "loop_seam_delta": 7.689371705055237e-05,
+    "max_adjacent_delta": 0.03972359001636505,
+    "seam_below_normal_peak_delta": true,
+    "clipped_samples": 0,
+    "finite": true
+  },
+  {
+    "file": "Game\\art\\audio\\harvest.wav",
+    "duration": 0.65,
+    "integrated_lufs": "-23.34",
+    "true_peak_dbfs": -16.481745819979274,
+    "dc_peak": 1.5395726913060897e-05,
+    "loop_seam_delta": 0.0,
+    "max_adjacent_delta": 0.043365478515625,
+    "seam_below_normal_peak_delta": true,
+    "clipped_samples": 0,
+    "finite": true
+  },
+  {
+    "file": "Game\\art\\audio\\sow.wav",
+    "duration": 0.48,
+    "integrated_lufs": "-27.25",
+    "true_peak_dbfs": -13.12909195631284,
+    "dc_peak": 1.1091762118869358e-05,
+    "loop_seam_delta": 0.0,
+    "max_adjacent_delta": 0.047760009765625,
+    "seam_below_normal_peak_delta": true,
+    "clipped_samples": 0,
+    "finite": true
+  },
+  {
+    "file": "Game\\art\\audio\\ui.wav",
+    "duration": 0.13,
+    "integrated_lufs": "-inf",
+    "true_peak_dbfs": -16.287666896676352,
+    "dc_peak": 1.914684589092548e-05,
+    "loop_seam_delta": 0.0,
+    "max_adjacent_delta": 0.01129150390625,
+    "seam_below_normal_peak_delta": true,
+    "clipped_samples": 0,
+    "finite": true
+  },
+  {
+    "file": "Game\\art\\audio\\water.wav",
+    "duration": 1.1499791666666668,
+    "integrated_lufs": "-23.30",
+    "true_peak_dbfs": -13.147175764743157,
+    "dc_peak": 1.5328173581326202e-05,
+    "loop_seam_delta": 0.0,
+    "max_adjacent_delta": 0.106781005859375,
+    "seam_below_normal_peak_delta": true,
+    "clipped_samples": 0,
+    "finite": true
+  }
+]
