@@ -11,6 +11,8 @@ var _stopping: bool = false
 var _elapsed: float = 0.0
 var _poll_elapsed: float = 0.0
 var _stage: int = 0
+var _farm_demo: bool = false
+var _farm_now: float = 0.0
 
 
 func _ready() -> void:
@@ -25,6 +27,10 @@ func _ready() -> void:
 		_fail("Invalid recording configuration.")
 		return
 	_demo = bool(config.get("demo", false))
+	_farm_demo = bool(config.get("farm_demo", false))
+	if _farm_demo:
+		_farm_now = farm_scene.clock.call()
+		farm_scene.clock = func() -> float: return _farm_now
 	# Movie Maker advances the simulation by 1/60 s for each saved frame.
 	# It does not wait for the live encoder's handshake.
 	_started = OS.has_feature("movie")
@@ -79,6 +85,9 @@ func _process(delta: float) -> void:
 	if not _started or _stopping or not _demo:
 		return
 	_elapsed += delta
+	if _farm_demo:
+		_run_farm_demo(delta)
+		return
 	if _stage == 0 and _elapsed >= 4.0:
 		farm_scene._focus_field(4)
 		_stage = 1
@@ -91,6 +100,41 @@ func _process(delta: float) -> void:
 	elif _stage == 3 and _elapsed >= 17.0:
 		farm_scene._return_overview()
 		_stage = 4
+
+
+func _run_farm_demo(delta: float) -> void:
+	# Explicit, isolated recording fixture: the normal game always uses real UTC.
+	# Invoke the same scene actions and persistence boundary used by player input.
+	if _stage == 0 and _elapsed >= 4.0:
+		farm_scene._focus_field(0)
+		_stage = 1
+	elif _stage == 1 and _elapsed >= 6.5:
+		farm_scene._select_tool("sow")
+		farm_scene._apply_tool()
+		_stage = 2
+	elif _stage == 2 and _elapsed >= 9.0:
+		farm_scene._select_tool("water")
+		farm_scene._apply_tool()
+		_stage = 3
+	elif _stage == 3:
+		farm_scene.camera.drag(Vector2(-16.7, 0.0) * delta, false)
+		if _elapsed >= 14.0:
+			_farm_now += 1440.0
+			farm_scene.settle_farm()
+			farm_scene._save_farm()
+			_stage = 4
+	elif _stage == 4 and _elapsed >= 17.0:
+		farm_scene._select_tool("harvest")
+		farm_scene._apply_tool()
+		_write_json("farm-demo-result.json", {
+			"controlled_utc_advance_seconds": 1440,
+			"snapshot": farm_scene.farm_state.snapshot(),
+			"saved": not farm_scene._save_failed
+		})
+		_stage = 5
+	elif _stage == 5 and _elapsed >= 21.0:
+		farm_scene._return_overview()
+		_stage = 6
 
 
 func _input(event: InputEvent) -> void:

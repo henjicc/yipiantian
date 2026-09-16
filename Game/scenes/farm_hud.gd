@@ -5,6 +5,9 @@ signal tool_requested(tool: String)
 signal crop_requested(crop_id: String)
 signal overview_requested
 signal reset_requested
+signal retry_requested
+signal recovery_requested
+signal exit_requested
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const INK := Color("465650")
@@ -15,6 +18,12 @@ var _tool_status: Label
 var _tools: HBoxContainer
 var _crop: OptionButton
 var _buttons: Dictionary = {}
+var _session: Label
+var _storage_overlay: ColorRect
+var _storage_message: Label
+var _retry: Button
+var _recover: Button
+var _exit: Button
 
 
 func _ready() -> void:
@@ -34,9 +43,9 @@ func _ready() -> void:
 	_status = _label(root, "全景", 19)
 	_status.name = "FieldStatus"
 	_status.position = Vector2(30, 65)
-	var session := _label(root, "试玩中 · 进度尚未保存", 14)
-	session.name = "SessionStatus"
-	session.position = Vector2(30, 96)
+	_session = _label(root, "正在读取存档", 14)
+	_session.name = "SessionStatus"
+	_session.position = Vector2(30, 96)
 	_harvested = _label(root, "", 18)
 	_harvested.name = "Harvested"
 	_harvested.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -97,6 +106,66 @@ func _ready() -> void:
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_button(bar, "全景", 142).pressed.connect(func() -> void: overview_requested.emit())
 	_button(bar, "视角复位", 142).pressed.connect(func() -> void: reset_requested.emit())
+	_build_storage_overlay(root)
+
+
+func _build_storage_overlay(root: Control) -> void:
+	_storage_overlay = ColorRect.new()
+	_storage_overlay.name = "StorageOverlay"
+	_storage_overlay.color = Color(0.18, 0.23, 0.20, 0.78)
+	root.add_child(_storage_overlay)
+	_storage_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var panel := PanelContainer.new()
+	_storage_overlay.add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.offset_left = -290
+	panel.offset_right = 290
+	panel.offset_top = -135
+	panel.offset_bottom = 135
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("f0e8d4")
+	style.set_corner_radius_all(18)
+	style.content_margin_left = 24
+	style.content_margin_right = 24
+	style.content_margin_top = 24
+	style.content_margin_bottom = 24
+	panel.add_theme_stylebox_override("panel", style)
+	var box := VBoxContainer.new()
+	panel.add_child(box)
+	box.add_theme_constant_override("separation", 16)
+	_storage_message = _label(box, "", 20)
+	_storage_message.name = "Message"
+	_storage_message.custom_minimum_size = Vector2(500, 70)
+	_storage_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_retry = _button(box, "重试读取", 180)
+	_retry.name = "Retry"
+	_retry.pressed.connect(func() -> void: retry_requested.emit())
+	_recover = _button(box, "从备份恢复", 180)
+	_recover.name = "Recover"
+	_recover.pressed.connect(func() -> void: recovery_requested.emit())
+	_exit = _button(box, "退出", 180)
+	_exit.name = "Exit"
+	_exit.pressed.connect(func() -> void: exit_requested.emit())
+	_storage_overlay.hide()
+
+
+func show_storage_issue(kind: String, unsaved: bool) -> void:
+	_session.text = "尚未保存" if unsaved else "存档未能读取"
+	_storage_message.text = "保存未完成，最新进度仍在本次窗口中。请重试保存。" if unsaved else {
+		"recovery_available": "存档未能读取，可恢复上一份备份。最近的改动可能丢失，原文件会保留。",
+		"unsupported": "这份存档来自其他版本。请使用对应版本打开，原文件已保留。",
+		"corrupt": "存档与备份都无法读取。原文件已保留，修复文件后可重试。"
+	}.get(kind, "暂时无法读取存档。请检查存档文件夹后重试，原文件已保留。")
+	_retry.text = "重试保存" if unsaved else "重试读取"
+	_recover.visible = not unsaved and kind == "recovery_available"
+	_exit.text = "仍然退出（最新进度未保存）" if unsaved else "退出"
+	_storage_overlay.show()
+	_retry.grab_focus()
+
+
+func show_saved() -> void:
+	_session.text = "已保存"
+	_storage_overlay.hide()
 
 
 func show_state(field: Dictionary, harvested: Dictionary, tool: String, crop_id: String, traveling: bool) -> void:
@@ -164,6 +233,7 @@ func _button(parent: Control, text: String, width: float) -> Button:
 
 func _style_button(button: BaseButton) -> void:
 	button.add_theme_color_override("font_color", INK)
+	button.add_theme_color_override("font_focus_color", INK)
 	button.add_theme_color_override("font_hover_color", Color("354c3d"))
 	button.add_theme_color_override("font_pressed_color", Color("f5eddc"))
 	button.add_theme_color_override("font_disabled_color", Color("888a7b"))
@@ -177,4 +247,6 @@ func _style_button(button: BaseButton) -> void:
 		style.set_corner_radius_all(14)
 		style.border_color = Color("9d9b7c")
 		style.set_border_width_all(2 if state == "focus" else 1)
+		if state == "focus":
+			style.draw_center = false
 		button.add_theme_stylebox_override(state, style)

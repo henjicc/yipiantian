@@ -1,6 +1,6 @@
 # 开发前准备与环境验证
 
-> 环境首次核验：2026-09-16；Godot 基础配置：2026-09-17。目标为 Windows 窗口版三维农场；尚无种植玩法。用户已决定切换引擎，不做选型对比样片。
+> 环境首次核验：2026-09-16；Godot 基础配置与种植闭环：2026-09-17。目标为 Windows 窗口版三维农场；六田种植、保存与离线回访已通过开发验证，正式环境仍在制作。
 
 ## Godot 安装与日常入口
 
@@ -17,8 +17,8 @@
 - `Game/project.godot` 使用 GDScript 标准版，Forward+ / Vulkan，1280×720 可调整普通窗口；已有六田简易场景、Tripo 青菜与聚焦镜头。当前是布局和手感确认原型，不锁定最终美术。
 - 模型交接采用显式 GLB；项目关闭 `.blend` 自动导入，编辑源文件保留在 `ArtSource/`。
 - 已核验版本、完成资源导入和 Windows x86_64 release 导出，过程退出码为 0。工程直接运行、导出后的独立程序均以 Forward+ / Vulkan 在 RTX 4090 上启动，并在指定迭代数后正常退出，日志无错误。本地日志为 `.local/logs/godot-run.log`、`godot-player.log`；仅证明空工程启动与导出链路可用，不代表画面、窗口交互、玩法或性能验收。
-- 未配置 CI 或第三方测试框架；已有原型交互冒烟 `tests/prototype_smoke.gd` 和纯农场规则回归 `tests/farm_state_test.gd`。后者在 Godot 4.7.2 通过 78 项断言，覆盖六田两作物、时间与动作边界、快照恢复校验；尚不代表主场景种植、磁盘存档或全部玩法通过。Blender / Tripo 进入 Godot 的真实资产、窗口交互、存档与后台性能随对应任务验证。
-- 原型已在 Godot 4.7.2 / RTX 4090 实际渲染，全景、聚焦和 960×600 窗口截图保存在 `.local/prototype-validation/`。真实输入路径测试覆盖点田、GUI 返回、拖动不误选、失焦取消、快速换田、返回途中再选田、恢复微调后的全景以及按钮布局；退出码为 0。Windows release 已重新导出；这不代表种植、存档或低配性能通过。
+- 未配置 CI 或第三方测试框架。纯规则 `tests/farm_state_test.gd` 的78项断言与主场景交互回归已通过；2.3 新增真实文件存储及场景恢复验证，包含只读主档替换失败保留旧字节。正式测试入口与覆盖范围随各任务交接维护，完整院落及后台性能尚待验收。
+- Godot 4.7.2 / RTX 4090 的原型输入路径已验证点田、GUI 返回、拖动不误选、失焦取消、快速换田、恢复微调和紧凑窗口布局。普通 Windows release 随后另做三次真实进程的播种／浇水、关闭、离线成熟、收获和再次重启，隔离主档保留空田与一篮收获，三个进程均退出0；这是存档闭环证据，不代表完整内容或低配性能通过。
 - 旧 `Game/` Unity 工程、`.local/unity-validation/`、`.local/foundation/` 与根 Unity 日志已按用户要求删除。Unity / Hub 软件保留，当前工程不再依赖它们。
 
 ## 已有工具环境
@@ -41,6 +41,10 @@
 
 纯农场规则验证：`& ./scripts/godot.ps1 Run -ExtraArgs @('--headless', '--script', (Join-Path $PWD 'tests/farm_state_test.gd'))`。规则从调用者接收 UTC 秒，测试不改系统时钟或玩家存档。状态与静态定义返回深拷贝，无效动作在候选副本结算后拒绝，整个权威状态不变；自然时间推进调用独立 `settle()`。界面不要将结算的 `changed_fields` 非空等同于模型阶段变化，空田时间基准也会更新。状态接口与存档接入边界见 [2.1 交接](task/首个可发布版本/handoffs/2.1-handoff.md)。
 
+磁盘和场景恢复分别使用 `tests/farm_store_test.gd`、`tests/farm_storage_scene_test.gd`；所有测试先注入 `.local/verification/` 下独立存储，再把主场景入树。正式存档为 `user://farm/`，Windows默认位于 `%APPDATA%/Godot/app_userdata/我有一片田/farm/`。未知版本、损坏或写入失败不能当首次启动，具体恢复与重试语义见 [2.3交接](task/首个可发布版本/handoffs/2.3-handoff.md)。
+
+普通发行程序验证入口：`./tests/start-isolated-game.ps1 -Directory (Join-Path $PWD '.local/verification/<本次目录>') -Phase sow`。该入口只给子进程设置 APPDATA／LOCALAPPDATA，持有该进程直到实际关窗并保存日志、退出码和快照；先核对隔离目录中产生了预期主档，再执行操作。Godot 4.7.2 release 本次静默忽略外部 `--script`，不能拿这个参数宣称已跑测试驱动。实际采用普通发行窗口的原生点击与关闭；需截图时 `tests/native-game-window.ps1 -ProcessId <启动器返回PID> -Action capture -Output <绝对PNG路径>`，其 `click` 使用已观察到的客户区坐标，`close` 请求程序正常退出，均限定已知进程。离线夹具仅在隔离进程退出后调整副本UTC基准并保留原件，不能改系统时钟或玩家档。
+
 原型交互检查可在仓库根目录的 PowerShell 会话运行：`& ./scripts/godot.ps1 Run -ExtraArgs @('--headless', '--script', (Join-Path $PWD 'tests/prototype_smoke.gd'))`。不带 `--headless` 可跑有画面的同一组检查。截图参数放在 `--` 后传入 `--screenshots=<已有输出目录>`；截图需有渲染窗口。
 
 Godot 4.7.2 本次验证：headless 测试须显式设置根窗口 / Viewport 尺寸，才能用与实际窗口相同的投影坐标测试鼠标输入，不能依赖默认无窗口尺寸。物理拾取放在 `_physics_process`，UI 未消费的输入进入拾取队列；截图等待 `RenderingServer.frame_post_draw` 再读取 Viewport。已通过当前原型实测；参考 [官方射线指南](https://docs.godotengine.org/en/4.7/tutorials/physics/ray-casting.html) 与 [Viewport 文档](https://docs.godotengine.org/en/4.7/classes/class_viewport.html)。
@@ -58,7 +62,7 @@ Godot 4.7.2 本次验证：headless 测试须显式设置根窗口 / Viewport �
 | 中文 Blender 找不到英文节点名 | 按稳定节点类型定位，例如 `BSDF_PRINCIPLED`；本机实测有效，不强制改用户语言 |
 | MCP 中文乱码 | Python 客户端与服务使用 UTF-8；本机 `PYTHONUTF8=1` 已解决路径和名称乱码 |
 | 多个工具实例 | 核实工程 / 文件路径、保存状态和端口归属；不凭相似窗口标题操作，不批量关闭进程 |
-| Windows 截图接口失败 | 本机 `SetIsBorderRequired / 0x80004002` 后使用 Blender 官方截图接口成功；不外推所有 Windows 均不支持，不关闭安全功能 |
+| Windows 截图接口失败 | Win10 19045 的 `SetIsBorderRequired / 0x80004002` 曾影响 WGC；Blender 可用其官方截图接口。普通发行游戏已由主代理在独立验证流程使用 DPI 感知的 GDI 客户区捕获成功，入口 `tests/native-game-window.ps1`，限定当前发行 exe 路径和已知 PID，并验证前台再点击；不要操作同名旧窗口。该经验不取消当前工具／技能自身的操作边界 |
 | 双屏坐标不一致 | 先用 DPI 感知的实际应用核对；2026-09-17 Godot 检测两屏均为 3840×2160，Windows DPI 为 144（150%），先前 2560×1440 属于缩放坐标，不能当作物理像素 |
 | PowerShell 长时间无输出 | 先用不加载个人 profile 的调用排查；本机 `login=false` 有效，未擅自修改用户 profile |
 | Git LFS 本地可用 | 已完成本地 clean / smudge 往返；真实模型与远端对象上传仍未验证，不等同云端备份成功 |
@@ -121,6 +125,8 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 ```powershell
 ./scripts/record.ps1 -Title '农场原型_全景与青菜聚焦' -Description '展示全景、青菜田近景与三维转动。' -Contribution 'Tripo 生成青菜模型与颜色纹理；GPT / Astra（Codex）编写场景和镜头；Blender 整理模型。' -Demo
 ```
+
+存档闭环里程碑可加 `-FarmDemo -Seconds 28`：播种、浇水、受控推进1440秒、收获与保存使用独立演示存档，片中需注明不是实际等待。普通运行不加载录制逻辑，发行排除 `development/*` 且拒绝录制参数；录制目录只允许项目 `.local/recordings/` 内，防止演示改到玩家档。
 
 - **自动展示 `-Demo`**：采用 Godot Movie Maker，以固定 1/60 秒时间步逐帧输出，再用 NVIDIA NVENC 编码 H.264。镜头停留 4 秒、聚焦 1.8 秒、近景停留、小角度转动约 15°、返回全景与收尾；默认 24 秒。这是当前游戏场景的离线演示渲染，不能作为人工操作或实时性能证明，不提高游戏画质设置。生成可能比视频时长更久。
 - **手动操作（不加 `-Demo`）**：保留 Windows.Graphics.Capture 按 HWND 实时捕获本次游戏窗口。当前机器这条链路仍存在重复帧风险，输出会提示，元数据标为 `manual_review_required`；预览通过前不作为流畅成片。不能把自动演示的修复说成实时采集问题已解决。普通交互过渡仍为 0.75 秒。

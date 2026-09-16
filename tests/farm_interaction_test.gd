@@ -19,6 +19,8 @@ func _run() -> void:
 	root.size = Vector2i(1280, 720)
 	scene = load("res://scenes/main.tscn").instantiate()
 	scene.clock = func() -> float: return now
+	var isolated: String = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/scene-save-%d" % Time.get_ticks_usec())
+	scene.store = load("res://farm/farm_store.gd").new(isolated)
 	root.add_child(scene)
 	scene.farm_changed.connect(func(_result: Dictionary) -> void: actions += 1)
 	await create_timer(0.6).timeout

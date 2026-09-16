@@ -15,6 +15,8 @@ func _run() -> void:
 		quit(1)
 		return
 	var scene: Node3D = load("res://scenes/main.tscn").instantiate()
+	var isolated: String = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/scene-save-%d" % Time.get_ticks_usec())
+	scene.store = load("res://farm/farm_store.gd").new(isolated)
 	root.add_child(scene)
 	for attempt in 100:
 		if FileAccess.file_exists(session_dir.path_join("ready.json")):

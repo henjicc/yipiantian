@@ -1,0 +1,146 @@
+extends SceneTree
+
+const Store = preload("res://farm/farm_store.gd")
+const Farm = preload("res://farm/farm_state.gd")
+var checks: int = 0
+var failures: Array[String] = []
+var test_root: String
+
+
+func _initialize() -> void:
+	_run.call_deferred()
+
+
+func _run() -> void:
+	test_root = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/farm-store-%d" % Time.get_ticks_usec())
+	DirAccess.make_dir_recursive_absolute(test_root)
+	var folder: String = test_root.path_join("roundtrip")
+	var store := Store.new(folder)
+	_expect(store.load_state().kind == "missing", "New isolated directory is truly missing")
+	var farm := Farm.new(10000.0)
+	_expect(store.save(farm.snapshot()).ok, "First farm is saved")
+	_expect(FileAccess.file_exists(folder.path_join(Store.MAIN)), "Main file exists")
+	farm.sow("field_01", "greens", 10000.0)
+	farm.water("field_01", 10000.0)
+	_expect(store.save(farm.snapshot()).ok, "Sow and water snapshot is saved")
+	var reopened := Store.new(folder)
+	var loaded: Dictionary = reopened.load_state()
+	_expect(loaded.ok and loaded.farm == farm.snapshot(), "Roundtrip retains exact authoritative state")
+	var second := Farm.new()
+	second.restore_snapshot(loaded.farm)
+	second.settle(11440.0)
+	_expect(second.get_field("field_01").stage == "mature", "Offline elapsed time matures the existing round")
+	second.harvest("field_01", 11440.0)
+	_expect(reopened.save(second.snapshot()).ok, "Harvest is durably saved")
+	var again := Store.new(folder)
+	var restored: Dictionary = again.load_state()
+	_expect(restored.farm.harvested.greens == 1 and restored.farm.fields.field_01.crop_id == "", "Reopen never reissues the collected basket")
+	_expect(again.load_state().farm == restored.farm, "Repeated loading does not initialize or reward again")
+	var before_stale: String = FileAccess.get_file_as_string(folder.path_join(Store.MAIN))
+	_expect(not store.save(farm.snapshot()).ok, "A stale session refuses to overwrite newer on-disk state")
+	_expect(FileAccess.get_file_as_string(folder.path_join(Store.MAIN)) == before_stale, "Stale write preserves main")
+	# A legal all-empty farm is not a missing save.
+	var empty := Farm.new(12000.0)
+	empty.settle(20000.0)
+	for id: String in Farm.FIELD_IDS:
+		empty.harvest(id, 20000.0)
+	_expect(again.save(empty.snapshot()).ok, "Legal empty farm saves")
+	_expect(Store.new(folder).load_state().farm == empty.snapshot(), "Legal empty farm restores without initial crops")
+	# Real Windows failures: a directory occupies the temporary-file path.
+	var pending_dir: String = folder.path_join(Store.PENDING)
+	DirAccess.make_dir_absolute(pending_dir)
+	var old_main: String = FileAccess.get_file_as_string(folder.path_join(Store.MAIN))
+	var old_backup: String = FileAccess.get_file_as_string(folder.path_join(Store.BACKUP))
+	empty.sow("field_02", "greens", 20000.0)
+	var failed: Dictionary = again.save(empty.snapshot())
+	_expect(not failed.ok and failed.kind.begins_with("write_"), "Real filesystem prevents temporary write")
+	_expect(FileAccess.get_file_as_string(folder.path_join(Store.MAIN)) == old_main and FileAccess.get_file_as_string(folder.path_join(Store.BACKUP)) == old_backup, "Temporary failure leaves main and backup unchanged")
+	DirAccess.remove_absolute(pending_dir)
+	_expect(again.save(empty.snapshot()).ok, "Retry saves current snapshot without replaying the action")
+	# Read-only replacement failure on Windows, using actual file attributes.
+	var protected_main: String = folder.path_join(Store.MAIN)
+	old_main = FileAccess.get_file_as_string(protected_main)
+	_expect(FileAccess.set_read_only_attribute(protected_main, true) == OK, "Set real Windows read-only attribute")
+	empty.water("field_02", 20000.0)
+	failed = again.save(empty.snapshot())
+	_expect(not failed.ok, "Read-only main rejects replacement")
+	_expect(FileAccess.get_file_as_string(protected_main) == old_main, "Replacement failure preserves previous main bytes")
+	_expect(Store.new(folder).load_state().farm.fields.field_02.watered == false, "Restart after failed replace reads committed previous state")
+	FileAccess.set_read_only_attribute(protected_main, false)
+	_expect(again.save(empty.snapshot()).ok, "Removing attribute allows safe retry")
+	# Candidate files left by an interrupted replace must not beat a valid main.
+	var candidate := Farm.new(90000.0)
+	_write(folder.path_join(Store.PENDING), JSON.stringify({"version": 1, "farm": candidate.snapshot()}))
+	_expect(Store.new(folder).load_state().farm == empty.snapshot(), "Uncommitted temp never supersedes valid main")
+	# A truncated main offers explicit recovery; it is not overwritten on load.
+	_write(protected_main, "{truncated")
+	var damaged_store := Store.new(folder)
+	var damaged: Dictionary = damaged_store.load_state()
+	_expect(damaged.kind == "recovery_available", "Valid backup offers recovery after main damage")
+	_expect(FileAccess.get_file_as_string(protected_main) == "{truncated", "Load preserves damaged main")
+	_expect(not damaged_store.save(candidate.snapshot()).ok, "Unapproved recovery cannot write new gameplay")
+	var recovered: Dictionary = damaged_store.recover()
+	_expect(recovered.ok and recovered.kind == "recovered", "Explicit recovery restores validated backup")
+	var preserved: bool = false
+	for name: String in DirAccess.get_files_at(folder):
+		if name.begins_with("farm.unreadable."):
+			preserved = FileAccess.get_file_as_string(folder.path_join(name)) == "{truncated"
+	_expect(preserved, "Original damaged bytes retained during recovery")
+	# Unsupported versions block recovery even when an old compatible backup exists.
+	var future: String = JSON.stringify({"version": 99, "farm": candidate.snapshot(), "future": true})
+	_write(protected_main, future)
+	var future_store := Store.new(folder)
+	_expect(future_store.load_state().kind == "unsupported", "Future version is distinguished from damage")
+	_expect(not future_store.recover().ok and not future_store.save(candidate.snapshot()).ok, "Future version cannot recover older state or save over it")
+	_expect(FileAccess.get_file_as_string(protected_main) == future, "Unknown version preserved byte-for-byte")
+	var corrupt_dir: String = test_root.path_join("all-corrupt")
+	DirAccess.make_dir_recursive_absolute(corrupt_dir)
+	_write(corrupt_dir.path_join(Store.MAIN), "")
+	_write(corrupt_dir.path_join(Store.BACKUP), "not-json")
+	var corrupt_store := Store.new(corrupt_dir)
+	_expect(corrupt_store.load_state().kind == "corrupt", "Empty main and invalid backup are not first launch")
+	_expect(not corrupt_store.recover().ok and not corrupt_store.save(candidate.snapshot()).ok, "No valid recovery retains broken files and locks saves")
+	var interrupted_dir: String = test_root.path_join("interrupted-first")
+	DirAccess.make_dir_recursive_absolute(interrupted_dir)
+	_write(interrupted_dir.path_join(Store.PENDING), JSON.stringify({"version": 1, "farm": candidate.snapshot()}))
+	var interrupted := Store.new(interrupted_dir)
+	_expect(interrupted.load_state().kind == "recovery_available", "Interrupted first creation is not silently reinitialized")
+	_expect(interrupted.recover().farm == candidate.snapshot(), "Valid first pending file can be explicitly recovered")
+	var bad_path: String = test_root.path_join("not-a-directory")
+	_write(bad_path, "occupied")
+	var bad_store := Store.new(bad_path)
+	_expect(not bad_store.load_state().ok and not bad_store.save(candidate.snapshot()).ok, "A file cannot masquerade as the save directory")
+	var first_dir: String = test_root.path_join("first-save-failure")
+	var first_store := Store.new(first_dir)
+	_expect(first_store.load_state().kind == "missing", "First-save fixture is admitted only after missing load")
+	DirAccess.make_dir_recursive_absolute(first_dir.path_join(Store.PENDING))
+	_expect(not first_store.save(candidate.snapshot()).ok and not FileAccess.file_exists(first_dir.path_join(Store.MAIN)), "Interrupted first write creates no fake committed main")
+	DirAccess.remove_absolute(first_dir.path_join(Store.PENDING))
+	_expect(first_store.save(candidate.snapshot()).ok and Store.new(first_dir).load_state().farm == candidate.snapshot(), "First-save retry preserves the same initial in-memory state")
+	var staged_dir: String = test_root.path_join("staged-backup")
+	DirAccess.make_dir_recursive_absolute(staged_dir)
+	_write(staged_dir.path_join(Store.BACKUP_PENDING), JSON.stringify({"version": 1, "farm": candidate.snapshot()}))
+	var staged_store := Store.new(staged_dir)
+	_expect(staged_store.load_state().kind == "recovery_available", "A lone validated backup stage cannot be mistaken for first launch")
+	_expect(staged_store.recover().farm == candidate.snapshot(), "Recovery handles a previously committed staged backup")
+	_write(first_dir.path_join(Store.BACKUP), future)
+	var before_future_backup: String = FileAccess.get_file_as_string(first_dir.path_join(Store.MAIN))
+	_expect(not first_store.save(candidate.snapshot()).ok, "Future backup is not overwritten by older software")
+	_expect(FileAccess.get_file_as_string(first_dir.path_join(Store.BACKUP)) == future and FileAccess.get_file_as_string(first_dir.path_join(Store.MAIN)) == before_future_backup, "Rejecting future backup preserves both files")
+	for failure: String in failures:
+		push_error(failure)
+	print("FARM_STORE_TEST checks=%d failures=%d root=%s" % [checks, failures.size(), test_root])
+	quit(0 if failures.is_empty() else 1)
+
+
+func _write(path: String, text: String) -> void:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	assert(file != null, "Fixture must be writable")
+	file.store_string(text)
+	file.close()
+
+
+func _expect(condition: bool, message: String) -> void:
+	checks += 1
+	if not condition:
+		failures.append(message)

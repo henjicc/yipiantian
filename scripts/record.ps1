@@ -6,6 +6,7 @@ param(
     [Parameter(Mandatory)][ValidateLength(1, 1000)][string]$Contribution,
     [ValidateRange(2, 120)][int]$Seconds = 24,
     [switch]$Demo,
+    [switch]$FarmDemo,
     [ValidateRange(-1, 15)][int]$Screen = -1,
     [string]$FFmpegPath,
     [string]$GodotPath = $env:GODOT_EXE
@@ -13,6 +14,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
+if ($FarmDemo) { $Demo = $true }
+if ($FarmDemo -and $Seconds -lt 28) { throw 'The sow/water/harvest demonstration needs at least 28 seconds.' }
 if ($Title.IndexOfAny([IO.Path]::GetInvalidFileNameChars()) -ge 0 -or $Title -match '[\r\n]' -or $Title.TrimEnd(' ', '.') -ne $Title) {
     throw 'Title must be a plain filename without slashes, newlines or trailing dots/spaces.'
 }
@@ -64,7 +67,7 @@ $outputDir = Join-Path $archive $name
 New-Item -ItemType Directory -Path $outputDir | Out-Null
 $sessionDir = Join-Path $repo ('.local/recordings/' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $sessionDir -Force | Out-Null
-Save-Json (Join-Path $sessionDir 'config.json') @{ demo=[bool]$Demo; screen=$Screen }
+Save-Json (Join-Path $sessionDir 'config.json') @{ demo=[bool]$Demo; farm_demo=[bool]$FarmDemo; screen=$Screen }
 $movieSource = Join-Path $sessionDir 'source.avi'
 $candidate = Join-Path $outputDir '待校验.mp4'
 $video = Join-Path $outputDir ($name + '.mp4')
@@ -76,6 +79,7 @@ $record = [ordered]@{
     session_directory=$sessionDir
     created_at=(Get-Date -Format o); commit=$commit; working_tree_dirty=$dirty
     duration_requested=$Seconds; demo=[bool]$Demo
+    farm_demo=[bool]$FarmDemo; controlled_utc_advance_seconds=$(if ($FarmDemo) { 1440 } else { 0 })
     capture=$(if ($Demo) { 'Godot Movie Maker / fixed 60 fps / offline demonstration' } else { 'Windows.Graphics.Capture / HWND / realtime' })
     encoder='h264_nvenc'; preset='p5'; cq=18; fps=60; audio='none'
     ffmpeg=(& $FFmpegPath -version | Select-Object -First 1); godot=[string]$actualVersion
@@ -126,6 +130,13 @@ try {
         if ($game.Process.ExitCode -ne 0) { throw 'Movie Maker failed; see Godot.log.' }
         $stopPath = Join-Path $sessionDir 'stop.json'
         if (Test-Path -LiteralPath $stopPath) { $stopReason = (Read-Json $stopPath).reason }
+        if ($FarmDemo -and $stopReason -eq 'duration') {
+            $farmResult = Read-Json (Join-Path $sessionDir 'farm-demo-result.json')
+            if (-not $farmResult.saved -or $farmResult.snapshot.harvested.greens -ne 1 -or $farmResult.snapshot.fields.field_01.crop_id -ne '') {
+                throw 'The recorded farming loop did not reach its saved harvest state.'
+            }
+            $record.farm_demo_result = $farmResult
+        }
         # MJPEG is an intermediate only. Final H.264 compression uses NVENC.
         $encoderArgs = @('-hide_banner', '-n', '-i', $movieSource, '-vf', 'scale=in_range=full:out_range=tv:out_color_matrix=bt709,format=yuv420p') + $codecArgs + @($candidate)
         $record.ffmpeg_arguments = $encoderArgs
@@ -205,7 +216,7 @@ try {
     $record.sha256 = (Get-FileHash -LiteralPath $video).Hash
     Save-Json $metadata $record
     Save-Json (Join-Path $outputDir '视频规格.json') $probe
-    $shots = if ($Demo) { '约 0–4 秒全景停留；4–6 秒缓慢聚焦；6–9 秒近景停留；9–14 秒小角度转动；14–17 秒停留；17–19 秒返回；19 秒后全景收尾。Godot 固定时间步逐帧渲染的自动演示，非实时录屏 / 性能证明；按画面切点。完整自动演示另检查推进和转动区间的重复画面；提前结束的片段仍需人工预览。' } else { '手动操作素材；剪辑前预览选择片段并检查运动连续性。F9 可提前结束。' }
+    $shots = if ($FarmDemo) { '约 0–4 秒全景；4–6 秒聚焦；6.5 秒播种；9 秒浇水；9–14 秒小角度转动；14 秒受控推进 UTC 1440 秒，展示成熟；17 秒收获并保存；21 秒返回全景。使用独立演示存档与正常农事动作 / 保存链；时间推进是录制夹具，并非真实等待 30 分钟。Godot 固定步长离线演示，不代表实时性能。' } elseif ($Demo) { '约 0–4 秒全景停留；4–6 秒缓慢聚焦；6–9 秒近景停留；9–14 秒小角度转动；14–17 秒停留；17–19 秒返回；19 秒后全景收尾。Godot 固定时间步逐帧渲染的自动演示，非实时录屏 / 性能证明；按画面切点。完整自动演示另检查推进和转动区间的重复画面；提前结束的片段仍需人工预览。' } else { '手动操作素材；剪辑前预览选择片段并检查运动连续性。F9 可提前结束。' }
     @("# $name", '', $Description, '', '## 工具贡献', '', $Contribution, '', '## 镜头与剪辑', '', $shots, '', "规格：3840×2160，H.264 High / yuv420p，60 fps 恒定帧率，NVENC p5 / CQ18，实际 $duration 秒。当前项目无声音，本条不录麦克风或桌面音频。", '', "代码基线：$commit；录制时工作区有改动：$dirty。", '', "[播放视频]($name.mp4)") | Set-Content -LiteralPath (Join-Path $outputDir '剪辑说明.md') -Encoding utf8
     $index = Join-Path $archive '录屏索引.md'
     if (-not (Test-Path -LiteralPath $index)) { @('# 开发录屏索引', '', '只记录关键变化，最新完成的成片可用于视频开头；过程按编号回溯。失败或中断文件留在各自目录，不加入成片清单。', '') | Set-Content -LiteralPath $index -Encoding utf8 }

@@ -16,6 +16,8 @@ func _run() -> void:
 	# Give offscreen runs the same viewport geometry as the interactive window.
 	root.size = Vector2i(1280, 720)
 	scene = load("res://scenes/main.tscn").instantiate()
+	var isolated: String = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/scene-save-%d" % Time.get_ticks_usec())
+	scene.store = load("res://farm/farm_store.gd").new(isolated)
 	root.add_child(scene)
 	await create_timer(0.5).timeout
 	var camera: Camera3D = scene.camera
