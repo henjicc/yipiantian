@@ -2,6 +2,8 @@
 
 Windows 普通窗口版三维微缩农场。当前建立开发基础，尚未实现种植玩法；桌面壁纸宿主后置，首个可玩切片另行确定。
 
+开始制作先看 [玩法、操作与首轮制作草案](docs/production-brief.md)：包含资料提炼、可玩切片建议、新运行画面参考与待定范围；具体工具分工见 [三维资产工作流](docs/asset-workflow.md)。
+
 ## 打开与开发
 
 使用 **Godot 标准版 + 带类型标注的 GDScript**，暂用 Forward+ 渲染。精确引擎版本由 [.godot-version](.godot-version) 固定，导出模板必须与之匹配；无需 .NET 版或额外 AI 桥接服务。
@@ -31,6 +33,7 @@ pwsh -NoProfile -File scripts/godot.ps1 ExportWindows
 | `ArtSource/` | Blender 可编辑源文件、源贴图、已采用生成资产与来源记录 | 同步；二进制类型使用 LFS |
 | `scripts/`、`.agents/skills/` | 开发入口与固定版本的项目技能 | 同步；不进入游戏导出 |
 | `docs/`、`rules/`、`AGENTS.md` | 开发资料与协作规则 | 同步 |
+| `docs/visual-references/` | 已整理交付的设计参考图与生成记录；候选状态在制作草案中注明 | 同步；图片使用 LFS |
 | `docs/ref/` | 本地参考资料和图板 | 不同步 |
 | `.local/` | 试验、候选、下载、截图、日志、构建与测试存档 | 不同步 |
 

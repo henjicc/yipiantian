@@ -1,0 +1,48 @@
+{
+  "date": "2026-09-17",
+  "tool": "image_gen.imagegen",
+  "status": "设计参考；未获用户选定；不是游戏截图或三维资产验收",
+  "path_base": "repository_root",
+  "notes": [
+    "提示词是生成意图，不等于所有要求已被图像满足；以目视检查记录为准。",
+    "未执行 Tripo 请求。工具没有返回可记录的具体模型版本或随机种子；不虚构可重复性。",
+    "A、B 与修订后的石头图是本次设计交付物，纳入 Git LFS；淘汰的中间图只保留本地，克隆后不影响阅读和开发。"
+  ],
+  "images": [
+    {
+      "id": "runtime_a_v01",
+      "output": "docs/visual-references/runtime-a-v01.png",
+      "references": [],
+      "prompt": "Use case: ui-mockup / stylized-concept.\nCreate ONE landscape 16:9 image, a plausible in-game runtime screenshot concept for a small Windows 3D cozy farming game named 我有一片田. This is a SINGLE full-bleed gameplay screen, absolutely not a poster, collage, design board, split panel, asset sheet, store banner or desktop mockup.\nStyle candidate A: warm handcrafted miniature Jiangnan Chinese countryside, restrained stylization, soft slightly rounded forms, simplified physically plausible materials, subtle hand-painted color variation. Rural Song/Ming-inspired grey tile roof, off-white plaster, dark aged wood, muted bamboo, earthy soil, jade/sage greens. No palace shapes, no floating islands, no European barn/windmill, no modern objects.\nCamera and composition: orthographic 3/4 view from above about 35 degrees, a comfortably close fixed gameplay camera. A SMALL single grey-tile rural cottage in the upper-left/back occupying at most 18% of frame. The main subject is a clear 3 by 4 grid of twelve square soil planting cells in the middle and lower-center, each with a clean visible boundary and enough empty space to click. Show one cabbage species in four distinct example conditions across cells: empty soil, tiny sprouts, young cabbage, mature cabbage. Mature cabbages are large readable rosettes with broad leaves, not tiny garden clutter. This is a mockup of possible states, not a large farm full of different crops. A short bamboo fence and a quiet narrow jade-colored water channel on the right provide context. A short stone path on the left. Just a few simple ceramic/wooden rural props by the cottage. No humans, animals, vehicles, boats, bridges, decorative foreground leaves, scenic mountains or distant villages. Farm fills the viewport naturally, no cutaway toy base or pedestal.\nKeep EVERY interactive soil square and plant sharply focused. Clear spacious composition; soft daylight with short unobtrusive shadows. No heavy bloom, fog, tilt-shift blur, overgrown bushes, lens effects or cinematic texture noise.\nMinimal believable game HUD: a slim translucent warm ivory toolbar at bottom center with precisely three separated readable Chinese action labels “播种” “浇水” “收获” and understated simple icons; sowing selected with a muted jade accent. Small harvest-basket symbol and count “0” upper left, small sun icon and “09:30” upper right. A single empty planting cell has a thin soft ivory corner outline indicating hover. Toolbar must not obscure the planting cells. No help text, title, logo, captions, slogans, tutorial callouts, arrows, extra currencies or watermark.\nThe result should feel achievable as an attractive small real-time 3D game, not a photoreal museum diorama. Render one complete screen at 16:9.",
+      "review": "单张运行界面概念；十二田格；表面细节偏密。图中圆白菜为占位，非已批准品种。"
+    },
+    {
+      "id": "runtime_b_v01",
+      "output": "docs/visual-references/runtime-b-v01.png",
+      "references": [
+        "docs/visual-references/runtime-a-v01.png"
+      ],
+      "prompt": "Use case: ui-mockup / stylized-concept.\nCreate ONE 16:9 full-bleed runtime game-screen reference. Use the attached image ONLY to preserve the camera, screen composition, exact twelve-cell 3-row by 4-column garden layout, relative cottage/water/path positions, and three-action HUD. This is a style variant, not a collage. No extra views, no poster titles, no explanatory text.\nChange the visual treatment from realistic detailed miniature to a cohesive hand-painted stylized 3D game. Make forms softer, a little chunkier and deliberately designed, while materials remain warm plaster, matte ceramic, weathered timber, slate tile, soil and broad leafy green vegetables; avoid plastic or toy gloss. Reduce surface frequency dramatically: no tiny pebbles, no intricate leaf veins, no botanical microdetail, no individual grass carpets. Use broad, readable light/shadow planes and subtle painted gradients. Roof tiles should be simplified grouped shapes, wooden fencing larger and less splintery, water a calm muted jade surface with minimal ripple detail, soil clean broad warm brown shapes. Sparse vegetation, not a flower garden. Entire image should resemble achievable polished realtime stylized 3D, not a flat painting or an offline photorealistic render. Preserve dimensional depth and rounded silhouettes, no visibly faceted low-poly triangles.\nKeep every clickable garden square sharp. One coherent cabbage design across tiny sprout, young rosette and mature broad-leaf head stages; simplify leaves into readable layered curved forms. Frame boundaries clear and grid unoccluded. Cottage can remain cropped upper left. No additional crops, animals, people, lantern bloom, distant landscape, post effects or foreground blur.\nUse a restrained palette of celadon green, moss green, soft ivory, warm earth, slate grey and aged walnut wood. Soft neutral late-morning daylight, weak contact shadows, comfortable balanced saturation. No golden cinematic color grading.\nUI stays in the same positions and contains exactly “播种” “浇水” “收获” with sowing selected, basket count “0”, sun and “09:30”; remove decorative UI textures and retain clear readable icons and text. One empty tile highlighted by thin ivory corner marks. The HUD is small and leaves the garden unobstructed.\nOutput just this one game screen, with no outer frame, labels A/B, charts or watermarks.",
+      "review": "推荐比较候选，形体较简洁；仍有边缘虚化和装饰密度，实际交互区域应保持清晰。一格多幼苗仅为图像表现，不定义作物数量。"
+    },
+    {
+      "id": "rock_rejected_v01",
+      "output": ".local/experiments/visual-references/rock-rejected-v01.png",
+      "local_only": true,
+      "references": [
+        "docs/visual-references/runtime-b-v01.png"
+      ],
+      "prompt": "Use case: isolated 3D game asset reference, image-to-3D input.\nCreate ONE square image of ONE freestanding irregular blue-grey garden rock, a small decorative rock for a stylized Jiangnan farming game. Use the attached image ONLY as a reference for its simplified, rounded, matte hand-painted 3D material language and restrained celadon/slate palette. Do not reproduce the farm, UI, plants, buildings or scene.\nThe rock is one continuous, solid, asymmetric mass, approximately 70 cm wide and 50 cm tall in intended game scale (no rulers or text in the image). Three broad interlocking bulges form a readable slightly leaning silhouette, gentle chipped planes, shallow creases, no deep holes, no thin projections, no separate stones. Blue-grey slate with very subtle warm-grey variation; no moss, grass, flowers, gems, carving, baked occlusion stripes or elaborate microtexture. Rounded edges and broad designed planes, believable stone rather than plastic, not sharply faceted low-poly triangles, no hyperreal texture.\nShow the entire object, including its complete lower contour and a broad flat stable underside edge. Three-quarter view with camera modestly above object, about 15 degrees downward, weak perspective; show front, right side and a little top. Centered with a generous clean margin, about 75% image width; nothing cropped.\nPlain uniform medium-light neutral grey background that clearly separates the silhouette. No visible stage, plinth, terrain, horizon line, grid, prop, labels, frame, multiple views or collage. Soft neutral even diffuse studio illumination; minimal faint contact shadow only, no strong directional shadows, no depth of field, rim glow or reflections. Keep every surface and contour sharp.\nThis is a clean geometric reference for reconstructing a standalone realtime game mesh, not a scene screenshot or an orthographic multiview sheet. Output just the one object on plain grey.",
+      "review": "淘汰：三个鼓包被画成类似叠石，分缝可能误导三维重建；纹理偏密。"
+    },
+    {
+      "id": "rock_input_v02",
+      "output": "docs/visual-references/rock-input-v02.png",
+      "references": [
+        ".local/experiments/visual-references/rock-rejected-v01.png"
+      ],
+      "prompt": "Edit the attached isolated rock reference. Keep the square canvas, plain neutral gray background, whole-object framing, soft diffuse neutral lighting, full sharp focus, slate-blue-gray matte stylized 3D aesthetic. The important correction is STRUCTURE: turn the apparent cluster of three stacked rocks into exactly ONE SOLID BOULDER with an uninterrupted continuous surface. Remove all deep dividing seams and valleys between the three masses; fuse and smooth them into one gently asymmetric broad rounded wedge, taller at the left rear, sloping to a lower right front, with a continuous wide flat resting base. It must be unmistakably one rock, not three stones.\nSimplify surface detail strongly. Only a few large softly curved planar changes and extremely subtle broad color variation. Remove the small mottled paint patches and dense chipped facets. No cracks that split it into parts, no holes, no moss, grass, dirt, separate pebbles, terrain, base plate, rulers, text, multiple views or UI. Three-quarter view at about 15 degrees downward, showing top/front/right. Silhouette centered with clear margin. Very faint contact shadow, no hard directional lighting. This should be an unambiguous clean single-object image-to-3D input, readable when reduced in a cozy stylized game.",
+      "review": "修正为清晰单体，作为背景、轮廓和视角示范；背面底面未知，尚未进行三维重建验证。造型简单，正式制作仍可能直接使用 Blender。"
+    }
+  ]
+}
