@@ -28,7 +28,7 @@ func _run() -> void:
 	event.keycode = KEY_F9
 	event.pressed = true
 	root.push_input(event)
-	await process_frame
+	# Movie Maker queues a graceful quit on F9; check the published request now.
 	var file := FileAccess.open(session_dir.path_join("stop.json"), FileAccess.READ)
 	if file == null or JSON.parse_string(file.get_as_text()).get("reason") != "user_f9":
 		push_error("F9 did not request a graceful recording stop.")

@@ -108,30 +108,30 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 
 ## 开发录屏
 
-录制属于开发工具，普通运行不加载录制节点或启动编码进程。用户要求在关键变化时保留过程素材，触发与镜头节奏统一见 [测试规则](../rules/testing.md#关键节点录屏)。
-
-在仓库根目录的 PowerShell 7 运行，例如：
+录制属于开发工具，普通运行不加载录制节点或编码进程。关键节点与镜头节奏见 [测试规则](../rules/testing.md#关键节点录屏)。在仓库根目录的 PowerShell 7 运行：
 
 ```powershell
-./scripts/record.ps1 -Title '农场原型_全景与青菜聚焦' -Description '展示全景、青菜田近景与三维转动。' -Contribution 'Tripo 生成青菜模型与颜色纹理；Codex 编写场景和镜头；Blender 整理模型。' -Demo
+./scripts/record.ps1 -Title '农场原型_全景与青菜聚焦' -Description '展示全景、青菜田近景与三维转动。' -Contribution 'Tripo 生成青菜模型与颜色纹理；GPT / Astra（Codex）编写场景和镜头；Blender 整理模型。' -Demo
 ```
 
-- `-Demo` 是当前农场的 24 秒慢镜头演示：停留 4 秒，聚焦用 1.8 秒，停稳后转动约 15°，再次停留，再返回全景收尾。普通操作仍使用 0.75 秒过渡。自动演示是实机场景拍摄，不冒充人工操作测试；未来玩法变化时按实际展示点维护这段演示。
-- 去掉 `-Demo` 即可手动操作，`-Seconds 40` 设置最大录制时长（2–120 秒，自动演示至少 24 秒）；在游戏中按 F9 可提前结束。Esc 仍用于返回全景。录制结束会关闭此次专用实例，不关闭用户原先运行的游戏或编辑器。
-- 默认自动选择一块 3840×2160 屏幕；`-Screen 1` 指定 Godot 的第二块屏幕，索引从 0 开始。必须有真实 4K 屏幕，不自动改系统分辨率或放大小画面。使用独占全屏，捕获 HWND 指向本次游戏实例，画面含游戏界面、不含标题栏和鼠标指针。
-- 固定输出 MP4 / H.264 High / yuv420p / 3840×2160 / 60 CFR，NVIDIA NVENC `p5`、`hq`、VBR `CQ18`、每 120 帧关键帧、BT.709 标记与 faststart。恒定的是帧率，码率按画面复杂度变化；不承诺每秒固定文件大小。GPU 捕获纹理直接交给硬件编码，不逐帧回读到 GDScript，不使用 Godot 离线 Movie Maker。当前项目没有声音，本入口不录麦克风、桌面音频或游戏音轨；有游戏声音后再按需求补入。
-- 成片、中文编号 / 时间 / 节点文件名、`剪辑说明.md`、`录制信息.json`、规格和编码日志保存到 `制作留档/05_开发录屏/`。成功后更新 `录屏索引.md`；失败 / 中断保留候选和诊断，不加入成片清单。逐条录制记录、视频与校验值不入 Git。辅助握手文件在 `.local/recordings/`，不是游戏存档。
-- 不支持 NVENC 或窗口捕获时明确报错，无 CPU 编码或整个桌面捕获的静默兜底。窗口关闭、最小化或尺寸改变会结束本次录制并保留中断证据。不要强杀进程；正常 F9 / 时长到期会封装可播放文件。
+- **自动展示 `-Demo`**：采用 Godot Movie Maker，以固定 1/60 秒时间步逐帧输出，再用 NVIDIA NVENC 编码 H.264。镜头停留 4 秒、聚焦 1.8 秒、近景停留、小角度转动约 15°、返回全景与收尾；默认 24 秒。这是当前游戏场景的离线演示渲染，不能作为人工操作或实时性能证明，不提高游戏画质设置。生成可能比视频时长更久。
+- **手动操作（不加 `-Demo`）**：保留 Windows.Graphics.Capture 按 HWND 实时捕获本次游戏窗口。当前机器这条链路仍存在重复帧风险，输出会提示，元数据标为 `manual_review_required`；预览通过前不作为流畅成片。不能把自动演示的修复说成实时采集问题已解决。普通交互过渡仍为 0.75 秒。
+- `-Seconds 40` 设置视频时长（2–120 秒，自动演示至少 24 秒）；游戏中 F9 提前结束，Esc 仍返回全景。完成后只关闭此次实例，保留用户原有游戏与编辑器。提前结束的演示也需人工预览。
+- 默认选择一块真实 3840×2160 屏幕；`-Screen 1` 指定第二屏（从 0 开始）。独占全屏、无标题栏；不更改系统分辨率，不放大低分辨率画面。仅 `movie` 特性下的窗口尺寸覆盖设为 4K，让影片初始化即取得正确尺寸，保留 1280×720 的 UI 逻辑尺度；本机单独传 `--resolution` 后再全屏不足以保证影片初始尺寸。
+- 成片规格为 MP4 / H.264 High / yuv420p / 3840×2160 / 60 CFR，NVENC `p5` / `hq` / VBR `CQ18`，每 120 帧关键帧，BT.709 标记与 faststart。当前不录声音。自动展示的 AVI / MJPEG 中间文件由引擎生成，最终 H.264 压缩使用显卡；不能称整个流程都在 GPU 上。中间文件临近 AVI 的 4 GB 上限时中止并提示缩短片段；成功后删除该临时 AVI，失败时留在 `.local/recordings/` 会话目录供排错。
+- 视频、中文编号 / 时间 / 节点名称、剪辑说明、元数据、规格和诊断放 `制作留档/05_开发录屏/`，整个目录不入 Git。完整演示必须通过格式、全部展示时间戳及运动区间的近重复画面检查，再以正式文件名加入索引；失败保留 `待校验.mp4`。手动片段明确需要复核。缺少 NVENC / 4K 屏幕时失败，不自动改为软件 H.264、低分辨率放大或整个桌面捕获。
 
-**本机依赖与复现。** 原系统 FFmpeg 8.0.1 保留；它支持 NVENC 但没有 `gfxcapture`。本项目另放置 Gyan FFmpeg 9.0.1 essentials 于 `.local/tools/ffmpeg/ffmpeg-9.0.1-essentials_build/bin/`，不修改 PATH，不打包进游戏。下载自 [Gyan Windows builds](https://www.gyan.dev/ffmpeg/builds/) 的 release essentials 7z，并核对对应 SHA-256（本次 `49a73bdf0850092a252ac4641d922f3048d63ed113e196cc65ce1e4f7fb33e85`）；压缩包、许可和 README 同目录保留。构建为 GPLv3 开发工具。新机器从该来源准备包含 `gfxcapture` 与 `h264_nvenc` 的版本，并保留同目录 `ffprobe.exe`；不同路径用 `-FFmpegPath '绝对路径/ffmpeg.exe'` 指定。Godot 沿用固定版本控制台入口做版本检查，再直接启动匹配的 GUI 程序，避免控制台 wrapper 与游戏进程 PID 不同导致窗口归属误判。
+**本机依赖。** Godot 版本以 `.godot-version` 为准，沿用控制台入口检查版本，实际启动匹配 GUI 程序以核验 PID / HWND。系统 FFmpeg 8.0.1 保留；项目隔离使用 `.local/tools/ffmpeg/ffmpeg-9.0.1-essentials_build/bin/ffmpeg.exe` 及同目录 `ffprobe.exe`，不修改 PATH、不打包进游戏。来自 [Gyan Windows builds](https://www.gyan.dev/ffmpeg/builds/) release essentials 7z，归档 SHA-256 为 `49a73bdf0850092a252ac4641d922f3048d63ed113e196cc65ce1e4f7fb33e85`，GPLv3 许可与 README 同目录保留。其他路径用 `-FFmpegPath` 指定；实时路径还要求 `gfxcapture`。
 
-**本机验证与经验（2026-09-17）。** Godot 4.7.2、FFmpeg 9.0.1、RTX 4090 下完成 24 秒实机示范，1440 帧；每帧展示时间戳相差 1/60 秒，H.264 / 4K / yuv420p 检查通过，已解码查看全景、近景与结尾。F9 输入路径检查通过，普通原型交互回归保持通过。此证据不替代低配性能测试，CFR 允许补帧 / 丢帧，不保证原始渲染一直达到 60 fps。
+**重复帧排查经验（2026-09-17，Godot 4.7.2 / FFmpeg 9.0.1 / RTX 4090 / 双 4K 60 Hz）。** 原 005 片段虽然有 1440 帧、每个展示时间戳间隔 1/60 秒，推进时仍存在大量近重复画面。恒定帧率转换会补重复帧，检查 FPS、时间戳和静态截图不足以验收运动。隔离场景的主循环实测约 60.00 fps、帧间隔 p95 约 16.74 ms；带可解码帧编号的实时捕获测试则发现漏采后补重复。问题已定位到呈现 / 实时采集链路，尚未证明是某个驱动或编码选项单独导致。关闭 B 帧与编码等待曾有一次连续 300 帧通过，但重复测试与完整演示失败，因此不作为已验证修复，也不据此修改游戏渲染器、画质或模型。
 
-F9 原生窗口检查入口为 `tests/recording_controls_smoke.gd`，通过 `--script` 启动并在 `--` 后传入 `--record-session=<隔离目录>`；目录内先准备 `config.json`（`{"demo":false,"screen":0}`）。已分别验证该键生成停止请求、编码进程接受请求并提前封装有效视频、缺少捕获能力 / 无效屏幕时明确失败。Windows release 也已在 `.local/builds/recording-validation/` 导出并通过 4K 录制节点启动 / 退出检查；用户原有 `.local/builds/windows/Farm.exe` 实例仍运行，未覆盖或关闭它。
+自动展示采用官方固定步长输出，避免依赖实时窗口采样。入口调用 [运动检查](../scripts/check-recording-motion.ps1)，在当前镜头的推进与转动区间解码相邻帧，检查缩至 320×180 后的亮度平均绝对差：小于 0.01 / 255 视为近重复，比例超过 2% 判失败。静止停留不参与；该启发式针对当前场景，不是通用 FPS 仪表，镜头时间或内容改变时应一并维护采样区间，并实际预览。本次旧 005 负例检出推进 16/45、转动 43/120 对近重复帧；新 010 同区间均为 0，24 秒 / 1440 帧 / 4K H.264 格式与全部时间戳通过，并解码查看全景和近景。临时测试素材和逐帧证据在 `.local/recording-cadence/`，剪辑使用与修复结论在制作留档的录屏索引。
 
-在本机普通全屏模式下，窗口捕获曾得到 3840×2162，不能仅凭游戏自报尺寸宣称 4K；使用独占全屏后实际输出 3840×2160。`canvas_items` 缩放时 `ViewportTexture.get_size()` 曾返回 11520×6480，实际 `get_image().get_size()` 是 3840×2160，因此只在录制准备时做一次图像尺寸核验，再由 ffprobe 检查最终文件；不依赖前者做录制尺寸验收，也不据此误称引擎正在超采样。
+原生 F9 检查入口为 `tests/recording_controls_smoke.gd`：`--script` 指定该文件，`--` 后传 `--record-session=<隔离目录>`，先创建 `config.json`（`{"demo":false,"screen":0}`）。它检查停止请求及普通镜头速度；本次实时节点路径和带 `--write-movie` 的提前退出路径均通过，后者正常封装 7 帧 AVI。普通镜头原型回归也通过。格式校验、失败 / 提前停止和新完整演示按变化分别复核，不以导出成功代替运动验收。
 
-依据：[Godot 全屏与分辨率](https://docs.godotengine.org/en/4.7/tutorials/rendering/multiple_resolutions.html)、[Godot Movie Maker 的离线录制边界](https://docs.godotengine.org/en/4.7/tutorials/animation/creating_movies.html)、[FFmpeg gfxcapture](https://ffmpeg.org/ffmpeg-filters.html#gfxcapture)、[FFmpeg 恒定帧率](https://ffmpeg.org/ffmpeg.html#Advanced-options)。`gfxcapture` 本身不保证固定帧率，因此链路明确加 `fps=60` 和 `-fps_mode cfr`，验收还检查全部视频包的展示时间戳，不能只看 FPS 标签。
+尺寸排错：本机普通全屏曾捕获到 3840×2162，独占全屏后为 3840×2160；`canvas_items` 下 `ViewportTexture.get_size()` 曾返回 11520×6480，实际图像为 3840×2160。因此准备时只回读一次图像核验，成片再用 ffprobe 核验，不把纹理报告尺寸当作实际超采样证据。
+
+依据：[Godot Movie Maker](https://docs.godotengine.org/en/stable/tutorials/animation/creating_movies.html) 说明固定步长与离线边界、AVI 上限；[FFmpeg gfxcapture](https://ffmpeg.org/ffmpeg-filters.html#gfxcapture) 不保证固定采集率；[FFmpeg 帧率选项](https://ffmpeg.org/ffmpeg.html#Advanced-options) 说明 CFR 补帧 / 丢帧行为。这里的稳定性结论只覆盖当前版本、场景和实测素材。
 
 ## 后续需要用户准备的内容
 

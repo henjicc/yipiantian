@@ -1,6 +1,6 @@
 extends Node
 ## Only instantiated by the explicit development recording launcher.
-## FFmpeg owns capture/encoding; this node owns the recording window and optional tour.
+## This node owns the window/tour; Movie Maker or FFmpeg captures, and FFmpeg encodes H.264.
 
 const TARGET_SIZE := Vector2i(3840, 2160)
 var session_dir: String
@@ -25,6 +25,9 @@ func _ready() -> void:
 		_fail("Invalid recording configuration.")
 		return
 	_demo = bool(config.get("demo", false))
+	# Movie Maker advances the simulation by 1/60 s for each saved frame.
+	# It does not wait for the live encoder's handshake.
+	_started = OS.has_feature("movie")
 	if _demo:
 		farm_scene.camera.transition_seconds = 1.8
 	var screen: int = int(config.get("screen", -1))
@@ -101,6 +104,8 @@ func _request_stop(reason: String) -> void:
 		return
 	_stopping = true
 	_write_json("stop.json", {"reason": reason})
+	if OS.has_feature("movie"):
+		get_tree().quit()
 
 
 func _fail(message: String) -> void:
