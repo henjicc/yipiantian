@@ -1,0 +1,148 @@
+{
+  "date": "2026-09-17",
+  "path_base": "repository_root",
+  "tool": "image_gen.imagegen",
+  "mode": "built-in",
+  "notes": [
+    "这里只记录基准包当前保留的生成结果；模型具体版本和随机种子未返回，不保证逐像素复现。",
+    "照片式青菜与第一版简化青菜已被后续反馈淘汰，不作为正式参考。原始生成文件保留在工具输出目录；部分淘汰图在 .local/experiments/design-baseline/。",
+    "一次萝卜生成调用被用户中断，未发现返回成品，不标记为成功，也不推断该次调用计费。",
+    "本轮没有 Tripo 生成或三维验收。",
+    "工笔 / 水墨术语表示项目探索方向；效果以实际生成图为准，不以提示词证明已达成技法或空间一致性。"
+  ],
+  "sources": [
+    {
+      "file": "docs/design-baseline/references/yun-cabbages.jpg",
+      "page": "https://artmuseum.princeton.edu/art/collections/objects/31919",
+      "image_url": "https://media.artmuseum.princeton.edu/iiif/3/collection/INV03787/full/%211024%2C1024/0/default.jpg",
+      "rights_observed": "馆方页面提供本作品 Public Domain 下载"
+    },
+    {
+      "file": "docs/design-baseline/references/shen-autumn-landscape.jpg",
+      "page": "https://www.metmuseum.org/art/collection/search/51858",
+      "image_url": "https://collectionapi.metmuseum.org/api/collection/v1/iiif/51858/152593/main-image",
+      "rights_observed": "Public Domain；Attributed to Shen Zhou"
+    },
+    {
+      "file": "docs/design-baseline/references/yun-peony.jpg",
+      "page": "https://www.clevelandart.org/art/1967.192",
+      "image_url": "https://www.clevelandart.org/_next/image?q=75&url=https%3A%2F%2Fpiction.clevelandart.org%2Fcma%2Fump.di%3Fe%3D8FA864935DB424F33110820390ED85F6234BF30A4CF651897E130D4287C05D68%26s%3D24247294%26se%3D399313166%26v%3D6%26f%3D1967.192_o5.jpg&w=640",
+      "rights_observed": "馆方明确允许复制、修改和分发"
+    },
+    {
+      "file": ".local/experiments/chinese-painting/lin-chun-fruit-bird.png",
+      "local_only": true,
+      "page": "https://intl.dpm.org.cn/Ceramics/7472.html",
+      "image_url": "https://shuziwenwu-1259446244.cos.ap-beijing.myqcloud.com/relic/1e30198c36d141df88bdd82aedb7b96e/cbc0d275b91541df8fac37e1960f6734.png",
+      "use": "仅本地视觉研究和 A 生成参考，不随包分发，不删除原图标记"
+    }
+  ],
+  "images": [
+    {
+      "id": "master",
+      "output": "docs/design-baseline/images/00-approved-overview.png",
+      "status": "用户选定的构图、距离与感觉；材质遵循后续卡通和国画修正",
+      "copied_from": "docs/visual-references/runtime-01-classic-diorama-v02.png",
+      "prompt_record": "docs/visual-references/generation-record-v02.json#01"
+    },
+    {
+      "id": "focus",
+      "output": "docs/design-baseline/images/01-field-focus.png",
+      "status": "镜头距离示意；生成于国画探索之前，非材质标准",
+      "references": [
+        "docs/design-baseline/images/00-approved-overview.png"
+      ],
+      "prompt": "Use case: stylized-concept. The input image is the USER-SELECTED style master for a 3D Jiangnan miniature farming game. Preserve its handcrafted natural-material realism with subtly rounded forms, grouped slate tiles, offwhite plaster, aged timber, muted jade/olive foliage and earthy ceramics. This is NOT the simplified plastic toy variant and NOT flat painting. Avoid dense microscopic noise, shiny plastic, sharp low-poly triangles, exaggerated chibi objects and modern objects.\nCreate ONE landscape 16:9 runtime screen of the same homestead after the camera gently moves toward the FRONT RIGHT leafy vegetable field. Preserve the spatial logic of the selected source: cottage back-right, entry gate back-left, wheat field beside the leafy bed, stone paths, low bamboo rails, river and wooden landing near right. Show one leaf-green bed occupying about 35-45% of the frame from an oblique three-quarter angle, looking downward about 28 degrees, NOT overhead. The farmhouse and other beds are visible behind, naturally cropped if necessary. Plants look small in a coherent miniature world but now large enough to inspect. Preserve the selected image's warm afternoon feel, slate roofs, warm grey stone, old timber and quiet jade water. NO additional buildings, no people or animals. Clearly show the bed's soil edge and practical clickable surface, use lower fence near camera to avoid occlusion. No strong foreground blur over interaction area.\nThe selected bed has a discreet ivory corner boundary, NO neon outline. HUD: compact bottom buttons “播种” “浇水” “收获”; upper-left button “全景” plus basket and “0”; upper-right sun and “16:30”. No explanatory text or labels, no title, no collage, no desktop surround. This is a closer perspective of the same farm, not an unrelated vegetable close-up."
+    },
+    {
+      "id": "structure_greens",
+      "output": "docs/design-baseline/images/structure/greens.png",
+      "status": "用户要求更卡通后的形体样例；非最终国画材质",
+      "references": [],
+      "prompt": "Use case: stylized-concept.\nONE square image of an unmistakably CARTOON STYLIZED 3D GAME MODEL of a bok choy plant, a cozy farm prop. Think carefully designed hand-sculpted animation-film shapes, chunky and graphic. NOT a photograph, NOT a realistic botanical render.\nSHAPE DESIGN IS THE MAIN SUBJECT: exactly SIX large rounded spoon-shaped leaf lobes, short and wide with thick smoothly rounded edges, each like a softly bent solid sculpted leaf shape. A compact squat little rosette, width about 1.3 times its height. Short plump pale-jade stems gathered into a rounded base. Leaves open outward in a friendly flower-like silhouette, large broad simple surfaces, pleasing slightly asymmetrical arrangement. The top leaves have rounded tips, no jagged edges, no tiny leaves or realistic creases.\nSURFACES: smooth MATTE moss-green / fresh sage green leaves, with broad softly painted gradients and just ONE short simplified central indentation per leaf. NO branching veins, NO thin lines, NO fine texture, NO speckles, NO leaf wrinkles, NO visible realistic fibres, NO intricate colour mottling, NO water droplets. Pale cream-green stems have equally clean broad shading. Natural softness, not shiny plastic, not transparent, not hard polygon facets, no face or eyes.\nRENDER: clearly three-dimensional, soft ambient occlusion only at leaf overlaps, gentle studio diffuse light, quiet warm-gray solid OPAQUE background. Simple pleasant toy-like silhouette but believable leaf / plant colours. Front three-quarter view about 20 degrees from above, complete object including base, plenty of margin. Entire plant sharp. No pot, dirt, roots, grass, stage, labels, text, UI, other objects, multiple views or sheet. This is a stylized production concept for a small game object, not a product photo."
+    },
+    {
+      "id": "structure_cottage",
+      "output": "docs/design-baseline/images/structure/cottage.png",
+      "references": [
+        "docs/design-baseline/images/00-approved-overview.png",
+        "docs/design-baseline/images/structure/greens.png"
+      ],
+      "prompt": "Use case: stylized-concept. ONE square isolated 3D game cottage design.\nInput 1 is ONLY a rural Jiangnan architecture and palette reference. Input 2 shows the REQUIRED LEVEL OF CARTOON SIMPLIFICATION: rounded chunky sculpted forms, broad shading, matte clean surfaces and minimal fine detail. Apply that simplification consistently to the cottage, not the green colour or botanical shape.\nOne modest squat grey-tile Jiangnan cottage with warm ivory plaster walls, brown timber structure, central wooden double door, a simple lattice window either side, shallow porch and two stone steps. Front-right three-quarter view about 20 degrees down. Complete roof and foundation inside frame, plain warm light-gray opaque background, gentle neutral studio light.\nMake it visibly an artist-designed COZY CARTOON 3D GAME MODEL with believable material colours, NOT photorealistic building photography. Group the roof into a few broad rows of large thick rounded tiles; slightly rounded beams; clean thick window bars; warm broad wall planes. Subtle irregularity in proportions, modest rural pitched roof with gently curved eaves, no palace finials. Wood has only a few broad grain marks, plaster smooth with barely any age marks, stone foundation made of few chunky rounded blocks. NO chipped wall patches, no dense wood grain, no tiny roof damage, no moss texture, no micro-cracks, no gritty realism, no glossy plastic. Do not produce a flattened 2D illustration or angular low-poly triangle model.\nNo scenery, garden, terrain pedestal, plants, hanging signs, props, people, text, UI, multiple views or collage. Preserve the warm natural material feel with soft light and carefully designed volumes."
+    },
+    {
+      "id": "structure_radish",
+      "output": "docs/design-baseline/images/structure/radish.png",
+      "references": [
+        "docs/design-baseline/images/structure/greens.png"
+      ],
+      "prompt": "Use case: stylized-concept. Create ONE square single-object 3D cartoon farm asset reference. The attached plant sets the required rounded chunky simplification, smooth matte shading and low detail frequency. Keep this precise stylization level, but make a WHITE RADISH PLANT instead.\nOne short plump off-white daikon root with rounded shoulders, a clean tapered lower tip, and FIVE broad rounded gently lobed green leaves on short thick stems at its crown. The root and leaves are connected naturally. Stylize the root as one simple softly curved volume, only two shallow broad growth notches at most. Simplify leaves into thick slightly cupped sculpted shapes, smooth continuous outlines and one broad central fold only. NO tiny hairs, branched leaf veins, wrinkles, root fibres, photographic mottling, tears or wet gloss. Broad hand-painted moss/sage gradients, pale ivory root, tactile matte surfaces, believable plant colours with clearly cartoon proportions. NOT a photorealistic vegetable, not plastic, not a flat drawing, no face or eyes.\nFull plant and full root visible, elevated three-quarter view, centered with generous margin, soft neutral studio light and a solid opaque warm-gray background. No soil, pot, other plants, scenery, pedestal, text, arrows, UI, multiple stages or collage. Complete root is shown for design; it will be mostly buried when placed in the game."
+    },
+    {
+      "id": "structure_jar",
+      "output": "docs/design-baseline/images/structure/jar.png",
+      "references": [
+        "docs/design-baseline/images/structure/greens.png"
+      ],
+      "prompt": "Use case: stylized-concept. One square isolated 3D CARTOON GAME PROP reference.\nThe attached stylized plant defines the simplified rounded form language and broad matte shading. Translate that same detail density into a small earthenware jar; do NOT transfer the plant's colour or shapes.\nExactly one squat warm terracotta-brown clay storage jar, large smooth rounded belly, short wide neck with thick rolled lip and clear dark opening, two rounded sturdy lug handles connected to upper shoulders, stable gently flattened bottom. Slight handmade asymmetry, broad soft orange-brown gradients, a few very faint broad wheel bands at most. Chunky coherent silhouette, smooth slightly worn edges, softly sculpted solid forms. Material should read as matte clay with natural warm colour and restrained shading. NO grainy pores, gritty microtexture, detailed chips, cracks, elaborate glaze, photoreal pottery photograph, glossy plastic, pattern, lettering, plants, lid or contents.\nSingle complete object centered with generous margin, three-quarter view about 18 degrees from above showing opening and both handle attachments, soft neutral studio lighting, faint contact shadow, solid opaque warm-grey background. No other props, terrain, stage, text, UI, multiple views or collage."
+    },
+    {
+      "id": "ink_A",
+      "title": "工笔淡彩",
+      "output": "docs/design-baseline/images/style-trials/ink-a-gongbi-overview.png",
+      "references": [
+        "docs/design-baseline/images/00-approved-overview.png",
+        ".local/experiments/chinese-painting/lin-chun-fruit-bird.png",
+        "docs/design-baseline/references/yun-peony.jpg"
+      ],
+      "prompt": "Use case: stylized-concept.\nGenerate ONE 16:9 full-bleed 3D cozy farming game screen with a CHINESE PAINTING art direction, not a poster or a painting hung on a wall.\nInput image 1 is the USER-APPROVED COMPOSITION: preserve its comfortable wide diagonal viewing distance, about 30 degrees down, a complete miniature farm with cottage back-right, gate left, six-ish rectangular crop patches central foreground, stone paths, bamboo rails, water and small bridge right. Maintain real 3D depth and clearly visible wall sides, plant volumes, near/mid/far relationships so the camera could move closer to a field. Do not convert it to a frontal flat painting or a top-down farm grid.\nSubsequent inputs are TRADITIONAL PAINTING REFERENCES ONLY for brush lines, restrained colour washes, material treatment and atmospheric spacing. Do NOT copy their birds, flowers, inscriptions, seals, ageing, stains, watermarks, paper frame or exact compositions.\nKeep friendly rounded simplified silhouettes and broad readable forms. NO realistic leaf veins, pores, dense wood grain or photographic texture; no glossy molded plastic either. The image should look like a living 3D Chinese illustrated miniature. Crop patches must remain clear and visually separable; no ink cloud covering interactive land. All objects belong to one coherent world.\nHUD stays tiny and functional: bottom three quiet ivory buttons with exactly “播种” “浇水” “收获”; upper-left basket “0”, upper-right sun “16:30”. No additional text, title, calligraphy, seals, arrows, inset, split-panel or collage. No humans or animals.\n\nDIRECTION A, GONGBI-INSPIRED LIGHT COLOUR: delicate selective dark tea-brown and muted green contour brush lines along roof edges, beams, leaf silhouettes and stone boundaries; line weight varies gently rather than uniform thick toon outlines. Fill volumes with translucent-looking layers of warm ivory, sage, muted mineral green, soft ochre and pale teal, inspired by traditional flower-and-bird painting. Sparse fine structural strokes, absolutely no return to dense botanical detail. Surfaces have soft painted tonal transitions, subtle pigment accumulation at edges rather than hard PBR specular reflections. Keep the volumetric softness of rounded stylized 3D objects. Gentle warm daylight without golden cinematic glare. Distant hills are airy pale colour washes, river calm with generous clean stretches. Foreground about 75% explicit volumetric game scene, 25% painterly treatment; texture attached to objects, not a yellow old-paper filter over the screen. Calm, refined, playful Chinese courtyard with readable farm operations.",
+      "status": "待用户比较，非已选风格"
+    },
+    {
+      "id": "ink_B",
+      "title": "彩墨写意",
+      "output": "docs/design-baseline/images/style-trials/ink-b-wash-overview.png",
+      "references": [
+        "docs/design-baseline/images/00-approved-overview.png",
+        "docs/design-baseline/references/shen-autumn-landscape.jpg",
+        "docs/design-baseline/references/yun-cabbages.jpg"
+      ],
+      "prompt": "Use case: stylized-concept.\nGenerate ONE 16:9 full-bleed 3D cozy farming game screen with a CHINESE PAINTING art direction, not a poster or a painting hung on a wall.\nInput image 1 is the USER-APPROVED COMPOSITION: preserve its comfortable wide diagonal viewing distance, about 30 degrees down, a complete miniature farm with cottage back-right, gate left, six-ish rectangular crop patches central foreground, stone paths, bamboo rails, water and small bridge right. Maintain real 3D depth and clearly visible wall sides, plant volumes, near/mid/far relationships so the camera could move closer to a field. Do not convert it to a frontal flat painting or a top-down farm grid.\nSubsequent inputs are TRADITIONAL PAINTING REFERENCES ONLY for brush lines, restrained colour washes, material treatment and atmospheric spacing. Do NOT copy their birds, flowers, inscriptions, seals, ageing, stains, watermarks, paper frame or exact compositions.\nKeep friendly rounded simplified silhouettes and broad readable forms. NO realistic leaf veins, pores, dense wood grain or photographic texture; no glossy molded plastic either. The image should look like a living 3D Chinese illustrated miniature. Crop patches must remain clear and visually separable; no ink cloud covering interactive land. All objects belong to one coherent world.\nHUD stays tiny and functional: bottom three quiet ivory buttons with exactly “播种” “浇水” “收获”; upper-left basket “0”, upper-right sun “16:30”. No additional text, title, calligraphy, seals, arrows, inset, split-panel or collage. No humans or animals.\n\nDIRECTION B, EXPRESSIVE INK WITH LIGHT COLOUR: markedly different from polished physically based 3D. Dark ink-grey roofs and timber, broad dry-brush edges on rounded rocks and tree trunks, flowing soft black/grey wash gradations in distant hills. Botanical masses use broad restrained green washes with ink accents, no anatomical veins. Keep cream-white wall planes and softly shaded solid crop volumes. Mainly ink grey, warm paper-white and muted moss green, with a VERY SMALL amount of warm terracotta or amber. The farm itself retains dimensional depth and selective clean contour edges; background water and sky open into luminous empty atmospheric space rather than busy distant villages. No blanket sepia filter and no grime. Soft even light, no shiny reflection, hard photographic shadows or cinematic bloom. Brush marks are integrated into surfaces and distant scenery, not random ink splats placed over UI. Strong poetic ink-painting mood, yet unmistakable orbital-camera 3D geometry on the playable farm.",
+      "status": "待用户比较，非已选风格"
+    },
+    {
+      "id": "ink_C",
+      "title": "青绿与淡墨结合",
+      "output": "docs/design-baseline/images/style-trials/ink-c-green-hybrid-overview.png",
+      "references": [
+        "docs/design-baseline/images/00-approved-overview.png",
+        "docs/design-baseline/references/yun-peony.jpg",
+        "docs/design-baseline/references/shen-autumn-landscape.jpg"
+      ],
+      "prompt": "Use case: stylized-concept.\nGenerate ONE 16:9 full-bleed 3D cozy farming game screen with a CHINESE PAINTING art direction, not a poster or a painting hung on a wall.\nInput image 1 is the USER-APPROVED COMPOSITION: preserve its comfortable wide diagonal viewing distance, about 30 degrees down, a complete miniature farm with cottage back-right, gate left, six-ish rectangular crop patches central foreground, stone paths, bamboo rails, water and small bridge right. Maintain real 3D depth and clearly visible wall sides, plant volumes, near/mid/far relationships so the camera could move closer to a field. Do not convert it to a frontal flat painting or a top-down farm grid.\nSubsequent inputs are TRADITIONAL PAINTING REFERENCES ONLY for brush lines, restrained colour washes, material treatment and atmospheric spacing. Do NOT copy their birds, flowers, inscriptions, seals, ageing, stains, watermarks, paper frame or exact compositions.\nKeep friendly rounded simplified silhouettes and broad readable forms. NO realistic leaf veins, pores, dense wood grain or photographic texture; no glossy molded plastic either. The image should look like a living 3D Chinese illustrated miniature. Crop patches must remain clear and visually separable; no ink cloud covering interactive land. All objects belong to one coherent world.\nHUD stays tiny and functional: bottom three quiet ivory buttons with exactly “播种” “浇水” “收获”; upper-left basket “0”, upper-right sun “16:30”. No additional text, title, calligraphy, seals, arrows, inset, split-panel or collage. No humans or animals.\n\nDIRECTION C, BALANCED CARTOON 3D WITH CHINESE PAINTING MATERIALS: keep attractive rounded stylized game forms and immediately readable soil beds, but remove photoreal textures and molded-clay toy appearance. Use celadon, muted malachite green and pale blue-green colour layering on plants, river and distant hills, warm creamy walls, ink-grey tile roofs, gentle ochre wood. Thin selective ink contours emphasize only major roof / plant / stone silhouettes; broad mineral-pigment-like colour transitions model the volume. Foreground clean and dimensional with subtle brush-painted roughness, no micro-grain. Background hills and willow masses gradually dissolve into light ink washes and soft negative space; no ocean of packed buildings. Preserve a trace of warm afternoon illumination without orange film grading. The farm is solid 3D and the atmosphere poetic, somewhere between a hand-painted cozy game and a Chinese landscape album, not a flat painting and not a cartoon plastic model. Let the central farmland remain more legible than atmospheric surroundings.",
+      "status": "待用户比较，非已选风格"
+    },
+    {
+      "id": "crop_light_colour",
+      "output": "docs/design-baseline/images/style-trials/greens-a-light-colour.png",
+      "references": [
+        "docs/design-baseline/images/structure/greens.png",
+        "docs/design-baseline/references/yun-cabbages.jpg",
+        "docs/design-baseline/references/yun-peony.jpg"
+      ],
+      "prompt": "Use case: stylized-concept. One square single-object concept for a living 3D game crop with CHINESE GONGBI / LIGHT-COLOUR PAINTING surface treatment.\nInput 1 gives the simple rounded 3D bok choy geometry and connected plant structure: keep it squat, 5-6 broad simple leaves, gently cupped thick forms, pale short stems, no pot.\nInput 2 is a historical vegetable painting reference for quiet colour washes and clean botanical negative space; input 3 is a flower-painting reference for layered light colour. Do not copy calligraphy, seals, paper stains, museum marks, composition or other plants.\nTransform the smooth clay/plastic look into hand-painted CHINESE illustration material on solid 3D shapes. Delicate dark moss / tea-brown brush contours selectively trace some leaf edges and major folds, variable fine line thickness; soft celadon, pale sage and olive-green transparent-looking pigment layers, slightly darker pigment gathered at edges and pale creamy stems. Broad controlled wash transitions, one graceful central brush line per leaf at most, NO dense veins or wrinkled photographic detail. Retain cartoon rounded simplified silhouette and genuine 3D volume but minimize specular shading. This must feel like a little plant from a Chinese painted world, not a photographic vegetable, a glossy toy or a flat image cutout.\nComplete plant visible, soft three-quarter view around 20 degrees above, neutral diffused light, light warm ivory-gray opaque background without paper border, faint contact shadow only, all contours sharp. No text, UI, stamp, pot, soil, surrounding landscape, extra objects, multi-view or collage.",
+      "status": "细线与淡彩候选；不作为精确几何事实"
+    },
+    {
+      "id": "crop_ink_wash",
+      "output": "docs/design-baseline/images/style-trials/greens-b-ink-wash.png",
+      "references": [
+        "docs/design-baseline/images/structure/greens.png",
+        "docs/design-baseline/references/yun-cabbages.jpg",
+        "docs/design-baseline/references/shen-autumn-landscape.jpg"
+      ],
+      "prompt": "Use case: stylized-concept. ONE square isolated 3D crop concept rendered with expressive CHINESE INK AND LIGHT COLOUR surfaces.\nInput 1 is the geometry reference: preserve the squat rounded bok choy with five or six broad cupped leaves and short gathered stems. Input 2 provides real Chinese vegetable painting brush-and-wash reference, input 3 provides ink gradation and spare atmospheric treatment. Extract technique only. Do not reproduce their compositions, lettering, seals, old paper stains or museum marks.\nMake the plant look like a softly dimensional ink-painted game asset. Use pale ivory reserved-space stems, moss-green and grey-green leaf masses made of a few broad fluid wash strokes, deeper dark-ink edges at selected overlaps, dry-brush interruptions along some leaf margins, controlled pooling of pigment. Leave portions of leaf planes luminous and light. Avoid outlining every edge with a uniform dark line. Broad simple sculpted geometry must remain legible, slight shadow where leaves overlap, but no polished clay gradients, realistic subsurface scattering or PBR shine. Sparse structural brush lines only, no thin leaf-vein network, botanical wrinkles, photography or wet gloss. No random splatters outside the silhouette.\nKeep the entire single connected plant visible against clean warm offwhite opaque background, weak-perspective three-quarter view 20 degrees from above, neutral diffuse light and faint contact shadow. No roots, soil, pot, other plants, landscape, frame, text, UI, stamp, multiple views or collage. Stronger ink-wash character than a pale watercolor filter, while keeping an understandable rounded 3D crop.",
+      "status": "墨色与断笔候选；白色笔触不代表几何破洞"
+    }
+  ]
+}

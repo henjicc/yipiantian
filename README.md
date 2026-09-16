@@ -1,8 +1,8 @@
 # 我有一片田
 
-Windows 普通窗口版三维微缩农场。当前建立开发基础，尚未实现种植玩法；桌面壁纸宿主后置，首个可玩切片另行确定。
+Windows 普通窗口版三维微缩农场。当前建立开发基础，尚未实现种植玩法；桌面壁纸宿主后置，初期玩法方案见制作基准包，详细开发计划后续制定。
 
-开始制作先看 [玩法、操作与首轮制作草案](docs/production-brief.md)：包含资料提炼、可玩切片建议、新运行画面参考与待定范围；具体工具分工见 [三维资产工作流](docs/asset-workflow.md)。
+开始制作先看 [制作基准包](docs/design-baseline/README.md)：包含当前玩法、镜头与操作、已选主图、国画风格对照和参考来源，供后续制定详细计划；具体工具分工见 [三维资产工作流](docs/asset-workflow.md)。
 
 ## 打开与开发
 
@@ -34,6 +34,7 @@ pwsh -NoProfile -File scripts/godot.ps1 ExportWindows
 | `scripts/`、`.agents/skills/` | 开发入口与固定版本的项目技能 | 同步；不进入游戏导出 |
 | `docs/`、`rules/`、`AGENTS.md` | 开发资料与协作规则 | 同步 |
 | `docs/visual-references/` | 已整理交付的设计参考图与生成记录；候选状态在制作草案中注明 | 同步；图片使用 LFS |
+| `docs/design-baseline/` | 当前玩法与美术基准包、候选对照和必要来源；替代旧草案作为制作入口 | 同步；图片使用 LFS |
 | `docs/ref/` | 本地参考资料和图板 | 不同步 |
 | `.local/` | 试验、候选、下载、截图、日志、构建与测试存档 | 不同步 |
 
