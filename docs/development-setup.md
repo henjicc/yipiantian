@@ -17,7 +17,7 @@
 - `Game/project.godot` 使用 GDScript 标准版，Forward+ / Vulkan，1280×720 可调整普通窗口；已有六田简易场景、Tripo 青菜与聚焦镜头。当前是布局和手感确认原型，不锁定最终美术。
 - 模型交接采用显式 GLB；项目关闭 `.blend` 自动导入，编辑源文件保留在 `ArtSource/`。
 - 已核验版本、完成资源导入和 Windows x86_64 release 导出，过程退出码为 0。工程直接运行、导出后的独立程序均以 Forward+ / Vulkan 在 RTX 4090 上启动，并在指定迭代数后正常退出，日志无错误。本地日志为 `.local/logs/godot-run.log`、`godot-player.log`；仅证明空工程启动与导出链路可用，不代表画面、窗口交互、玩法或性能验收。
-- 未配置 CI 或第三方测试框架；已有原型交互冒烟脚本 `tests/prototype_smoke.gd`，尚无农场模拟或存档测试套件，不声称全部玩法通过。Blender / Tripo 进入 Godot 的真实资产、窗口交互、存档与后台性能随对应任务验证。
+- 未配置 CI 或第三方测试框架；已有原型交互冒烟 `tests/prototype_smoke.gd` 和纯农场规则回归 `tests/farm_state_test.gd`。后者在 Godot 4.7.2 通过 78 项断言，覆盖六田两作物、时间与动作边界、快照恢复校验；尚不代表主场景种植、磁盘存档或全部玩法通过。Blender / Tripo 进入 Godot 的真实资产、窗口交互、存档与后台性能随对应任务验证。
 - 原型已在 Godot 4.7.2 / RTX 4090 实际渲染，全景、聚焦和 960×600 窗口截图保存在 `.local/prototype-validation/`。真实输入路径测试覆盖点田、GUI 返回、拖动不误选、失焦取消、快速换田、返回途中再选田、恢复微调后的全景以及按钮布局；退出码为 0。Windows release 已重新导出；这不代表种植、存档或低配性能通过。
 - 旧 `Game/` Unity 工程、`.local/unity-validation/`、`.local/foundation/` 与根 Unity 日志已按用户要求删除。Unity / Hub 软件保留，当前工程不再依赖它们。
 
@@ -34,6 +34,8 @@
 可选 VS Code 集成使用 [Godot 官方组织的 Godot Tools](https://github.com/godotengine/godot-vscode-plugin)，需要编辑器侧语言服务时按其文档配置；不安装旧 Unity 扩展作为 Godot 依赖。
 
 ## 可复用的开发经验
+
+纯农场规则验证：`& ./scripts/godot.ps1 Run -ExtraArgs @('--headless', '--script', (Join-Path $PWD 'tests/farm_state_test.gd'))`。规则从调用者接收 UTC 秒，测试不改系统时钟或玩家存档。状态与静态定义返回深拷贝，无效动作在候选副本结算后拒绝，整个权威状态不变；自然时间推进调用独立 `settle()`。界面不要将结算的 `changed_fields` 非空等同于模型阶段变化，空田时间基准也会更新。状态接口与存档接入边界见 [2.1 交接](task/首个可发布版本/handoffs/2.1-handoff.md)。
 
 原型交互检查可在仓库根目录的 PowerShell 会话运行：`& ./scripts/godot.ps1 Run -ExtraArgs @('--headless', '--script', (Join-Path $PWD 'tests/prototype_smoke.gd'))`。不带 `--headless` 可跑有画面的同一组检查。截图参数放在 `--` 后传入 `--screenshots=<已有输出目录>`；截图需有渲染窗口。
 
