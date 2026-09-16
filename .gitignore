@@ -1,6 +1,8 @@
 # Local references, experiments, downloads, builds, logs and test saves
 /docs/ref/
 /.local/
+/制作留档/
+/.tripo/
 /Builds/
 /Logs/
 
