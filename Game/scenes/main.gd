@@ -4,6 +4,11 @@ signal farm_changed(result: Dictionary)
 
 const FarmState = preload("res://farm/farm_state.gd")
 const FarmStore = preload("res://farm/farm_store.gd")
+const DecorationState = preload("res://farm/decoration_state.gd")
+const DecorationLayout = preload("res://scenes/decoration_layout.gd")
+const FarmAudio = preload("res://audio/farm_audio.gd")
+const DayNight = preload("res://atmosphere/day_night.gd")
+const WindowActivity = preload("res://atmosphere/window_activity.gd")
 const HUD = preload("res://scenes/farm_hud.gd")
 
 @onready var farm: FarmLayout = $Farm
@@ -11,6 +16,11 @@ const HUD = preload("res://scenes/farm_hud.gd")
 # One clock boundary: tests inject a callable before adding the scene to the tree.
 var clock: Callable = Time.get_unix_time_from_system
 var farm_state: FarmState
+var decoration_state: DecorationState
+var decoration_layout: DecorationLayout
+var farm_audio: FarmAudio
+var atmosphere: DayNight
+var window_activity: WindowActivity
 var store: FarmStore
 var hud: HUD
 var selected_field: int = -1
@@ -56,8 +66,34 @@ func _ready() -> void:
 	hud.retry_requested.connect(_retry_storage)
 	hud.recovery_requested.connect(_recover_storage)
 	hud.exit_requested.connect(func() -> void: get_tree().quit())
+	hud.decoration_requested.connect(_begin_decoration)
 	camera.motion_finished.connect(_refresh_hud)
 	_load_game()
+	# The courtyard owns all slot transforms and art; no duplicate fallback layout.
+	var courtyard: Node3D = $Environment
+	decoration_layout = DecorationLayout.new()
+	decoration_layout.name = "Decorations"
+	add_child(decoration_layout)
+	decoration_layout.configure(courtyard, camera, decoration_state if _loaded else DecorationState.new())
+	decoration_layout.mode_changed.connect(func(_active: bool) -> void: _refresh_hud())
+	decoration_layout.confirmed.connect(_save_farm)
+	farm_audio = FarmAudio.new()
+	farm_audio.name = "FarmAudio"
+	add_child(farm_audio)
+	atmosphere = DayNight.new()
+	atmosphere.name = "DayNight"
+	add_child(atmosphere)
+	atmosphere.configure($DirectionalLight3D, $WorldEnvironment, courtyard.get_water_surface())
+	atmosphere.set_backdrop_material(courtyard.get_backdrop_material())
+	atmosphere.night_weight_changed.connect(farm_audio.set_night_weight)
+	farm_audio.set_night_weight(atmosphere.get_night_weight())
+	window_activity = WindowActivity.new()
+	window_activity.name = "WindowActivity"
+	window_activity.foreground_changed.connect(farm_audio.set_foreground)
+	add_child(window_activity)
+	farm_audio.set_foreground(window_activity.is_foreground())
+	decoration_layout.confirmed.connect(_refresh_lanterns)
+	_refresh_lanterns()
 	var timer := Timer.new()
 	timer.name = "SettlementTimer"
 	timer.wait_time = 1.0
@@ -88,22 +124,31 @@ func _load_game() -> void:
 		return
 	if result.kind == "missing":
 		farm_state = FarmState.new(clock.call())
+		decoration_state = DecorationState.new()
 	else:
 		farm_state = FarmState.new()
 		farm_state.restore_snapshot(result.farm)
+		decoration_state = DecorationState.new()
+		decoration_state.restore_snapshot(result.decorations)
+	decoration_state.unlock(farm_state.snapshot().harvested)
+	if decoration_layout != null:
+		decoration_layout.bind_state(decoration_state)
+		_refresh_lanterns()
 	_loaded = true
 	farm.visible = true
 	settle_farm()
 	_save_farm()
-	print("FARM_LOAD stage=%s version=%d" % [result.kind, FarmStore.VERSION])
+	print("FARM_LOAD stage=%s version=%d migrated=%s saved=%s" % [result.kind, FarmStore.VERSION, result.get("migrated", false), not _save_failed])
 
 
 func _save_farm() -> bool:
 	if not _loaded:
 		return false
-	var result: Dictionary = store.save(farm_state.snapshot())
+	var result: Dictionary = store.save(farm_state.snapshot(), decoration_state.snapshot())
 	_save_failed = not result.ok
 	if _save_failed:
+		if decoration_layout != null:
+			decoration_layout.finish_mode()
 		_cancel_input()
 		selected_tool = ""
 		hud.show_storage_issue(result.kind, true)
@@ -131,6 +176,8 @@ func _recover_storage() -> void:
 
 func _request_exit() -> void:
 	_cancel_input()
+	if decoration_layout != null:
+		decoration_layout.finish_mode()
 	if not _loaded:
 		get_tree().quit()
 		return
@@ -158,10 +205,33 @@ func _refresh_hud() -> void:
 		return
 	var field: Dictionary = {} if selected_field < 0 else farm_state.get_field(farm.field_id(selected_field))
 	hud.show_state(field, farm_state.snapshot().harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed)
+	hud.show_decoration_mode(decoration_layout != null and decoration_layout.active)
+
+
+func _begin_decoration() -> void:
+	if not _loaded or _save_failed or decoration_layout == null:
+		return
+	_return_overview()
+	decoration_layout.begin_mode()
+	farm_audio.play_ui()
+
+
+func _refresh_lanterns() -> void:
+	if atmosphere != null and decoration_layout != null:
+		atmosphere.set_lantern_anchors(decoration_layout.lantern_anchors())
 
 
 func _input(event: InputEvent) -> void:
 	if not _loaded or _save_failed:
+		return
+	if decoration_layout != null and decoration_layout.active:
+		decoration_layout.observe_input(event)
+		if (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT):
+			if decoration_layout.selected_item.is_empty():
+				decoration_layout.finish_mode()
+			else:
+				decoration_layout.cancel_preview()
+			get_viewport().set_input_as_handled()
 		return
 	# Cancellation sees even GUI-consumed releases; world gestures start only in unhandled input.
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
@@ -183,6 +253,9 @@ func _input(event: InputEvent) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _loaded or _save_failed:
+		return
+	if decoration_layout != null and decoration_layout.active:
+		decoration_layout.handle_input(event)
 		return
 	if event is InputEventMouseButton:
 		match event.button_index:
@@ -236,6 +309,11 @@ func _notification(what: int) -> void:
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_WM_MOUSE_EXIT:
 		_cancel_input()
 		selected_tool = ""
+		if decoration_layout != null and decoration_layout.active:
+			if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+				decoration_layout.finish_mode()
+			else:
+				decoration_layout.cancel_preview()
 		if is_node_ready():
 			_refresh_hud()
 			if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT and _loaded and not _save_failed:
@@ -270,6 +348,7 @@ func _select_tool(tool: String) -> void:
 	if not _loaded or _save_failed or selected_field < 0 or camera.is_transitioning():
 		return
 	selected_tool = "" if selected_tool == tool else tool
+	farm_audio.play_ui()
 	hud.clear_feedback()
 	_refresh_hud()
 
@@ -277,6 +356,7 @@ func _select_tool(tool: String) -> void:
 func _select_crop(crop_id: String) -> void:
 	_cancel_input()
 	selected_crop = crop_id
+	farm_audio.play_ui()
 	_refresh_hud()
 
 
@@ -292,8 +372,11 @@ func _apply_tool() -> void:
 		"harvest": result = farm_state.harvest(field_id, now)
 		_: return
 	hud.show_result(result, selected_tool, selected_crop)
+	farm_audio.play_action(selected_tool, result)
 	if result.ok:
 		selected_tool = ""
+		var unlocked: Array[String] = decoration_state.unlock(farm_state.snapshot().harvested)
+		hud.show_unlocks(unlocked)
 		refresh_farm()
 		farm_changed.emit(result)
 		_save_farm()

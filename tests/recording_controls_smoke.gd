@@ -41,4 +41,7 @@ func _run() -> void:
 		quit(1)
 		return
 	print("RECORDING_CONTROLS_SMOKE failures=0")
-	quit()
+	if not OS.has_feature("movie"):
+		quit()
+	# In MovieMaker the recording owner must finish its two cleanup frames and
+	# quit itself. An immediate test quit would hide a broken cleanup sequence.

@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scenes/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scenes/farm_layout.gd" id="2_farm"]
 [ext_resource type="Script" path="res://scenes/farm_camera.gd" id="3_camera"]
+[ext_resource type="PackedScene" path="res://scenes/environment/courtyard.tscn" id="4_courtyard"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -20,6 +21,8 @@ fog_density = 0.006
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
+
+[node name="Environment" parent="." instance=ExtResource("4_courtyard")]
 
 [node name="Farm" type="Node3D" parent="."]
 script = ExtResource("2_farm")

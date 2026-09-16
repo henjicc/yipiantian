@@ -4,7 +4,7 @@ extends Camera3D
 signal motion_finished
 
 const DEFAULT_POINT := Vector3(0.0, 0.6, 0.0)
-const DEFAULT_VIEW := Vector3(32.0, 34.0, 26.0)
+const DEFAULT_VIEW := Vector3(32.0, 34.0, 29.5)
 
 var focus_point: Vector3 = DEFAULT_POINT
 var view: Vector3 = DEFAULT_VIEW # yaw, pitch, distance

@@ -13,6 +13,8 @@ var _poll_elapsed: float = 0.0
 var _stage: int = 0
 var _farm_demo: bool = false
 var _farm_now: float = 0.0
+var _courtyard_demo: bool = false
+var _movie_frame_limit: int = 0
 
 
 func _ready() -> void:
@@ -28,9 +30,29 @@ func _ready() -> void:
 		return
 	_demo = bool(config.get("demo", false))
 	_farm_demo = bool(config.get("farm_demo", false))
-	if _farm_demo:
+	_courtyard_demo = bool(config.get("courtyard_demo", false))
+	_movie_frame_limit = int(config.get("movie_frame_limit", 0))
+	if OS.has_feature("movie") and bool(config.get("capture_audio", false)):
+		# Only this explicit editor-only isolated recording session may render an
+		# offline soundtrack while unfocused. Normal gameplay retains focus mute.
+		farm_scene.window_activity.foreground_changed.disconnect(farm_scene.farm_audio.set_foreground)
+		farm_scene.farm_audio.set_foreground(true)
+	if _farm_demo or _courtyard_demo:
 		_farm_now = farm_scene.clock.call()
 		farm_scene.clock = func() -> float: return _farm_now
+	if _courtyard_demo:
+		var fixture: Dictionary = farm_scene.farm_state.snapshot()
+		fixture.harvested = {"greens": 9, "radish": 6}
+		for index in 6:
+			var id: String = farm_scene.farm.field_id(index)
+			fixture.fields[id] = {"crop_id": "greens" if index < 3 else "radish", "growth_seconds": [0.0, 0.6, 1.0][index % 3] * (1800.0 if index < 3 else 5400.0), "watered": false, "last_settled_utc_seconds": _farm_now}
+		if not farm_scene.farm_state.restore_snapshot(fixture):
+			_fail("The isolated courtyard recording fixture is invalid.")
+			return
+		farm_scene.decoration_state.unlock(fixture.harvested)
+		farm_scene.refresh_farm()
+		farm_scene._save_farm()
+		farm_scene.atmosphere.set_preview_hour(12.0)
 	# Movie Maker advances the simulation by 1/60 s for each saved frame.
 	# It does not wait for the live encoder's handshake.
 	_started = OS.has_feature("movie")
@@ -72,6 +94,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# MovieMaker must mix after playback destruction before its fixed-frame quit.
+	# Release only the recording audio in the final three frames; keep the image
+	# and exact requested frame count. Ordinary game lifecycle is unaffected.
+	if OS.has_feature("movie") and _movie_frame_limit > 0 and Engine.get_process_frames() >= _movie_frame_limit - 3:
+		_release_recording_audio()
 	_poll_elapsed += delta
 	if _poll_elapsed >= 0.1:
 		_poll_elapsed = 0.0
@@ -85,6 +112,9 @@ func _process(delta: float) -> void:
 	if not _started or _stopping or not _demo:
 		return
 	_elapsed += delta
+	if _courtyard_demo:
+		_run_courtyard_demo(delta)
+		return
 	if _farm_demo:
 		_run_farm_demo(delta)
 		return
@@ -137,6 +167,57 @@ func _run_farm_demo(delta: float) -> void:
 		_stage = 6
 
 
+func _run_courtyard_demo(delta: float) -> void:
+	var layout: Node3D = farm_scene.decoration_layout
+	if _stage == 0 and _elapsed >= 4.0:
+		farm_scene._focus_field(2)
+		_stage = 1
+	elif _stage == 1 and _elapsed >= 6.5:
+		farm_scene._select_tool("harvest")
+		farm_scene._apply_tool()
+		_stage = 2
+	elif _stage == 2 and _elapsed >= 9.0:
+		_stage = 3
+	elif _stage == 3:
+		farm_scene.camera.drag(Vector2(-16.7, 0.0) * delta, false)
+		if _elapsed >= 14.0:
+			farm_scene._return_overview()
+			_stage = 4
+	elif _stage == 4 and _elapsed >= 18.0:
+		farm_scene._begin_decoration()
+		layout.select_item("pot")
+		layout.preview_at("ground_03")
+		_stage = 5
+	elif _stage == 5 and _elapsed >= 21.0:
+		layout.confirm_preview()
+		_stage = 6
+	elif _stage == 6 and _elapsed >= 23.0:
+		layout.select_item("flowerpot")
+		layout.preview_at("ground_04")
+		_stage = 7
+	elif _stage == 7 and _elapsed >= 26.0:
+		layout.confirm_preview()
+		_stage = 8
+	elif _stage == 8 and _elapsed >= 28.0:
+		layout.select_item("lantern")
+		layout.preview_at("hanging_02")
+		_stage = 9
+	elif _stage == 9 and _elapsed >= 31.0:
+		layout.confirm_preview()
+		_stage = 10
+	elif _stage == 10 and _elapsed >= 34.0:
+		layout.finish_mode()
+		_stage = 11
+	elif _stage == 11 and _elapsed >= 36.0:
+		farm_scene.atmosphere.set_preview_hour(21.0)
+		_write_json("courtyard-demo-result.json", {
+			"fixture_harvested": {"greens": 9, "radish": 6},
+			"fixture_hours": [12, 21], "farm": farm_scene.farm_state.snapshot(),
+			"decorations": farm_scene.decoration_state.snapshot(), "saved": not farm_scene._save_failed
+		})
+		_stage = 12
+
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F9:
 		_request_stop("user_f9")
@@ -149,7 +230,16 @@ func _request_stop(reason: String) -> void:
 	_stopping = true
 	_write_json("stop.json", {"reason": reason})
 	if OS.has_feature("movie"):
+		_release_recording_audio()
+		await get_tree().process_frame
+		await get_tree().process_frame
 		get_tree().quit()
+
+
+func _release_recording_audio() -> void:
+	if is_instance_valid(farm_scene.farm_audio):
+		farm_scene.farm_audio.free()
+		farm_scene.farm_audio = null
 
 
 func _fail(message: String) -> void:

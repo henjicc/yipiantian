@@ -1,6 +1,6 @@
 # 开发前准备与环境验证
 
-> 环境首次核验：2026-09-16；Godot 基础配置与种植闭环：2026-09-17。目标为 Windows 窗口版三维农场；六田种植、保存与离线回访已通过开发验证，正式环境仍在制作。
+> 环境首次核验：2026-09-16；正式院落与种植布置闭环：2026-09-17。目标为 Windows 窗口版三维农场；六田、三件装饰、保存回访及昼夜声音已集成，最终界面、焦点细节和成品性能按任务继续验收。
 
 ## Godot 安装与日常入口
 
@@ -14,7 +14,7 @@
 
 ## 工程基线与验证边界
 
-- `Game/project.godot` 使用 GDScript 标准版，Forward+ / Vulkan，1280×720 可调整普通窗口；已有六田简易场景、Tripo 青菜与聚焦镜头。当前是布局和手感确认原型，不锁定最终美术。
+- `Game/project.godot` 使用 GDScript 标准版，Forward+ / Vulkan，1280×720 可调整普通窗口；已接入六田两作物三阶段、正式江南院落与聚焦镜头。实景与固定参考的对照见 3.3 交接，最终界面仍按 4.1 推进。
 - 模型交接采用显式 GLB；项目关闭 `.blend` 自动导入，编辑源文件保留在 `ArtSource/`。
 - 已核验版本、完成资源导入和 Windows x86_64 release 导出，过程退出码为 0。工程直接运行、导出后的独立程序均以 Forward+ / Vulkan 在 RTX 4090 上启动，并在指定迭代数后正常退出，日志无错误。本地日志为 `.local/logs/godot-run.log`、`godot-player.log`；仅证明空工程启动与导出链路可用，不代表画面、窗口交互、玩法或性能验收。
 - 未配置 CI 或第三方测试框架。纯规则 `tests/farm_state_test.gd` 的78项断言与主场景交互回归已通过；2.3 新增真实文件存储及场景恢复验证，包含只读主档替换失败保留旧字节。正式测试入口与覆盖范围随各任务交接维护，完整院落及后台性能尚待验收。
@@ -35,13 +35,19 @@
 
 ## 可复用的开发经验
 
-农事输入验证：`& ./scripts/godot.ps1 Run -ExtraArgs @('--script', (Join-Path $PWD 'tests/farm_interaction_test.gd'))`；需截图时预先建立隔离目录，再追加 `--` 与 `--screenshots=<绝对目录>`。Godot 4.7.2 实窗通过 42 项行为／布局断言与 6 张截图，覆盖整田种植闭环、工具取消、过渡和拖动防误触、原生弹窗键盘选择。当前操作为先点田聚焦、选作物／工具、再点同田；右键／Esc 先取消工具再返回，弹窗优先关闭；中键转动、Shift＋中键平移、滚轮缩放。此切片尚未保存，界面已明示；阶段替身位置见 [2.2 交接](task/首个可发布版本/handoffs/2.2-handoff.md)。
+农事输入验证：`& ./scripts/godot.ps1 Run -ExtraArgs @('--script', (Join-Path $PWD 'tests/farm_interaction_test.gd'))`；需截图时预先建立隔离目录，再追加 `--` 与 `--screenshots=<绝对目录>`。Godot 4.7.2 正式场景回归通过43项行为／布局断言，覆盖整田种植闭环、工具取消、过渡和拖动防误触、原生弹窗键盘选择。当前操作为先点田聚焦、选作物／工具、再点同田；右键／Esc 先取消工具再返回，弹窗优先关闭；中键转动、Shift＋中键平移、滚轮缩放。动作已自动保存；原交互设计见 [2.2 交接](task/首个可发布版本/handoffs/2.2-handoff.md)，正式资产及布置见 [3.3 交接](task/首个可发布版本/handoffs/3.3-handoff.md)。
 
 本机 Godot 4.7.2 弹窗测试：场景输入用 `root.push_input(event)`，原生 PopupMenu 键盘事件须设置 `window_id = popup.get_window_id()` 后经 `Input.parse_input_event(event)` 分发。鼠标打开下拉时焦点可能为 -1，第一下 Down 才到第一项；读取实际焦点后导航，不直接发选择信号冒充用户输入。Esc 关闭弹窗及第二项选择已在实际窗口验证。
 
 纯农场规则验证：`& ./scripts/godot.ps1 Run -ExtraArgs @('--headless', '--script', (Join-Path $PWD 'tests/farm_state_test.gd'))`。规则从调用者接收 UTC 秒，测试不改系统时钟或玩家存档。状态与静态定义返回深拷贝，无效动作在候选副本结算后拒绝，整个权威状态不变；自然时间推进调用独立 `settle()`。界面不要将结算的 `changed_fields` 非空等同于模型阶段变化，空田时间基准也会更新。状态接口与存档接入边界见 [2.1 交接](task/首个可发布版本/handoffs/2.1-handoff.md)。
 
 磁盘和场景恢复分别使用 `tests/farm_store_test.gd`、`tests/farm_storage_scene_test.gd`；所有测试先注入 `.local/verification/` 下独立存储，再把主场景入树。正式存档为 `user://farm/`，Windows默认位于 `%APPDATA%/Godot/app_userdata/我有一片田/farm/`。未知版本、损坏或写入失败不能当首次启动，具体恢复与重试语义见 [2.3交接](task/首个可发布版本/handoffs/2.3-handoff.md)。
+
+3.3 将外壳升级为 v2，统一保存 `farm` 与 `decorations`；两参数必须显式传入。读取 v1 只补已获得的装饰解锁、不自动摆放，首次升级写入前按原文 SHA-256 保留一份不可变原件，失败重试不重复归档。`tests/decoration_state_test.gd` 验证门槛、位置和迁移47项，`decoration_interaction_test.gd` 实窗验证31项，`complete_scene_test.gd` 验证正式六阶段和镜头34项。界面偏好单独保存，不为偏好更改农场格式。
+
+正式装饰槽的可见性用环境实际网格的 `TriangleMesh` BVH 与 AABB 预筛判断，不穿透屋顶或树叶。启动时构造共享网格缓存，布置／镜头事件只查询，不每帧重建；本机八槽热查询合计904微秒，原约64毫秒的冷构造已移出点击路径。切换 Mesh 实例或资源时需刷新缓存；仅自动 LOD bias 改动不改变引用。
+
+昼夜／声音验证入口为 `tests/atmosphere_test.gd`（独立41项）和 `tests/atmosphere_scene_test.gd`（正式场景23项）。前后台观察不暂停农场计时；后台音频暂停、帧率最多15，回来恢复用户设置。`day_night.gd` 接管水面的 `material_override` 并同步远景色，不能只替换被 override 遮住的表面材质。音轨来源、响度与循环证据见 [3.4交接](task/首个可发布版本/handoffs/3.4-handoff.md)；主观听感未由模型验收。
 
 普通发行程序验证入口：`./tests/start-isolated-game.ps1 -Directory (Join-Path $PWD '.local/verification/<本次目录>') -Phase sow`。该入口只给子进程设置 APPDATA／LOCALAPPDATA，持有该进程直到实际关窗并保存日志、退出码和快照；先核对隔离目录中产生了预期主档，再执行操作。Godot 4.7.2 release 本次静默忽略外部 `--script`，不能拿这个参数宣称已跑测试驱动。实际采用普通发行窗口的原生点击与关闭；需截图时 `tests/native-game-window.ps1 -ProcessId <启动器返回PID> -Action capture -Output <绝对PNG路径>`，其 `click` 使用已观察到的客户区坐标，`close` 请求程序正常退出，均限定已知进程。离线夹具仅在隔离进程退出后调整副本UTC基准并保留原件，不能改系统时钟或玩家档。
 
@@ -128,11 +134,13 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 
 存档闭环里程碑可加 `-FarmDemo -Seconds 28`：播种、浇水、受控推进1440秒、收获与保存使用独立演示存档，片中需注明不是实际等待。普通运行不加载录制逻辑，发行排除 `development/*` 且拒绝录制参数；录制目录只允许项目 `.local/recordings/` 内，防止演示改到玩家档。
 
+完整院落里程碑用 `-CourtyardDemo -WithAudio -Seconds 40`：六阶段全景、收获解锁、三件装饰确认及夜景。初始累计青9／萝6、作物阶段和12／21点是隔离演示夹具，动作与保存走普通场景接口；不是实际等待或玩家进度。`-WithAudio` 仅支持离线演示，使用 Godot 内部混音转 AAC／48kHz／双声道／192kbps；校验非静音和音视频时长差，不采集麦克风或其他程序。未提供主观听感结论。
+
 - **自动展示 `-Demo`**：采用 Godot Movie Maker，以固定 1/60 秒时间步逐帧输出，再用 NVIDIA NVENC 编码 H.264。镜头停留 4 秒、聚焦 1.8 秒、近景停留、小角度转动约 15°、返回全景与收尾；默认 24 秒。这是当前游戏场景的离线演示渲染，不能作为人工操作或实时性能证明，不提高游戏画质设置。生成可能比视频时长更久。
 - **手动操作（不加 `-Demo`）**：保留 Windows.Graphics.Capture 按 HWND 实时捕获本次游戏窗口。当前机器这条链路仍存在重复帧风险，输出会提示，元数据标为 `manual_review_required`；预览通过前不作为流畅成片。不能把自动演示的修复说成实时采集问题已解决。普通交互过渡仍为 0.75 秒。
 - `-Seconds 40` 设置视频时长（2–120 秒，自动演示至少 24 秒）；游戏中 F9 提前结束，Esc 仍返回全景。完成后只关闭此次实例，保留用户原有游戏与编辑器。提前结束的演示也需人工预览。
 - 默认选择一块真实 3840×2160 屏幕；`-Screen 1` 指定第二屏（从 0 开始）。独占全屏、无标题栏；不更改系统分辨率，不放大低分辨率画面。仅 `movie` 特性下的窗口尺寸覆盖设为 4K，让影片初始化即取得正确尺寸，保留 1280×720 的 UI 逻辑尺度；本机单独传 `--resolution` 后再全屏不足以保证影片初始尺寸。
-- 成片规格为 MP4 / H.264 High / yuv420p / 3840×2160 / 60 CFR，NVENC `p5` / `hq` / VBR `CQ18`，每 120 帧关键帧，BT.709 标记与 faststart。当前不录声音。自动展示的 AVI / MJPEG 中间文件由引擎生成，最终 H.264 压缩使用显卡；不能称整个流程都在 GPU 上。中间文件临近 AVI 的 4 GB 上限时中止并提示缩短片段；成功后删除该临时 AVI，失败时留在 `.local/recordings/` 会话目录供排错。
+- 成片规格为 MP4 / H.264 High / yuv420p / 3840×2160 / 60 CFR，NVENC `p5` / `hq` / VBR `CQ18`，每 120 帧关键帧，BT.709 标记与 faststart。默认无声，显式 `-WithAudio` 加入游戏混音。自动展示的 AVI / MJPEG 中间文件由引擎生成，最终 H.264 压缩使用显卡；不能称整个流程都在 GPU 上。中间文件临近 AVI 的 4 GB 上限时中止并提示缩短片段；成功后删除该临时 AVI，失败时留在 `.local/recordings/` 会话目录供排错。
 - 视频、中文编号 / 时间 / 节点名称、剪辑说明、元数据、规格和诊断放 `制作留档/05_开发录屏/`，整个目录不入 Git。完整演示必须通过格式、全部展示时间戳及运动区间的近重复画面检查，再以正式文件名加入索引；失败保留 `待校验.mp4`。手动片段明确需要复核。缺少 NVENC / 4K 屏幕时失败，不自动改为软件 H.264、低分辨率放大或整个桌面捕获。
 
 **本机依赖。** Godot 版本以 `.godot-version` 为准，沿用控制台入口检查版本，实际启动匹配 GUI 程序以核验 PID / HWND。系统 FFmpeg 8.0.1 保留；项目隔离使用 `.local/tools/ffmpeg/ffmpeg-9.0.1-essentials_build/bin/ffmpeg.exe` 及同目录 `ffprobe.exe`，不修改 PATH、不打包进游戏。来自 [Gyan Windows builds](https://www.gyan.dev/ffmpeg/builds/) release essentials 7z，归档 SHA-256 为 `49a73bdf0850092a252ac4641d922f3048d63ed113e196cc65ce1e4f7fb33e85`，GPLv3 许可与 README 同目录保留。其他路径用 `-FFmpegPath` 指定；实时路径还要求 `gfxcapture`。

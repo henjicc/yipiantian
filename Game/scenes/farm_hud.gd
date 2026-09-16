@@ -8,6 +8,7 @@ signal reset_requested
 signal retry_requested
 signal recovery_requested
 signal exit_requested
+signal decoration_requested
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const INK := Color("465650")
@@ -24,9 +25,11 @@ var _storage_message: Label
 var _retry: Button
 var _recover: Button
 var _exit: Button
+var _view_controls: HBoxContainer
 
 
 func _ready() -> void:
+	layer = 10
 	var root := Control.new()
 	root.name = "Layout"
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -38,6 +41,15 @@ func _ready() -> void:
 	theme.default_font = font
 	theme.default_font_size = 18
 	root.theme = theme
+	var left_plate := _status_plate(root)
+	left_plate.position = Vector2(18, 12)
+	left_plate.size = Vector2(570, 110)
+	var right_plate := _status_plate(root)
+	right_plate.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	right_plate.offset_left = -348
+	right_plate.offset_right = -18
+	right_plate.offset_top = 18
+	right_plate.offset_bottom = 68
 	var title := _label(root, "我有一片田", 26)
 	title.position = Vector2(30, 22)
 	_status = _label(root, "全景", 19)
@@ -95,17 +107,21 @@ func _ready() -> void:
 		button.pressed.connect(func() -> void: tool_requested.emit(item[0]))
 		_buttons[item[0]] = button
 	var bar := HBoxContainer.new()
+	_view_controls = bar
 	bar.name = "ViewControls"
 	root.add_child(bar)
 	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	bar.offset_left = -148
-	bar.offset_right = 148
+	bar.offset_left = -225
+	bar.offset_right = 225
 	bar.offset_top = -60
 	bar.offset_bottom = -16
 	bar.add_theme_constant_override("separation", 12)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_button(bar, "全景", 142).pressed.connect(func() -> void: overview_requested.emit())
 	_button(bar, "视角复位", 142).pressed.connect(func() -> void: reset_requested.emit())
+	var decorate := _button(bar, "布置", 142)
+	decorate.name = "Decorate"
+	decorate.pressed.connect(func() -> void: decoration_requested.emit())
 	_build_storage_overlay(root)
 
 
@@ -149,6 +165,19 @@ func _build_storage_overlay(root: Control) -> void:
 	_storage_overlay.hide()
 
 
+func _status_plate(parent: Control) -> Panel:
+	var panel := Panel.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.94, 0.91, 0.84, 0.93)
+	style.set_corner_radius_all(14)
+	style.border_color = Color("b4ad94")
+	style.set_border_width_all(1)
+	panel.add_theme_stylebox_override("panel", style)
+	parent.add_child(panel)
+	return panel
+
+
 func show_storage_issue(kind: String, unsaved: bool) -> void:
 	_session.text = "尚未保存" if unsaved else "存档未能读取"
 	_storage_message.text = "保存未完成，最新进度仍在本次窗口中。请重试保存。" if unsaved else {
@@ -166,6 +195,13 @@ func show_storage_issue(kind: String, unsaved: bool) -> void:
 func show_saved() -> void:
 	_session.text = "已保存"
 	_storage_overlay.hide()
+
+
+func show_decoration_mode(active: bool) -> void:
+	_view_controls.visible = not active
+	_tools.visible = not active and not _status.text.begins_with("全景")
+	_feedback.visible = not active
+	_tool_status.visible = not active
 
 
 func show_state(field: Dictionary, harvested: Dictionary, tool: String, crop_id: String, traveling: bool) -> void:
@@ -212,6 +248,12 @@ func clear_feedback() -> void:
 	_feedback.text = ""
 
 
+func show_unlocks(item_ids: Array[String]) -> void:
+	const Decorations = preload("res://farm/decoration_catalog.gd")
+	for item_id: String in item_ids:
+		_feedback.text += " · %s已解锁" % Decorations.ITEMS[item_id].name
+
+
 func _label(parent: Control, text: String, font_size: int) -> Label:
 	var label := Label.new()
 	label.text = text
@@ -231,7 +273,7 @@ func _button(parent: Control, text: String, width: float) -> Button:
 	return button
 
 
-func _style_button(button: BaseButton) -> void:
+static func _style_button(button: BaseButton) -> void:
 	button.add_theme_color_override("font_color", INK)
 	button.add_theme_color_override("font_focus_color", INK)
 	button.add_theme_color_override("font_hover_color", Color("354c3d"))

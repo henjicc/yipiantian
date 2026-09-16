@@ -2,7 +2,8 @@ extends RefCounted
 ## Versioned local storage. This owner serializes writes; the farm owns all gameplay rules.
 
 const FarmState = preload("res://farm/farm_state.gd")
-const VERSION: int = 1
+const Decorations = preload("res://farm/decoration_state.gd")
+const VERSION: int = 2
 const MAX_BYTES: int = 65536
 const MAIN: String = "farm.json"
 const BACKUP: String = "farm.backup.json"
@@ -25,7 +26,7 @@ func load_state() -> Dictionary:
 	var primary: Dictionary = _read(MAIN)
 	if primary.kind == "valid":
 		_admit(primary.text, false)
-		return {"ok": true, "kind": "loaded", "farm": primary.farm}
+		return {"ok": true, "kind": "loaded", "farm": primary.farm, "decorations": primary.decorations, "migrated": primary.version < VERSION}
 	if primary.kind == "unsupported" or primary.kind == "io":
 		return _failure(primary.kind)
 	var backup: Dictionary = _read(BACKUP)
@@ -51,12 +52,15 @@ func load_state() -> Dictionary:
 	return _failure("io" if backup.kind == "io" or pending.kind == "io" else "corrupt")
 
 
-func save(farm: Dictionary) -> Dictionary:
+func save(farm: Dictionary, decorations: Dictionary) -> Dictionary:
 	if not _writable:
 		return _failure("not_loaded")
 	var validator := FarmState.new()
 	if not validator.restore_snapshot(farm):
 		return _failure("invalid_state")
+	var decoration_validator := Decorations.new()
+	if not decoration_validator.restore_snapshot(decorations):
+		return _failure("invalid_decorations")
 	if not _safe_paths():
 		return _failure("unsafe_path")
 	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(directory)
@@ -65,10 +69,21 @@ func save(farm: Dictionary) -> Dictionary:
 	var current: Dictionary = _read(MAIN)
 	if not _matches_expected(current):
 		return _failure("changed_on_disk")
+	if current.kind == "valid" and current.version == 1:
+		# Content identity makes retries reuse one immutable pre-upgrade copy.
+		var archive: String = "farm.v1.%s.json" % current.text.sha256_text()
+		if DirAccess.open(directory).is_link(archive):
+			return _failure("preserve_migration")
+		if not FileAccess.file_exists(_path(archive)):
+			var copy_error: Error = DirAccess.copy_absolute(_path(MAIN), _path(archive))
+			if copy_error != OK:
+				return _failure("preserve_migration", copy_error)
+		if FileAccess.get_sha256(_path(MAIN)) != FileAccess.get_sha256(_path(archive)):
+			return _failure("preserve_migration")
 	for filename: String in [BACKUP, BACKUP_PENDING, PENDING]:
 		if _read(filename).kind == "unsupported":
 			return _failure("unsupported")
-	var text: String = JSON.stringify({"version": VERSION, "farm": validator.snapshot()}, "\t")
+	var text: String = JSON.stringify({"version": VERSION, "farm": validator.snapshot(), "decorations": decoration_validator.snapshot()}, "\t")
 	var result: Dictionary = _write_verified(PENDING, text)
 	if not result.ok:
 		return result
@@ -112,8 +127,8 @@ func recover() -> Dictionary:
 	if replace_error != OK:
 		return _failure("recover_replace", replace_error)
 	_admit(source.text, false)
-	print("FARM_LOAD stage=recovered source=%s version=%d" % [state.source, VERSION])
-	return {"ok": true, "kind": "recovered", "farm": source.farm}
+	print("FARM_LOAD stage=recovered source=%s version=%d" % [state.source, source.version])
+	return {"ok": true, "kind": "recovered", "farm": source.farm, "decorations": source.decorations, "migrated": source.version < VERSION}
 
 
 func _read(filename: String) -> Dictionary:
@@ -139,14 +154,21 @@ func _read(filename: String) -> Dictionary:
 	var version: Variant = data.get("version")
 	if not (version is int or version is float) or not is_finite(float(version)) or float(version) != floorf(float(version)):
 		return {"kind": "corrupt"}
-	if version != VERSION:
+	if version != 1 and version != VERSION:
 		return {"kind": "unsupported"}
-	if data.size() != 2 or not data.get("farm") is Dictionary:
+	if data.size() != (2 if version == 1 else 3) or not data.get("farm") is Dictionary:
 		return {"kind": "corrupt"}
 	var validator := FarmState.new()
 	if not validator.restore_snapshot(data.farm):
 		return {"kind": "corrupt"}
-	return {"kind": "valid", "text": text, "farm": validator.snapshot()}
+	var decoration_validator := Decorations.new()
+	if version == 1:
+		# Exact v1 migration: preserve farm and derive earned unlocks, with no placements.
+		# The original v1 bytes remain the backup on the first successful v2 save.
+		decoration_validator.unlock(validator.snapshot().harvested)
+	elif not data.get("decorations") is Dictionary or not decoration_validator.restore_snapshot(data.decorations):
+		return {"kind": "corrupt"}
+	return {"kind": "valid", "version": int(version), "text": text, "farm": validator.snapshot(), "decorations": decoration_validator.snapshot()}
 
 
 func _write_verified(filename: String, text: String) -> Dictionary:
