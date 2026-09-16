@@ -2,9 +2,14 @@ class_name FarmLayout
 extends Node3D
 
 const CROP: PackedScene = preload("res://art/crops/greens/greens_mature.glb")
+const FarmState = preload("res://farm/farm_state.gd")
 const FIELD_SIZE := Vector3(2.6, 0.16, 2.05)
 var fields: Array[StaticBody3D] = []
 var _frames: Array[Node3D] = []
+var _crop_roots: Dictionary = {}
+var _visual_keys: Dictionary = {}
+var _soil_meshes: Dictionary = {}
+var _wet_soil: StandardMaterial3D
 var _rng := RandomNumberGenerator.new()
 var _soil: StandardMaterial3D
 var _wood: StandardMaterial3D
@@ -16,6 +21,7 @@ var _roof: StandardMaterial3D
 func _ready() -> void:
 	_rng.seed = 17
 	_soil = _material("80684d")
+	_wet_soil = _material("62533e")
 	_wood = _material("88704f")
 	_stone = _material("c4baa0")
 	_leaf = _material("839873")
@@ -31,6 +37,46 @@ func _ready() -> void:
 func select_field(index: int) -> void:
 	for i in _frames.size():
 		_frames[i].visible = i == index
+
+
+func field_id(index: int) -> String:
+	return str(fields[index].get_meta("field_id"))
+
+
+func show_field(field: Dictionary) -> void:
+	# A stage/watering change affects visuals; advancing the timestamp alone does not.
+	var key: String = "%s/%s/%s" % [field.crop_id, field.stage, field.watered]
+	if _visual_keys.get(field.id) == key:
+		return
+	_visual_keys[field.id] = key
+	_soil_meshes[field.id].material_override = _wet_soil if field.watered else _soil
+	var crops: Node3D = _crop_roots[field.id]
+	for child: Node in crops.get_children():
+		crops.remove_child(child)
+		child.queue_free()
+	if field.stage == "empty":
+		return
+	# Development stage stand-ins: 3.1 replaces these with the approved stage assets.
+	for a in 3:
+		for b in 3:
+			var crop := CROP.instantiate() as Node3D
+			crop.position = Vector3(-0.8 + a * 0.8, 0.09, -0.65 + b * 0.65)
+			crop.rotation.y = float(a * 3 + b) * 0.23
+			var size_factor: float = {"sprout": 0.28, "young": 0.62, "mature": 1.0}[field.stage]
+			crop.scale = Vector3.ONE * size_factor
+			if field.crop_id == "radish":
+				crop.scale *= Vector3(0.7, 1.1, 0.7)
+				_ball(crops, crop.position + Vector3(0, 0.07, 0), Vector3(0.16, 0.25, 0.16) * size_factor, _stone)
+			crops.add_child(crop)
+	var label := Label3D.new()
+	label.text = "白萝卜 · 阶段示意" if field.crop_id == "radish" else ("阶段示意" if field.stage != "mature" else "可收获")
+	label.position = Vector3(0, 0.55, -0.9)
+	label.font_size = 34
+	label.pixel_size = 0.004
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.modulate = Color("f1ebd8")
+	label.outline_modulate = Color("465650")
+	crops.add_child(label)
 
 
 func _material(hex: String) -> StandardMaterial3D:
@@ -112,9 +158,14 @@ func _make_fields() -> void:
 			body.collision_layer = 1
 			body.collision_mask = 0
 			body.set_meta("field_index", index)
+			body.set_meta("field_id", FarmState.FIELD_IDS[index])
 			add_child(body)
 			fields.append(body)
-			_box(body, Vector3.ZERO, FIELD_SIZE, _soil)
+			_soil_meshes[field_id(index)] = _box(body, Vector3.ZERO, FIELD_SIZE, _soil)
+			var crops := Node3D.new()
+			crops.name = "Crops"
+			body.add_child(crops)
+			_crop_roots[field_id(index)] = crops
 			var collision := CollisionShape3D.new()
 			var shape := BoxShape3D.new()
 			shape.size = Vector3(FIELD_SIZE.x, 0.8, FIELD_SIZE.z)
@@ -133,13 +184,6 @@ func _make_fields() -> void:
 				_box(frame, Vector3(side * 1.39, 0.16, 0), Vector3(0.045, 0.04, 2.3), selected)
 				_box(frame, Vector3(0, 0.16, side * 1.13), Vector3(2.8, 0.04, 0.045), selected)
 			frame.visible = false
-			if index != 3 and index != 1:
-				for a in 3:
-					for b in 3:
-						var crop := CROP.instantiate() as Node3D
-						crop.position = Vector3(-0.8 + a * 0.8, 0.09, -0.65 + b * 0.65)
-						crop.rotation.y = _rng.randf_range(-0.3, 0.3)
-						body.add_child(crop)
 
 
 func _make_house() -> void:

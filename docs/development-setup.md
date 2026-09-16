@@ -35,6 +35,10 @@
 
 ## 可复用的开发经验
 
+农事输入验证：`& ./scripts/godot.ps1 Run -ExtraArgs @('--script', (Join-Path $PWD 'tests/farm_interaction_test.gd'))`；需截图时预先建立隔离目录，再追加 `--` 与 `--screenshots=<绝对目录>`。Godot 4.7.2 实窗通过 42 项行为／布局断言与 6 张截图，覆盖整田种植闭环、工具取消、过渡和拖动防误触、原生弹窗键盘选择。当前操作为先点田聚焦、选作物／工具、再点同田；右键／Esc 先取消工具再返回，弹窗优先关闭；中键转动、Shift＋中键平移、滚轮缩放。此切片尚未保存，界面已明示；阶段替身位置见 [2.2 交接](task/首个可发布版本/handoffs/2.2-handoff.md)。
+
+本机 Godot 4.7.2 弹窗测试：场景输入用 `root.push_input(event)`，原生 PopupMenu 键盘事件须设置 `window_id = popup.get_window_id()` 后经 `Input.parse_input_event(event)` 分发。鼠标打开下拉时焦点可能为 -1，第一下 Down 才到第一项；读取实际焦点后导航，不直接发选择信号冒充用户输入。Esc 关闭弹窗及第二项选择已在实际窗口验证。
+
 纯农场规则验证：`& ./scripts/godot.ps1 Run -ExtraArgs @('--headless', '--script', (Join-Path $PWD 'tests/farm_state_test.gd'))`。规则从调用者接收 UTC 秒，测试不改系统时钟或玩家存档。状态与静态定义返回深拷贝，无效动作在候选副本结算后拒绝，整个权威状态不变；自然时间推进调用独立 `settle()`。界面不要将结算的 `changed_fields` 非空等同于模型阶段变化，空田时间基准也会更新。状态接口与存档接入边界见 [2.1 交接](task/首个可发布版本/handoffs/2.1-handoff.md)。
 
 原型交互检查可在仓库根目录的 PowerShell 会话运行：`& ./scripts/godot.ps1 Run -ExtraArgs @('--headless', '--script', (Join-Path $PWD 'tests/prototype_smoke.gd'))`。不带 `--headless` 可跑有画面的同一组检查。截图参数放在 `--` 后传入 `--screenshots=<已有输出目录>`；截图需有渲染窗口。

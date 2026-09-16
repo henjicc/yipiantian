@@ -1,6 +1,8 @@
 class_name FarmCamera
 extends Camera3D
 
+signal motion_finished
+
 const DEFAULT_POINT := Vector3(0.0, 0.6, 0.0)
 const DEFAULT_VIEW := Vector3(32.0, 34.0, 26.0)
 
@@ -57,6 +59,7 @@ func zoom(amount: float) -> void:
 	_stop_transition()
 	view.z = clampf(view.z + amount, 7.5 if focused else 22.0, 15.0 if focused else 34.0)
 	_apply_pose()
+	motion_finished.emit()
 
 
 func drag(relative: Vector2, pan: bool) -> void:
@@ -72,6 +75,11 @@ func drag(relative: Vector2, pan: bool) -> void:
 		view.x = clampf(view.x - relative.x * 0.18, -12.0, 68.0)
 		view.y = clampf(view.y + relative.y * 0.18, 28.0, 58.0)
 	_apply_pose()
+	motion_finished.emit()
+
+
+func is_transitioning() -> bool:
+	return _transition != null and _transition.is_running()
 
 
 func _move_to(point: Vector3, target_view: Vector3) -> void:
@@ -82,6 +90,7 @@ func _move_to(point: Vector3, target_view: Vector3) -> void:
 	_transition.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	_transition.tween_property(self, "focus_point", point, transition_seconds)
 	_transition.tween_property(self, "view", target_view, transition_seconds)
+	_transition.finished.connect(func() -> void: motion_finished.emit())
 
 
 func _stop_transition() -> void:
