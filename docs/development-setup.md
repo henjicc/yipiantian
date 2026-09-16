@@ -14,10 +14,11 @@
 
 ## 工程基线与验证边界
 
-- `Game/project.godot` 使用 GDScript 标准版，Forward+ / Vulkan，1280×720 可调整普通窗口；主场景只有相机、方向光与环境。当前镜头与背景仅用于空工程启动，不锁定最终美术。
+- `Game/project.godot` 使用 GDScript 标准版，Forward+ / Vulkan，1280×720 可调整普通窗口；已有六田简易场景、Tripo 青菜与聚焦镜头。当前是布局和手感确认原型，不锁定最终美术。
 - 模型交接采用显式 GLB；项目关闭 `.blend` 自动导入，编辑源文件保留在 `ArtSource/`。
 - 已核验版本、完成资源导入和 Windows x86_64 release 导出，过程退出码为 0。工程直接运行、导出后的独立程序均以 Forward+ / Vulkan 在 RTX 4090 上启动，并在指定迭代数后正常退出，日志无错误。本地日志为 `.local/logs/godot-run.log`、`godot-player.log`；仅证明空工程启动与导出链路可用，不代表画面、窗口交互、玩法或性能验收。
-- 未配置 CI 或第三方测试框架；没有玩法脚本测试套件，不声称测试全部通过。Blender / Tripo 进入 Godot 的真实资产、窗口交互、存档与后台性能随对应任务验证。
+- 未配置 CI 或第三方测试框架；已有原型交互冒烟脚本 `tests/prototype_smoke.gd`，尚无农场模拟或存档测试套件，不声称全部玩法通过。Blender / Tripo 进入 Godot 的真实资产、窗口交互、存档与后台性能随对应任务验证。
+- 原型已在 Godot 4.7.2 / RTX 4090 实际渲染，全景、聚焦和 960×600 窗口截图保存在 `.local/prototype-validation/`。真实输入路径测试覆盖点田、GUI 返回、拖动不误选、失焦取消、快速换田、返回途中再选田、恢复微调后的全景以及按钮布局；退出码为 0。Windows release 已重新导出；这不代表种植、存档或低配性能通过。
 - 旧 `Game/` Unity 工程、`.local/unity-validation/`、`.local/foundation/` 与根 Unity 日志已按用户要求删除。Unity / Hub 软件保留，当前工程不再依赖它们。
 
 ## 已有工具环境
@@ -28,11 +29,15 @@
 | Git / PowerShell | Git 2.51.1、LFS 3.7.1、PowerShell 7；仓库级 LFS 已配置，远端尚未指定 |
 | 编辑代码 | Godot 内置脚本编辑器即可；VS Code 已安装，外部补全与断点未验证，不是开工前置条件 |
 | Blender | 5.2.2 LTS；官方 Lab MCP 1.0.3，独立 AI 工作区，见下文 |
-| Tripo | 插件 0.2.2 + CLI 0.4.0；已完成青菜生成与 Blender 检查，Godot 验收待做 |
+| Tripo | 插件 0.2.2 + CLI 0.4.0；青菜经 Blender 整理后已接入 Godot 原型；最终美术与性能验收待做 |
 
 可选 VS Code 集成使用 [Godot 官方组织的 Godot Tools](https://github.com/godotengine/godot-vscode-plugin)，需要编辑器侧语言服务时按其文档配置；不安装旧 Unity 扩展作为 Godot 依赖。
 
 ## 可复用的开发经验
+
+原型交互检查可在仓库根目录的 PowerShell 会话运行：`& ./scripts/godot.ps1 Run -ExtraArgs @('--headless', '--script', (Join-Path $PWD 'tests/prototype_smoke.gd'))`。不带 `--headless` 可跑有画面的同一组检查。截图参数放在 `--` 后传入 `--screenshots=<已有输出目录>`；截图需有渲染窗口。
+
+Godot 4.7.2 本次验证：headless 测试须显式设置根窗口 / Viewport 尺寸，才能用与实际窗口相同的投影坐标测试鼠标输入，不能依赖默认无窗口尺寸。物理拾取放在 `_physics_process`，UI 未消费的输入进入拾取队列；截图等待 `RenderingServer.frame_post_draw` 再读取 Viewport。已通过当前原型实测；参考 [官方射线指南](https://docs.godotengine.org/en/4.7/tutorials/physics/ray-casting.html) 与 [Viewport 文档](https://docs.godotengine.org/en/4.7/classes/class_viewport.html)。
 
 以下保留本机已验证经验及本轮官方文档核验结论。软件更新后只复核相关条目；新经验及时更新本文件，约束见 [规则主动维护](../rules/rule-maintenance.md)。
 
@@ -74,7 +79,7 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 - Codex 已通过自身 CLI 注册全局 MCP 条目 `blender-lab`，以 stdio 启动 `venv/Scripts/blender-mcp.exe`；环境明确指定 Blender 路径、回环地址、端口与 `PYTHONUTF8=1`。当前任务的动态工具列表未自动刷新，本次使用标准 MCP 客户端完成真实协议测试；后续重新加载 Codex 使新增工具进入任务列表。
 - 两块屏幕均检测为 2560×1440，副屏在主屏右侧。实测 AI 窗口位置为 x=2640、y=100，大小 1200×1000；Windows 缩放可能导致应用坐标与物理像素有差异，后续按实际窗口核对。
 
-已通过的验证：读取场景与中文名称、创建七个测试网格并配置材质、保存中文路径 `.blend`、导出 FBX、重开保存文件、完整关闭并重启 AI 工作区后自动连接，以及调用 Blender 自身截图接口检查模型。重启后七个对象保留且文件无未保存修改，端口归属为本次 AI Blender 实例。此前导出的是 FBX；Godot 当前采用 GLB，Blender → GLB → Godot 的完整链路尚未验证，不把已有导出测试视为链路通过。
+已通过的验证：读取场景与中文名称、创建七个测试网格并配置材质、保存中文路径 `.blend`、导出 FBX、重开保存文件、完整关闭并重启 AI 工作区后自动连接，以及调用 Blender 自身截图接口检查模型。重启后七个对象保留且文件无未保存修改，端口归属为本次 AI Blender 实例。此前导出的是 FBX；Godot 当前采用 GLB，现已另用 Tripo 青菜完成 Blender 整理 → GLB → Godot 原型导入与真实画面检查；这只验证该静态资产路径，不涵盖骨骼、复杂材质或所有模型。
 
 测试文件位于被忽略的 `.local/blender-validation/`，包含 `AI连接验证.blend`、`AI连接验证.fbx`、`blender-window.png` 和 MCP 测试结果。它们用于环境验证，不是正式美术资产。系统窗口截图接口本次报 `SetIsBorderRequired / 0x80004002`，已使用 Blender 官方截图工具取得有效画面，不需要关闭系统安全功能。
 
@@ -89,7 +94,7 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 - `--version`、`--help` 与包内参数说明已检查；用户完成国际区（ov）浏览器设备授权，登录进程正常退出。随后 `doctor` 的 Node、认证、API 连通性和余额检查通过，退出码为 0。余额属于实时账号状态，用前查询，不在此复制；本文件不保留一次性代码或令牌。
 - 登录使用浏览器设备授权，凭据由 CLI 存在用户目录 `~/.tripo`；不要求用户把 API Key 发到聊天或写入工程。若账号属于国内区，重新发起 cn 区授权，不能只按用户语言推断账号区域。
 - 后续连接异常或准备使用时，通过 `tripo.cmd doctor --json --no-open` 分别检查认证、API 连通性和余额。CLI 自带的 `tripo ai` 可另接 LLM，但由 Codex 调用普通生成命令不需要再配置一套 LLM 账号。
-- 首次真实生成已完成：获选青菜 PNG → Tripo v3.1 智能低面数模型，一次 40 积分；CLI 等待并下载 GLB、预览和 task.json，Blender 5.2.2 可导入。请求 6000 面，实际 8790 三角形，检查未通过；无缺失纹理。原始顶点拆分造成的非流形统计经内存副本合并诊断后为零，不能直接当作破洞数。模型尚未减面、校准摆放或进入 Godot，不能声称游戏资产验收通过。详细报告在本地 `制作留档/`，可复用取舍见资产工作流。
+- 首次真实生成已完成：获选青菜 PNG → Tripo v3.1 智能低面数模型，一次 40 积分；CLI 等待并下载 GLB、预览和 task.json，Blender 5.2.2 可导入。请求 6000 面，实际 8790 三角形，检查未通过；无缺失纹理。原始顶点拆分造成的非流形统计经内存副本合并诊断后为零，不能直接当作破洞数。该原始结果保留；随后经 Blender 合并重合点、减至 2988 三角形、统一约 0.48 米宽与接地原点，已导入 Godot 原型并查看全景 / 聚焦。整理版静态资产检查通过，最终美术和性能仍未验收。详细报告在本地 `制作留档/`，可复用取舍见资产工作流。
 
 各类资产使用 Godot、Blender、Tripo 的分工、Tripo 内部模型选择及交接验收，统一见 [三维资产工具分工](asset-workflow.md)。用户补充商业推广目标后，作物、可见道具和静态建筑在合理范围内优先采用 Tripo 整体或部件生成；精确拼接与运行效果继续由 Blender / Godot 负责。生成服务仅用于开发，不接进游戏运行逻辑。
 

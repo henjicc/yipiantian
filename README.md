@@ -1,6 +1,6 @@
 # 我有一片田
 
-Windows 普通窗口版三维微缩农场。当前建立开发基础，尚未实现种植玩法；桌面壁纸宿主后置，初期玩法方案见制作基准包，详细开发计划后续制定。
+Windows 普通窗口版三维微缩农场。当前有可运行的简易场景原型：六块田、简化民居、水岸与 Tripo 青菜，可点击聚焦、微调视角和返回全景；供用户确认大概感觉。种植、生长、存档与完整开发暂缓，桌面壁纸宿主后置。
 
 开始制作先看 [制作基准包](docs/design-baseline/README.md)：包含当前玩法、镜头与操作、已确认的工笔淡彩风格、固定参考图与提示词。按商业推广目标，在合理范围内优先用 Tripo 生成资产；具体分工与验收见 [三维资产工作流](docs/asset-workflow.md)。
 
@@ -17,7 +17,11 @@ pwsh -NoProfile -File scripts/godot.ps1 Import
 pwsh -NoProfile -File scripts/godot.ps1 ExportWindows
 ```
 
-也可在 Godot 项目管理器导入 [Game/project.godot](Game/project.godot)，打开 `scenes/main.tscn`，按 F6 运行当前场景或 F5 运行工程。当前场景只有相机、灯光和环境，运行时是空白背景，不代表农场画面。
+也可在 Godot 项目管理器导入 [Game/project.godot](Game/project.godot)，打开 `scenes/main.tscn`，按 F6 运行当前场景或 F5 运行工程。当前展示六田场景原型，36 株青菜是同一成熟资产的重复实例，没有真实生长状态。
+
+操作：左键点击田块聚焦；滚轮缩放；中键拖动微调角度；Shift + 中键拖动平移；“全景”或 Esc 返回上次全景；“视角复位”回默认构图。当前按钮只控制镜头，不包含尚未实现的农事操作。
+
+Windows 导出后可直接运行 `.local/builds/windows/Farm.exe`，同目录 `Farm.pck` 必须保留。原型的真实截图、处理后模型和贡献报告副本在本地 `制作留档/`，不参与 Git 同步。
 
 本机桌面已有 **我有一片田 - Godot** 快捷方式，可直接打开正式工程。
 
