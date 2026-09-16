@@ -1,0 +1,13 @@
+{
+  "date": "2026-09-17",
+  "tool": "built-in image_gen",
+  "purpose": "3.1 single-object model input",
+  "input_order": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+  ],
+  "prompt": "Use case: stylized-concept. Create ONE complete single-object concept for our 3D Jiangnan miniature farm.\nInput 1 is the APPROVED painted crop style, NOT the required plant species: transfer its rounded dimensional shapes, selective fine moss-green contours, pale layered sage-green washes, broad pigment variation and matte volume. Input 2 is the APPROVED world palette and atmosphere only.\nObject: one MATURE WHITE RADISH / DAIKON plant growing in place, visibly NOT bok choy. It has ONE SHORT stout creamy ivory-white tapered root shoulder, smoothly rounded at its top, and FIVE connected upright/outward spreading green leaves gathered at the root crown. The leaves are relatively slender oblong leaves with two or three broad soft round lobes per side (gentle scalloped outline, no tiny serrations), pale slender green petioles, slightly different orientations. Root shoulder is the distinctive visible lower third of the object; leaf cluster is upper two-thirds. Show only a compact blunt lower taper intended to be tucked below soil, NOT a long harvested dangling root. No fine fibrous roots. The white root must be clearly visible between stems and below the leaves, distinguishable from bok choy's many fat leaf stalks.\nRounded simple cartoon geometry with painted gongbi light-colour surface, softly cupped thick leaves, honest three-dimensional overlaps. Avoid photographic botanical veins, mud, skin pores, skinny spiky leaves, glossy plastic or heavy black outlines.\nWeak-perspective three-quarter view slightly above centre, one complete plant, whole base and all leaves inside frame with 15% margins, neutral diffuse lighting, plain clean light grey background or true transparency and only faint contact shadow. No soil or pot, pedestal, landscape, tools, extra objects, labels, calligraphy, text, frames or collage.",
+  "original_output": "%USERPROFILE%\\.codex\\generated_images\\01a0ac03-8c4f-7690-a6b6-6cab4c25ec31\\exec-ebfbc1b9-e766-4769-bd4f-b86e8129ea0b.png",
+  "adopted_path": "ArtSource/Crops/Radish/references/radish_mature.png",
+  "review": "完整单体与连通根部，淡彩色斑、细轮廓及阶段叶数清楚；仅图片验收，三维尚待1.2样片结论后生成。"
+}

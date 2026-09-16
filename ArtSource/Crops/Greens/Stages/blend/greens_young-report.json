@@ -1,0 +1,128 @@
+{
+  "asset": "greens_young",
+  "blender": "5.2.2 LTS",
+  "source": "ArtSource/Crops/Greens/Stages/raw/tripo-out/greens-young-e25fb3c3/model.glb",
+  "settings": {
+    "width": 0.3,
+    "triangles": 2000,
+    "low_triangles": 650
+  },
+  "raw": {
+    "triangles": 5385,
+    "vertices": 5696,
+    "materials": 1,
+    "uv_layers": 1,
+    "non_manifold_edges": 4881,
+    "loose_vertices": 0,
+    "degenerate_faces": 0,
+    "bounds_min": [
+      -0.23581212759017944,
+      -0.5,
+      -0.4823874831199646
+    ],
+    "bounds_max": [
+      0.23385518789291382,
+      0.5,
+      0.480430543422699
+    ]
+  },
+  "high_repair": {
+    "removed_overlap_faces": 1,
+    "filled_faces": 1
+  },
+  "high": {
+    "triangles": 2006,
+    "vertices": 1001,
+    "materials": 1,
+    "uv_layers": 1,
+    "non_manifold_edges": 0,
+    "loose_vertices": 0,
+    "degenerate_faces": 0,
+    "bounds_min": [
+      -0.07841511815786362,
+      -0.15481515228748322,
+      0.0
+    ],
+    "bounds_max": [
+      0.06231042742729187,
+      0.14518484473228455,
+      0.28925657272338867
+    ]
+  },
+  "images": [
+    {
+      "name": "Color_e25fb3c3-b11c-4931-bc55-3aab886577bc",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    }
+  ],
+  "low_repair": {
+    "removed_overlap_faces": 0,
+    "filled_faces": 0
+  },
+  "low": {
+    "triangles": 650,
+    "vertices": 323,
+    "materials": 1,
+    "uv_layers": 1,
+    "non_manifold_edges": 0,
+    "loose_vertices": 0,
+    "degenerate_faces": 0,
+    "bounds_min": [
+      -0.07782045751810074,
+      -0.15464918315410614,
+      0.00011991555220447481
+    ],
+    "bounds_max": [
+      0.06117355823516846,
+      0.14412431418895721,
+      0.28883132338523865
+    ]
+  },
+  "exported": [
+    "Game/art/crops/greens/greens_young.glb",
+    "Game/art/crops/greens/greens_young_low.glb",
+    "ArtSource/Crops/Greens/Stages/blend/greens_young.blend"
+  ],
+  "reimport_high": {
+    "triangles": 2006,
+    "vertices": 2714,
+    "materials": 1,
+    "uv_layers": 1,
+    "non_manifold_edges": 2662,
+    "loose_vertices": 0,
+    "degenerate_faces": 0,
+    "bounds_min": [
+      -0.07841511815786362,
+      -0.15481515228748322,
+      0.0
+    ],
+    "bounds_max": [
+      0.06231042742729187,
+      0.14518484473228455,
+      0.28925657272338867
+    ]
+  },
+  "reimport_low": {
+    "triangles": 650,
+    "vertices": 1110,
+    "materials": 1,
+    "uv_layers": 1,
+    "non_manifold_edges": 1142,
+    "loose_vertices": 0,
+    "degenerate_faces": 0,
+    "bounds_min": [
+      -0.07782045751810074,
+      -0.15464918315410614,
+      0.00011991555220447481
+    ],
+    "bounds_max": [
+      0.06117355823516846,
+      0.14412431418895721,
+      0.28883132338523865
+    ]
+  }
+}

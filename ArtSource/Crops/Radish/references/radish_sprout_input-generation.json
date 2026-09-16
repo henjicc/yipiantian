@@ -1,0 +1,10 @@
+{
+  "date": "2026-09-17",
+  "tool": "built-in image_gen",
+  "intent": "precise-object-edit: remove ground shadow before Tripo",
+  "input": "ArtSource/Crops/Radish/references/radish_sprout.png",
+  "prompt": "Use case: precise-object-edit. Edit ONLY the background of the attached two-leaf radish sprout reference for 3D reconstruction. Preserve the plant exactly: same two rounded heart-shaped leaves, curled dimensional thickness, pale slim stems, single tiny shared ivory base, painted sage-green colour and broad brush pigment pattern, pose and scale.\nCompletely REMOVE the grey ground shadow and all translucent haze / coloured fringe outside the plant. Use one perfectly clean SOLID very light neutral grey (#eceeed) background, no transparency, no gradient and NO shadow. Keep both leaf edges and lowest root-base edge clean and intact.\nDo not repaint or resculpt the sprout, add central leaves, change colour, add a mature radish bulb or add a pedestal/floor. No text or extra objects.",
+  "output": "ArtSource/Crops/Radish/references/radish_sprout_input.png",
+  "original_output": "%USERPROFILE%\\.codex\\generated_images\\01a0ac03-8c4f-7690-a6b6-6cab4c25ec31\\exec-4016fa73-038b-49d6-8db9-322ea9a3e89f.png",
+  "review": "地面灰影和透明晕已消除；保持叶数、连接与植株轮廓，采用为Tripo输入。原图留存。"
+}

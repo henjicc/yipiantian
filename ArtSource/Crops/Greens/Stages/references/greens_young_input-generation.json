@@ -1,0 +1,10 @@
+{
+  "date": "2026-09-17",
+  "tool": "built-in image_gen",
+  "intent": "precise-object-edit: remove ground shadow before Tripo",
+  "input": "ArtSource/Crops/Greens/Stages/references/greens_young.png",
+  "prompt": "Use case: precise-object-edit.\nEdit only the background of this young bok choy single-object reference for 3D reconstruction. Preserve the entire plant exactly: same three outer leaves plus small central leaf, shapes, stems, pale painted sage-green/ivory colours, visible brush pigment pattern, scale, orientation and root connection.\nREMOVE the entire grey ground shadow, including all semitransparent haze and coloured fringe outside the plant. Replace ALL background with perfectly clean flat SOLID very light neutral grey (#eceeed), no transparency, no gradient, no shadow of any kind. The lowest plant base must remain intact and sharply separate from the uniform backdrop. Do not add a floor, pedestal, outline, extra object or text. Do not repaint, resculpt or change the plant.",
+  "output": "ArtSource/Crops/Greens/Stages/references/greens_young_input.png",
+  "original_output": "%USERPROFILE%\\.codex\\generated_images\\01a0ac03-8c4f-7690-a6b6-6cab4c25ec31\\exec-75494ade-46dc-4217-a290-65dfd7612f41.png",
+  "review": "地面灰影和透明晕已消除；保持叶数、连接与植株轮廓，采用为Tripo输入。原图留存。"
+}

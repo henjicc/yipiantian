@@ -1,0 +1,13 @@
+{
+  "date": "2026-09-17",
+  "tool": "built-in image_gen",
+  "purpose": "3.1 single-object model input",
+  "input_order": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+  ],
+  "prompt": "Use case: stylized-concept.\nCreate one complete single-object concept for our 3D Jiangnan miniature farm game.\nInput 1 is the APPROVED close-up style reference: match its rounded broad forms, selective fine moss-green / tea-brown brush contours, layered pale colour washes, controlled pigment variation and softly shaded matte volume.\nInput 2 is the APPROVED world reference: transfer its warm restrained natural-material visual language only, not its scene, UI or lighting.\nObject: one newly sprouted bok choy plant, exactly TWO broad rounded oval seed leaves (cotyledons) forming an open shallow V, each cupped gently with real thickness, attached via two SHORT thick pale ivory-green stems to ONE small shared pale base. Clearly a seedling, not a scaled-down mature rosette: no additional inner leaves, no developed bulb, no true leaf cluster. Friendly solid rounded shapes, sage-grey green leaves with selective brush contours, broad subtle watercolour pigment variation; avoid glossy plastic or photographic veins.\nShow the complete sprout in a weak-perspective three-quarter view slightly above the centre, one leaf turned slightly toward the viewer to show thickness. Base and both leaves entirely in frame, about 65% image occupancy with generous margin. Plain clean neutral light grey background, soft neutral diffuse lighting, only faint contact shadow. No soil, pot, pedestal, trailing root, scene, text, labels, collage, checkerboard, or detached leaf.\nKeep the same botanical paint language as the approved bok choy but make this explicitly a TWO-leaf sprout.",
+  "original_output": "%USERPROFILE%\\.codex\\generated_images\\01a0ac03-8c4f-7690-a6b6-6cab4c25ec31\\exec-90b08fd4-79cf-4e7e-93df-1a599b8016e4.png",
+  "adopted_path": "ArtSource/Crops/Greens/Stages/references/greens_sprout.png",
+  "review": "完整单体与连通根部，淡彩色斑、细轮廓及阶段叶数清楚；仅图片验收，三维尚待1.2样片结论后生成。"
+}

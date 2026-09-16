@@ -1,0 +1,13 @@
+{
+  "date": "2026-09-17",
+  "tool": "built-in image_gen",
+  "purpose": "3.1 single-object model input",
+  "input_order": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+  ],
+  "prompt": "Use case: stylized-concept. Create exactly ONE young WHITE RADISH / DAIKON plant for a 3D Jiangnan miniature farm.\nInput 1 provides APPROVED paint style only: rounded dimensional forms, selective fine moss-green contours, layered pale sage-grey green colour washes, controlled broad pigment variation and matte shaded volume. Input 2 provides the warm restrained world style, not the scene. The required species is RADISH, not bok choy.\nThis is the YOUNG middle growth stage: THREE medium slender oblong true leaves with gentle rounded scalloped lobes, plus one SMALL emerging central leaf. The leaves are more upright and compact than a mature radish, with slender pale green petioles, all attached at one small root crown. At the base clearly show a SHORT SMALL ivory-white root shoulder, about one sixth the total plant height: a subtle rounded thickening, not a fully mature large radish. Root bottom is a simple short blunt taper to tuck into soil; no long trailing roots. The pale root is one unified structure, not many thick bok choy stems.\nShow dimensional curled leaves with thickness, clear complete silhouette, weak-perspective three-quarter view slightly above centre. Keep all leaves and full base inside frame with ample margin. Neutral diffuse light, plain clean neutral light grey background or true transparency; faint contact shadow. Do not include soil, pot, stand, detached leaves, landscape, extra objects, text, watermark or collage. No microveins, photoreal details, glossy plastic, uniform heavy black lines, or faded stone-like grey leaves.",
+  "original_output": "%USERPROFILE%\\.codex\\generated_images\\01a0ac03-8c4f-7690-a6b6-6cab4c25ec31\\exec-72a5438c-7d74-41da-a656-96300a1c473a.png",
+  "adopted_path": "ArtSource/Crops/Radish/references/radish_young.png",
+  "review": "完整单体与连通根部，淡彩色斑、细轮廓及阶段叶数清楚；仅图片验收，三维尚待1.2样片结论后生成。"
+}

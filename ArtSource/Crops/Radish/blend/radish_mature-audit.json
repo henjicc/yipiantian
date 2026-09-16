@@ -1,0 +1,95 @@
+{
+  "actions": [],
+  "armatures": [],
+  "blender_version": "5.2.2 LTS",
+  "failures": [],
+  "meshes": [
+    {
+      "dimensions": [
+        0.336021,
+        0.42,
+        0.408281
+      ],
+      "edges": 4800,
+      "faces": 3200,
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loose_vertices": 0,
+      "material_slots": 1,
+      "modifiers": [],
+      "name": "radish_mature",
+      "non_manifold_edges": 0,
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 3200,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "vertices": 1602
+    },
+    {
+      "dimensions": [
+        0.335123,
+        0.418356,
+        0.406718
+      ],
+      "edges": 1500,
+      "faces": 1000,
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loose_vertices": 0,
+      "material_slots": 1,
+      "modifiers": [],
+      "name": "radish_mature_low",
+      "non_manifold_edges": 0,
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 1000,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "vertices": 502
+    }
+  ],
+  "missing_files": [],
+  "passed": true,
+  "scene": "Scene",
+  "schema_version": 1,
+  "source_file": "D:\\VibeCode\\\u6211\u6709\u4e00\u7247\u7530\\ArtSource\\Crops\\Radish\\blend\\radish_mature.blend",
+  "summary": {
+    "actions": 0,
+    "armatures": 0,
+    "images": 1,
+    "materials": 1,
+    "mesh_objects": 2,
+    "objects": 2,
+    "triangles": 4200
+  },
+  "units": {
+    "scale_length": 1.0,
+    "system": "METRIC"
+  },
+  "warnings": []
+}

@@ -1,0 +1,13 @@
+{
+  "date": "2026-09-17",
+  "tool": "built-in image_gen",
+  "purpose": "3.1 single-object model input",
+  "input_order": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+  ],
+  "prompt": "Use case: stylized-concept. Create exactly ONE single-object concept for our 3D Jiangnan miniature farm game.\nInput 1 is the APPROVED close-up style: match rounded broad shapes, selective fine moss-green brush contours, layered pale sage-grey green colour washes, controlled pigment variation and softly shaded MATTE volume. Input 2 is the world style reference only; do not copy its scene or props.\nObject: a YOUNG bok choy plant, a compact upright OPEN rosette with exactly THREE substantial cupped broad oval leaves and one SMALL tightly folded central leaf bud. The three leaves are raised at differing heights and each connects by a short stout ivory-green stem at ONE stable shared base. It is halfway between a two-leaf sprout and the fully spreading mature bok choy reference. Clearly fewer, more upright leaves with less outward spread; not the complete mature rosette simply miniaturized. Keep colour and brush texture the same crop family as input 1.\nWeak-perspective three-quarter view slightly above centre, clear three-dimensional leaf thickness and natural overlap. Single complete object with all leaves and base inside frame and clear margin, neutral soft diffuse lighting, clean plain light neutral grey background or true transparency, faint contact shadow only.\nNo soil, pot, stand, trailing roots, scene, extra objects, photographic microveins, glossy toy shading, thick black outlines, text, watermark, layout sheet or collage.",
+  "original_output": "%USERPROFILE%\\.codex\\generated_images\\01a0ac03-8c4f-7690-a6b6-6cab4c25ec31\\exec-0225ec1e-2113-4b41-975a-6bcb951f2479.png",
+  "adopted_path": "ArtSource/Crops/Greens/Stages/references/greens_young.png",
+  "review": "完整单体与连通根部，淡彩色斑、细轮廓及阶段叶数清楚；仅图片验收，三维尚待1.2样片结论后生成。"
+}

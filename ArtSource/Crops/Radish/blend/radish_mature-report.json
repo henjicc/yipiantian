@@ -1,0 +1,128 @@
+{
+  "asset": "radish_mature",
+  "blender": "5.2.2 LTS",
+  "source": "ArtSource/Crops/Radish/raw/tripo-out/radish-mature-e139b212/model.glb",
+  "settings": {
+    "width": 0.42,
+    "triangles": 3200,
+    "low_triangles": 1000
+  },
+  "raw": {
+    "triangles": 8379,
+    "vertices": 9376,
+    "materials": 1,
+    "uv_layers": 1,
+    "non_manifold_edges": 8439,
+    "loose_vertices": 0,
+    "degenerate_faces": 0,
+    "bounds_min": [
+      -0.4001956880092621,
+      -0.5,
+      -0.48630136251449585
+    ],
+    "bounds_max": [
+      0.4001957178115845,
+      0.5,
+      0.4843444228172302
+    ]
+  },
+  "high_repair": {
+    "removed_overlap_faces": 0,
+    "filled_faces": 1
+  },
+  "high": {
+    "triangles": 3200,
+    "vertices": 1602,
+    "materials": 1,
+    "uv_layers": 1,
+    "non_manifold_edges": 0,
+    "loose_vertices": 0,
+    "degenerate_faces": 0,
+    "bounds_min": [
+      -0.16769137978553772,
+      -0.20809334516525269,
+      0.0
+    ],
+    "bounds_max": [
+      0.1683293730020523,
+      0.21190664172172546,
+      0.40828055143356323
+    ]
+  },
+  "images": [
+    {
+      "name": "Color_e139b212-b82e-4a6d-8df0-ab35d3f6af0c",
+      "size": [
+        2048,
+        2048
+      ],
+      "packed": true
+    }
+  ],
+  "low_repair": {
+    "removed_overlap_faces": 0,
+    "filled_faces": 0
+  },
+  "low": {
+    "triangles": 1000,
+    "vertices": 502,
+    "materials": 1,
+    "uv_layers": 1,
+    "non_manifold_edges": 0,
+    "loose_vertices": 0,
+    "degenerate_faces": 0,
+    "bounds_min": [
+      -0.1668792963027954,
+      -0.20686225593090057,
+      0.0006297910585999489
+    ],
+    "bounds_max": [
+      0.16824348270893097,
+      0.21149404346942902,
+      0.40734732151031494
+    ]
+  },
+  "exported": [
+    "Game/art/crops/radish/radish_mature.glb",
+    "Game/art/crops/radish/radish_mature_low.glb",
+    "ArtSource/Crops/Radish/blend/radish_mature.blend"
+  ],
+  "reimport_high": {
+    "triangles": 3200,
+    "vertices": 4559,
+    "materials": 1,
+    "uv_layers": 1,
+    "non_manifold_edges": 4534,
+    "loose_vertices": 0,
+    "degenerate_faces": 0,
+    "bounds_min": [
+      -0.16769137978553772,
+      -0.20809334516525269,
+      0.0
+    ],
+    "bounds_max": [
+      0.1683293730020523,
+      0.21190664172172546,
+      0.40828055143356323
+    ]
+  },
+  "reimport_low": {
+    "triangles": 1000,
+    "vertices": 1839,
+    "materials": 1,
+    "uv_layers": 1,
+    "non_manifold_edges": 1920,
+    "loose_vertices": 0,
+    "degenerate_faces": 0,
+    "bounds_min": [
+      -0.1668792963027954,
+      -0.20686225593090057,
+      0.0006297910585999489
+    ],
+    "bounds_max": [
+      0.16824348270893097,
+      0.21149404346942902,
+      0.40734732151031494
+    ]
+  }
+}

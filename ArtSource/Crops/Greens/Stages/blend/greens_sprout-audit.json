@@ -1,0 +1,95 @@
+{
+  "actions": [],
+  "armatures": [],
+  "blender_version": "5.2.2 LTS",
+  "failures": [],
+  "meshes": [
+    {
+      "dimensions": [
+        0.083866,
+        0.14,
+        0.103797
+      ],
+      "edges": 1050,
+      "faces": 700,
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loose_vertices": 0,
+      "material_slots": 1,
+      "modifiers": [],
+      "name": "greens_sprout",
+      "non_manifold_edges": 0,
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 700,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "vertices": 352
+    },
+    {
+      "dimensions": [
+        0.083717,
+        0.139619,
+        0.10311
+      ],
+      "edges": 420,
+      "faces": 280,
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loose_vertices": 0,
+      "material_slots": 1,
+      "modifiers": [],
+      "name": "greens_sprout_low",
+      "non_manifold_edges": 0,
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 280,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "vertices": 142
+    }
+  ],
+  "missing_files": [],
+  "passed": true,
+  "scene": "Scene",
+  "schema_version": 1,
+  "source_file": "D:\\VibeCode\\\u6211\u6709\u4e00\u7247\u7530\\ArtSource\\Crops\\Greens\\Stages\\blend\\greens_sprout.blend",
+  "summary": {
+    "actions": 0,
+    "armatures": 0,
+    "images": 1,
+    "materials": 1,
+    "mesh_objects": 2,
+    "objects": 2,
+    "triangles": 980
+  },
+  "units": {
+    "scale_length": 1.0,
+    "system": "METRIC"
+  },
+  "warnings": []
+}

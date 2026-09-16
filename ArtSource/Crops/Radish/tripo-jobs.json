@@ -1,0 +1,50 @@
+{
+  "date": "2026-09-17",
+  "tool": "Tripo CLI 0.4.0",
+  "model": "v3.1-20260211",
+  "parameters": {
+    "texture": true,
+    "pbr": false,
+    "texture_quality": "standard",
+    "geometry_quality": "standard",
+    "smart_low_poly": true,
+    "texture_alignment": "original_image",
+    "enable_image_autofix": false
+  },
+  "status": "success; all original tasks downloaded and inspected",
+  "jobs": [
+    {
+      "asset": "radish_sprout",
+      "task_id": "bcdef8a0-d7fe-4006-8a1c-ca60d2b73a42",
+      "face_limit": 1500,
+      "input": "ArtSource/Crops/Radish/references/radish_sprout_input.png",
+      "status": "success",
+      "credits_consumed": 40,
+      "created_at": "2026-09-16T21:36:52.927565Z",
+      "completed_at": "2026-09-16T21:39:58.135202Z",
+      "raw_directory": "ArtSource/Crops/Radish/raw/tripo-out/radish-sprout-bcdef8a0"
+    },
+    {
+      "asset": "radish_young",
+      "task_id": "7f303f4b-c2ef-40e7-afad-dc6040e4cdaf",
+      "face_limit": 4000,
+      "input": "ArtSource/Crops/Radish/references/radish_young.png",
+      "status": "success",
+      "credits_consumed": 40,
+      "created_at": "2026-09-16T21:36:52.201243Z",
+      "completed_at": "2026-09-16T21:41:20.913648Z",
+      "raw_directory": "ArtSource/Crops/Radish/raw/tripo-out/radish-young-7f303f4b"
+    },
+    {
+      "asset": "radish_mature",
+      "task_id": "e139b212-b82e-4a6d-8df0-ab35d3f6af0c",
+      "face_limit": 6000,
+      "input": "ArtSource/Crops/Radish/references/radish_mature.png",
+      "status": "success",
+      "credits_consumed": 40,
+      "created_at": "2026-09-16T21:36:52.460502Z",
+      "completed_at": "2026-09-16T21:42:10.759217Z",
+      "raw_directory": "ArtSource/Crops/Radish/raw/tripo-out/radish-mature-e139b212"
+    }
+  ]
+}
