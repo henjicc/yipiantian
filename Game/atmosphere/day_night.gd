@@ -77,14 +77,19 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	_world.environment.ambient_light_sky_contribution = 0.50
 	_world.environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	_world.environment.ssao_enabled = true
-	_world.environment.ssao_radius = 0.42
-	_world.environment.ssao_intensity = 1.8
-	_world.environment.ssao_power = 1.4
+	# A 0.42 m radius averages occlusion over far more than a 3 cm railing post or a
+	# kerb stone, so those contacts produced almost no darkening and every prop met
+	# the ground on a hard line. The radius has to match the contact being drawn.
+	_world.environment.ssao_radius = 0.18
+	_world.environment.ssao_intensity = 3.4
+	_world.environment.ssao_power = 1.6
+	_world.environment.ssao_horizon = 0.035
+	_world.environment.ssao_sharpness = 0.92
 	# Restrained artistic contact darkening in sunlit areas, not a replacement for
 	# cast shadows. In 4.7.2 Forward+, the AO-channel mix also gates this influence.
-	_world.environment.ssao_light_affect = 0.65
+	_world.environment.ssao_light_affect = 0.75
 	_world.environment.ssao_ao_channel_affect = 1.0
-	_world.environment.ssao_detail = 0.7
+	_world.environment.ssao_detail = 1.0
 	_world.environment.ssil_enabled = true
 	_world.environment.ssil_radius = 1.8
 	_world.environment.ssil_intensity = 0.22

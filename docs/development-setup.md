@@ -69,6 +69,14 @@ Godot 4.7.2纯测试经验：`--script ../tests/...` 的 `resource_path` 可为 
 
 第二轮复测（`.local/verification/tone-pass/08-paving/`）：黄昏组暗部0.684%对参考0.687%、p1 0.163对0.169、p99 0.9268对0.928、亮部7.03%对8.20%、饱和p90 0.545对0.514、冷暖均值0.150对0.140，即明度与色彩两个维度已基本对齐。正午组暗部0.365%、细节密度0.0414。剩余无细节面积42.9%仍远高于参考，主要来自开阔水面与天空，属于下一轮水面／远景工作，不能宣称构图信息量已达标。同源码1080p性能烟测164项通过，可见图元由1789707增至1824117（+2%），GPU中位数仍在2.6~5.6毫秒区间，无回归。
 
+田块石边与接触暗部（2026-09-17，rc.5 第三轮）：用户指出压边石"一模一样"且难看，以及杆子与地面接触生硬。压边石原为本仓生成的倒角方块，同一拓扑只改长宽高，放大后必然读成一串一样的面包；改为复用已有的 `art/environment/modules/stone_0..4.glb` 五个 Blender 岸石，按全 360 度偏航、混合形状、不等埋深、少量缺口与偶发小石拼成，全部 `SurfaceTool.append_from` 合并为一份网格供六块田复用（不重新生成法线，保留原始大切面）。远近两档实机对照后定为低平而非圆石：缩放约 0.34~0.46 × 0.30~0.43 × 0.21~0.28，基色 `6f6c5b`；早期较高较亮的版本在全景里读成一圈白色卵石。
+
+接触暗部的关键结论：**Godot 的 SSAO 在结构上画不出细立柱与地面的接触**。用 `Viewport.DEBUG_DRAW_SSAO` 灰度缓冲配合 ssao 开/关、radius 0.18／0.09／0.05 三档实拍对照（`.local/verification/tone-pass/ao-probe/`）：最大亮度差可达 0.43~0.61，但全部落在器皿、簸箕、石头这类宽底物体和轮廓边缘上；立柱脚下的地面始终无遮蔽，因为 SSAO 在 `ssao_radius` 半球内求平均，3 厘米的杆子占的立体角太小。把半径继续缩小只会让遮蔽退化成轮廓描边。因此 SSAO 收到接触尺度（radius 0.18、intensity 3.4、power 1.6、horizon 0.035、detail 1.0、light_affect 0.75）用于宽底物体，另加 `presentation/contact_shading.gd` 投影接触暗池补细立柱。
+
+`contact_shading.gd` 从真实顶点位置提取接触：对注册节点的每个 surface，取落在给定世界高度 ±区间内的顶点（下探 0.16 米、上探 0.10 米，因为立柱常埋进地面，且圆柱在穿过的高度上没有顶点），按 0.20 米网格聚类，按聚类展布决定半径与强度（细立柱强、宽底弱，避免与 SSAO 叠成脏斑），烘进一张 1024² RGBA 贴图并生成 Decal。本院落有两个承载面：地面 0.132 与廊台面 0.41，各烘一张、各用薄盒投影，避免地面暗池跑到廊台边缘上。Decal 的 `cull_mask=2` 是接收层，因此 `_apply_pigment` 把 `veranda` 和 `island_bank` 一起放进第 2 层。注册表在 `courtyard.CONTACT_MODULES`；新增会落地的模块要一并加入，否则它没有接触暗池。
+
+1080p 性能烟测 164 项通过，可见图元 1824117→1928589（+5.7%，来自压边石）、峰值工作集 959→975 MB（两张 1024² 贴图），GPU 中位数仍在 2.2~5.2 毫秒区间。
+
 用户描述的“物体靠近产生暗部”主要对应环境光遮蔽，和光源投影、接触阴影不是同一机制。[Godot Environment](https://docs.godotengine.org/en/4.7/classes/class_environment.html)提供SSAO与SSIL；[UE RVT](https://dev.epicgames.com/documentation/unreal-engine/runtime-virtual-texturing-quick-start-in-unreal-engine)是地形／材质数据混合的一种实现，也需要材质及体积配置，不是任意相交模型自动融合开关。当前采用共享世界坐标材质、窄幅基脚风化贴花与SSAO；不引入新的地形插件或完整GI系统。
 
 当前SSAO使用高质量、全分辨率，半径0.42米，强度1.8、power1.4；阳光区0.65影响属于美术增强，不是物理接触阴影。4.7.2 [Forward+实际着色器](https://github.com/godotengine/godot/blob/4.7.2-stable/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl)还用AO-channel mix插值直接光影响，因此同时设channel affect为1，并用实际成片核验。灰度SSAO检查确认篮底、柱脚、台阶有遮挡；开关对比及固定近景像素断言验证最终图确有适量暗化（篮底平均亮度降低0.0756、柱脚0.0348，以0–1表示）。SSAO仍受屏幕外信息、深度和视角限制，不能代替正确落地、法线、模型连接或烘焙遮蔽；保留建筑硬质轮廓，不能用全局模糊掩盖接缝。

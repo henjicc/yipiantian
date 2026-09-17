@@ -6,6 +6,12 @@ const BACKDROP = preload("res://scenes/environment/backdrop.gdshader")
 const LivingDetails = preload("res://scenes/environment/living_details.gd")
 const PlantWind = preload("res://presentation/plant_wind.gd")
 const GroundCover = preload("res://scenes/environment/ground_cover.gd")
+const ContactShading = preload("res://presentation/contact_shading.gd")
+# World heights of the two surfaces props actually stand on in this courtyard.
+const GROUND_LEVEL := 0.132
+const DECK_LEVEL := 0.41
+# Modules whose feet meet a visible surface and therefore need a contact pool.
+const CONTACT_MODULES := ["veranda", "side_wing", "stone_bridge", "climbing_trellis", "bamboo_fence"]
 const BOAT_ORIGIN := Vector3(9.0,-.50,4.3)
 const ROOT := "res://art/environment/"
 const SLOT_POSITIONS := {
@@ -24,6 +30,7 @@ var _boat: Node3D
 var _floaters: Array[Node3D] = []
 var _floater_origins: Array[Vector3] = []
 var _motion_time: float = 0.0
+var _contact_sources: Array[Node3D] = []
 
 func _ready() -> void:
 	_rng.seed = 32026
@@ -39,6 +46,7 @@ func _ready() -> void:
 	_living=LivingDetails.new();_living.name="LivingDetails";add_child(_living)
 	_living.configure_house(get_node("MainHouse"))
 	_living.attach_boat(_boat)
+	_build_contact_shading()
 
 func _process(delta: float) -> void:
 	_motion_time += delta
@@ -66,11 +74,14 @@ func _module(id: String, at: Vector3, yaw_degrees: float=0, scale_value: Vector3
 	add_child(node)
 	node.position=at; node.rotation.y=deg_to_rad(yaw_degrees); node.scale=scale_value
 	_apply_pigment(node, id)
+	if id in CONTACT_MODULES: _contact_sources.append(node)
 	return node
 
 func _apply_pigment(node: Node, module_id: String = "") -> void:
 	if node is MeshInstance3D:
-		if module_id == "island_bank": node.set_layer_mask_value(2,true)
+		# Layer 2 is the decal receiver set. The veranda joins the island so the
+		# deck-level contact pools land on the platform its posts stand on.
+		if module_id in ["island_bank", "veranda"]: node.set_layer_mask_value(2,true)
 		for surface in node.mesh.get_surface_count():
 			var original: Material = node.get_active_material(surface)
 			if original is StandardMaterial3D:
@@ -168,6 +179,7 @@ func _build_porch_bench(at: Vector3, width: float) -> void:
 	for part in parts:
 		var mesh := MeshInstance3D.new();var shape:=BoxMesh.new();shape.size=part[0];mesh.mesh=shape;mesh.position=part[1]
 		mesh.material_override=material;bench.add_child(mesh)
+	_contact_sources.append(bench)
 
 func _build_plants() -> void:
 	_asset("tree","WestTree",Vector3(-5.8,.13,-3.45),32,.87)
@@ -261,6 +273,17 @@ func _build_distance() -> void:
 	var material:=ShaderMaterial.new();material.shader=BACKDROP
 	material.set_shader_parameter("landscape",load(ROOT+"backdrop/river-distance.png"));backdrop.material_override=material
 	backdrop.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(backdrop)
+
+func _build_contact_shading() -> void:
+	var shading: Node3D = ContactShading.new()
+	shading.name = "ContactShading"
+	add_child(shading)
+	for source: Node3D in _contact_sources:
+		shading.collect(source, [GROUND_LEVEL, DECK_LEVEL])
+	shading.collect(get_node("MainHouse"), [GROUND_LEVEL])
+	shading.collect(_living, [GROUND_LEVEL, DECK_LEVEL])
+	shading.bake()
+
 
 func get_water_surface() -> MeshInstance3D:
 	return _water

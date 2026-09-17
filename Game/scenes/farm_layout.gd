@@ -31,7 +31,7 @@ func _ready() -> void:
 	_ridge = _soil_material("6a5033", 0.0)
 	_coping = ShaderMaterial.new()
 	_coping.shader = PigmentShader
-	_coping.set_shader_parameter("base_color", Color("948f7e"))
+	_coping.set_shader_parameter("base_color", Color("6f6c5b"))
 	_coping.set_shader_parameter("wash_scale", 5.5)
 	_coping.set_shader_parameter("stone_treatment", 1.0)
 	_make_fields()
@@ -199,12 +199,23 @@ func _soil_patch() -> ArrayMesh:
 
 
 func _coping_kerb() -> ArrayMesh:
-	# Laid kerb stones capping the earthen skirt, as the reference beds have. One
-	# shared mesh for all six beds; decoration only, the field collider is unchanged.
+	# Kerb stones laid around each bed. These reuse the five authored stone modules
+	# already used on the island rim rather than a generated block: full yaw, mixed
+	# shapes, uneven bedding depth and real gaps are what stop a kerb reading as a
+	# row of identical loaves. One shared mesh serves all six beds; it is decoration
+	# only and never takes part in collision or cell hit-testing.
+	var stones: Array[Mesh] = []
+	for index: int in 5:
+		var packed: PackedScene = load("res://art/environment/modules/stone_%d.glb" % index)
+		var root: Node3D = packed.instantiate()
+		for node: Node in root.find_children("*", "MeshInstance3D", true, false):
+			stones.append((node as MeshInstance3D).mesh)
+			break
+		root.free()
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 5514
+	rng.seed = 91744
 	var half := Vector2(1.315, 0.995)
 	var runs: Array[Array] = [
 		[Vector2(-half.x, -half.y), Vector2(half.x, -half.y)], [Vector2(half.x, half.y), Vector2(-half.x, half.y)],
@@ -213,32 +224,32 @@ func _coping_kerb() -> ArrayMesh:
 		var start: Vector2 = run[0]
 		var finish: Vector2 = run[1]
 		var span: float = start.distance_to(finish)
-		var count: int = maxi(3, roundi(span / 0.30))
+		var count: int = maxi(3, roundi(span / 0.305))
 		var along: Vector2 = (finish - start) / span
 		var across := Vector2(-along.y, along.x)
 		for i: int in count:
-			var centre: Vector2 = start + along * (span * (i + 0.5) / count) + across * rng.randf_range(-0.012, 0.012)
-			var length: float = span / count * rng.randf_range(0.80, 0.95)
-			var depth: float = rng.randf_range(0.135, 0.175)
-			var top: float = rng.randf_range(0.082, 0.101)
-			var lean: float = rng.randf_range(-0.07, 0.07)
-			var basis := Basis(Vector3(along.x, 0.0, along.y), Vector3.UP, Vector3(across.x, 0.0, across.y)).rotated(Vector3.UP, lean)
-			_kerb_block(surface, Transform3D(basis, Vector3(centre.x, 0.0, centre.y)), Vector3(length, top + 0.145, depth), top)
-	surface.generate_normals()
+			# Corners always carry a stone; elsewhere an occasional gap lets the
+			# earth bank and grass through, as a hand-laid edge actually does.
+			var corner: bool = i == 0
+			if not corner and rng.randf() < 0.05:
+				continue
+			var centre: Vector2 = start + along * (span * (i + 0.5) / count) + across * rng.randf_range(-0.045, 0.030)
+			_kerb_stone(surface, stones, rng, centre, across, 1.18 if corner else rng.randf_range(0.86, 1.08))
+			if rng.randf() < 0.16:
+				_kerb_stone(surface, stones, rng, centre + along * rng.randf_range(0.10, 0.17) + across * rng.randf_range(0.10, 0.16), across, rng.randf_range(0.50, 0.68))
 	return surface.commit()
 
 
-func _kerb_block(surface: SurfaceTool, placement: Transform3D, size: Vector3, top: float) -> void:
-	var half: Vector3 = size * 0.5
-	var base: float = top - size.y
-	var corners: Array[Vector3] = [
-		Vector3(-half.x, base, -half.z), Vector3(half.x, base, -half.z), Vector3(half.x, base, half.z), Vector3(-half.x, base, half.z),
-		Vector3(-half.x * 0.94, top, -half.z * 0.90), Vector3(half.x * 0.94, top, -half.z * 0.90),
-		Vector3(half.x * 0.94, top, half.z * 0.90), Vector3(-half.x * 0.94, top, half.z * 0.90)]
-	var faces: Array[Array] = [[4, 5, 6, 7], [1, 0, 3, 2], [0, 1, 5, 4], [2, 3, 7, 6], [3, 0, 4, 7], [1, 2, 6, 5]]
-	for face: Array in faces:
-		for index: int in [0, 1, 2, 0, 2, 3]:
-			surface.add_vertex(placement * corners[face[index]])
+func _kerb_stone(surface: SurfaceTool, stones: Array[Mesh], rng: RandomNumberGenerator, centre: Vector2, across: Vector2, size: float) -> void:
+	# Source stones are roughly 0.95 x 0.27 x 0.74 metres with their base at y = 0.
+	var mesh: Mesh = stones[rng.randi_range(0, stones.size() - 1)]
+	var scale := Vector3(rng.randf_range(0.34, 0.46) * size, rng.randf_range(0.30, 0.43) * size, rng.randf_range(0.21, 0.28) * size)
+	var basis := Basis.IDENTITY.scaled(scale)
+	basis = basis.rotated(Vector3.UP, rng.randf_range(0.0, TAU))
+	basis = basis.rotated(Vector3(across.x, 0.0, across.y), rng.randf_range(-0.10, 0.10))
+	basis = basis.rotated(Vector3(-across.y, 0.0, across.x), rng.randf_range(-0.09, 0.09))
+	var bedded: float = rng.randf_range(-0.055, -0.008)
+	surface.append_from(mesh, 0, Transform3D(basis, Vector3(centre.x, bedded, centre.y)))
 
 
 func _earthen_bank() -> ArrayMesh:
