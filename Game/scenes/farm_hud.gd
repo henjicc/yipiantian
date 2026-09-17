@@ -12,6 +12,8 @@ signal exit_requested
 signal decoration_requested
 signal settings_requested
 signal free_view_requested
+signal preview_hour_requested(hour: float)
+signal time_preview_opened
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const FarmTheme = preload("res://ui/farm_theme.gd")
@@ -37,6 +39,9 @@ var _recover: Button
 var _exit: Button
 var _view_controls: HBoxContainer
 var _free_view: Button
+var _time_panel: PanelContainer
+var _time_slider: HSlider
+var _preview_minutes: int = -1
 
 
 func _ready() -> void:
@@ -79,6 +84,9 @@ func _ready() -> void:
 	_clock.offset_right = -30
 	_clock.offset_top = 26
 	_clock.offset_bottom = 65
+	if OS.is_debug_build():
+		_clock.mouse_filter = Control.MOUSE_FILTER_STOP
+		_clock.gui_input.connect(_clock_input)
 	_status = _label(root, "全景", 19)
 	_status.name = "FieldStatus"
 	_tag(_status, -162, -120)
@@ -158,6 +166,7 @@ func _ready() -> void:
 		_free_view.offset_top = 140
 		_free_view.offset_bottom = 182
 		_free_view.pressed.connect(func() -> void: free_view_requested.emit())
+		_build_time_preview(root)
 	_build_storage_overlay(root)
 	_update_clock()
 	var timer := Timer.new()
@@ -165,6 +174,61 @@ func _ready() -> void:
 	timer.timeout.connect(_update_clock)
 	add_child(timer)
 	timer.start()
+
+
+func _build_time_preview(root: Control) -> void:
+	_time_panel = PanelContainer.new()
+	_time_panel.name = "DebugTimePreview"
+	root.add_child(_time_panel)
+	_time_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_time_panel.offset_left = -350
+	_time_panel.offset_right = -18
+	_time_panel.offset_top = 196
+	var box := VBoxContainer.new()
+	_time_panel.add_child(box)
+	_time_slider = HSlider.new()
+	_time_slider.name = "TimeSlider"
+	_time_slider.max_value = 1439
+	_time_slider.step = 1
+	_time_slider.custom_minimum_size = Vector2(296, 38)
+	box.add_child(_time_slider)
+	_time_slider.value_changed.connect(func(value: float) -> void:
+		_preview_minutes = int(value)
+		_update_clock()
+		preview_hour_requested.emit(value / 60.0))
+	var actions := HBoxContainer.new()
+	box.add_child(actions)
+	var live := _button(actions, "恢复实时", 160)
+	live.name = "LiveTime"
+	live.pressed.connect(func() -> void:
+		_preview_minutes = -1
+		_update_clock()
+		_sync_time_slider()
+		preview_hour_requested.emit(-1.0))
+	_button(actions, "收起", 110).pressed.connect(hide_time_preview)
+	_time_panel.hide()
+
+
+func _clock_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_clock.accept_event()
+		if _time_panel.visible:
+			hide_time_preview()
+		else:
+			_sync_time_slider()
+			_time_panel.show()
+			time_preview_opened.emit()
+
+
+func _sync_time_slider() -> void:
+	var local := Time.get_datetime_dict_from_system(false)
+	_time_slider.set_value_no_signal(_preview_minutes if _preview_minutes >= 0 else int(local.hour) * 60 + int(local.minute))
+
+
+func hide_time_preview() -> void:
+	if _time_panel != null:
+		_time_panel.hide()
+		_time_slider.release_focus()
 
 
 func _build_storage_overlay(root: Control) -> void:
@@ -360,6 +424,9 @@ func _fit_tag(label: Label) -> void:
 
 func _update_clock() -> void:
 	var local: Dictionary = Time.get_datetime_dict_from_system(false)
+	if _preview_minutes >= 0:
+		local.hour = _preview_minutes / 60
+		local.minute = _preview_minutes % 60
 	_clock.text = "%02d:%02d" % [local.hour, local.minute]
 	_day_icon.texture = SUN if local.hour >= 6 and local.hour < 18 else MOON
 

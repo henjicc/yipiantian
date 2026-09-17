@@ -103,6 +103,11 @@ func _ready() -> void:
 	atmosphere.name = "DayNight"
 	add_child(atmosphere)
 	atmosphere.configure($DirectionalLight3D, $WorldEnvironment, courtyard.get_water_surface())
+	hud.preview_hour_requested.connect(func(hour: float) -> void: atmosphere.set_preview_hour(hour))
+	hud.time_preview_opened.connect(func() -> void:
+		_cancel_input()
+		camera.cancel_free_gesture()
+		decoration_layout.cancel_pointer_gesture())
 	atmosphere.set_backdrop_material(courtyard.get_backdrop_material())
 	atmosphere.window_warmth_changed.connect(courtyard.set_window_warmth)
 	courtyard.set_window_warmth(atmosphere.get_window_warmth())
@@ -120,6 +125,8 @@ func _ready() -> void:
 	add_child(focus_detail)
 	focus_detail.configure(camera, farm.fields, courtyard, decoration_layout)
 	_setup_settings()
+	if OS.has_feature("editor") and OS.get_cmdline_user_args().has("--dev-preview"):
+		_report_preview_ready.call_deferred()
 	var timer := Timer.new()
 	timer.name = "SettlementTimer"
 	timer.wait_time = 1.0
@@ -599,6 +606,9 @@ func _setup_settings() -> void:
 		settings_store = SettingsStore.new()
 	var loaded: Dictionary = settings_store.load_settings()
 	settings_values = loaded.settings
+	if OS.has_feature("editor") and OS.get_cmdline_user_args().has("--dev-preview"):
+		# Development startup overrides the old window preference for this session.
+		settings_values.fullscreen = true
 	if not loaded.ok:
 		_settings_issue = {
 			"corrupt": "设置文件无法读取，已使用默认设置；原件保留。保存设置时会先留存原件。",
@@ -623,6 +633,8 @@ func _apply_settings() -> void:
 	if DisplayServer.get_name() != "headless":
 		var window: Window = get_window()
 		var desired: Window.Mode = Window.MODE_FULLSCREEN if settings_values.fullscreen else Window.MODE_WINDOWED
+		if settings_values.fullscreen and OS.has_feature("editor") and OS.get_cmdline_user_args().has("--dev-preview"):
+			desired = Window.MODE_EXCLUSIVE_FULLSCREEN
 		if window.mode != desired:
 			_cancel_input()
 			window.mode = desired
@@ -634,6 +646,7 @@ func _open_menu() -> void:
 	if game_menu == null or not _loaded or _save_failed:
 		return
 	_cancel_input()
+	hud.hide_time_preview()
 	camera.free_input_enabled = false
 	camera.cancel_free_gesture()
 	decoration_layout.cancel_pointer_gesture()
@@ -682,3 +695,9 @@ func _request_menu_close() -> void:
 	camera.free_input_enabled = true
 	_refresh_hud()
 	hud.get_node("Layout/ViewControls/Settings").grab_focus()
+
+
+func _report_preview_ready() -> void:
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	print("DEV_PREVIEW_READY screen=%d mode=%d size=%s" % [DisplayServer.window_get_current_screen(), get_window().mode, DisplayServer.window_get_size()])

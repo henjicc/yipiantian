@@ -25,6 +25,7 @@ if ($LASTEXITCODE -ne 0 -or -not ([string]$actualVersion).StartsWith($version.Re
 }
 
 $nativeArgs = @('--path', $projectPath)
+$isPreview = $Action -eq 'Run' -and @($ExtraArgs | Where-Object { $_ -in @('--headless', '--script', '-s', '--check-only', '--write-movie', '--quit', '--quit-after', '--editor') }).Count -eq 0
 switch ($Action) {
     'Editor' { $nativeArgs += '--editor' }
     'Run' {
@@ -35,6 +36,7 @@ switch ($Action) {
         if (-not $EnableAudio -and $ExtraArgs -notcontains '--audio-driver') {
             $nativeArgs += @('--audio-driver', 'Dummy')
         }
+        if ($isPreview) { $nativeArgs += '--fullscreen' }
     }
     'Import' { $nativeArgs += @('--headless', '--import') }
     'ExportWindows' {
@@ -44,7 +46,11 @@ switch ($Action) {
     }
 }
 $nativeArgs += $ExtraArgs
-if ($Action -eq 'Editor') {
+if ($isPreview) {
+    $screenIndex = [Array]::IndexOf($nativeArgs, '--screen')
+    $previewScreen = [int]$nativeArgs[$screenIndex + 1]
+    & (Join-Path $PSScriptRoot 'start-dev-game.ps1') -GodotPath $GodotPath -ProjectPath $projectPath -Screen $previewScreen -NativeArgs $nativeArgs
+} elseif ($Action -eq 'Editor') {
     $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
     # Avoid a separate console window for interactive editing.
     $guiPath = $GodotPath -replace '_console\.exe$', '.exe'
