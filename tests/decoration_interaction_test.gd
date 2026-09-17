@@ -25,7 +25,8 @@ func _run() -> void:
 		DirAccess.make_dir_recursive_absolute(captures)
 	var farm := Farm.new(now)
 	var data: Dictionary = farm.snapshot()
-	data.harvested = {"greens": 10, "radish": 6}
+	data.harvested.greens = 10
+	data.harvested.radish = 6
 	farm.restore_snapshot(data)
 	var decoration := Decorations.new()
 	decoration.unlock(data.harvested)

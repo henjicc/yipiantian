@@ -1,18 +1,42 @@
 extends RefCounted
-## Design definitions only. Every returned dictionary is an independent value.
+## September Jiangnan choices; durations and water benefits are game tuning.
 
-const WATER_PROGRESS: float = 0.2
 const YOUNG_PROGRESS: float = 0.35
+const CROPS := {
+	"greens": {"name": "青菜", "minutes": 30, "water": .20},
+	"radish": {"name": "白萝卜", "minutes": 90, "water": .20},
+	"spinach": {"name": "菠菜", "minutes": 45, "water": .24},
+	"lettuce": {"name": "生菜", "minutes": 40, "water": .25},
+	"chrysanthemum": {"name": "茼蒿", "minutes": 35, "water": .22},
+	"coriander": {"name": "香菜", "minutes": 50, "water": .16},
+	"celery": {"name": "芹菜", "minutes": 100, "water": .30},
+	"mustard": {"name": "雪里蕻", "minutes": 65, "water": .22},
+	"tatsoi": {"name": "乌塌菜", "minutes": 60, "water": .24},
+	"carrot": {"name": "胡萝卜", "minutes": 120, "water": .15},
+	"scallion": {"name": "小葱", "minutes": 55, "water": .12},
+	"garlic": {"name": "青蒜", "minutes": 70, "water": .12},
+}
 
 
 static func crop_ids() -> Array[String]:
-	return ["greens", "radish"]
+	var result: Array[String] = []
+	result.assign(CROPS.keys())
+	return result
 
 
 static func definition(crop_id: String) -> Dictionary:
-	match crop_id:
-		"greens":
-			return {"id": "greens", "name": "青菜", "duration_seconds": 1800.0}
-		"radish":
-			return {"id": "radish", "name": "白萝卜", "duration_seconds": 5400.0}
-	return {}
+	if not CROPS.has(crop_id):
+		return {}
+	var crop: Dictionary = CROPS[crop_id]
+	return {"id": crop_id, "name": crop.name, "duration_seconds": crop.minutes * 60.0, "water_progress": crop.water}
+
+
+static func icon_path(crop_id: String) -> String:
+	return "res://art/ui/crops/%s.png" % crop_id if CROPS.has(crop_id) else ""
+
+
+static func total_harvested(harvested: Dictionary) -> int:
+	var total: int = 0
+	for count: int in harvested.values():
+		total += count
+	return total

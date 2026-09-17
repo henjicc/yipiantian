@@ -36,7 +36,7 @@ $info.ArgumentList.Add((Join-Path $profileRoot ($Phase + '.godot.log')))
 $process = [Diagnostics.Process]::Start($info)
 $outputTask = $process.StandardOutput.ReadToEndAsync()
 $errorTask = $process.StandardError.ReadToEndAsync()
-$saveFile = Join-Path $profileRoot 'profile/roaming/Godot/app_userdata/我有一片田/farm/farm.json'
+$saveFile = Join-Path $profileRoot 'profile/roaming/Godot/app_userdata/我有一片田/farm-v4/farm.json'
 $metadata = @{ phase=$Phase; pid=$process.Id; executable=$GamePath; save_file=$saveFile; started=(Get-Date -Format o); status='running' }
 $metadata | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profileRoot ($Phase + '.process.json')) -Encoding utf8
 Write-Output "ISOLATED_GAME_STARTED phase=$Phase pid=$($process.Id) evidence=$profileRoot"

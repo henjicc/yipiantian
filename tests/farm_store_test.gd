@@ -128,102 +128,21 @@ func _run() -> void:
 	var before_future_backup: String = FileAccess.get_file_as_string(first_dir.path_join(Store.MAIN))
 	_expect(not first_store.save(candidate.snapshot(), Decorations.new().snapshot()).ok, "Future backup is not overwritten by older software")
 	_expect(FileAccess.get_file_as_string(first_dir.path_join(Store.BACKUP)) == future and FileAccess.get_file_as_string(first_dir.path_join(Store.MAIN)) == before_future_backup, "Rejecting future backup preserves both files")
-	_test_legacy_migration()
-	_test_v3_boundaries()
+	_test_current_boundaries()
 	for failure: String in failures:
 		push_error(failure)
 	print("FARM_STORE_TEST checks=%d failures=%d root=%s" % [checks, failures.size(), test_root])
 	quit(0 if failures.is_empty() else 1)
 
 
-func _legacy_farm() -> Dictionary:
-	# Genuine v1/v2 shape, authored independently of the v3 migration.
-	var fields: Dictionary = {}
-	for field_id: String in Farm.FIELD_IDS:
-		fields[field_id] = {"crop_id": "", "growth_seconds": 0.0, "last_settled_utc_seconds": 10000.0, "watered": false}
-	fields.field_03 = {"crop_id": "greens", "growth_seconds": 1800.0, "last_settled_utc_seconds": 9000.0, "watered": true}
-	fields.field_04 = {"crop_id": "radish", "growth_seconds": 1200.0, "last_settled_utc_seconds": 9500.0, "watered": true}
-	return {"fields": fields, "harvested": {"greens": 10, "radish": 6}}
-
-
-func _test_legacy_migration() -> void:
-	for version: int in [1, 2]:
-		var folder: String = test_root.path_join("legacy-v%d" % version)
-		DirAccess.make_dir_recursive_absolute(folder)
-		var legacy: Dictionary = _legacy_farm()
-		var decorations := Decorations.new()
-		decorations.unlock(legacy.harvested)
-		decorations.place("pot", "ground_02", 3)
-		decorations.place("lantern", "hanging_04", 0)
-		var payload: Dictionary = {"version": version, "farm": legacy}
-		if version == 2:
-			payload.decorations = decorations.snapshot()
-		var original: String = JSON.stringify(payload, "\t")
-		_write(folder.path_join(Store.MAIN), original)
-		var store := Store.new(folder)
-		var loaded: Dictionary = store.load_state()
-		_expect(loaded.ok and loaded.migrated, "v%d is explicitly migrated" % version)
-		if not loaded.ok:
-			continue
-		_expect(FileAccess.get_file_as_string(folder.path_join(Store.MAIN)) == original, "Loading migration does not modify original")
-		_expect(loaded.farm.harvested == legacy.harvested, "Migration preserves cumulative baskets")
-		for field_id: String in Farm.FIELD_IDS:
-			var cells: Dictionary = loaded.farm.fields[field_id].cells
-			_expect(cells.size() == 16 and cells.cell_06 == legacy.fields[field_id], "Old crop transferred exactly once to cell06")
-			for cell_id: String in Farm.CELL_IDS:
-				if cell_id != "cell_06":
-					_expect(cells[cell_id] == {"crop_id": "", "growth_seconds": 0.0, "last_settled_utc_seconds": legacy.fields[field_id].last_settled_utc_seconds, "watered": false}, "Other fifteen cells retain old time baseline and no crop")
-		if version == 2:
-			_expect(loaded.decorations == decorations.snapshot(), "v2 placements, turns and unlocks preserved")
-		else:
-			_expect(loaded.decorations.lantern.unlocked and loaded.decorations.pot.slot_id == "", "v1 derives earned unlocks without inventing placements")
-		var migrated := Farm.new()
-		migrated.restore_snapshot(loaded.farm)
-		_expect(migrated.harvest("field_03", "cell_06", 9000.0).reward_amount == 1, "One old mature crop yields one basket")
-		_expect(not migrated.harvest("field_03", "cell_07", 9000.0).ok and migrated.snapshot().harvested.greens == 11, "Old visual sixteen plants cannot yield sixteen rewards")
-		# A blocked first v3 write preserves both original main and immutable archive.
-		DirAccess.make_dir_absolute(folder.path_join(Store.PENDING))
-		_expect(not store.save(migrated.snapshot(), loaded.decorations).ok, "Interrupted migration save fails honestly")
-		var archive: String = folder.path_join("farm.v%d.%s.json" % [version, original.sha256_text()])
-		_expect(FileAccess.get_file_as_string(archive) == original and FileAccess.get_file_as_string(folder.path_join(Store.MAIN)) == original, "Migration failure retains exact original and immutable archive")
-		DirAccess.remove_absolute(folder.path_join(Store.PENDING))
-		_expect(store.save(migrated.snapshot(), loaded.decorations).ok, "Migration retry commits current v3 state")
-		var current: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(folder.path_join(Store.MAIN)))
-		_expect(current.version == 3, "Successful migration writes v3 only")
-		var reopened := Store.new(folder)
-		var again: Dictionary = reopened.load_state()
-		_expect(again.ok and not again.migrated and again.farm == migrated.snapshot() and again.decorations == loaded.decorations, "v3 roundtrip does not migrate or award twice")
-		migrated.sow("field_03", "cell_16", "radish", 9000.0)
-		_expect(reopened.save(migrated.snapshot(), loaded.decorations).ok and FileAccess.get_file_as_string(archive) == original, "Later saves never change migration archive")
-		# An existing archive with different bytes blocks overwriting old main.
-		var conflict: String = test_root.path_join("archive-conflict-v%d" % version)
-		DirAccess.make_dir_recursive_absolute(conflict)
-		_write(conflict.path_join(Store.MAIN), original)
-		_write(conflict.path_join(archive.get_file()), "do not overwrite")
-		var conflict_store := Store.new(conflict)
-		var admitted: Dictionary = conflict_store.load_state()
-		_expect(admitted.ok and conflict_store.save(admitted.farm, admitted.decorations).kind == "preserve_migration", "Conflicting immutable archive blocks migration")
-		_expect(FileAccess.get_file_as_string(conflict.path_join(Store.MAIN)) == original and FileAccess.get_file_as_string(conflict.path_join(archive.get_file())) == "do not overwrite", "Archive conflict preserves both byte streams")
-		# Recovery from an actual old backup remains explicit and subsequently migrates.
-		var recovery_dir: String = test_root.path_join("legacy-recovery-v%d" % version)
-		DirAccess.make_dir_recursive_absolute(recovery_dir)
-		_write(recovery_dir.path_join(Store.MAIN), "{broken")
-		_write(recovery_dir.path_join(Store.BACKUP), original)
-		var recovery := Store.new(recovery_dir)
-		_expect(recovery.load_state().kind == "recovery_available", "Legacy backup is offered without replacing broken main")
-		var recovered: Dictionary = recovery.recover()
-		_expect(recovered.ok and recovered.migrated and recovered.farm == loaded.farm, "Explicit old backup recovery exposes migrated cell state")
-		_expect(recovery.save(recovered.farm, recovered.decorations).ok, "Recovered legacy backup can commit v3")
-		_expect(FileAccess.get_file_as_string(recovery_dir.path_join(archive.get_file())) == original, "Recovered old backup also gets immutable migration archive")
-
-
-func _test_v3_boundaries() -> void:
+func _test_current_boundaries() -> void:
 	var farm := Farm.new(10000.0)
 	var data: Dictionary = farm.snapshot()
 	for field_id: String in Farm.FIELD_IDS:
 		for cell_id: String in Farm.CELL_IDS:
 			data.fields[field_id].cells[cell_id] = {"crop_id": "radish", "growth_seconds": 4321.123456789, "last_settled_utc_seconds": 1.7976931348623157e308, "watered": true}
-	data.harvested = {"greens": Farm.MAX_HARVEST_COUNT, "radish": Farm.MAX_HARVEST_COUNT}
+	for crop_id: String in Farm.Crops.crop_ids():
+		data.harvested[crop_id] = Farm.MAX_HARVEST_COUNT
 	var decorations := Decorations.new()
 	decorations.unlock(data.harvested)
 	decorations.place("pot", "ground_04", 3)
@@ -233,27 +152,21 @@ func _test_v3_boundaries() -> void:
 	var text: String = JSON.stringify(payload, "\t")
 	var bytes: int = text.to_utf8_buffer().size()
 	_expect(bytes < Store.MAX_BYTES, "Full 96-cell state with long numeric values fits current bounded read limit")
-	print("FARM_V3_SIZE full_96_cells_bytes=%d max_bytes=%d" % [bytes, Store.MAX_BYTES])
+	print("FARM_CURRENT_SIZE full_96_cells_bytes=%d max_bytes=%d" % [bytes, Store.MAX_BYTES])
 	var full_dir: String = test_root.path_join("full-96")
 	var full_store := Store.new(full_dir)
 	full_store.load_state()
 	_expect(full_store.save(data, decorations.snapshot()).ok, "96-cell mixed-compatible schema saves under existing limit")
 	_expect(Store.new(full_dir).load_state().ok, "96-cell bounded payload roundtrips")
-	for flaw: String in ["missing_cell", "unknown_cell", "legacy_in_v3", "invalid_growth", "invalid_decoration", "v3_in_v2", "bad_legacy"]:
+	for flaw: String in ["missing_cell", "unknown_cell", "invalid_growth", "invalid_decoration"]:
 		var candidate: Dictionary = payload.duplicate(true)
 		match flaw:
 			"missing_cell": candidate.farm.fields.field_06.cells.erase("cell_16")
 			"unknown_cell":
 				candidate.farm.fields.field_06.cells.cell_99 = candidate.farm.fields.field_06.cells.cell_16
 				candidate.farm.fields.field_06.cells.erase("cell_16")
-			"legacy_in_v3": candidate.farm = _legacy_farm()
 			"invalid_growth": candidate.farm.fields.field_02.cells.cell_01.growth_seconds = -1.0
 			"invalid_decoration": candidate.decorations.pot.slot_id = "ground_99"
-			"v3_in_v2": candidate.version = 2
-			"bad_legacy":
-				candidate.version = 2
-				candidate.farm = _legacy_farm()
-				candidate.farm.fields.field_02.watered = true
 		var folder: String = test_root.path_join(flaw)
 		DirAccess.make_dir_recursive_absolute(folder)
 		var original: String = JSON.stringify(candidate)
@@ -261,10 +174,10 @@ func _test_v3_boundaries() -> void:
 		var store := Store.new(folder)
 		_expect(store.load_state().kind == "corrupt" and not store.save(data, decorations.snapshot()).ok, "Malformed or mislabeled schema locks writes: " + flaw)
 		_expect(FileAccess.get_file_as_string(folder.path_join(Store.MAIN)) == original, "Rejected payload preserved: " + flaw)
-	# v3 mixed-cell data and decoration state persist together, including cell16.
+	# Current mixed-cell data and decoration state persist together, including cell16.
 	var mixed := Farm.new(20000.0)
-	mixed.sow("field_01", "cell_01", "greens", 20000.0)
-	mixed.sow("field_01", "cell_16", "radish", 20000.0)
+	mixed.sow("field_01", "cell_01", "celery", 20000.0)
+	mixed.sow("field_01", "cell_16", "garlic", 20000.0)
 	mixed.water("field_01", "cell_16", 20001.0)
 	var mixed_dir: String = test_root.path_join("mixed-roundtrip")
 	var mixed_store := Store.new(mixed_dir)

@@ -29,7 +29,8 @@ func _run() -> void:
 	var store = Store.new(output_dir.path_join("farm-%d" % Time.get_ticks_usec()))
 	store.load_state()
 	var data: Dictionary = Farm.new(now).snapshot()
-	data.harvested = {"greens": 10, "radish": 6}
+	data.harvested.greens = 10
+	data.harvested.radish = 6
 	for index: int in 6:
 		for cell_index: int in Farm.CELL_IDS.size():
 			var cell: Dictionary = data.fields[Farm.FIELD_IDS[index]].cells[Farm.CELL_IDS[cell_index]]

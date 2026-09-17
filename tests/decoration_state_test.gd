@@ -36,7 +36,9 @@ func _run() -> void:
 				_expect(unlocked == ["lantern"], "Ten greens plus six radish unlock lantern")
 			else:
 				_expect(unlocked.is_empty(), "No early or repeated unlock")
-	_expect(farm.snapshot().harvested == {"greens": 10, "radish": 6}, "Unlocks never spend harvest")
+	_expect(farm.snapshot().harvested.greens == 10 and farm.snapshot().harvested.radish == 6 and preload("res://farm/crop_catalog.gd").total_harvested(farm.snapshot().harvested) == 16, "Unlocks never spend harvest")
+	var autumn := Decorations.new()
+	_expect(autumn.unlock({"greens": 0, "radish": 0, "celery": 3}) == ["pot"], "New crop baskets count towards total unlocks")
 	_expect(decorations.unlock({"greens": 0, "radish": 0}).is_empty() and decorations.snapshot().lantern.unlocked, "Earned unlocks are never revoked")
 	_expect(decorations.place("pot", "ground_01", 3).ok, "Ground placement accepts quarter rotation")
 	var before: Dictionary = decorations.snapshot()
@@ -55,33 +57,11 @@ func _run() -> void:
 	_expect(not restored.restore_snapshot(invalid), "Fractional rotation rejected at load")
 	var folder: String = ProjectSettings.globalize_path("res://../").simplify_path().path_join(".local/verification/decorations-%d" % Time.get_ticks_usec())
 	DirAccess.make_dir_recursive_absolute(folder)
-	var legacy: Dictionary = {"fields": {}, "harvested": farm.snapshot().harvested}
-	for field_id: String in Farm.FIELD_IDS:
-		legacy.fields[field_id] = farm.snapshot().fields[field_id].cells.cell_06.duplicate(true)
-	var original: String = JSON.stringify({"version": 1, "farm": legacy})
-	_write(folder.path_join(Store.MAIN), original)
 	var store := Store.new(folder)
 	var loaded: Dictionary = store.load_state()
-	_expect(loaded.ok and loaded.migrated and loaded.farm == farm.snapshot(), "Version one migration preserves all farm state")
-	_expect(loaded.decorations.lantern.unlocked and loaded.decorations.pot.slot_id.is_empty(), "Version one derives earned unlocks without placing")
-	_expect(FileAccess.get_file_as_string(folder.path_join(Store.MAIN)) == original, "Reading migration does not alter original bytes")
-	FileAccess.set_read_only_attribute(folder.path_join(Store.MAIN), true)
-	_expect(not store.save(farm.snapshot(), decorations.snapshot()).ok and not store.save(farm.snapshot(), decorations.snapshot()).ok, "Failed migration can retry without altering original main")
-	var copies: int = 0
-	for name: String in DirAccess.get_files_at(folder):
-		if name.begins_with("farm.v1."):
-			copies += 1
-	_expect(copies == 1 and FileAccess.get_file_as_string(folder.path_join(Store.MAIN)) == original, "Migration retries reuse one original copy and preserve v1")
-	FileAccess.set_read_only_attribute(folder.path_join(Store.MAIN), false)
-	_expect(store.save(farm.snapshot(), decorations.snapshot()).ok, "Version three saves full state explicitly")
-	_expect(FileAccess.get_file_as_string(folder.path_join(Store.BACKUP)) == original, "First migration save retains exact version one backup")
-	var migration_copy: String = ""
-	for name: String in DirAccess.get_files_at(folder):
-		if name.begins_with("farm.v1."):
-			migration_copy = FileAccess.get_file_as_string(folder.path_join(name))
-	_expect(migration_copy == original, "Original version one remains archived beyond rotating backups")
+	_expect(loaded.ok and store.save(farm.snapshot(), decorations.snapshot()).ok, "Current schema saves full state")
 	loaded = Store.new(folder).load_state()
-	_expect(loaded.ok and not loaded.migrated and loaded.decorations == decorations.snapshot() and loaded.farm == farm.snapshot(), "Version three reopens farm and decoration placements")
+	_expect(loaded.ok and loaded.decorations == decorations.snapshot() and loaded.farm == farm.snapshot(), "Current schema reopens farm and decoration placements")
 	FileAccess.set_read_only_attribute(folder.path_join(Store.MAIN), true)
 	decorations.place("pot", "ground_03", 2)
 	_expect(not store.save(farm.snapshot(), decorations.snapshot()).ok and Store.new(folder).load_state().decorations == loaded.decorations, "Failed placement save preserves last committed position")

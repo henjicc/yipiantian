@@ -13,7 +13,9 @@ var _data: Dictionary
 
 func _init(now_utc_seconds: float = 0.0) -> void:
 	assert(_valid_time(now_utc_seconds), "Farm initialization requires finite nonnegative UTC seconds")
-	_data = {"fields": {}, "harvested": {"greens": 0, "radish": 0}}
+	_data = {"fields": {}, "harvested": {}}
+	for crop_id: String in Crops.crop_ids():
+		_data.harvested[crop_id] = 0
 	for field_id: String in FIELD_IDS:
 		_data.fields[field_id] = {"cells": {}}
 		for cell_id: String in CELL_IDS:
@@ -111,7 +113,7 @@ func _act(action: String, field_id: String, cell_id: String, crop_id: String, no
 				return _result(false, "mature")
 			if field.watered:
 				return _result(false, "already_watered")
-			field.growth_seconds = minf(duration, field.growth_seconds + duration * Crops.WATER_PROGRESS)
+			field.growth_seconds = minf(duration, field.growth_seconds + duration * Crops.definition(field.crop_id).water_progress)
 			field.watered = true
 		else:
 			if field.growth_seconds < duration:
@@ -203,6 +205,6 @@ static func valid_cell_snapshot(field: Dictionary) -> bool:
 		var crop: Dictionary = Crops.definition(field.crop_id)
 		if crop.is_empty() or float(growth) > crop.duration_seconds:
 			return false
-		if field.watered and float(growth) < crop.duration_seconds * Crops.WATER_PROGRESS:
+		if field.watered and float(growth) < crop.duration_seconds * crop.water_progress:
 			return false
 	return true

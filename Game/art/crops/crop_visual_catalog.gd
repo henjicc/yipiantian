@@ -1,14 +1,26 @@
 extends RefCounted
 ## Visual resource mapping only; growth phases and rewards come from FarmState.
 
-const CROP_IDS: Array[String] = ["greens", "radish"]
+const CROP_IDS: Array[String] = ["greens", "radish", "spinach", "lettuce", "chrysanthemum", "coriander", "celery", "mustard", "tatsoi", "carrot", "scallion", "garlic"]
+const ROOT_RADII := {
+	"spinach": Vector2(0.03835, 0.11000),
+	"lettuce": Vector2(0.11000, 0.11000),
+	"chrysanthemum": Vector2(0.08778, 0.11000),
+	"coriander": Vector2(0.02333, 0.02220),
+	"celery": Vector2(0.04430, 0.04709),
+	"mustard": Vector2(0.04806, 0.03768),
+	"tatsoi": Vector2(0.11000, 0.11000),
+	"carrot": Vector2(0.05847, 0.11000),
+	"scallion": Vector2(0.11000, 0.03975),
+	"garlic": Vector2(0.04260, 0.03028),
+}
 const STAGES: Array[String] = ["sprout", "young", "mature"]
 
 
 static func scene_path(crop_id: String, stage: String, low_detail: bool = false) -> String:
 	if not CROP_IDS.has(crop_id) or not STAGES.has(stage):
 		return ""
-	return "res://art/crops/%s/%s_%s%s.glb" % [crop_id, crop_id, stage, "_low" if low_detail else ""]
+	return "res://art/crops/%s/%s_%s%s.glb" % [crop_id, crop_id, stage, "_low" if low_detail and crop_id in ["greens", "radish"] else ""]
 
 
 static func instantiate(crop_id: String, stage: String, low_detail: bool = false) -> Node3D:
@@ -38,6 +50,8 @@ static func planting_depth(crop_id: String, stage: String) -> float:
 
 
 static func soil_radius(crop_id: String, stage: String) -> Vector2:
+	if ROOT_RADII.has(crop_id):
+		return Vector2(.015,.015) if stage == "sprout" else ROOT_RADII[crop_id] * (.54 if stage == "young" else 1.0)
 	# Audited at the soil contact slice of each imported stage, not canopy bounds.
 	if crop_id == "greens":
 		return {"sprout": Vector2(.018,.022), "young": Vector2(.055,.058), "mature": Vector2(.11,.10)}.get(stage,Vector2(.075,.06))

@@ -11,6 +11,7 @@ const PROFILES := {
 	"lotus": Vector4(0.035, 0.15, 0.0, 0.012),
 	"grass": Vector4(0.018, 0.08, 0.0, 0.003),
 	"greens": Vector4(0.005, 0.20, 0.0, 0.0015),
+	"autumn_crop": Vector4(0.005, 0.20, 0.0, 0.0015),
 	"radish": Vector4(0.005, 0.42, 0.0, 0.0015),
 	"trellis": Vector4(0.010, 0.08, 0.0, 0.003),
 	"flowerpot": Vector4(0.010, 0.42, 0.0, 0.003),
@@ -30,7 +31,7 @@ func _apply_node(node: Node, kind: String) -> void:
 		var centre: Vector3 = bounds.get_center()
 		var motion: Vector4 = PROFILES[kind]
 		# Sprouts receive the same relative restraint as the larger mature plants.
-		if kind == "greens" or kind == "radish":
+		if kind in ["greens", "radish", "autumn_crop"]:
 			motion.x = minf(motion.x, bounds.size.y * 0.025)
 			motion.w = minf(motion.w, bounds.size.y * 0.008)
 		for surface: int in mesh.mesh.get_surface_count():
@@ -44,6 +45,7 @@ func _apply_node(node: Node, kind: String) -> void:
 		mesh.set_instance_shader_parameter("wind_bounds", Vector4(bounds.position.y, bounds.size.y, centre.x, centre.z))
 		mesh.set_instance_shader_parameter("wind_motion", motion)
 		mesh.set_instance_shader_parameter("wind_authored", 1.0 if kind == "osmanthus" else 0.0)
+		mesh.set_instance_shader_parameter("leaf_paint_strength", 0.0 if kind == "autumn_crop" else 1.0)
 		mesh.set_instance_shader_parameter("wind_leaf_texture_mask", 1.0 if kind == "trellis" else 0.0)
 		mesh.extra_cull_margin = maxf(mesh.extra_cull_margin, 0.22 if kind == "osmanthus" else motion.x + motion.w)
 		mesh.set_meta("plant_wind_kind", kind)

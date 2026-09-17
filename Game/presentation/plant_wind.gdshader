@@ -17,6 +17,7 @@ instance uniform vec4 wind_bounds = vec4(0.0, 1.0, 0.0, 0.0); // bottom, height,
 instance uniform vec4 wind_motion = vec4(0.018, 0.20, 0.0, 0.005); // metres, root lock, crown profile, flutter
 instance uniform float wind_leaf_texture_mask = 0.0;
 instance uniform float wind_authored = 0.0;
+instance uniform float leaf_paint_strength = 1.0;
 instance uniform vec2 root_soil = vec2(-1000.0,0.0); // world soil height / contact band; crops only
 instance uniform float frame_enabled = 0.0;
 instance uniform vec4 frame_safe_rect = vec4(0.15, 0.14, 0.85, 0.90);
@@ -76,11 +77,15 @@ void fragment() {
 	// White radish shoulders, flowers and yellow gourds remain their own colour.
 	float leaf_pigment = smoothstep(0.98, 1.13, color.g / max(color.r, 0.001));
 	leaf_pigment *= smoothstep(1.06, 1.35, color.g / max(color.b, 0.001));
-	color *= mix(vec3(1.0), vec3(0.74, 1.20, 0.83), leaf_pigment);
+	// The new autumn atlases already contain strong greens; only older pale maps
+	// need this boost. Keep the new leaves closer to the muted reference palette.
+	float source_value = dot(color, vec3(0.2126, 0.7152, 0.0722));
+	color = mix(vec3(source_value), color, mix(.78, 1.0, leaf_paint_strength));
+	color *= mix(vec3(1.0), vec3(0.74, 1.20, 0.83), leaf_pigment * leaf_paint_strength);
 	// The generated leaf maps are washed towards cream, which left the crops at the
 	// same value as the soil. Deepen the leaf midtones without touching the rest.
 	float leaf_value = dot(color, vec3(0.2126, 0.7152, 0.0722));
-	color = mix(color, color * (0.72 + 0.46 * leaf_value), leaf_pigment);
+	color = mix(color, color * (0.72 + 0.46 * leaf_value), leaf_pigment * leaf_paint_strength);
 	float contact = 0.0;
 	if (root_soil.y > 0.0) {
 		float dirt_edge = root_soil.x + root_soil.y*(.25+.75*pigment_wash(world_point*87.0));

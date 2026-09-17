@@ -24,7 +24,8 @@ func _run() -> void:
 	var store = Store.new(folder)
 	_expect(store.load_state().kind == "missing", "Isolated fixture has no player data")
 	var farm: Dictionary = Farm.new(now).snapshot()
-	farm.harvested = {"greens": 10, "radish": 6}
+	farm.harvested.greens = 10
+	farm.harvested.radish = 6
 	var decorations = Decorations.new()
 	decorations.unlock(farm.harvested)
 	_expect(decorations.place("lantern", "hanging_01", 0).ok, "Fixture has one earned placed lantern")

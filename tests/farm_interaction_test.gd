@@ -16,155 +16,154 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	root.size = Vector2i(1280, 720)
+	root.size = Vector2i(1600, 900)
 	scene = load("res://scenes/main.tscn").instantiate()
 	scene.clock = func() -> float: return now
-	var isolated: String = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/grid-input-%d" % Time.get_ticks_usec())
+	var isolated: String = ProjectSettings.globalize_path("res://../.local/verification/autumn-input-%d" % Time.get_ticks_usec())
 	scene.store = load("res://farm/farm_store.gd").new(isolated)
-	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("preferences"))
+	scene.settings_store = load("res://settings/settings_store.gd").new(isolated.path_join("preferences"))
 	root.add_child(scene)
-	root.grab_focus()
 	scene.farm_changed.connect(func(_result: Dictionary) -> void: actions += 1)
-	await create_timer(0.6).timeout
-	var baseline: Dictionary = scene.farm_state.snapshot()
-	_expect(scene.farm.field_id(0) == "field_01", "Visual field retains stable identity")
-	_expect(scene.farm.fields[0].get_node("Crops").get_child_count() == 0, "Empty cells have no crop placeholders")
-	await _capture("01-overview.png")
-	await _click(_point(0))
-	_expect(scene.selected_field == 0 and scene.selected_cell.is_empty() and scene.farm_state.snapshot() == baseline, "Overview click only focuses a field")
-	await _click(_point(0, "cell_01"))
-	await create_timer(0.85).timeout
-	_expect(scene.selected_cell.is_empty() and scene.farm_state.snapshot() == baseline, "Travel clicks never become a cell action after landing")
-	_expect(_control("Sow").disabled, "No selected cell means no available farm action")
-	# Every empty cell is a real soil target, independent of plant colliders.
-	for cell_id: String in scene.farm_state.CELL_IDS:
-		await _click(_point(0, cell_id))
-		_expect(scene.selected_cell == cell_id, "Native soil ray selects exact empty cell " + cell_id)
-	await _click(_point(0, "cell_01"))
-	_expect(scene.farm_state.snapshot() == baseline, "Selecting empty soil never sows")
-	await _tool("Sow")
-	_expect(_cell(0, "cell_01").crop_id == "greens" and _cell(0, "cell_01").stage == "sprout", "Sow button immediately acts on the selected cell")
-	_expect(actions == 1 and scene.selected_cell == "cell_01" and scene.selected_tool.is_empty(), "Action retains selected cell without an armed world tool")
-	var crop_root: Node3D = scene.farm.fields[0].get_node("Crops")
-	var first_instance: int = crop_root.get_node("cell_01").get_instance_id()
-	scene.settle_farm()
-	_expect(crop_root.get_node("cell_01").get_instance_id() == first_instance, "Unchanged cell stage retains its crop node")
-	await _button(_point(0, "cell_01"), true, MOUSE_BUTTON_LEFT, true)
-	await _button(_point(0, "cell_01"), false)
-	_expect(actions == 1, "Double world click cannot replay a farm action")
-	await _click(_point(0, "cell_02"))
-	await _choose_radish()
-	await _tool("Sow")
-	_expect(_cell(0, "cell_02").crop_id == "radish" and _cell(0, "cell_01").crop_id == "greens", "Adjacent cells genuinely mix two selected crops")
-	_expect(crop_root.get_child_count() == 2, "Only the two planted cells contain real stage resources")
-	var neighbor_instance: int = crop_root.get_node("cell_02").get_instance_id()
-	await _click(_point(0, "cell_01"))
+	await create_timer(.8).timeout
+	scene.atmosphere.set_preview_hour(10.0)
+	var ids: Array[String] = scene.Crops.crop_ids()
+	_expect(ids.size() == 12, "Twelve available crops")
+	var initial: Dictionary = scene.farm_state.snapshot()
+	await _choose("spinach")
+	_expect(scene.selected_tool == "sow" and scene.selected_field == -1, "Select seeds before selecting any land")
+	await _motion(_point(0,"cell_01"), Vector2.ZERO)
+	_expect(scene.hover_field == 0 and scene.hover_cell == "cell_01", "Hover targets exact cell without clicking")
+	_expect(scene.farm_state.snapshot() == initial, "Hover never modifies farm state")
+	_expect(scene.tool_cursor.badge.visible and scene.tool_cursor.badge.texture.resource_path.ends_with("spinach.png"), "Carried transparent crop follows pointer")
+	var distance: float = scene.camera.view.z
+	await _button(_point(0,"cell_01"), true, MOUSE_BUTTON_WHEEL_DOWN)
+	_expect(scene.selected_crop == "lettuce" and scene.camera.view.z == distance, "Armed wheel changes seeds rather than zoom")
+	await _click(_point(0,"cell_01"))
+	_expect(_cell(0,"cell_01").crop_id == "lettuce" and actions == 1, "One click plants the hovered overview cell")
+	_expect(scene.selected_tool == "sow", "Successful sow stays armed")
+	await _click(_point(0,"cell_02"))
+	_expect(_cell(0,"cell_02").crop_id == "lettuce" and actions == 2, "Continuous planting works in next cell")
+	await _click(_point(0,"cell_02"))
+	_expect(actions == 2 and _feedback() == "这一格已有作物", "Occupied target cannot overwrite crop")
 	await _tool("Water")
-	_expect(_cell(0, "cell_01").watered and is_equal_approx(_cell(0, "cell_01").progress, .2), "Water button boosts only the selected cell")
-	_expect(not _cell(0, "cell_02").watered and _cell(0, "cell_02").progress == 0.0, "Neighbor growth and watering remain independent")
-	_expect(scene.farm._soil_meshes.field_01.cell_01.material_override != scene.farm._soil_meshes.field_01.cell_02.material_override, "Wet soil belongs to one cell, not the whole field")
-	await _capture("02-mixed-watered.png")
-	var watered: Dictionary = scene.farm_state.snapshot()
-	await _tool("Water")
-	_expect(scene.farm_state.snapshot() == watered and actions == 3, "Repeated watering cannot alter state")
-	_expect(_feedback() == "这一轮已经浇过水", "Invalid action gives truthful feedback")
-	await _key(KEY_ESCAPE)
-	_expect(scene.selected_cell.is_empty() and scene.selected_field == 0, "Escape clears cell selection first")
-	await _key(KEY_ESCAPE)
-	await create_timer(.85).timeout
-	_expect(scene.selected_field == -1, "Escape then returns to overview")
-	await _click(_point(0))
-	await create_timer(.85).timeout
-	await _click(_point(0, "cell_01"))
-	await _tool("Harvest")
-	_expect(scene.farm_state.snapshot() == watered and _feedback() == "作物还在生长", "Premature selected-cell harvest is rejected")
-	now += 270.0
-	scene.settle_farm()
-	_expect(_cell(0, "cell_01").stage == "young" and _cell(0, "cell_02").stage == "sprout", "Mixed stages follow their independent crop clocks")
-	_expect(crop_root.get_node("cell_02").get_instance_id() == neighbor_instance, "One cell's stage change never rebuilds its neighbor")
-	await _capture("03-independent-stages.png")
-	now += 1170.0
-	scene.settle_farm()
-	await _tool("Harvest")
-	_expect(_cell(0, "cell_01").stage == "empty" and scene.farm_state.snapshot().harvested.greens == 1, "Harvest clears one cell and rewards one basket")
-	_expect(_cell(0, "cell_02").crop_id == "radish" and crop_root.get_child_count() == 1, "Harvest keeps the neighboring planted cell")
-	var harvested: Dictionary = scene.farm_state.snapshot()
-	await _tool("Harvest")
-	_expect(scene.farm_state.snapshot() == harvested and actions == 4, "Repeated empty-cell harvest cannot duplicate reward")
-	# Cross-cell releases, dragged clicks and world-to-GUI releases select nothing.
-	var p: Vector2 = _point(0, "cell_01")
-	await _button(p, true)
-	await _button(_point(0, "cell_02"), false)
-	_expect(scene.selected_cell == "cell_01", "Cross-cell press/release never switches target")
-	await _button(_point(0, "cell_02"), true)
-	await _motion(_point(0, "cell_02") + Vector2(45, 0), Vector2(45, 0))
-	await _button(_point(0, "cell_02"), false)
-	_expect(scene.selected_cell == "cell_01", "Dragged click cannot pick another cell")
-	await _button(p, true)
-	await _motion(_control("Sow").get_global_rect().get_center(), Vector2.ZERO)
-	await _button(_control("Sow").get_global_rect().get_center(), false)
-	_expect(scene.farm_state.snapshot() == harvested, "A world press released over Sow does not activate the button")
-	await _motion(_control("Sow").get_global_rect().get_center(), Vector2.ZERO)
-	await _button(_control("Sow").get_global_rect().get_center(), true)
+	_expect(not _cell(0,"cell_01").watered, "Selecting water never acts on prior target")
+	await _click(_point(0,"cell_01"))
+	_expect(_cell(0,"cell_01").watered and is_equal_approx(_cell(0,"cell_01").progress,.25), "Water applies species-specific boost to clicked cell")
+	await _click(_point(0,"cell_01"))
+	_expect(actions == 3 and _feedback() == "这一轮已经浇过水", "Repeated water is a no-op")
+	await _button(_point(0,"cell_01"), true, MOUSE_BUTTON_RIGHT)
+	await _button(_point(0,"cell_01"), false, MOUSE_BUTTON_RIGHT)
+	_expect(scene.selected_tool.is_empty(), "Right click disarms tool first")
+	await _button(_point(0,"cell_01"), true, MOUSE_BUTTON_WHEEL_UP)
+	await create_timer(.45).timeout
+	_expect(scene.camera.view.z < distance, "Disarmed wheel restores damped zoom")
+	await _choose("celery")
+	var before: Dictionary = scene.farm_state.snapshot()
+	await _button(_point(0,"cell_03"), true)
+	await _button(_point(0,"cell_04"), false)
+	_expect(scene.farm_state.snapshot() == before, "Cross-cell release never plants")
+	await _button(_point(0,"cell_03"), true)
+	await _motion(_point(0,"cell_03") + Vector2(30,0), Vector2(30,0))
+	await _button(_point(0,"cell_03"), false)
+	_expect(scene.farm_state.snapshot() == before, "Dragged click never plants")
+	await _motion(_control("Water").get_global_rect().get_center(),Vector2.ZERO)
+	_expect(scene.hover_cell.is_empty() and not scene.tool_cursor.badge.visible, "UI clears world preview and carried badge")
+	await _button(_point(0,"cell_03"),true)
+	await _motion(_control("Water").get_global_rect().get_center(),Vector2.ZERO)
+	await _button(_control("Water").get_global_rect().get_center(),false)
+	_expect(scene.farm_state.snapshot() == before, "World-to-UI release cannot farm")
+	await _choose("carrot")
 	scene.notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT)
-	await _button(_control("Sow").get_global_rect().get_center(), false)
-	_expect(scene.farm_state.snapshot() == harvested, "Focus loss invalidates a held toolbar press")
-	# A new focus clears the selected cell; movement never replays held selection.
-	scene._focus_field(1)
-	await _button(_point(1, "cell_01"), true)
-	await create_timer(.85).timeout
-	await _button(_point(1, "cell_01"), false)
-	_expect(scene.selected_cell.is_empty() and scene.farm_state.snapshot() == harvested, "Press admitted during travel cannot select after landing")
-	await _click(_point(1, "cell_01"))
-	var view_before: Vector3 = scene.camera.view
-	await _button(_point(1), true, MOUSE_BUTTON_MIDDLE)
-	await _motion(_point(1), Vector2(25, -10))
-	await _button(_point(1), false, MOUSE_BUTTON_MIDDLE)
-	_expect(not scene.camera.view.is_equal_approx(view_before), "Middle drag still orbits")
-	var point_before: Vector3 = scene.camera.focus_point
-	await _button(_point(1), true, MOUSE_BUTTON_MIDDLE)
-	await _motion(_point(1), Vector2(12, 8), true)
-	await _button(_point(1), false, MOUSE_BUTTON_MIDDLE)
-	_expect(not scene.camera.focus_point.is_equal_approx(point_before), "Shift-middle drag still pans")
-	var distance_before: float = scene.camera.view.z
-	await _button(_point(1), true, MOUSE_BUTTON_WHEEL_UP)
-	await create_timer(0.35).timeout
-	_expect(scene.camera.view.z < distance_before and scene.farm_state.snapshot() == harvested, "Camera manipulation never farms")
-	await _button(_point(1), true, MOUSE_BUTTON_RIGHT)
-	await _button(_point(1), false, MOUSE_BUTTON_RIGHT)
-	_expect(scene.selected_cell.is_empty() and scene.selected_field == 1, "Right click clears cell before returning the field")
-	root.size = Vector2i(960, 600)
+	await physics_frame
+	_expect(scene.selected_tool.is_empty() and not scene.tool_cursor.badge.visible, "Focus loss clears armed cursor and gestures")
+	scene._focus_field(0)
+	await create_timer(.9).timeout
+	await _choose("garlic")
+	await _click(_point(0,"cell_03"))
+	_expect(_cell(0,"cell_03").crop_id == "garlic", "Focused view supports new allium")
+	await _key(KEY_ESCAPE)
+	_expect(scene.selected_tool.is_empty(), "Escape cancels seeds")
+	await _capture("01-new-tools.png")
+	# Seed all twelve species through authoritative actions, then verify exact saved state.
+	for i: int in ids.size():
+		scene.farm_state.sow("field_02",scene.farm_state.CELL_IDS[i],ids[i],now)
+		scene.farm_state.water("field_02",scene.farm_state.CELL_IDS[i],now)
+	scene.refresh_farm()
+	scene._save_farm()
+	var disk: Dictionary = load("res://farm/farm_store.gd").new(isolated).load_state()
+	_expect(disk.ok and disk.farm == scene.farm_state.snapshot(), "All twelve species and water states roundtrip")
+	# Short, isolated authoring preview of all three stages. Does not touch player saves.
+	var fixture: Dictionary = scene.farm_state.snapshot()
+	for field_index: int in 3:
+		for i: int in ids.size():
+			var cell: Dictionary = fixture.fields[scene.farm.field_id(field_index)].cells[scene.farm_state.CELL_IDS[i]]
+			cell.crop_id = ids[i]
+			cell.growth_seconds = scene.Crops.definition(ids[i]).duration_seconds * [0.0,.5,1.0][field_index]
+			cell.watered = false
+	scene.farm_state.restore_snapshot(fixture)
+	scene.refresh_farm()
+	scene.focus_detail.set_depth_of_field(false)
+	for field_index: int in 3:
+		scene._focus_field(field_index)
+		await create_timer(.9).timeout
+		scene.camera.zoom(-2.8)
+		await _camera_settled()
+		await _motion(_point(field_index,"cell_06"),Vector2.ZERO)
+		await _capture("02-stage-%d.png" % field_index)
+	for id: String in ids:
+		var mesh_root: Node3D = scene.farm.fields[2].get_node("Crops").get_node(scene.farm_state.CELL_IDS[ids.find(id)])
+		_expect(mesh_root != null, "Visible mature model: " + id)
+	scene._select_tool("harvest")
+	await _click(_point(2,"cell_06"))
+	_expect(_cell(2,"cell_06").stage == "empty" and scene.farm_state.snapshot().harvested.coriander == 1, "New crop harvest rewards correct species")
+	scene._cancel_tool()
+	# Near-root and reverse views exercise thin leaves and soil contact at inspection scale.
+	var camera_transform: Transform3D = scene.camera.transform
+	scene.camera.set_process(false)
+	var target: Vector3 = scene.farm.fields[2].global_position + Vector3(0,.2,0)
+	scene.camera.position = target + Vector3(.6,2.1,2.4)
+	scene.camera.look_at(target)
 	await create_timer(.3).timeout
-	var rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
-	for control: Control in scene.get_node("HUD/Layout/FarmControls").get_children():
-		_expect(rect.encloses(control.get_global_rect()), "Farm control fits compact window: " + control.name)
+	await _capture("03-close-mature.png")
+	scene.camera.position = target + Vector3(-.8,1.5,-2.3)
+	scene.camera.look_at(target)
+	await create_timer(.3).timeout
+	await _capture("03-close-reverse.png")
+	scene.camera.transform = camera_transform
+	scene.camera.set_process(true)
+	scene.camera.drag(Vector2(320,0),false)
+	await create_timer(.3).timeout
+	await _capture("03-reverse-mature.png")
+	scene._toggle_free_view()
+	before = scene.farm_state.snapshot()
+	await _click(_point(2,"cell_04"))
+	_expect(scene.farm_state.snapshot() == before and scene.selected_tool.is_empty(), "Free camera cannot farm")
+	scene._return_overview()
+	await create_timer(.9).timeout
+	root.size = Vector2i(960,600)
+	await create_timer(.3).timeout
+	var viewport: Rect2 = root.get_visible_rect()
+	for card: Control in scene.hud.get_node("Layout/CropChoices").get_children():
+		_expect(viewport.encloses(card.get_global_rect()), "Crop card fits compact window: "+card.name)
 	await _capture("04-compact.png")
-	# Reopen through the real saved snapshot: two species are independent persisted data.
-	var stored: Dictionary = load("res://farm/farm_store.gd").new(isolated).load_state().farm
-	_expect(stored.fields.field_01.cells.cell_01.crop_id == "" and stored.fields.field_01.cells.cell_02.crop_id == "radish" and stored.harvested.greens == 1, "Disk state keeps per-cell harvest and neighboring crop")
-	for failure: String in failures:
-		push_error(failure)
+	for failure: String in failures: push_error(failure)
 	scene.farm_audio.shutdown()
 	await create_timer(.1).timeout
 	scene.free()
 	await process_frame
-	await process_frame
-	print("FARM_INTERACTION_TEST checks=%d failures=%d" % [checks, failures.size()])
+	print("FARM_INTERACTION_TEST checks=%d failures=%d" % [checks,failures.size()])
 	quit(0 if failures.is_empty() else 1)
 
 
-func _choose_radish() -> void:
-	var choice: OptionButton = _control("CropChoice")
-	await _click(choice.get_global_rect().get_center())
-	_expect(choice.get_popup().visible, "Actual crop menu opens beside Sow")
-	await _key(KEY_ESCAPE, choice.get_popup())
-	_expect(not choice.get_popup().visible and scene.selected_cell == "cell_02", "Popup Escape closes menu without clearing selected cell")
-	await _click(choice.get_global_rect().get_center())
-	for step: int in 2:
-		if choice.get_popup().get_focused_item() != 1:
-			await _key(KEY_DOWN, choice.get_popup())
-	await _key(KEY_ENTER, choice.get_popup())
-	_expect(scene.selected_crop == "radish", "Real crop menu updates seed intent")
+func _camera_settled() -> void:
+	var deadline: int = Time.get_ticks_msec() + 4000
+	while scene.camera.is_transitioning() and Time.get_ticks_msec() < deadline:
+		await process_frame
+	_expect(not scene.camera.is_transitioning(), "Camera settles before farming")
+
+
+func _choose(id: String) -> void:
+	await _click(scene.hud.get_node("Layout/CropChoices/"+id).get_global_rect().get_center())
 
 
 func _cell(index: int, cell_id: String) -> Dictionary:
@@ -195,10 +194,9 @@ func _button(point: Vector2, down: bool, button_index: MouseButton = MOUSE_BUTTO
 	event.pressed = down
 	event.button_index = button_index
 	event.double_click = double
-	# Native popups read Input's held-button state when they open. Parsing through
-	# Input updates that state; Viewport.push_input alone does not model a real mouse.
+	# Inject viewport-local coordinates; no native popups or OS cursor/focus changes.
 	event.window_id = root.get_window_id()
-	Input.parse_input_event(event)
+	root.push_input(event, true)
 	await physics_frame
 	await process_frame
 
@@ -215,7 +213,8 @@ func _motion(point: Vector2, relative: Vector2, shift: bool = false) -> void:
 	event.relative = relative
 	event.shift_pressed = shift
 	event.window_id = root.get_window_id()
-	Input.parse_input_event(event)
+	root.push_input(event, true)
+	await physics_frame
 	await process_frame
 
 
@@ -226,13 +225,13 @@ func _key(code: Key, target: Window = null) -> void:
 	event.keycode = code
 	event.pressed = true
 	event.window_id = target.get_window_id()
-	Input.parse_input_event(event)
+	root.push_input(event, true)
 	await process_frame
 	event = InputEventKey.new()
 	event.keycode = code
 	event.pressed = false
 	event.window_id = target.get_window_id()
-	Input.parse_input_event(event)
+	root.push_input(event, true)
 	await process_frame
 
 

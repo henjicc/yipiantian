@@ -50,7 +50,8 @@ func _run() -> void:
 	_expect(store.load_state().kind == "missing", "Every run requires a fresh isolated farm directory")
 	var now: float = Time.get_unix_time_from_system()
 	var data: Dictionary = Farm.new(now).snapshot()
-	data.harvested = {"greens": 10, "radish": 6}
+	data.harvested.greens = 10
+	data.harvested.radish = 6
 	for index: int in 6:
 		for cell_index: int in Farm.CELL_IDS.size():
 			var cell: Dictionary = data.fields[Farm.FIELD_IDS[index]].cells[Farm.CELL_IDS[cell_index]]
@@ -221,7 +222,9 @@ func _background_probe(seconds: float) -> void:
 	await create_timer(0.85).timeout
 	scene._select_cell("cell_01")
 	scene._select_tool("harvest")
+	scene._apply_tool()
 	scene._select_tool("sow")
+	scene._apply_tool()
 	var before: Dictionary = scene.farm_state.get_cell("field_01", "cell_01")
 	var before_utc: float = Time.get_unix_time_from_system()
 	var capture := AudioEffectCapture.new()

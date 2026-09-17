@@ -49,7 +49,8 @@ func _ready() -> void:
 		farm_scene.clock = func() -> float: return _farm_now
 	if _courtyard_demo or _final_demo:
 		var fixture: Dictionary = farm_scene.farm_state.snapshot()
-		fixture.harvested = {"greens": 9, "radish": 6}
+		fixture.harvested.greens = 9
+		fixture.harvested.radish = 6
 		for index in 6:
 			var id: String = farm_scene.farm.field_id(index)
 			for cell_id: String in farm_scene.farm_state.CELL_IDS:
@@ -237,10 +238,11 @@ func _run_farm_demo(delta: float) -> void:
 	elif _stage == 1 and _elapsed >= 6.5:
 		farm_scene._select_cell("cell_06")
 		farm_scene._select_crop("greens")
-		farm_scene._select_tool("sow")
+		farm_scene._apply_tool()
 		_stage = 2
 	elif _stage == 2 and _elapsed >= 9.0:
 		farm_scene._select_tool("water")
+		farm_scene._apply_tool()
 		_stage = 3
 	elif _stage == 3:
 		farm_scene.camera.drag(Vector2(-16.7, 0.0) * delta, false)
@@ -251,6 +253,7 @@ func _run_farm_demo(delta: float) -> void:
 			_stage = 4
 	elif _stage == 4 and _elapsed >= 17.0:
 		farm_scene._select_tool("harvest")
+		farm_scene._apply_tool()
 		_write_json("farm-demo-result.json", {
 			"controlled_utc_advance_seconds": 1440,
 			"snapshot": farm_scene.farm_state.snapshot(),
@@ -270,6 +273,7 @@ func _run_courtyard_demo(delta: float) -> void:
 	elif _stage == 1 and _elapsed >= 6.5:
 		farm_scene._select_cell("cell_06")
 		farm_scene._select_tool("harvest")
+		farm_scene._apply_tool()
 		_stage = 2
 	elif _stage == 2 and _elapsed >= 9.0:
 		_stage = 3
@@ -398,7 +402,9 @@ func _demo_action(tool: String) -> void:
 		farm_scene._select_cell("cell_06")
 	if tool == "sow":
 		farm_scene._select_crop("greens")
-	farm_scene._select_tool(tool)
+	elif farm_scene.selected_tool != tool:
+		farm_scene._select_tool(tool)
+	farm_scene._apply_tool()
 
 
 func _set_demo_hour(hour: float) -> void:

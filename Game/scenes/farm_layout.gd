@@ -109,7 +109,7 @@ func show_field(field: Dictionary) -> void:
 		crop.rotation.y = float(FarmState.CELL_IDS.find(cell_id)) * 0.23
 		_crop_roots[field.id].add_child(crop)
 		_cell_crops[field.id][cell_id] = crop
-		_plant_wind.apply(crop, cell.crop_id)
+		_plant_wind.apply(crop, cell.crop_id if cell.crop_id in ["greens", "radish"] else "autumn_crop")
 		var soil_y: float = crop.global_position.y + CropVisuals.planting_depth(cell.crop_id,cell.stage) + .008
 		for plant_mesh: MeshInstance3D in crop.find_children("*", "MeshInstance3D", true, false):
 			plant_mesh.set_instance_shader_parameter("root_soil", Vector2(soil_y,.045*root_size))
