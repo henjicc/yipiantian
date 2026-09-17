@@ -123,7 +123,9 @@ func _build_ground() -> void:
 			var a:Vector3=route[k];var b:Vector3=route[k+1];var count:int=ceili(a.distance_to(b)/.48)
 			for j in count:
 				var p:Vector3=a.lerp(b,float(j)/count);p.x+=_rng.randf_range(-.055,.055);p.z+=_rng.randf_range(-.07,.07)
-				_module("stone_%d"%_rng.randi_range(0,4),p,_rng.randf_range(-18,18),Vector3(.64,.18,.72))
+				# Untinted slabs came out near white and became the brightest thing on
+				# the island, pulling attention off the beds. Warm grey flagstones.
+				_tint_stone(_module("stone_%d"%_rng.randi_range(0,4),p,_rng.randf_range(-18,18),Vector3(.64,.18,.72)),Color("93907e")*_rng.randf_range(.90,1.08))
 
 func _tint_stone(node: Node, color: Color) -> void:
 	if node is MeshInstance3D:

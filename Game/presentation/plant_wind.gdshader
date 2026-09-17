@@ -68,7 +68,11 @@ void fragment() {
 	// White radish shoulders, flowers and yellow gourds remain their own colour.
 	float leaf_pigment = smoothstep(0.98, 1.13, color.g / max(color.r, 0.001));
 	leaf_pigment *= smoothstep(1.06, 1.35, color.g / max(color.b, 0.001));
-	color *= mix(vec3(1.0), vec3(0.85, 1.14, 0.94), leaf_pigment);
+	color *= mix(vec3(1.0), vec3(0.74, 1.20, 0.83), leaf_pigment);
+	// The generated leaf maps are washed towards cream, which left the crops at the
+	// same value as the soil. Deepen the leaf midtones without touching the rest.
+	float leaf_value = dot(color, vec3(0.2126, 0.7152, 0.0722));
+	color = mix(color, color * (0.72 + 0.46 * leaf_value), leaf_pigment);
 	ALBEDO = color;
 	BACKLIGHT = color * leaf_pigment * .16;
 	ROUGHNESS = base_roughness;

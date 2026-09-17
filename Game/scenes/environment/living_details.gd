@@ -10,18 +10,27 @@ var _boat: Node3D
 var _wood: ShaderMaterial
 var _bamboo: ShaderMaterial
 var _rope: ShaderMaterial
+var _clay: ShaderMaterial
+var _straw: ShaderMaterial
+var _iron: ShaderMaterial
 
 func _ready() -> void:
 	_wood = _paint(Color("756042"), 5.0)
 	_bamboo = _paint(Color("a89464"), 12.0)
 	_rope = _paint(Color("a09672"), 15.0)
+	_clay = _paint(Color("a8835d"), 6.0)
+	_straw = _paint(Color("c0a068"), 10.0)
+	_iron = _paint(Color("6d7166"), 8.0)
 	_build_porch_group()
 	_build_drying_rack()
 	_build_tools()
 	_build_mooring()
 	_build_windows()
+	_build_yard_props()
+	# Every authored group merges by material; the animated mooring rope lives
+	# directly on this node and is deliberately not part of any merged group.
 	for child: Node in get_children():
-		if child is Node3D and child.name in ["PorchHarvestTable","SidePorchDryingRack","PorchFarmTools","WindowWarmth"]:
+		if child is Node3D and not child is MeshInstance3D:
 			_merge_static_group(child)
 
 func _merge_static_group(group: Node3D) -> void:
@@ -228,3 +237,205 @@ func set_window_warmth(amount: float) -> void:
 			material.set_shader_parameter("warmth",strength)
 		for light: OmniLight3D in _window_lights:
 			light.light_energy=strength*.70
+
+
+## Yard set dressing. Everything here is decoration only: no collision, no farm
+## state and no decoration slot. Positions keep the six fields, the eight slots,
+## the stone routes and the bottom tool shelf area clear.
+func _build_yard_props() -> void:
+	_build_water_vats()
+	_build_firewood()
+	_build_stone_mill()
+	_build_jar_cluster()
+	_build_ground_trays()
+	_build_basket_stack()
+	_build_yard_bucket()
+	_build_drying_line()
+	_build_melon_pile()
+	_build_seed_frames()
+
+
+func _vessel(parent: Node3D, at: Vector3, radius: float, height: float, material: ShaderMaterial) -> void:
+	# A thrown jar profile: narrow foot, full belly, turned-in shoulder, rolled lip,
+	# then back down the inside so the open mouth reads from the overview angle.
+	var profile: Array[Vector2] = [
+		Vector2(.02, 0), Vector2(radius * .52, 0), Vector2(radius * .66, height * .08),
+		Vector2(radius, height * .42), Vector2(radius * .92, height * .72),
+		Vector2(radius * .68, height * .94), Vector2(radius * .72, height),
+		Vector2(radius * .62, height * .99), Vector2(radius * .58, height * .80),
+		Vector2(radius * .80, height * .44), Vector2(radius * .40, height * .10)]
+	_lathe(parent, at, profile, material, 20)
+
+
+func _log_billet(parent: Node3D, at: Vector3, length: float, radius: float, yaw: float) -> void:
+	var shape := CylinderMesh.new()
+	shape.top_radius = radius
+	shape.bottom_radius = radius * 1.04
+	shape.height = length
+	shape.radial_segments = 7
+	shape.rings = 1
+	var node: MeshInstance3D = _mesh(parent, shape, at, _wood)
+	node.quaternion = Quaternion(Vector3.UP, Vector3(cos(yaw), 0.0, sin(yaw)))
+
+
+func _build_water_vats() -> void:
+	var group := _group("YardWaterVats", Vector3(-5.28, .14, -0.62), 18)
+	_vessel(group, Vector3.ZERO, .40, .60, _clay)
+	_vessel(group, Vector3(.66, 0, .18), .27, .40, _paint(Color("96785f"), 7.0))
+	# Plank lid and a long-handled dipper resting across the smaller vat.
+	for i: int in 3:
+		var plank := BoxMesh.new()
+		plank.size = Vector3(.115, .022, .44)
+		_mesh(group, plank, Vector3(.66 + (i - 1) * .125, .405, .18), _wood)
+	_beam(group, Vector3(.30, .44, -.16), Vector3(-.16, .68, -.30), .017, _bamboo)
+	_lathe(group, Vector3(.30, .42, -.16), [Vector2(.005, 0), Vector2(.075, .01), Vector2(.082, .07), Vector2(.068, .072), Vector2(.062, .02), Vector2(.005, .018)], _bamboo, 14)
+
+
+func _build_firewood() -> void:
+	var group := _group("YardFirewood", Vector3(-4.90, .14, -3.28), -14)
+	_lathe(group, Vector3(-.52, 0, .10), [Vector2(.01, 0), Vector2(.21, 0), Vector2(.215, .34), Vector2(.20, .36), Vector2(.01, .36)], _wood, 14)
+	# Axe left standing in the chopping block.
+	_beam(group, Vector3(-.50, .34, .09), Vector3(-.40, .80, .02), .019, _bamboo)
+	var head := BoxMesh.new()
+	head.size = Vector3(.075, .155, .045)
+	var blade: MeshInstance3D = _mesh(group, head, Vector3(-.494, .40, .086), _iron)
+	blade.rotation = Vector3(0, 0, .21)
+	for row: int in 4:
+		var count: int = 5 - row / 2
+		for i: int in count:
+			var jitter: float = sin(row * 3.1 + i * 2.3) * .018
+			_log_billet(group, Vector3(.30 + jitter, .075 + row * .135, -.42 + i * .168), .70, .066, PI * .5 + sin(row * 1.7 + i) * .05)
+	_log_billet(group, Vector3(.06, .066, .34), .58, .062, 1.15)
+
+
+func _build_stone_mill() -> void:
+	var group := _group("YardStoneMill", Vector3(5.02, .14, -0.72), 25)
+	var granite := _paint(Color("9ea49a"), 4.0)
+	granite.set_shader_parameter("stone_treatment", 1.0)
+	var pedestal := _paint(Color("8d928a"), 4.0)
+	pedestal.set_shader_parameter("stone_treatment", 1.0)
+	_lathe(group, Vector3.ZERO, [Vector2(.01, 0), Vector2(.26, 0), Vector2(.23, .30), Vector2(.01, .30)], pedestal, 16)
+	_lathe(group, Vector3(0, .30, 0), [Vector2(.01, 0), Vector2(.47, .015), Vector2(.49, .075), Vector2(.47, .105), Vector2(.01, .105)], granite, 24)
+	_lathe(group, Vector3(0, .405, 0), [Vector2(.01, 0), Vector2(.33, 0), Vector2(.335, .16), Vector2(.31, .175), Vector2(.09, .175), Vector2(.075, .12), Vector2(.01, .12)], granite, 24)
+	_beam(group, Vector3(.33, .53, 0), Vector3(.72, .60, .10), .024, _wood)
+	_basket(group, Vector3(-.62, 0, .34), .19, .27, false)
+
+
+func _build_jar_cluster() -> void:
+	var group := _group("YardJarCluster", Vector3(5.22, .14, 2.45), -30)
+	_vessel(group, Vector3.ZERO, .30, .46, _clay)
+	_vessel(group, Vector3(.50, 0, .22), .22, .32, _paint(Color("8b7159"), 8.0))
+	_vessel(group, Vector3(.24, 0, -.38), .17, .24, _paint(Color("b0905f"), 9.0))
+	# Straw cap tied over the largest mouth.
+	_lathe(group, Vector3(0, .44, 0), [Vector2(.245, 0), Vector2(.20, .055), Vector2(.10, .09), Vector2(.01, .10)], _straw, 16)
+	_ring(group, Vector3(0, .445, 0), .235, .016, _rope)
+
+
+func _build_ground_trays() -> void:
+	var group := _group("YardGroundTrays", Vector3(-5.30, .14, 2.30), 40)
+	_tray(group, Vector3.ZERO, .30, true)
+	_tray(group, Vector3(.58, .004, .26), .26, false)
+	# The only saturated note on this side of the yard: drying chillies.
+	var chilli := _paint(Color("a8422b"), 14.0)
+	for i: int in 22:
+		var angle: float = i * 2.399
+		var distance: float = .19 * sqrt(float(i) / 22.0)
+		var pod := CapsuleMesh.new()
+		pod.radius = .017
+		pod.height = .105
+		pod.radial_segments = 6
+		pod.rings = 2
+		var node: MeshInstance3D = _mesh(group, pod, Vector3(.58 + cos(angle) * distance, .045, .26 + sin(angle) * distance), chilli)
+		node.quaternion = Quaternion(Vector3.UP, Vector3(cos(angle * 1.7), .22, sin(angle * 1.7)).normalized())
+	_tray(group, Vector3(.24, .008, -.44), .23, true)
+	_basket(group, Vector3(-.52, 0, -.34), .20, .30, true)
+
+
+func _build_basket_stack() -> void:
+	var group := _group("YardBasketStack", Vector3(4.25, .14, 4.22), -20)
+	_basket(group, Vector3.ZERO, .26, .34, false)
+	_basket(group, Vector3(.02, .30, .01), .24, .30, false)
+	_basket(group, Vector3(.52, 0, .28), .21, .29, true)
+	for i: int in 4:
+		_ring(group, Vector3(-.46, .022 + i * .028, .30), .15 - i * .012, .021, _rope)
+
+
+func _build_yard_bucket() -> void:
+	var group := _group("YardBucket", Vector3(-2.15, .14, -1.28), 8)
+	_lathe(group, Vector3.ZERO, [Vector2(.01, 0), Vector2(.145, 0), Vector2(.175, .26), Vector2(.175, .285), Vector2(.155, .29), Vector2(.15, .26), Vector2(.125, .02), Vector2(.01, .02)], _wood, 16)
+	_ring(group, Vector3(0, .08, 0), .155, .011, _iron)
+	_ring(group, Vector3(0, .25, 0), .172, .011, _iron)
+	for i: int in 10:
+		var a: float = i * PI / 10.0
+		var b: float = (i + 1) * PI / 10.0
+		_beam(group, Vector3(cos(a) * .17, .29 + sin(a) * .17, 0), Vector3(cos(b) * .17, .29 + sin(b) * .17, 0), .009, _iron)
+	_lathe(group, Vector3(.38, 0, .16), [Vector2(.01, 0), Vector2(.10, 0), Vector2(.115, .19), Vector2(.10, .195), Vector2(.09, .02), Vector2(.01, .02)], _bamboo, 14)
+
+
+func _build_drying_line() -> void:
+	# A low A-frame in the front garden. Tall posts beside the veranda read as part
+	# of its railing and hide the porch, so the herbs hang below eye level instead.
+	var group := _group("YardDryingLine", Vector3(1.45, .14, 5.62), 20)
+	var herb := _paint(Color("9d7a34"), 13.0)
+	for x: float in [-.74, .74]:
+		_beam(group, Vector3(x, 0, -.26), Vector3(x, .70, 0), .027, _bamboo)
+		_beam(group, Vector3(x, 0, .26), Vector3(x, .70, 0), .027, _bamboo)
+		_beam(group, Vector3(x, .26, -.17), Vector3(x, .26, .17), .016, _bamboo)
+	_beam(group, Vector3(-.80, .70, 0), Vector3(.80, .70, 0), .024, _bamboo)
+	for i: int in 6:
+		var x: float = -.60 + i * .24
+		var length: float = .30 + sin(i * 2.1) * .07
+		var bundle := CapsuleMesh.new()
+		bundle.radius = .048 + sin(i * 1.3) * .009
+		bundle.height = length
+		bundle.radial_segments = 7
+		bundle.rings = 3
+		_mesh(group, bundle, Vector3(x, .655 - length * .5, sin(i * 1.9) * .045), herb)
+		_ring(group, Vector3(x, .662, sin(i * 1.9) * .045), .050, .009, _rope)
+	_basket(group, Vector3(-1.02, 0, .18), .20, .28, true)
+
+
+func _build_melon_pile() -> void:
+	var group := _group("YardMelonPile", Vector3(1.15, .14, 4.24), 30)
+	var straw_mat := BoxMesh.new()
+	straw_mat.size = Vector3(.92, .030, .62)
+	_mesh(group, straw_mat, Vector3(0, .015, 0), _straw)
+	var rind := _paint(Color("b9b055"), 11.0)
+	var ripe := _paint(Color("c49a3e"), 11.0)
+	for i: int in 6:
+		var angle: float = i * 2.399
+		var distance: float = .26 * sqrt(float(i) / 6.0)
+		var melon := SphereMesh.new()
+		melon.radius = .115 + sin(i * 1.9) * .020
+		melon.height = melon.radius * 1.72
+		melon.radial_segments = 12
+		melon.rings = 7
+		var node: MeshInstance3D = _mesh(group, melon, Vector3(cos(angle) * distance, .03 + melon.height * .5, sin(angle) * distance * .8), ripe if i % 3 == 0 else rind)
+		node.rotation = Vector3(.32, angle, .18)
+
+
+func _build_seed_frames() -> void:
+	var group := _group("YardSeedFrames", Vector3(-2.62, .14, 4.20), -25)
+	var earth := _paint(Color("6b573c"), 16.0)
+	var sprout := _paint(Color("6e8a4a"), 18.0)
+	for frame_index: int in 2:
+		var origin := Vector3(frame_index * .70, 0, frame_index * .16)
+		var soil := BoxMesh.new()
+		soil.size = Vector3(.56, .090, .38)
+		_mesh(group, soil, origin + Vector3(0, .0650, 0), earth)
+		for side: int in [-1, 1]:
+			var long_rail := BoxMesh.new()
+			long_rail.size = Vector3(.60, .115, .032)
+			_mesh(group, long_rail, origin + Vector3(0, .0575, side * .198), _wood)
+			var short_rail := BoxMesh.new()
+			short_rail.size = Vector3(.032, .115, .38)
+			_mesh(group, short_rail, origin + Vector3(side * .288, .0575, 0), _wood)
+		for i: int in 24:
+			var leaf := CapsuleMesh.new()
+			leaf.radius = .019
+			leaf.height = .125
+			leaf.radial_segments = 5
+			leaf.rings = 2
+			var p := origin + Vector3(-.225 + (i % 6) * .09, .115, -.115 + int(i / 6) * .077)
+			var node: MeshInstance3D = _mesh(group, leaf, p, sprout)
+			node.rotation = Vector3(sin(i * 1.7) * .38, i * .9, cos(i * 2.3) * .34)

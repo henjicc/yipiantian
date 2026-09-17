@@ -5,6 +5,7 @@ const CropVisuals = preload("res://art/crops/crop_visual_catalog.gd")
 const FarmState = preload("res://farm/farm_state.gd")
 const PlantWind = preload("res://presentation/plant_wind.gd")
 const SoilShader = preload("res://scenes/environment/soil.gdshader")
+const PigmentShader = preload("res://scenes/environment/pigment.gdshader")
 const FIELD_SIZE := Vector3(2.6, 0.16, 2.05)
 const CELL_SPAN := Vector2(0.60, 0.44)
 const CELL_ORIGIN := Vector2(-1.20, -0.88)
@@ -18,13 +19,21 @@ var _cell_frame: Node3D
 var _wet_soil: ShaderMaterial
 var _soil: ShaderMaterial
 var _ridge: ShaderMaterial
+var _coping: ShaderMaterial
 var _plant_wind := PlantWind.new()
 
 
 func _ready() -> void:
-	_soil = _soil_material("80684d", 0.0)
-	_wet_soil = _soil_material("62533e", 1.0)
-	_ridge = _soil_material("80684d", 0.0)
+	# Pale soil sat at the same value as the sage crops, so neither read. Rich
+	# earth gives the leaves something to stand against, as in the reference.
+	_soil = _soil_material("6a5033", 0.0)
+	_wet_soil = _soil_material("4c3a24", 1.0)
+	_ridge = _soil_material("6a5033", 0.0)
+	_coping = ShaderMaterial.new()
+	_coping.shader = PigmentShader
+	_coping.set_shader_parameter("base_color", Color("948f7e"))
+	_coping.set_shader_parameter("wash_scale", 5.5)
+	_coping.set_shader_parameter("stone_treatment", 1.0)
 	_make_fields()
 
 
@@ -124,6 +133,7 @@ func _box(parent: Node3D, point: Vector3, dimensions: Vector3, material: Materia
 func _make_fields() -> void:
 	var soil_patch: ArrayMesh = _soil_patch()
 	var earthen_bank: ArrayMesh = _earthen_bank()
+	var coping: ArrayMesh = _coping_kerb()
 	var selected := _material("4d806c")
 	selected.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_cell_frame = Node3D.new()
@@ -148,6 +158,7 @@ func _make_fields() -> void:
 			# A shallow shared bed under sixteen soil pads makes narrow natural furrows,
 			# without raised UI dividers or a separate collision body per plant.
 			_mesh(body, earthen_bank, Vector3.ZERO, _ridge)
+			_mesh(body, coping, Vector3.ZERO, _coping)
 			_soil_meshes[field_id(index)] = {}
 			_cell_crops[field_id(index)] = {}
 			for cell_id: String in FarmState.CELL_IDS:
@@ -185,6 +196,49 @@ func _soil_patch() -> ArrayMesh:
 				surface.add_vertex(Vector3((uv.x-.5)*CELL_SPAN.x,height,(uv.y-.5)*CELL_SPAN.y))
 	surface.generate_normals()
 	return surface.commit()
+
+
+func _coping_kerb() -> ArrayMesh:
+	# Laid kerb stones capping the earthen skirt, as the reference beds have. One
+	# shared mesh for all six beds; decoration only, the field collider is unchanged.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5514
+	var half := Vector2(1.315, 0.995)
+	var runs: Array[Array] = [
+		[Vector2(-half.x, -half.y), Vector2(half.x, -half.y)], [Vector2(half.x, half.y), Vector2(-half.x, half.y)],
+		[Vector2(half.x, -half.y), Vector2(half.x, half.y)], [Vector2(-half.x, half.y), Vector2(-half.x, -half.y)]]
+	for run: Array in runs:
+		var start: Vector2 = run[0]
+		var finish: Vector2 = run[1]
+		var span: float = start.distance_to(finish)
+		var count: int = maxi(3, roundi(span / 0.30))
+		var along: Vector2 = (finish - start) / span
+		var across := Vector2(-along.y, along.x)
+		for i: int in count:
+			var centre: Vector2 = start + along * (span * (i + 0.5) / count) + across * rng.randf_range(-0.012, 0.012)
+			var length: float = span / count * rng.randf_range(0.80, 0.95)
+			var depth: float = rng.randf_range(0.135, 0.175)
+			var top: float = rng.randf_range(0.082, 0.101)
+			var lean: float = rng.randf_range(-0.07, 0.07)
+			var basis := Basis(Vector3(along.x, 0.0, along.y), Vector3.UP, Vector3(across.x, 0.0, across.y)).rotated(Vector3.UP, lean)
+			_kerb_block(surface, Transform3D(basis, Vector3(centre.x, 0.0, centre.y)), Vector3(length, top + 0.145, depth), top)
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _kerb_block(surface: SurfaceTool, placement: Transform3D, size: Vector3, top: float) -> void:
+	var half: Vector3 = size * 0.5
+	var base: float = top - size.y
+	var corners: Array[Vector3] = [
+		Vector3(-half.x, base, -half.z), Vector3(half.x, base, -half.z), Vector3(half.x, base, half.z), Vector3(-half.x, base, half.z),
+		Vector3(-half.x * 0.94, top, -half.z * 0.90), Vector3(half.x * 0.94, top, -half.z * 0.90),
+		Vector3(half.x * 0.94, top, half.z * 0.90), Vector3(-half.x * 0.94, top, half.z * 0.90)]
+	var faces: Array[Array] = [[4, 5, 6, 7], [1, 0, 3, 2], [0, 1, 5, 4], [2, 3, 7, 6], [3, 0, 4, 7], [1, 2, 6, 5]]
+	for face: Array in faces:
+		for index: int in [0, 1, 2, 0, 2, 3]:
+			surface.add_vertex(placement * corners[face[index]])
 
 
 func _earthen_bank() -> ArrayMesh:
