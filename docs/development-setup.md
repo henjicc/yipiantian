@@ -299,10 +299,17 @@ rc.5交付：源码8f39fd66干净独立克隆、导入和发行导出通过，PC
 
 入口：`Game/ui/camera_tuning.gd`，参数权威在 `FarmCamera.overview_parameters/preview_overview`。非自由全景最远缩放边界使用本次距离。`layered_landscape.gd` 的绘景舞台原先固定28°，改低角度会令远山落出画面；现在跟随所选全景基准俯角，临时聚焦或自由观察不改变基准。镜头选定后如需进一步配景，继续基于该固定参数调整。
 
-景深调节（2026-09-18）：面板提供「景深模糊」开关与0–300%滑块，默认150%（100%保持原上限的含义），以及「远景雾气」0–100%滑块，默认55%，即时平滑预览，复制JSON同时包含`dof_enabled`、`dof_strength`（0–3）与`fog_strength`（0–1）。强度由`focus_detail`持有，仅本次运行有效，收起／复位／其他设置应用不重置；开关与原设置中的景深偏好共用。低画质明确停用控件并保留数值，自由检查和摆放仍不虚化。当前采用[CameraAttributesPractical](https://docs.godotengine.org/en/4.7/classes/class_cameraattributespractical.html)的真实相机深度加人为清晰区，并非真实镜头的单一焦平面：全景和聚焦都保护六块田及实际作物包围盒（额外0.12米风动余量），作物更换后更新缓存、镜头变化时重新投影深度；焦区扩展立即生效，收缩平滑，强度不改变田块清晰边界。远景雾气复用已有深度雾：从最远田块后10米开始、70米渐入，最大密度0.85，颜色继续跟随昼夜；调为0关闭深度雾，原素材中的绘制薄雾保留。没有新增整屏模糊或额外渲染通道。沿用下述定向入口，当前证据输出`.local/verification/dof-tuning/`，含0／35／100%及聚焦对照、面板小窗和4K截图。
+景深调节（2026-09-18）：面板提供「景深模糊」开关与0–300%滑块，默认150%（100%保持原上限的含义），以及「远景雾气」0–100%滑块，默认55%，即时平滑预览，复制JSON同时包含`dof_enabled`、`dof_strength`（0–3）与`fog_strength`（0–1）。强度由`focus_detail`持有，仅本次运行有效，收起／复位／其他设置应用不重置；开关与原设置中的景深偏好共用。低画质明确停用控件并保留数值，自由检查和摆放仍不虚化。当前采用[CameraAttributesPractical](https://docs.godotengine.org/en/4.7/classes/class_cameraattributespractical.html)的真实相机深度加人为清晰区，并非真实镜头的单一焦平面：全景和聚焦都保护六块田及实际作物包围盒（额外0.12米风动余量），作物更换后更新缓存、镜头变化时重新投影深度；全景／聚焦／缩放及过渡共用同一强度和清晰带，不再在set_focus中清零，也不切换较弱的近景配置，强度不改变田块清晰边界。远景雾气复用已有深度雾：按田块包围盒到相机的最大径向距离加4米起雾（与DOF轴向深度区分），渐入距离随滑块从70米缩至26米，最大密度0.98，颜色继续跟随昼夜；调为0关闭深度雾，原素材中的绘制薄雾保留。没有新增整屏模糊或额外渲染通道。沿用下述定向入口，当前证据输出`.local/verification/dof-tuning/`，含0／35／100%及聚焦对照、面板小窗和4K截图。
 
 定向原生场景验证入口：`scripts/godot.ps1 -Action Run -ExtraArgs @('--script','../tests/camera_tuning_test.gd')`。原相机面板验证了滑块改变镜头、剪贴板JSON可还原数值、取消持工具与阻断场景点击、聚焦返回／复位／缩放上限、Esc及960×600与4K布局；历史截图保留在`.local/verification/camera-tuning/`。当前景深修订的同一入口已通过，另检查0／35／100%实际模糊量、所有田块和可见作物角点在聚焦过渡／缩放中保持清晰、开关共享、低画质停用及恢复、其他设置不重置强度，以及复制新增景深参数；证据在`dof-tuning/`，没有跑存档或全资产回归。剪贴板复制后立即读取曾遇系统短时占用，检查延迟0.4秒模拟粘贴时机后通过，未修改产品复制行为。场景光照固定16:30，HUD时钟为系统时间，不能当作时间同步演示。此节点保留参数、截图和补拍入口，本轮未录制视频。
 
+### 水雾与景深连续性修复（2026-09-18）
+
+本轮定位到三个实际原因：邻居岛与水草材质写入固定的`FOG`，覆盖了环境雾；水面反射在15–23米突然衰减，且远水绘景另用屏幕纵向渐变，形成白／蓝／白分带；聚焦逻辑主动将景深清零并切换弱档。现移除材质雾覆盖，让岛、植物和水面响应共同环境雾，反射连续变化并衰减远处波纹高光；绘景湖面用视线与虚拟水面的交点距离计算相同雾渐变。全景、聚焦和返回共用景深配置，清晰带每帧保护全部田块与作物。
+
+前景虚线黑边另由透明水面未写入深度触发：当前Godot 4.7.2 Forward+、4×MSAA下，对照渲染只给水面增加`depth_draw_always`即可消除叶片／水面交界的黑点。保留圆形高质量景深、关闭采样抖动以及原4×MSAA；未采用试验中的方形模糊或TAA，也不靠关闭抗锯齿掩盖问题。水面透明度、船舱遮罩和读取不透明场景的水岸接触效果保留。此结论来自本机渲染对照，不推断所有引擎版本都有同样问题。契约依据：[空间着色器FOG与深度写入](https://docs.godotengine.org/en/4.7/tutorials/shaders/shader_reference/spatial_shader.html)；径向雾与自定义FOG分支另核对了[Forward+着色器实现](https://github.com/godotengine/godot/blob/master/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl)。
+
+定向入口：`scripts/godot.ps1 -Action Run -ExtraArgs @('--script','../tests/camera_tuning_test.gd','--','--fog-regression')`。本轮通过实际远岛像素雾开关对照、300%景深下聚焦及返回过渡连续采样、全部土面与作物角点清晰检查，并目检4K叶片边缘和缩放湖面。证据`.local/verification/dof-tuning/`：`fog-fixed-00/55/100.png`、`dof-edge-fixed-4k.png`、`dof-continuous-focus.png`、`fog-fixed-zoom.png`；日志`.local/fog-fix.log`包含`FOG_REGRESSION_PASS`且无引擎错误。未重跑存档、全资产或完整相机面板套件；没有新增模型、生成费用或成片。截图光照固定11点，HUD为系统时刻，不作时间同步演示。
 
 ### 低机位前景（2026-09-18）
 

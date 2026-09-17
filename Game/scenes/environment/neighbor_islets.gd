@@ -5,8 +5,6 @@ const EXPANSION := "res://art/environment/archipelago/"
 const MarshPlants = preload("res://scenes/environment/marsh_plants.gd")
 var _islets: Array[Dictionary] = []
 var _low_quality: bool = false
-var _materials: Array[ShaderMaterial] = []
-var _haze := Color.TRANSPARENT
 var _lake_plants: Node3D
 
 func _ready() -> void:
@@ -63,17 +61,12 @@ func _add(label: String, asset: String, at: Vector3, yaw: float, directory: Stri
 				material.shader = preload("res://scenes/environment/islet_surface.gdshader")
 				material.set_shader_parameter("painted_color",source.albedo_texture)
 				geometry.set_surface_override_material(surface, material)
-				_materials.append(material)
 	levels[1].visible = false
 	_islets.append({"node":holder, "high":levels[0], "low":levels[1], "distant":false})
 
 func _process(_delta: float) -> void:
 	var camera: Camera3D = get_viewport().get_camera_3d()
 	if camera == null: return
-	var haze: Color = get_world_3d().environment.fog_light_color
-	if haze != _haze:
-		_haze = haze
-		for material: ShaderMaterial in _materials: material.set_shader_parameter("haze_color",haze)
 	for entry: Dictionary in _islets:
 		var distance: float = camera.global_position.distance_to(entry.node.global_position)
 		# Hysteresis prevents tier flicker when orbiting across the boundary.

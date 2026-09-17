@@ -31,7 +31,7 @@ Tripo CLI0.4.0，H3.1 `v3.1-20260211`；几何Ultra（`geometry_quality=detailed
 
 湖面原10–18米过早渐隐，远岛后方背景底色又已切到天空，形成大片暖灰空白。现真实湖面延至48–72米平滑过渡，并上移绘景水／天颜色过渡，保留山岸轮廓。自由检查远岛时水面渐隐随相机前进，避免身边的水先消失；水接触图仍只覆盖主院[-24,24]，远处植物与岛岸主要依靠真实水位、湿色和植被衔接。没有全湖昂贵的接触图烘焙。
 
-全景远景DOF过渡原为500米，几十米外岛屿接近零虚化；改为40米，起点仍在最远田块后7.5米，近景船与田块清晰区保留。减轻邻居岛额外雾色至0.20，避免把“雾白”当成“失焦”。遵循现有开关与低画质／自由视角策略，不加新UI。[Godot4.7 CameraAttributesPractical](https://docs.godotengine.org/en/4.7/classes/class_cameraattributespractical.html)明确transition是从零到最大模糊的过渡距离。
+全景远景DOF过渡原为500米，几十米外岛屿接近零虚化；改为40米，起点仍在最远田块后7.5米，近景船与田块清晰区保留。后续移除岛与水草材质写死的FOG，统一接受全局深度雾，避免覆盖相机面板雾气滑块。全景和聚焦共用相同景深强度／清晰带；相关面板与水面深度修复见[开发记录](../../../docs/development-setup.md#全景相机调节)。遵循现有开关与低画质／自由视角策略。[Godot4.7 CameraAttributesPractical](https://docs.godotengine.org/en/4.7/classes/class_cameraattributespractical.html)明确transition是从零到最大模糊的过渡距离。
 
 ## 验证与补拍
 

@@ -8,6 +8,7 @@ uniform vec4 sky_top : source_color = vec4(0.40, 0.53, 0.62, 1.0);
 uniform vec4 sky_horizon : source_color = vec4(0.72, 0.72, 0.65, 1.0);
 uniform vec4 lake_horizon : source_color = vec4(0.43, 0.59, 0.59, 1.0);
 uniform float cloud_strength : hint_range(0.0, 1.0) = 0.22;
+uniform vec3 distance_fog = vec3(40.0, 90.0, 0.5); // begin, end, density
 instance uniform int landscape_layer = 0;
 varying vec2 stage_point;
 float noise(vec2 p) {
@@ -19,7 +20,12 @@ void vertex() { stage_point = VERTEX.xy; }
 void fragment() {
  if (landscape_layer == 0) {
   vec3 sky = mix(sky_horizon.rgb, sky_top.rgb, smoothstep(58.0, 180.0, stage_point.y));
-  vec3 river = mix(lake_horizon.rgb, sky_horizon.rgb, smoothstep(-45.0, 60.0, stage_point.y)*0.48);
+  // Reconstruct the virtual lake surface behind the real-water fade, so the
+  // matte and 3D water share distance/fog instead of unrelated vertical bands.
+  vec3 ray = normalize((INV_VIEW_MATRIX * vec4(VERTEX, 0.0)).xyz);
+  float water_distance = ray.y < -0.00001 ? max(0.0, (-0.25-CAMERA_POSITION_WORLD.y)/ray.y) : distance_fog.y;
+  float haze = pow(smoothstep(distance_fog.x,distance_fog.y,water_distance),0.85)*distance_fog.z;
+  vec3 river = mix(lake_horizon.rgb, sky_horizon.rgb, haze);
   ALBEDO = mix(river, sky, smoothstep(90.0, 125.0, stage_point.y));
   ALPHA = 1.0;
  } else if (landscape_layer == 4) {
@@ -34,7 +40,8 @@ void fragment() {
   else { painted = texture(near_bank, UV); }
   // Near-zero-alpha RGB in generated cutouts is not meaningful pigment.
   if (painted.a < 0.025) { discard; }
-  float haze = landscape_layer == 1 ? 0.65 : (landscape_layer == 2 ? 0.48 : 0.34);
+  float base_haze = landscape_layer == 1 ? 0.40 : (landscape_layer == 2 ? 0.25 : 0.12);
+  float haze = mix(base_haze,0.94,distance_fog.z);
   ALBEDO = mix(painted.rgb * atmosphere_tint.rgb, sky_horizon.rgb, haze);
   ALPHA = smoothstep(0.025, 0.985, painted.a);
  }

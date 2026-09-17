@@ -20,15 +20,16 @@ var _quality: String = "standard"
 var _dof_enabled: bool = true
 var _dof_strength: float = 1.5
 var _fog_strength: float = 0.55
-var _band_initialized: bool = false
 var _field_bounds: Dictionary = {}
 var _bounds_dirty: bool = true
+var _backdrop_material: ShaderMaterial
 
 
 func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations: Node3D) -> void:
 	_camera = camera
 	_fields = fields.duplicate()
 	_environment = environment
+	_backdrop_material = environment.get_backdrop_material()
 	_decorations = decorations
 	_attributes = CameraAttributesPractical.new()
 	_attributes.dof_blur_amount = 0.0
@@ -57,15 +58,9 @@ func set_focus(field: Node3D = null) -> void:
 	if field == _target:
 		return
 	_target = field
-	_band_initialized = false
 	for candidate: Node3D in _fields:
 		refresh_field(candidate)
-	# Remove blur immediately when switching targets; never blur the new operation.
-	# Strength then eases in at the new depth instead of preserving an old focus band.
-	if _attributes != null:
-		_attributes.dof_blur_amount = 0.0
-		_attributes.dof_blur_near_enabled = false
-		_attributes.dof_blur_far_enabled = false
+	# Focus changes detail priority, never the appearance or continuity of DOF.
 
 
 func set_quality(value: String) -> bool:
@@ -175,49 +170,37 @@ func _apply_decoration_wind(node: Node) -> void:
 func _process(delta: float) -> void:
 	if _camera == null:
 		return
-	# Depth haze begins beyond all beds and the house; clock still owns its colour.
+	# Built-in depth fog uses radial distance, unlike DOF's camera-axis depth.
+	# Protect the same field bounds using the correct metric for each effect.
 	var environment: Environment = _camera.get_world_3d().environment
-	var clear_depths: Vector2 = protected_depth_range()
+	protected_depth_range()
+	var clear_radius: float = 0.0
+	for field: Node3D in _fields:
+		var bounds: AABB = _field_bounds[field]
+		for corner: int in 8:
+			clear_radius = maxf(clear_radius, _camera.global_position.distance_to(field.global_transform * bounds.get_endpoint(corner)))
 	environment.fog_enabled = _fog_strength > 0.0
-	environment.fog_density = _fog_strength * 0.85
-	environment.fog_depth_begin = maxf(1.0, clear_depths.y + 10.0)
-	environment.fog_depth_end = environment.fog_depth_begin + 70.0
-	environment.fog_depth_curve = 1.25
+	environment.fog_density = _fog_strength * 0.98
+	environment.fog_depth_begin = clear_radius + 4.0
+	environment.fog_depth_end = environment.fog_depth_begin + lerpf(70.0, 26.0, _fog_strength)
+	environment.fog_depth_curve = 0.85
+	_backdrop_material.set_shader_parameter("distance_fog", Vector3(environment.fog_depth_begin, environment.fog_depth_end, environment.fog_density))
 	var inspecting: bool = _camera.get("free_view") == true
 	var framing: bool = not inspecting and not is_instance_valid(_target) and not _decorations.active and _quality == "standard"
 	_foreground.set_overview_visible(framing, inspecting)
 	var allowed: bool = not inspecting and _dof_enabled and _quality == "standard" and _dof_strength > 0.0
-	var active: bool = is_instance_valid(_target) and allowed
-	var frame_blur: bool = framing and allowed
-	var approach: float = 1.0 - smoothstep(12.0, 18.0, _camera.global_position.distance_to(_target.global_position)) if active else 0.0
-	var target_amount: float = (0.115 if frame_blur else 0.032 * approach) * _dof_strength
+	var effect_active: bool = allowed and not _decorations.active
+	var target_amount: float = 0.115 * _dof_strength if effect_active else 0.0
 	_attributes.dof_blur_amount = move_toward(_attributes.dof_blur_amount, target_amount, delta * 0.35)
-	_attributes.dof_blur_near_enabled = (active or frame_blur) and _attributes.dof_blur_amount > 0.0001
-	_attributes.dof_blur_far_enabled = (active or frame_blur) and _attributes.dof_blur_near_enabled
-	if frame_blur:
-		var depths: Vector2 = protected_depth_range()
-		# Keep the boat and mid-water lotus clear; only the much closer frame plants
-		# enter the stronger blur band introduced for the low overview angle.
-		_attributes.dof_blur_near_distance = maxf(0.1, depths.x - 4.0)
-		_attributes.dof_blur_near_transition = 3.5
-		# Every bed stays sharp even at the legal orbit and zoom limits. Only the
-		# space beyond the farm/house begins the gradual background defocus.
-		_attributes.dof_blur_far_distance = depths.y + 7.5
-		_attributes.dof_blur_far_transition = 40.0
-		_band_initialized = false
-	if active:
-		_attributes.dof_blur_near_transition = 5.0
-		_attributes.dof_blur_far_transition = 12.0
-		# Artistic clear plateau: all six beds remain sharp even in a focused view.
-		var depths: Vector2 = protected_depth_range()
-		var near_edge: float = maxf(0.1, depths.x - 0.6)
-		var far_edge: float = depths.y + 0.6
-		var weight: float = 1.0 - exp(-delta * 8.0)
-		# Expand immediately to enclose the operation; contract smoothly. Ordinary
-		# pose tweens are continuous, but a fast pan must never outrun the clear band.
-		_attributes.dof_blur_near_distance = minf(near_edge, lerpf(_attributes.dof_blur_near_distance, near_edge, weight)) if _band_initialized else near_edge
-		_attributes.dof_blur_far_distance = maxf(far_edge, lerpf(_attributes.dof_blur_far_distance, far_edge, weight)) if _band_initialized else far_edge
-		_band_initialized = true
+	_attributes.dof_blur_near_enabled = effect_active and _attributes.dof_blur_amount > 0.0001
+	_attributes.dof_blur_far_enabled = _attributes.dof_blur_near_enabled
+	# One farm-relative clear band in overview, zoom, focus and camera tweens.
+	# No target reset or separate low-strength close-up profile.
+	var depths: Vector2 = protected_depth_range()
+	_attributes.dof_blur_near_distance = maxf(0.1, depths.x - 4.0)
+	_attributes.dof_blur_near_transition = 3.5
+	_attributes.dof_blur_far_distance = depths.y + 7.5
+	_attributes.dof_blur_far_transition = 40.0
 
 
 static func depth_range(camera: Camera3D, transform: Transform3D, bounds: AABB) -> Vector2:

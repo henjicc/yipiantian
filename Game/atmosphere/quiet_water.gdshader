@@ -1,5 +1,7 @@
 shader_type spatial;
-render_mode blend_mix, cull_disabled;
+render_mode blend_mix, cull_disabled, depth_draw_always;
+// Post-processing must see the lake surface, not the distant matte behind it.
+// Missing transparent-water depth left dotted DOF/MSAA rims around near leaves.
 
 // Celadon lake: broad colour, broken moving highlights and actual shore contacts.
 // Distance texture stores squared metres over world XZ [-24,24].
@@ -17,6 +19,7 @@ uniform bool boat_mask_enabled = false;
 uniform mat4 world_to_boat;
 varying vec3 world_position;
 varying float crest_light;
+varying float water_detail;
 
 float water_noise(vec2 p) {
 	vec2 cell = floor(p);
@@ -54,6 +57,7 @@ void fragment() {
 	vec2 mirrored = 1.0 - abs(1.0 - mod(flow * vec2(0.11, 0.14) + vec2(0.35, 0.6), 2.0));
 	vec3 pigment = texture(painted_water, vec2(mirrored.x, 0.90 + mirrored.y * 0.08)).rgb;
 	float distance_fade = 1.0 - smoothstep(15.0, 34.0, lake_depth);
+	water_detail = distance_fade;
 	// Analytic slopes of centimetre-scale crossing waves. Unlike translating the
 	// painted pigment, these normals change real light/view-dependent highlights.
 	vec2 d1 = vec2(0.530, 0.848);
@@ -88,6 +92,7 @@ void fragment() {
 		vec3 hull_world_outward = normalize(transpose(mat3(world_to_boat)) * vec3(hull_outward.x, 0.0, hull_outward.y));
 		slope += hull_world_outward.xz * sin(hull_distance * 16.0 - TIME * 1.5) * exp(-hull_distance * 2.4) * 0.025;
 	}
+	slope *= mix(0.12, 1.0, distance_fade);
 	vec3 wave_normal = normalize(vec3(-slope.x * wave_strength, 1.0, -slope.y * wave_strength));
 	NORMAL = normalize((VIEW_MATRIX * vec4(wave_normal, 0.0)).xyz);
 	float broad = sin(flow.y * 1.7 - TIME * 0.22 + sin(flow.x * 0.31) * 1.6);
@@ -134,10 +139,11 @@ void fragment() {
 	vec2 sky_uv = vec2(sky_u, clamp(0.29 - reflected_world.y * 0.23, 0.015, 0.29));
 	vec3 sky = texture(painted_water, sky_uv).rgb;
 	vec3 reflection = mix(water_color.rgb * 0.88, sky, 0.48);
-	float reflection_weight = 0.16 + fresnel * 0.44;
+	float reflection_weight = 0.08 + fresnel * 0.20;
 	// Soft sky reflection is stable when orbiting. Local objects are anchored by
 	// their real submerged continuation, avoiding stepped screen-ray silhouettes.
-	reflection_weight *= 1.0 - smoothstep(15.0, 23.0, lake_depth);
+	// Keep reflection continuous. A hard distance fade produced a blue middle
+	// strip between the pale reflected foreground and the fogged horizon.
 	ALBEDO = colour * (1.0 - reflection_weight);
 	// Screen/sky reflection already contains illumination. Do not light it twice.
 	EMISSION = reflection * reflection_tint.rgb * reflection_weight;
@@ -162,5 +168,5 @@ void light() {
 	vec3 halfway = normalize(LIGHT + VIEW);
 	float highlight = pow(max(dot(NORMAL, halfway), 0.0), 100.0);
 	float broken_reflection = pow(max(dot(NORMAL, halfway), 0.0), 14.0) * crest_light;
-	SPECULAR_LIGHT += mix(vec3(luminance), LIGHT_COLOR, 0.55) * ATTENUATION * (highlight * 0.22 + broken_reflection * 0.12);
+	SPECULAR_LIGHT += mix(vec3(luminance), LIGHT_COLOR, 0.55) * ATTENUATION * (highlight * 0.12 * water_detail + broken_reflection * 0.12);
 }

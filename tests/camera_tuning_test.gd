@@ -31,13 +31,59 @@ func _run() -> void:
 	scene._select_crop("spinach")
 	await click(scene.hud.get_node("Layout/DebugCameraTuning").get_global_rect().get_center())
 	expect(panel.visible and scene.selected_tool.is_empty(), "Opening panel cancels armed farming")
+	if OS.get_cmdline_user_args().has("--fog-regression"):
+		panel._dof_slider.value = 0
+		panel.hide()
+		scene.atmosphere.set_preview_hour(11.0)
+		panel._fog_slider.value = 0
+		await shot("fog-fixed-00.png")
+		var clear_image: Image = root.get_texture().get_image()
+		panel._fog_slider.value = 100
+		await shot("fog-fixed-100.png")
+		var fog_image: Image = root.get_texture().get_image()
+		for island: String in ["FarWillow", "FarBamboo"]:
+			var node: Node3D = scene.get_node("Environment/NeighborIslets/"+island)
+			var point: Vector2 = camera.unproject_position(node.global_position+Vector3(0,1.2,0))
+			var change: float = colour_change(clear_image,fog_image,Vector2i(point))
+			expect(change > .04, "Fog visibly affects actual rendered island: "+island)
+			print("FOG_ISLAND_PIXEL_CHANGE ",island," ",change)
+		panel._fog_slider.value = 55
+		await shot("fog-fixed-55.png")
+		panel._dof_slider.value = 300
+		await create_timer(1.1).timeout
+		root.size = Vector2i(3840,2160)
+		await shot("dof-edge-fixed-4k.png")
+		var held_amount: float = camera.attributes.dof_blur_amount
+		scene._focus_field(0)
+		for index: int in 18:
+			await create_timer(.05).timeout
+			expect(camera.attributes.dof_blur_far_enabled and is_equal_approx(camera.attributes.dof_blur_amount,held_amount), "Focus transition never clears or weakens DOF")
+			check_clear_fields("continuous focus")
+		await shot("dof-continuous-focus.png")
+		scene._return_overview()
+		for index: int in 18:
+			await create_timer(.05).timeout
+			expect(camera.attributes.dof_blur_far_enabled and is_equal_approx(camera.attributes.dof_blur_amount,held_amount), "Return transition never clears or weakens DOF")
+			check_clear_fields("continuous return")
+		camera.zoom(-3.0)
+		await create_timer(.8).timeout
+		await shot("fog-fixed-zoom.png")
+		expect(camera.get_world_3d().environment.fog_depth_begin > scene.focus_detail.protected_depth_range().y, "Farm remains outside fog when zooming")
+		scene.farm_audio.shutdown()
+		await create_timer(.3).timeout
+		scene.queue_free()
+		await process_frame
+		await process_frame
+		print("FOG_REGRESSION_PASS" if failures.is_empty() else str(failures))
+		quit(0 if failures.is_empty() else 1)
+		return
 	if OS.get_cmdline_user_args().has("--quick-atmosphere"):
 		panel._dof_slider.value = 300
 		panel._fog_slider.value = 100
 		await create_timer(1.2).timeout
 		expect(camera.attributes.dof_blur_amount > .3, "Extended slider reaches three times previous blur ceiling")
 		var environment: Environment = camera.get_world_3d().environment
-		expect(is_equal_approx(environment.fog_density,.85), "Fog slider reaches renderer")
+		expect(is_equal_approx(environment.fog_density,.98), "Fog slider reaches renderer")
 		expect(environment.fog_depth_begin > scene.focus_detail.protected_depth_range().y, "Fog begins beyond all fields")
 		check_clear_fields("extended blur")
 		panel._fog_slider.value = 0
@@ -180,6 +226,20 @@ func check_clear_fields(context: String) -> void:
 				if depth < scene.camera.near:
 					continue
 				expect(depth >= attributes.dof_blur_near_distance and depth <= attributes.dof_blur_far_distance, "All soil and crop corners remain sharp: " + context)
+
+
+func colour_change(before: Image, after: Image, at: Vector2i) -> float:
+	var total: float = 0.0
+	var count: int = 0
+	for x: int in range(at.x-5,at.x+6):
+		for y: int in range(at.y-5,at.y+6):
+			if x < 0 or y < 0 or x >= before.get_width() or y >= before.get_height():
+				continue
+			var a: Color = before.get_pixel(x,y)
+			var b: Color = after.get_pixel(x,y)
+			total += Vector3(a.r-b.r,a.g-b.g,a.b-b.b).length()
+			count += 1
+	return total/maxf(1.0,count)
 
 
 func click(point: Vector2) -> void:

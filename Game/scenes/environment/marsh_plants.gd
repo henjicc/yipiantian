@@ -5,10 +5,8 @@ const ROOT := "res://art/environment/archipelago/"
 const SURFACE = preload("res://scenes/environment/marsh_surface.gdshader")
 static var _sources: Dictionary = {}
 var _tiers: Array[Node3D] = []
-var _materials: Array[ShaderMaterial] = []
 var shoreline_points: PackedVector3Array = []
 var clump_count := 0
-var _haze := Color.TRANSPARENT
 
 func populate(island: Node3D, seed_value: int) -> void:
 	var bins: Dictionary = {}
@@ -105,7 +103,6 @@ func _batch(parent: Node3D, species: String, tier: String, transforms: Array) ->
 	material.shader=SURFACE
 	material.set_shader_parameter("painted_color",source.texture)
 	material.set_shader_parameter("floating",species=="trapa")
-	_materials.append(material)
 	var mesh := MultiMesh.new()
 	mesh.transform_format=MultiMesh.TRANSFORM_3D
 	mesh.mesh=source.mesh
@@ -123,9 +120,3 @@ func set_low_detail(enabled: bool) -> void:
 	if _tiers.size()!=2: return
 	_tiers[0].visible=not enabled
 	_tiers[1].visible=enabled
-
-func _process(_delta: float) -> void:
-	var colour: Color = get_world_3d().environment.fog_light_color
-	if colour==_haze: return
-	_haze=colour
-	for material: ShaderMaterial in _materials: material.set_shader_parameter("haze_color",colour)
