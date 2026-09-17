@@ -1,5 +1,6 @@
 extends PanelContainer
 ## Development-only overview composition controls; camera owns the session pose.
+signal depth_of_field_changed(enabled: bool, strength: float)
 
 const FarmTheme = preload("res://ui/farm_theme.gd")
 const FIELDS: Array = [
@@ -15,6 +16,9 @@ var camera: FarmCamera
 var _sliders: Dictionary = {}
 var _values: Dictionary = {}
 var _copy: Button
+var _dof_toggle: CheckBox
+var _dof_slider: HSlider
+var _dof_value: Label
 
 
 func _ready() -> void:
@@ -57,21 +61,59 @@ func _ready() -> void:
 		column.add_child(slider)
 		_sliders[key] = slider
 		slider.value_changed.connect(func(_value: float) -> void: _apply())
+	var dof_row := HBoxContainer.new()
+	column.add_child(dof_row)
+	_dof_toggle = CheckBox.new()
+	_dof_toggle.text = "景深模糊"
+	_dof_toggle.add_theme_font_size_override("font_size", 18)
+	_dof_toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dof_row.add_child(_dof_toggle)
+	_dof_value = Label.new()
+	_dof_value.add_theme_font_size_override("font_size", 18)
+	dof_row.add_child(_dof_value)
+	_dof_slider = HSlider.new()
+	_dof_slider.name = "DepthOfFieldStrength"
+	_dof_slider.max_value = 100
+	_dof_slider.step = 1
+	_dof_slider.custom_minimum_size = Vector2(284, 20)
+	_dof_slider.mouse_force_pass_scroll_events = false
+	column.add_child(_dof_slider)
+	_dof_toggle.toggled.connect(func(_enabled: bool) -> void: _apply_dof())
+	_dof_slider.value_changed.connect(func(_value: float) -> void: _apply_dof())
 	var presets := HBoxContainer.new()
 	column.add_child(presets)
 	_button(presets, "原角度").pressed.connect(func() -> void: _preset(28.0))
 	_button(presets, "低角度").pressed.connect(func() -> void: _preset(22.0))
 	_copy = _button(column, "复制参数")
 	_copy.pressed.connect(func() -> void:
-		DisplayServer.clipboard_set(JSON.stringify(camera.overview_parameters(), "\t"))
+		var parameters: Dictionary = camera.overview_parameters()
+		parameters.dof_enabled = _dof_toggle.button_pressed
+		parameters.dof_strength = _dof_slider.value / 100.0
+		DisplayServer.clipboard_set(JSON.stringify(parameters, "\t"))
 		_copy.text = "已复制")
 	hide()
 
 
-func present() -> void:
+func present(settings: Dictionary) -> void:
 	camera.preview_overview(camera.overview_parameters())
+	_dof_toggle.set_pressed_no_signal(settings.dof_enabled)
+	_dof_slider.set_value_no_signal(settings.dof_strength * 100.0)
+	_dof_toggle.disabled = settings.quality == "low"
+	_dof_toggle.text = "景深模糊（低画质停用）" if _dof_toggle.disabled else "景深模糊"
+	_sync_dof()
 	_sync()
 	show()
+
+
+func _sync_dof() -> void:
+	_dof_slider.editable = _dof_toggle.button_pressed and not _dof_toggle.disabled
+	_dof_value.text = "%d%%" % roundi(_dof_slider.value)
+
+
+func _apply_dof() -> void:
+	_sync_dof()
+	depth_of_field_changed.emit(_dof_toggle.button_pressed, _dof_slider.value / 100.0)
+	_copy.text = "复制参数"
 
 
 func _preset(pitch: float) -> void:

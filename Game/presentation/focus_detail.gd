@@ -18,8 +18,10 @@ var _decorations: Node3D
 var _target_bounds := AABB(Vector3(-1.4, -0.1, -1.15), Vector3(2.8, 0.75, 2.3))
 var _quality: String = "standard"
 var _dof_enabled: bool = true
-var _dof_strength: float = 1.0
+var _dof_strength: float = 0.65
 var _band_initialized: bool = false
+var _field_bounds: Dictionary = {}
+var _bounds_dirty: bool = true
 
 
 func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations: Node3D) -> void:
@@ -44,6 +46,7 @@ func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations
 	process_priority = 10
 	for field: Node3D in _fields:
 		field.get_node("Crops").child_entered_tree.connect(_on_crop_added.bind(field))
+		field.get_node("Crops").child_exiting_tree.connect(_on_crop_removed)
 	_decorations.child_entered_tree.connect(_on_decoration_added)
 	_apply_quality()
 	refresh_details()
@@ -125,6 +128,31 @@ func _set_bias(node: Node, value: float) -> void:
 
 func _on_crop_added(node: Node, field: Node3D) -> void:
 	_set_bias(node, FOCUS_BIAS if field == _target else OVERVIEW_BIAS)
+	_bounds_dirty = true
+
+
+func _on_crop_removed(_node: Node) -> void:
+	_bounds_dirty = true
+
+
+func protected_depth_range() -> Vector2:
+	# Rebuild only after crops change, once their final placement has been applied.
+	# Actual foliage bounds plus wind margin protect tall crops as well as soil.
+	if _bounds_dirty:
+		for field: Node3D in _fields:
+			var bounds: AABB = _target_bounds
+			for mesh: MeshInstance3D in field.get_node("Crops").find_children("*", "MeshInstance3D", true, false):
+				if mesh.mesh != null and mesh.is_visible_in_tree():
+					var local: Transform3D = field.global_transform.affine_inverse() * mesh.global_transform
+					bounds = bounds.merge(local * mesh.get_aabb())
+			_field_bounds[field] = bounds.grow(0.12)
+		_bounds_dirty = false
+	var result := Vector2(INF, -INF)
+	for field: Node3D in _fields:
+		var depths: Vector2 = depth_range(_camera, field.global_transform, _field_bounds[field])
+		result.x = minf(result.x, depths.x)
+		result.y = maxf(result.y, depths.y)
+	return result
 
 
 func _on_decoration_added(node: Node) -> void:
@@ -153,25 +181,21 @@ func _process(delta: float) -> void:
 	_attributes.dof_blur_near_enabled = (active or frame_blur) and _attributes.dof_blur_amount > 0.0001
 	_attributes.dof_blur_far_enabled = (active or frame_blur) and _attributes.dof_blur_near_enabled
 	if frame_blur:
-		var nearest_field: float = INF
-		var farthest_field: float = -INF
-		for field: Node3D in _fields:
-			var depths: Vector2 = depth_range(_camera, field.global_transform, _target_bounds)
-			nearest_field = minf(nearest_field, depths.x)
-			farthest_field = maxf(farthest_field, depths.y)
+		var depths: Vector2 = protected_depth_range()
 		# Keep the boat and mid-water lotus clear; only the much closer frame plants
 		# enter the stronger blur band introduced for the low overview angle.
-		_attributes.dof_blur_near_distance = maxf(0.1, nearest_field - 4.0)
+		_attributes.dof_blur_near_distance = maxf(0.1, depths.x - 4.0)
 		_attributes.dof_blur_near_transition = 3.5
 		# Every bed stays sharp even at the legal orbit and zoom limits. Only the
 		# space beyond the farm/house begins the gradual background defocus.
-		_attributes.dof_blur_far_distance = farthest_field + 7.5
+		_attributes.dof_blur_far_distance = depths.y + 7.5
 		_attributes.dof_blur_far_transition = 40.0
 		_band_initialized = false
 	if active:
 		_attributes.dof_blur_near_transition = 5.0
 		_attributes.dof_blur_far_transition = 12.0
-		var depths: Vector2 = depth_range(_camera, _target.global_transform, _target_bounds)
+		# Artistic clear plateau: all six beds remain sharp even in a focused view.
+		var depths: Vector2 = protected_depth_range()
 		var near_edge: float = maxf(0.1, depths.x - 0.6)
 		var far_edge: float = depths.y + 0.6
 		var weight: float = 1.0 - exp(-delta * 8.0)

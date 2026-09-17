@@ -6,7 +6,7 @@ var output: String
 
 
 func _initialize() -> void:
-	output = ProjectSettings.globalize_path("res://../.local/verification/camera-tuning")
+	output = ProjectSettings.globalize_path("res://../.local/verification/dof-tuning")
 	_run.call_deferred()
 
 
@@ -31,6 +31,31 @@ func _run() -> void:
 	scene._select_crop("spinach")
 	await click(scene.hud.get_node("Layout/DebugCameraTuning").get_global_rect().get_center())
 	expect(panel.visible and scene.selected_tool.is_empty(), "Opening panel cancels armed farming")
+	var original_pose: Transform3D = camera.transform
+	panel._dof_slider.value = 0
+	await create_timer(.7).timeout
+	expect(not camera.attributes.dof_blur_far_enabled, "Zero strength disables visible blur")
+	panel.hide()
+	await shot("dof-00.png")
+	panel._dof_slider.value = 35
+	await create_timer(.7).timeout
+	var soft_amount: float = camera.attributes.dof_blur_amount
+	await shot("dof-35.png")
+	panel._dof_slider.value = 100
+	await create_timer(.8).timeout
+	expect(camera.attributes.dof_blur_amount > soft_amount and soft_amount > 0, "Slider continuously changes actual renderer blur")
+	expect(camera.transform.is_equal_approx(original_pose), "Blur tuning never resets camera pose")
+	check_clear_fields("maximum blur overview")
+	await shot("dof-100.png")
+	panel._dof_toggle.button_pressed = false
+	await create_timer(.2).timeout
+	expect(not camera.attributes.dof_blur_far_enabled and not scene.settings_values.dof_enabled, "Panel switch shares main settings preference")
+	panel._dof_toggle.button_pressed = true
+	panel._dof_slider.value = 65
+	scene._apply_settings()
+	expect(is_equal_approx(scene.focus_detail.get_settings().dof_strength,.65), "Applying unrelated settings preserves session strength")
+	scene._toggle_camera_tuning()
+	expect(panel._dof_slider.value == 65, "Reopening retains displayed strength")
 	panel._preset(28.0)
 	panel.hide()
 	await shot("02-original.png")
@@ -48,8 +73,12 @@ func _run() -> void:
 	var tuned: Dictionary = camera.overview_parameters()
 	var previous_clipboard: String = DisplayServer.clipboard_get()
 	await click(panel._copy.get_global_rect().get_center())
+	# Avoid racing OS clipboard consumers immediately after a change event.
+	# Observe the user's paste-time result, not a read in the same input frame.
+	await create_timer(.4).timeout
 	var copied: Variant = JSON.parse_string(DisplayServer.clipboard_get())
-	var matches: bool = copied is Dictionary and copied.size() == tuned.size()
+	var matches: bool = copied is Dictionary and copied.size() == tuned.size() + 2
+	matches = matches and copied.get("dof_enabled") == true and is_equal_approx(float(copied.get("dof_strength",-1)),.65)
 	for key: String in tuned:
 		matches = matches and copied is Dictionary and copied.has(key) and is_equal_approx(float(copied[key]), float(tuned[key]))
 	expect(matches, "Copied JSON reproduces the displayed camera parameters")
@@ -59,7 +88,15 @@ func _run() -> void:
 	expect(not camera.focused and scene.farm_state.snapshot() == state, "Open panel blocks world actions")
 	panel.hide()
 	scene._focus_field(0)
+	for frame: int in 12:
+		await create_timer(.04).timeout
+		check_clear_fields("focus transition")
 	await create_timer(.85).timeout
+	check_clear_fields("focused view")
+	await shot("dof-focus.png")
+	scene.camera.zoom(-100)
+	await create_timer(.6).timeout
+	check_clear_fields("focused zoom")
 	scene._return_overview()
 	await create_timer(.85).timeout
 	expect(camera.view.is_equal_approx(Vector3(25,20,30)) and camera.focus_point.is_equal_approx(Vector3(0,1.2,0)), "Focus and return retain tuned overview")
@@ -71,6 +108,16 @@ func _run() -> void:
 	expect(camera.overview_parameters() == tuned and is_equal_approx(camera.fov,32), "Reset preserves session composition")
 	scene._toggle_camera_tuning()
 	panel._preset(22)
+	scene.settings_values.quality = "low"
+	scene._apply_settings()
+	panel.hide()
+	scene._toggle_camera_tuning()
+	expect(not panel._dof_slider.editable and panel._dof_toggle.disabled, "Low quality visibly disables DOF tuning")
+	scene.settings_values.quality = "standard"
+	scene._apply_settings()
+	panel.hide()
+	scene._toggle_camera_tuning()
+	expect(panel._dof_slider.editable and panel._dof_slider.value == 65, "Standard restores retained slider value")
 	root.size = Vector2i(960,600)
 	await process_frame
 	await shot("04-compact.png")
@@ -91,6 +138,24 @@ func _run() -> void:
 	await process_frame
 	print("CAMERA_TUNING_PASS" if failures.is_empty() else "CAMERA_TUNING_FAIL: " + str(failures))
 	quit(0 if failures.is_empty() else 1)
+
+
+func check_clear_fields(context: String) -> void:
+	var attributes: CameraAttributesPractical = scene.camera.attributes
+	if not attributes.dof_blur_far_enabled:
+		return
+	var forward: Vector3 = -scene.camera.global_basis.z
+	for field: Node3D in scene.farm.fields:
+		var boxes: Array[Dictionary] = [{"transform": field.global_transform, "bounds": AABB(Vector3(-1.4,-.1,-1.15),Vector3(2.8,.75,2.3))}]
+		for mesh: MeshInstance3D in field.get_node("Crops").find_children("*","MeshInstance3D",true,false):
+			if mesh.mesh != null and mesh.is_visible_in_tree():
+				boxes.append({"transform": mesh.global_transform,"bounds":mesh.get_aabb()})
+		for box: Dictionary in boxes:
+			for corner: int in 8:
+				var depth: float = forward.dot(box.transform * box.bounds.get_endpoint(corner) - scene.camera.global_position)
+				if depth < scene.camera.near:
+					continue
+				expect(depth >= attributes.dof_blur_near_distance and depth <= attributes.dof_blur_far_distance, "All soil and crop corners remain sharp: " + context)
 
 
 func click(point: Vector2) -> void:

@@ -105,6 +105,9 @@ func _ready() -> void:
 		hud.get_node("Layout").add_child(camera_tuning)
 		hud.camera_tuning_requested.connect(_toggle_camera_tuning)
 		camera_tuning.visibility_changed.connect(_refresh_hud)
+		camera_tuning.depth_of_field_changed.connect(func(enabled: bool, strength: float) -> void:
+			settings_values.dof_enabled = enabled
+			focus_detail.set_depth_of_field(enabled, strength))
 	camera.motion_finished.connect(_refresh_hud)
 	_load_game()
 	# The courtyard owns all slot transforms and art; no duplicate fallback layout.
@@ -679,7 +682,7 @@ func _toggle_camera_tuning() -> void:
 		return
 	_return_overview()
 	hud.hide_time_preview()
-	camera_tuning.present()
+	camera_tuning.present(focus_detail.get_settings())
 
 
 func _cancel_input(cancel_tool_press: bool = true) -> void:
@@ -721,7 +724,7 @@ func _setup_settings() -> void:
 func _apply_settings() -> void:
 	farm_audio.set_volumes(settings_values.master, settings_values.music, settings_values.effects)
 	focus_detail.set_quality(settings_values.quality)
-	focus_detail.set_depth_of_field(settings_values.dof_enabled)
+	focus_detail.set_depth_of_field(settings_values.dof_enabled, focus_detail.get_settings().dof_strength)
 	# Headless validation has no OS window; preference validation remains identical.
 	if DisplayServer.get_name() != "headless":
 		var window: Window = get_window()
