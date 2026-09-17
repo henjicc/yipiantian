@@ -1,0 +1,55 @@
+{
+  "blender": "5.2.2 LTS",
+  "meshes": {
+    "house_high": {
+      "triangles": 54434,
+      "dimensions_godot_xyz": [
+        7.200000286102295,
+        4.742326736450195,
+        4.66555643081665
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 25,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_d74fa707-1ebe-455f-ade3-b068dd50f704",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "house_low": {
+      "triangles": 18000,
+      "dimensions_godot_xyz": [
+        7.200000286102295,
+        4.729841709136963,
+        4.666853427886963
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 25,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color_d74fa707-1ebe-455f-ade3-b068dd50f704",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  },
+  "source": "raw/model.glb",
+  "requested_triangles": 60000,
+  "raw_triangles": 54434,
+  "godot_import": "Disable automatic LOD; retain authored 54434/18000 tiers."
+}

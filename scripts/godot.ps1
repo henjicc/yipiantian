@@ -3,6 +3,8 @@ param(
     [ValidateSet('Editor', 'Run', 'Import', 'ExportWindows')]
     [string]$Action = 'Editor',
     [string]$GodotPath = $env:GODOT_EXE,
+    [ValidateRange(0, 15)][int]$Screen = 0,
+    [switch]$EnableAudio,
     [string[]]$ExtraArgs = @()
 )
 
@@ -25,7 +27,15 @@ if ($LASTEXITCODE -ne 0 -or -not ([string]$actualVersion).StartsWith($version.Re
 $nativeArgs = @('--path', $projectPath)
 switch ($Action) {
     'Editor' { $nativeArgs += '--editor' }
-    'Run' { }
+    'Run' {
+        # On this workstation Godot screen 0 is the right-hand secondary monitor.
+        if ($ExtraArgs -notcontains '--headless' -and $ExtraArgs -notcontains '--screen') {
+            $nativeArgs += @('--screen', [string]$Screen)
+        }
+        if (-not $EnableAudio -and $ExtraArgs -notcontains '--audio-driver') {
+            $nativeArgs += @('--audio-driver', 'Dummy')
+        }
+    }
     'Import' { $nativeArgs += @('--headless', '--import') }
     'ExportWindows' {
         $buildDirectory = Join-Path $repoRoot '.local/builds/windows'

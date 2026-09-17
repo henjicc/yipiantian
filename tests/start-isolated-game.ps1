@@ -3,7 +3,9 @@
 param(
     [Parameter(Mandatory)][string]$Directory,
     [Parameter(Mandatory)][ValidatePattern('^[a-z0-9-]+$')][string]$Phase,
-    [string]$GamePath
+    [string]$GamePath,
+    [ValidateRange(0, 15)][int]$Screen = 0,
+    [switch]$EnableAudio
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -21,6 +23,10 @@ $info.FileName = $GamePath
 $info.WorkingDirectory = Split-Path -Parent $GamePath
 $info.UseShellExecute = $false
 $info.CreateNoWindow = $true
+foreach ($argument in @('--screen', [string]$Screen)) { $info.ArgumentList.Add($argument) }
+if (-not $EnableAudio) {
+    foreach ($argument in @('--audio-driver', 'Dummy')) { $info.ArgumentList.Add($argument) }
+}
 $info.RedirectStandardOutput = $true
 $info.RedirectStandardError = $true
 $info.Environment['APPDATA'] = Join-Path $profileRoot 'profile/roaming'

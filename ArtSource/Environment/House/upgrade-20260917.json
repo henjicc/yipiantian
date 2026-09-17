@@ -1,0 +1,114 @@
+{
+  "comparison_boundary": "Same reference and scene lighting; geometry, polycount, texture model and LOD treatment changed. Not an isolated model benchmark. The two rejected retextures were affected by automatic LOD and are not controlled texture-quality comparisons.",
+  "godot": "4.7.2 Forward+; disable additional auto LOD for house only; existing explicit detail selection and window lighting",
+  "blender": "5.2.2 LTS; preserve raw inputs, normalize width 7.2m and bottom centre, canonical +Z Godot facade, authored two-tier exports, reimport audit",
+  "jobs": [
+    {
+      "task_id": "837491d8-0e94-49a0-8d71-83a29ea83845",
+      "type": "texture_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "bake": true,
+        "delight": true,
+        "texture": true,
+        "texture_seed": 20260917,
+        "model_version": "v3.5-20260815",
+        "texture_prompt": {
+          "text": "Traditional Jiangnan courtyard house, Chinese gongbi light-colour hand-painted game asset. Clearly defined cool blue-grey ceramic roof tiles with restrained layered washes, warm ivory lime plaster walls, tea-brown timber posts and window frames. Crisp broad material regions, subtle selective painted contours. Clean well-kept surfaces, soft pigment variation. Preserve the reference palette and existing architectural parts. Matte materials. No moss stains, no dirty black mottling, no photorealistic noise, no painted directional shadows or highlights, no yellow sepia filter.",
+          "reference_path": "ArtSource/Environment/House/house-concept-v1.png",
+          "reference_mode": "text + style_image"
+        },
+        "texture_quality": "detailed",
+        "original_model_id": "1d6c7c36-d2ef-47bb-b464-3c5f9e4f71bb",
+        "texture_alignment": "geometry"
+      },
+      "output_fields": [
+        "model_url",
+        "rendered_image_url"
+      ],
+      "credits_consumed": 20,
+      "created_at": "2026-09-17T08:35:18.805928Z",
+      "completed_at": "2026-09-17T08:36:16.869245Z",
+      "files": [
+        "model.glb",
+        "rendered_image.webp",
+        "preview.png"
+      ],
+      "adopted": false,
+      "archive": "制作留档/02_三维模型/20260917_Tripo高级能力小样/house-v35-hd-837491d8"
+    },
+    {
+      "task_id": "91c981f8-7633-4e29-b30f-c957f8afe853",
+      "type": "texture_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "bake": true,
+        "delight": true,
+        "texture": true,
+        "texture_seed": 20260917,
+        "model_version": "v3.5-20260815",
+        "texture_prompt": {
+          "reference_path": "ArtSource/Environment/House/house-concept-v1.png",
+          "reference_mode": "image"
+        },
+        "texture_quality": "detailed",
+        "original_model_id": "f870b088-9930-48c6-af07-db4c11fba176",
+        "texture_alignment": "geometry"
+      },
+      "output_fields": [
+        "model_url",
+        "rendered_image_url"
+      ],
+      "credits_consumed": 20,
+      "created_at": "2026-09-17T08:43:23.850407Z",
+      "completed_at": "2026-09-17T08:44:28.776555Z",
+      "files": [
+        "model.glb",
+        "rendered_image.webp",
+        "preview.png"
+      ],
+      "adopted": false,
+      "archive": "制作留档/02_三维模型/20260917_Tripo高级能力小样/house-v35-image-hd-91c981f8"
+    },
+    {
+      "task_id": "d74fa707-1ebe-455f-ade3-b068dd50f704",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 60000,
+        "model_seed": 20260918,
+        "texture_seed": 20260918,
+        "model_version": "v3.1-20260211",
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "output_fields": [
+        "model_url",
+        "rendered_image_url"
+      ],
+      "credits_consumed": 60,
+      "created_at": "2026-09-17T08:47:26.071665Z",
+      "completed_at": "2026-09-17T08:49:41.020964Z",
+      "files": [
+        "model.glb",
+        "rendered_image.webp",
+        "preview.png"
+      ],
+      "adopted": true,
+      "archive": "制作留档/02_三维模型/20260917_Tripo高级能力小样/house-ultra-hd-d74fa707"
+    }
+  ],
+  "house_credits": 100,
+  "reference": "ArtSource/Environment/House/house-concept-v1.png",
+  "retained_legacy": "Original tripo-original, house.blend, prepare_house.py and repair_ridge.py remain unchanged.",
+  "authorization": "User authorized this small improvement pass and uncapped generation credits; rejected house retexturing and requested a stronger geometry generation.",
+  "date": "2026-09-17"
+}

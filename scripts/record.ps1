@@ -11,7 +11,7 @@ param(
     [switch]$FinalDemo,
     [switch]$RealtimeProbe,
     [switch]$WithAudio,
-    [ValidateRange(-1, 15)][int]$Screen = -1,
+    [ValidateRange(-1, 15)][int]$Screen = 0,
     [string]$FFmpegPath,
     [string]$GodotPath = $env:GODOT_EXE
 )
@@ -105,7 +105,8 @@ $encoder = $null
 $success = $false
 try {
     Write-Output "准备 4K 全屏录制：$Title；F9 提前结束。"
-    $gameArgs = @('--path', (Join-Path $repo 'Game'), '--log-file', (Join-Path $outputDir 'Godot.log'))
+    $gameArgs = @('--path', (Join-Path $repo 'Game'), '--audio-driver', 'Dummy', '--log-file', (Join-Path $outputDir 'Godot.log'))
+    if ($Screen -ge 0) { $gameArgs += @('--screen', [string]$Screen) }
     if ($Demo) { $gameArgs += @('--write-movie', $movieSource, '--fixed-fps', '60', '--resolution', '3840x2160', '--quit-after', [string]($Seconds * 60)) }
     $gameArgs += @('--', "--record-session=$sessionDir")
     $renderStarted = [DateTime]::UtcNow

@@ -3,6 +3,7 @@
 param(
     [ValidateSet('acceptance','4k','smoke')][string]$Suite = 'acceptance',
     [Parameter(Mandatory)][string]$Directory,
+    [ValidateRange(0, 15)][int]$Screen = 0,
     [string]$GodotPath = $env:GODOT_EXE
 )
 $ErrorActionPreference = 'Stop'
@@ -64,6 +65,7 @@ $info = [Diagnostics.ProcessStartInfo]::new()
 $info.FileName = $gui
 $info.UseShellExecute = $false
 $info.CreateNoWindow = $true
+foreach ($argument in @('--screen', [string]$Screen, '--audio-driver', 'Dummy')) { $info.ArgumentList.Add($argument) }
 $info.RedirectStandardOutput = $true
 $info.RedirectStandardError = $true
 $info.WorkingDirectory = $repo

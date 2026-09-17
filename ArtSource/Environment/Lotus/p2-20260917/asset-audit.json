@@ -1,0 +1,75 @@
+{
+  "source": "raw/model.fbx",
+  "blender": "5.2.2 LTS",
+  "source_topology": {
+    "vertices": 4411,
+    "faces": 4352,
+    "quads": 3408,
+    "triangles": 7760,
+    "dimensions_godot_xyz": [
+      0.91943359375,
+      0.63232421875,
+      0.99951171875
+    ],
+    "materials": 1,
+    "uv_layers": 1,
+    "non_manifold_edges": 996,
+    "loose_vertices": 2,
+    "zero_area_faces": 0
+  },
+  "meshes": {
+    "lotus_high": {
+      "vertices": 4409,
+      "faces": 7760,
+      "quads": 0,
+      "triangles": 7760,
+      "dimensions_godot_xyz": [
+        0.9000000357627869,
+        0.5693697929382324,
+        0.8278945088386536
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 996,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "lotus_low": {
+      "vertices": 2169,
+      "faces": 3500,
+      "quads": 0,
+      "triangles": 3500,
+      "dimensions_godot_xyz": [
+        0.9002969861030579,
+        0.5692045092582703,
+        0.8281168937683105
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "non_manifold_edges": 776,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  },
+  "godot_import": "Disable automatic mesh LOD on both GLBs; use authored high/low only."
+}

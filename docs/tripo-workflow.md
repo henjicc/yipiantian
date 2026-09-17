@@ -14,15 +14,17 @@
 
 ## 已用能力与证据边界
 
-本次在 `ArtSource/` 找到的 15 份原始 `task.json` 都是 `image_to_model`、`v3.1-20260211`，使用 `geometry_quality=standard`、`texture_quality=standard`、`smart_low_poly=true`、`pbr=false`、`texture_alignment=original_image`，未显式指定纹理版本。证据入口：[环境资产](../ArtSource/Environment/README.md)、[青菜](../ArtSource/Crops/Greens/README.md)、[青菜阶段](../ArtSource/Crops/Greens/Stages/tripo-jobs.json)、[萝卜阶段](../ArtSource/Crops/Radish/tripo-jobs.json)、[民居](../ArtSource/Environment/House/generation-record.json)。这不是账号全部历史的统计。
+首次调研时 `ArtSource/` 的 15 份历史原始 `task.json` 都是 `image_to_model`、`v3.1-20260211`，使用 `geometry_quality=standard`、`texture_quality=standard`、`smart_low_poly=true`、`pbr=false`、`texture_alignment=original_image`，未显式指定纹理版本。证据入口：[环境资产](../ArtSource/Environment/README.md)、[青菜](../ArtSource/Crops/Greens/README.md)、[青菜阶段](../ArtSource/Crops/Greens/Stages/tripo-jobs.json)、[萝卜阶段](../ArtSource/Crops/Radish/tripo-jobs.json)、[民居](../ArtSource/Environment/House/generation-record.json)。这不是账号全部历史的统计。
 
-上述记录不能证明 P2、多视图、纹理 v3.5、语义分割或自动绑定的效果。本轮只读调研未提交付费任务。下文的用途判断是待验证建议，官网示例、论文和任务 `success` 均不能替代本项目目标镜头验收。
+首次调研之后，用户授权小规模付费改造，已实际生成 [P2 荷花](../ArtSource/Environment/Lotus/README.md)：P2 四边面 + v3.5 HD + delight，共 120 积分，用户确认荷花明显改善。原始 FBX 4352 面中 3408 为四边面；整理后高低档 7760/3500 三角形。v3.5 重贴图房屋两轮各 20 积分，第一轮 text + style_image、第二轮直接 image，均为 HD + delight；实景不佳未采用。用户否定房屋重贴图后，改用 [H3.1 Ultra 重新生成](../ArtSource/Environment/House/README.md)，60 积分；实测高低档 54434/18000 三角、单材质 4K 纹理。该轮房屋已开发侧采用，待用户评价；两轮重贴图未排除自动 LOD 对画面的影响，不能用其失败评价 v3.5 的单独质量。高版本、高清、去光照都不是自动提高效果的保证。
+
+多视图、语义分割、自动绑定的项目效果仍未实测。官网示例、论文和任务 `success` 均不能替代本项目目标镜头验收。
 
 ## 几何模型选择
 
 | 路线 | 核验版本与能力 | 项目使用判断 |
 |---|---|---|
-| H3.1 / v3.1 | `v3.1-20260211`；复杂形体与高精度源模型；`geometry_quality=detailed` 为 Ultra | 我们已用过该模型，但未测试 Ultra。重点资产可先保留较完整源形体，再按需要重拓扑和烘焙；不为远景小物件默认高模 |
+| H3.1 / v3.1 | `v3.1-20260211`；复杂形体与高精度源模型；`geometry_quality=detailed` 为 Ultra | 民居已实测 Ultra + 60000 面预算，实际 54434 三角，未启用 smart_low_poly；保留高档并另制 18000 三角低档，不为远景小物件默认高模 |
 | P1 | `P1-20260311`；低面数三角网格，API 范围 50～20,000 | 简洁道具候选；不支持 `quad`、`smart_low_poly`、`generate_parts`、`geometry_quality` |
 | P2.0 Preview | `P2-20260801`；原生四边面与三角网格；API 范围三角 48～50,000、四边 48～25,000 | 优先在需要干净结构、修改轮廓或形变的代表资产上比较；四边面不自动保证材质、布线和最终画面更好 |
 
@@ -31,6 +33,8 @@
 CLI 0.4.0 源码 `dist/knowledge/models.js` 已核验：提示词含低模意图或 `face_limit <= 20000` 会自动选择 P1；P2 从不自动选择，需显式指定 `--model tripo-p2`。要在低面数预算下比较 H3.1，应显式指定 `--model tripo-v3.1`。该版本对 P2 会剔除 `smart_low_poly`、`generate_parts`、`geometry_quality` 并警告，不能把带有这些参数的调用记录当作能力已启用。
 
 四边面生成按插件说明输出 FBX；GLB 不保留四边面制作拓扑。需后续编辑时保留 FBX / Blender 源，再导出游戏 GLB。预算统一统计最终三角形：25,000 个普通四边面三角化后约为 50,000 三角形。H3.1 智能低模实测曾超出请求面数，所有路线均应核对实际结果。
+
+P2 荷花和 Ultra 民居实测还表明：源模型完整并不保证 Godot 自动减面后完整。4.7.2 导入自动生成的 LOD 在当前 `focus_detail.gd` 全景偏置下曾删除花瓣和茎、严重扭曲瓦片和窗格；这两件资产禁用自动生成 LOD，保留经过同机位检查的人工高低档。先检查运行时 LOD 是否引入问题，再判断模型失败；不能据此对所有资产禁用 LOD。原始四边面也可能含三角面、开放边和孤立点，须审计。
 
 ## 优先改善输入与纹理
 
@@ -45,7 +49,9 @@ CLI 0.4.0 源码 `dist/knowledge/models.js` 已核验：提示词含低模意图
 
 来源：[多视图接口](https://developers.tripo3d.ai/en/docs/generation-multiview-to-model/p)、[多视图编辑](https://developers.tripo3d.ai/en/docs/generation-edit-multiview)、[图像工作流](https://www.tripo3d.ai/blog/tripo-image-gen-update)、[纹理接口](https://developers.tripo3d.ai/en/docs/models-texture)、[Magic Brush 教程](https://www.tripo3d.ai/blog/how-to-use-magic-brush)。
 
-纹理模型独立于几何模型：H3.1 / P1 / P2 默认纹理仍为 `v3.0-20250812`，不会因选择 P2 自动升级到 v3.5。`texture_quality=fast` 仅 v3.5 有效，牺牲细节换速度，尺寸和价格与 standard 相同，不作为质量优先选择。本机 CLI 的默认纹理和随包说明仍是旧版；v3.5 参数服务端已有文档，但经本机封装透传、生效及成图质量尚未实测。见 [更新日志](https://developers.tripo3d.ai/en/docs/changelog)。
+纹理模型独立于几何模型：H3.1 / P1 / P2 默认纹理仍为 `v3.0-20250812`，不会因选择 P2 自动升级到 v3.5。`texture_quality=fast` 仅 v3.5 有效，牺牲细节换速度，尺寸和价格与 standard 相同，不作为质量优先选择。CLI 0.4.0 的生成参数 `-p texture_version=v3.5-20260815 -p delight=true` 已由荷花任务服务端回显确认；但独立 `model texture` 的 `TEXTURE_MODELS` 本地白名单只有 v3.0/v2.5，会提前拒绝 v3.5。当前实测方法是复用包内 `newClient()`、`resolveInputValue()` 上传、`runTask()` 的历史/轮询/下载引擎，按官方 `/v3/models/texture` 请求传入 `model=v3.5-20260815`，不修改全局安装或打印凭据。包内方法只适用于已核验的 0.4.0；升级后优先检查 CLI 是否已原生支持，不能永久依赖内部路径。见 [纹理接口](https://developers.tripo3d.ai/en/docs/models-texture)、[更新日志](https://developers.tripo3d.ai/en/docs/changelog)。
+
+独立重贴图还有实际集成边界：本轮上传 7.2 米宽的房屋，服务返回宽 1.0 的归一化几何；需恢复原尺度与位置，并验证顶点到原网格的距离。本轮恢复后最大误差小于 0.000001 米，原屋脊封补仍在；不能因任务类型为 texture 就假定输出变换不变。原图/模型上传令牌及签名下载地址不入版本库。
 
 ## 分件、补全与重拓扑
 

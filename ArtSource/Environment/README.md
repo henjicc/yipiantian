@@ -4,6 +4,7 @@
 
 ## 来源与分工
 
+- 2026-09-17 高级能力小样：正式 [荷花](Lotus/README.md) 改为 P2 四边面 + v3.5 HD（120 积分）；正式 [民居](House/README.md) 改为 H3.1 Ultra + v3.5 HD（60 积分）。两版未采用的房屋重贴图各 20 积分，本轮总计 220 积分。新源各自放在版本子目录，旧源不覆盖；当前重建须使用该版本的 `prepare.py`。下面九件标准 H3.1 是历史生产记录，不再代表这两件资产的现役模型。两件新资产使用人工高低档，禁用其导入自动 LOD，其他资产策略不变。
 - 内置 image_gen：以固定青菜与全景图为风格参考，生成船、庭院树、竹、野花、荷叶、藤架和三件装饰的单体图。野花去除误带的白粗茎、荷叶去除光晕，各仅定向修正一次；所有生成/修正均使用图像工具。
 - Tripo CLI 0.4.0：九个原始 image_to_model 任务，全为真实 `v3.1-20260211`，texture=true、PBR=false、smart_low_poly=true、standard 纹理、original_image 对齐、image_autofix=false。各 **40 积分，共 360 积分**；没有为高低档重复付费。逐项真实 ID、请求参数、成功时间与费用见各目录 `tripo-original/task.json`（已移除签名下载URL）。
 - Blender 5.2.2 LTS：`prepare_assets.py` 统一米制、接地/顶挂原点、同源低档、清理/法线、GLB重导入；`build_modules.py` 制作自然岛岸、五种河石、石桥拱券/栏杆、竹栏、入口棚、側屋瓦顶/山墙/窗门、廊台、田框；`House/repair_ridge.py` 只闭合原民居屋脊两端局部缺口，闭合塞用匹配的深灰瓦色，中段原纹理保留，原始 Tripo 模型不动。
