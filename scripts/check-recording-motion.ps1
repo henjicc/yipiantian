@@ -2,16 +2,21 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$VideoPath,
-    [Parameter(Mandatory)][string]$FFmpegPath
+    [Parameter(Mandatory)][string]$FFmpegPath,
+    [ValidateSet('classic', 'final')][string]$Tour = 'classic'
 )
 
 $ErrorActionPreference = 'Stop'
 # These intervals are inside the current 24-second tour's movement, not its intentional holds.
 # Update them together with recording_session.gd if the tour changes.
-$segments = @(
+$segments = if ($Tour -eq 'final') { @(
+    @{ name='推进'; start=4.4; frames=60 },
+    @{ name='照料后缓转'; start=13.6; frames=120 },
+    @{ name='返回全景'; start=27.3; frames=60 }
+) } else { @(
     @{ name='推进'; start=4.9; frames=45 },
     @{ name='转动'; start=10.5; frames=120 }
-)
+) }
 $checks = foreach ($segment in $segments) {
     $start = $segment.start.ToString([Globalization.CultureInfo]::InvariantCulture)
     $filter = 'scale=320:180,format=yuv420p,tblend=all_mode=difference,signalstats,metadata=print'
@@ -33,6 +38,7 @@ $checks = foreach ($segment in $segments) {
 }
 [pscustomobject]@{
     passed=(@($checks | Where-Object { -not $_.passed }).Count -eq 0)
+    tour=$Tour
     method='Adjacent decoded luma mean absolute difference at 320x180, 0..255 scale; current demo moving intervals only.'
     near_repeat_threshold=0.01; max_near_repeat_fraction=0.02
     limitation='Content-based regression check, not a universal FPS measurement. Static holds are intentionally excluded; manual takes require visual review.'

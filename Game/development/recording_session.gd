@@ -14,6 +14,7 @@ var _stage: int = 0
 var _farm_demo: bool = false
 var _farm_now: float = 0.0
 var _courtyard_demo: bool = false
+var _final_demo: bool = false
 var _movie_frame_limit: int = 0
 
 
@@ -31,16 +32,17 @@ func _ready() -> void:
 	_demo = bool(config.get("demo", false))
 	_farm_demo = bool(config.get("farm_demo", false))
 	_courtyard_demo = bool(config.get("courtyard_demo", false))
+	_final_demo = bool(config.get("final_demo", false))
 	_movie_frame_limit = int(config.get("movie_frame_limit", 0))
 	if OS.has_feature("movie") and bool(config.get("capture_audio", false)):
 		# Only this explicit editor-only isolated recording session may render an
 		# offline soundtrack while unfocused. Normal gameplay retains focus mute.
 		farm_scene.window_activity.foreground_changed.disconnect(farm_scene.farm_audio.set_foreground)
 		farm_scene.farm_audio.set_foreground(true)
-	if _farm_demo or _courtyard_demo:
+	if _farm_demo or _courtyard_demo or _final_demo:
 		_farm_now = farm_scene.clock.call()
 		farm_scene.clock = func() -> float: return _farm_now
-	if _courtyard_demo:
+	if _courtyard_demo or _final_demo:
 		var fixture: Dictionary = farm_scene.farm_state.snapshot()
 		fixture.harvested = {"greens": 9, "radish": 6}
 		for index in 6:
@@ -52,7 +54,12 @@ func _ready() -> void:
 		farm_scene.decoration_state.unlock(fixture.harvested)
 		farm_scene.refresh_farm()
 		farm_scene._save_farm()
-		farm_scene.atmosphere.set_preview_hour(12.0)
+		# Only the isolated demonstration substitutes the HUD's local clock timer.
+		# Never change the system clock or the production HUD's update contract.
+		for child: Node in farm_scene.hud.get_children():
+			if child is Timer and child.timeout.is_connected(Callable(farm_scene.hud, "_update_clock")):
+				child.stop()
+		_set_demo_hour(12.0)
 	# Movie Maker advances the simulation by 1/60 s for each saved frame.
 	# It does not wait for the live encoder's handshake.
 	_started = OS.has_feature("movie")
@@ -112,6 +119,9 @@ func _process(delta: float) -> void:
 	if not _started or _stopping or not _demo:
 		return
 	_elapsed += delta
+	if _final_demo:
+		_run_final_demo(delta)
+		return
 	if _courtyard_demo:
 		_run_courtyard_demo(delta)
 		return
@@ -209,13 +219,101 @@ func _run_courtyard_demo(delta: float) -> void:
 		layout.finish_mode()
 		_stage = 11
 	elif _stage == 11 and _elapsed >= 36.0:
-		farm_scene.atmosphere.set_preview_hour(21.0)
+		_set_demo_hour(21.0)
 		_write_json("courtyard-demo-result.json", {
 			"fixture_harvested": {"greens": 9, "radish": 6},
 			"fixture_hours": [12, 21], "farm": farm_scene.farm_state.snapshot(),
 			"decorations": farm_scene.decoration_state.snapshot(), "saved": not farm_scene._save_failed
 		})
 		_stage = 12
+
+
+func _run_final_demo(delta: float) -> void:
+	# Isolated six-stage/cumulative fixture; production rules, LOD and DOF stay active.
+	var layout: Node3D = farm_scene.decoration_layout
+	if _stage == 0 and _elapsed >= 4.0:
+		farm_scene._focus_field(2)
+		_stage = 1
+	elif _stage == 1 and _elapsed >= 6.5:
+		_demo_action("harvest")
+		_stage = 2
+	elif _stage == 2 and _elapsed >= 9.0:
+		_demo_action("sow")
+		_stage = 3
+	elif _stage == 3 and _elapsed >= 12.0:
+		_demo_action("water")
+		_stage = 4
+	elif _stage == 4 and _elapsed >= 13.0:
+		_stage = 5
+	elif _stage == 5:
+		farm_scene.camera.drag(Vector2(-16.7, 0.0) * delta, false)
+		if _elapsed >= 18.0:
+			_farm_now += 300.0
+			farm_scene.settle_farm()
+			_stage = 6
+	elif _stage == 6 and _elapsed >= 21.0:
+		_farm_now += 1140.0
+		farm_scene.settle_farm()
+		_stage = 7
+	elif _stage == 7 and _elapsed >= 24.0:
+		_demo_action("harvest")
+		_stage = 8
+	elif _stage == 8 and _elapsed >= 27.0:
+		farm_scene._return_overview()
+		_stage = 9
+	elif _stage == 9 and _elapsed >= 31.0:
+		farm_scene._begin_decoration()
+		layout.select_item("pot")
+		layout.preview_at("ground_03")
+		_stage = 10
+	elif _stage == 10 and _elapsed >= 34.0:
+		layout.confirm_preview()
+		_stage = 11
+	elif _stage == 11 and _elapsed >= 35.0:
+		layout.select_item("flowerpot")
+		layout.preview_at("ground_04")
+		_stage = 12
+	elif _stage == 12 and _elapsed >= 38.0:
+		layout.confirm_preview()
+		_stage = 13
+	elif _stage == 13 and _elapsed >= 39.0:
+		layout.select_item("lantern")
+		layout.preview_at("hanging_02")
+		_stage = 14
+	elif _stage == 14 and _elapsed >= 42.0:
+		layout.confirm_preview()
+		_stage = 15
+	elif _stage == 15 and _elapsed >= 44.0:
+		layout.finish_mode()
+		_stage = 16
+	elif _stage == 16 and _elapsed >= 46.0:
+		_stage = 17
+	elif _stage == 17:
+		_set_demo_hour(lerpf(12.0, 21.0, clampf((_elapsed - 46.0) / 6.0, 0.0, 1.0)))
+		if _elapsed >= 52.0:
+			_write_json("final-demo-result.json", {
+				"fixture_harvested": {"greens": 9, "radish": 6},
+				"controlled_utc_advance_seconds": 1440,
+				"fixture_hours": [12, 21], "farm": farm_scene.farm_state.snapshot(),
+				"hud_clock_matches_fixture": farm_scene.hud._clock.text == "21:00",
+				"decorations": farm_scene.decoration_state.snapshot(),
+				"presentation": farm_scene.focus_detail.get_settings(),
+				"mesh_lod_threshold": get_viewport().mesh_lod_threshold,
+				"saved": not farm_scene._save_failed
+			})
+			_stage = 18
+
+
+func _demo_action(tool: String) -> void:
+	farm_scene._select_tool(tool)
+	farm_scene._apply_tool()
+
+
+func _set_demo_hour(hour: float) -> void:
+	farm_scene.atmosphere.set_preview_hour(hour)
+	var minutes: int = int(round(hour * 60.0)) % 1440
+	farm_scene.hud._clock.text = "%02d:%02d" % [floori(minutes / 60.0), minutes % 60]
+	farm_scene.hud._day_icon.texture = farm_scene.hud.SUN if minutes >= 360 and minutes < 1080 else farm_scene.hud.MOON
 
 
 func _input(event: InputEvent) -> void:

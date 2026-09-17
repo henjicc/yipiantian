@@ -8,6 +8,8 @@ param(
     [switch]$Demo,
     [switch]$FarmDemo,
     [switch]$CourtyardDemo,
+    [switch]$FinalDemo,
+    [switch]$RealtimeProbe,
     [switch]$WithAudio,
     [ValidateRange(-1, 15)][int]$Screen = -1,
     [string]$FFmpegPath,
@@ -18,7 +20,10 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 if ($FarmDemo) { $Demo = $true }
 if ($CourtyardDemo) { $Demo = $true }
-if ($FarmDemo -and $CourtyardDemo) { throw 'Select one demonstration.' }
+if ($FinalDemo) { $Demo = $true }
+if ($RealtimeProbe -and ($Demo -or $WithAudio -or $Seconds -lt 14 -or $Seconds -gt 20)) { throw 'RealtimeProbe is a silent 14-20 second bounded live capture; do not combine it with offline demonstrations.' }
+if ((@($FarmDemo, $CourtyardDemo, $FinalDemo) | Where-Object { $_ }).Count -gt 1) { throw 'Select one demonstration.' }
+if ($FinalDemo -and $Seconds -lt 56) { throw 'The final gameplay and atmosphere demonstration needs at least 56 seconds.' }
 if ($CourtyardDemo -and $Seconds -lt 40) { throw 'The courtyard and arrangement demonstration needs at least 40 seconds.' }
 if ($WithAudio -and -not $Demo) { throw 'WithAudio requires Movie Maker demonstration capture.' }
 if ($FarmDemo -and $Seconds -lt 28) { throw 'The sow/water/harvest demonstration needs at least 28 seconds.' }
@@ -73,7 +78,7 @@ $outputDir = Join-Path $archive $name
 New-Item -ItemType Directory -Path $outputDir | Out-Null
 $sessionDir = Join-Path $repo ('.local/recordings/' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $sessionDir -Force | Out-Null
-Save-Json (Join-Path $sessionDir 'config.json') @{ demo=[bool]$Demo; farm_demo=[bool]$FarmDemo; courtyard_demo=[bool]$CourtyardDemo; capture_audio=[bool]$WithAudio; movie_frame_limit=$(if ($Demo) { $Seconds * 60 } else { 0 }); screen=$Screen }
+Save-Json (Join-Path $sessionDir 'config.json') @{ demo=[bool]($Demo -or $RealtimeProbe); farm_demo=[bool]$FarmDemo; courtyard_demo=[bool]$CourtyardDemo; final_demo=[bool]$FinalDemo; capture_audio=[bool]$WithAudio; movie_frame_limit=$(if ($Demo) { $Seconds * 60 } else { 0 }); screen=$Screen }
 $movieSource = Join-Path $sessionDir 'source.avi'
 $candidate = Join-Path $outputDir '待校验.mp4'
 $video = Join-Path $outputDir ($name + '.mp4')
@@ -85,8 +90,10 @@ $record = [ordered]@{
     session_directory=$sessionDir
     created_at=(Get-Date -Format o); commit=$commit; working_tree_dirty=$dirty
     duration_requested=$Seconds; demo=[bool]$Demo
-    farm_demo=[bool]$FarmDemo; controlled_utc_advance_seconds=$(if ($FarmDemo) { 1440 } else { 0 })
+    farm_demo=[bool]$FarmDemo; controlled_utc_advance_seconds=$(if ($FarmDemo -or $FinalDemo) { 1440 } else { 0 })
     courtyard_demo=[bool]$CourtyardDemo
+    final_demo=[bool]$FinalDemo
+    realtime_probe=[bool]$RealtimeProbe
     capture=$(if ($Demo) { 'Godot Movie Maker / fixed 60 fps / offline demonstration' } else { 'Windows.Graphics.Capture / HWND / realtime' })
     encoder='h264_nvenc'; preset='p5'; cq=18; fps=60; audio=$(if ($WithAudio) { 'Godot game mix / AAC 48 kHz stereo / 192 kbps' } else { 'none' })
     ffmpeg=(& $FFmpegPath -version | Select-Object -First 1); godot=[string]$actualVersion
@@ -154,6 +161,15 @@ try {
             }
             $record.courtyard_demo_result = $courtyardResult
         }
+        if ($FinalDemo -and $stopReason -eq 'duration') {
+            $finalResult = Read-Json (Join-Path $sessionDir 'final-demo-result.json')
+            if (-not $finalResult.saved -or $finalResult.farm.harvested.greens -ne 11 -or $finalResult.farm.fields.field_03.crop_id -ne '' -or
+                -not $finalResult.decorations.pot.slot_id -or -not $finalResult.decorations.flowerpot.slot_id -or -not $finalResult.decorations.lantern.slot_id -or
+                $finalResult.presentation.quality -ne 'standard' -or -not $finalResult.presentation.dof_enabled -or $finalResult.mesh_lod_threshold -le 0 -or -not $finalResult.hud_clock_matches_fixture) {
+                throw 'The final demonstration did not reach saved harvest, placement and normal presentation conditions.'
+            }
+            $record.final_demo_result = $finalResult
+        }
         # MJPEG is an intermediate only. Final H.264 compression uses NVENC.
         $encoderArgs = @('-hide_banner', '-n', '-i', $movieSource, '-vf', 'scale=in_range=full:out_range=tv:out_color_matrix=bt709,format=yuv420p') + $codecArgs + @($candidate)
         $record.ffmpeg_arguments = $encoderArgs
@@ -209,8 +225,13 @@ try {
     # Check every presentation timestamp, rather than trusting the container FPS label.
     $timestamps = @(& $ffprobe -v error -select_streams v:0 -show_entries packet=pts_time -of csv=p=0 $candidate | Where-Object { $_ -match '^-?\d+\.\d+$' } | ForEach-Object { [double]::Parse($_, [Globalization.CultureInfo]::InvariantCulture) } | Sort-Object)
     if ($LASTEXITCODE -ne 0 -or $timestamps.Count -lt 2) { throw 'Video timestamp validation failed.' }
+    $minimumStep = [double]::PositiveInfinity
+    $maximumStep = 0.0
     for ($i=1; $i -lt $timestamps.Count; $i++) {
-        if ([Math]::Abs(($timestamps[$i]-$timestamps[$i-1])-1.0/60.0) -gt 0.000002) { throw 'Video is not constant 60 fps.' }
+        $step = $timestamps[$i]-$timestamps[$i-1]
+        $minimumStep = [Math]::Min($minimumStep, $step)
+        $maximumStep = [Math]::Max($maximumStep, $step)
+        if ([Math]::Abs($step-1.0/60.0) -gt 0.000002) { throw 'Video is not constant 60 fps.' }
     }
     $duration = [double]::Parse($stream.duration, [Globalization.CultureInfo]::InvariantCulture)
     if ($WithAudio) {
@@ -219,13 +240,13 @@ try {
         $audioAnalysis = & $FFmpegPath -hide_banner -nostats -i $candidate -vn -af volumedetect -f null - 2>&1 | Out-String
         $audioMatch = [regex]::Match($audioAnalysis,'mean_volume:\s+(-?[\d.]+) dB')
         if ($LASTEXITCODE -ne 0 -or -not $audioMatch.Success -or [double]::Parse($audioMatch.Groups[1].Value,[Globalization.CultureInfo]::InvariantCulture) -lt -80) { throw 'Recorded game audio is silent or could not be decoded.' }
-        $record.audio_verification = @{ mean_db=[double]::Parse($audioMatch.Groups[1].Value,[Globalization.CultureInfo]::InvariantCulture); duration_seconds=[double]$audioProbe.duration; subjective_listening='not verified' }
+        $record.audio_verification = @{ mean_db=[double]::Parse($audioMatch.Groups[1].Value,[Globalization.CultureInfo]::InvariantCulture); duration_seconds=[double]$audioProbe.duration; duration_difference_seconds=[Math]::Abs([double]$audioProbe.duration - $duration); subjective_listening='not verified' }
         $audioAnalysis | Set-Content -LiteralPath (Join-Path $outputDir '音轨校验.log') -Encoding utf8
     }
     if ($stopReason -eq 'duration' -and [Math]::Abs($duration - $Seconds) -gt 0.1) { throw 'Recording ended before its requested duration.' }
     if ($stopReason -notin @('duration', 'user_f9')) { throw "Recording interrupted ($stopReason); inspect the retained candidate before using it." }
     if ($Demo -and $stopReason -eq 'duration') {
-        $motion = & (Join-Path $PSScriptRoot 'check-recording-motion.ps1') -VideoPath $candidate -FFmpegPath $FFmpegPath
+        $motion = & (Join-Path $PSScriptRoot 'check-recording-motion.ps1') -VideoPath $candidate -FFmpegPath $FFmpegPath -Tour $(if ($FinalDemo) { 'final' } else { 'classic' })
         Save-Json (Join-Path $outputDir '运动流畅度检查.json') $motion
         if (-not $motion.passed) { throw 'Camera movement contains near-repeated frames; see 运动流畅度检查.json. CFR metadata alone is not sufficient.' }
         $record.motion_check = 'passed'
@@ -238,11 +259,12 @@ try {
     $record.stop_reason = $stopReason
     $record.duration_seconds = $duration
     $record.frames = $timestamps.Count
+    $record.timestamps = @{ checked_packets=$timestamps.Count; minimum_step_seconds=$minimumStep; maximum_step_seconds=$maximumStep; expected_step_seconds=1.0/60.0; maximum_allowed_step_error_seconds=0.000002 }
     $record.video = Split-Path -Leaf $video
     $record.sha256 = (Get-FileHash -LiteralPath $video).Hash
     Save-Json $metadata $record
     Save-Json (Join-Path $outputDir '视频规格.json') $probe
-    $shots = if ($CourtyardDemo) { '0–4秒六个正式阶段全景；4秒聚焦，6.5秒收获触发灯笼解锁；9–14秒缓转；14秒返回。18–21秒陶罐预览确认，23–26秒花盆，28–31秒灯笼；34秒收起布置，36秒切夜景并停留。初始累计青菜9/萝卜6、作物阶段及本地12/21点为隔离录制夹具，农事/布置仍走普通场景动作和保存链。离线固定步长演示，不代表真实等待或实时性能。' } elseif ($FarmDemo) { '约 0–4 秒全景；4–6 秒聚焦；6.5 秒播种；9 秒浇水；9–14 秒小角度转动；14 秒受控推进 UTC 1440 秒，展示成熟；17 秒收获并保存；21 秒返回全景。使用独立演示存档与正常农事动作 / 保存链；时间推进是录制夹具，并非真实等待 30 分钟。Godot 固定步长离线演示，不代表实时性能。' } elseif ($Demo) { '约 0–4 秒全景停留；4–6 秒缓慢聚焦；6–9 秒近景停留；9–14 秒小角度转动；14–17 秒停留；17–19 秒返回；19 秒后全景收尾。Godot 固定时间步逐帧渲染的自动演示，非实时录屏 / 性能证明；按画面切点。完整自动演示另检查推进和转动区间的重复画面；提前结束的片段仍需人工预览。' } else { '手动操作素材；剪辑前预览选择片段并检查运动连续性。F9 可提前结束。' }
+    $shots = if ($FinalDemo) { '0–4秒六阶段全景；4秒聚焦成熟青菜，6.5秒收获，9秒播种，12秒浇水；13–18秒缓转，18秒受控推进300秒为幼株，21秒再推进1140秒成熟，24秒收获，27秒返回。31–34秒陶罐，35–38秒花盆，39–42秒灯笼预览确认；44秒收起，46–52秒昼转夜，52–56秒停留。六阶段、初始累计青菜9/萝卜6、UTC推进与HUD12→21时钟均是隔离演示夹具；采用正式设置与普通LOD/DOF，不强制全高，不代表实时性能。' } elseif ($CourtyardDemo) { '0–4秒六个正式阶段全景；4秒聚焦，6.5秒收获触发灯笼解锁；9–14秒缓转；14秒返回。18–21秒陶罐预览确认，23–26秒花盆，28–31秒灯笼；34秒收起布置，36秒切夜景并停留。初始累计青菜9/萝卜6、作物阶段及本地12/21点为隔离录制夹具，农事/布置仍走普通场景动作和保存链。离线固定步长演示，不代表真实等待或实时性能。' } elseif ($FarmDemo) { '约 0–4 秒全景；4–6 秒聚焦；6.5 秒播种；9 秒浇水；9–14 秒小角度转动；14 秒受控推进 UTC 1440 秒，展示成熟；17 秒收获并保存；21 秒返回全景。使用独立演示存档与正常农事动作 / 保存链；时间推进是录制夹具，并非真实等待 30 分钟。Godot 固定步长离线演示，不代表实时性能。' } elseif ($Demo) { '约 0–4 秒全景停留；4–6 秒缓慢聚焦；6–9 秒近景停留；9–14 秒小角度转动；14–17 秒停留；17–19 秒返回；19 秒后全景收尾。Godot 固定时间步逐帧渲染的自动演示，非实时录屏 / 性能证明；按画面切点。完整自动演示另检查推进和转动区间的重复画面；提前结束的片段仍需人工预览。' } elseif ($RealtimeProbe) { '有界实时窗口采集探针：采用本次游戏窗口与现有WGC链路，4秒开始缓推，9–14秒小角度转动。画面按实时呈现采集，不是MovieMaker；需另查相邻帧，未通过前不作流畅素材。' } else { '手动操作素材；剪辑前预览选择片段并检查运动连续性。F9 可提前结束。' }
     @("# $name", '', $Description, '', '## 工具贡献', '', $Contribution, '', '## 镜头与剪辑', '', $shots, '', "规格：3840×2160，H.264 High / yuv420p，60 fps 恒定帧率，NVENC p5 / CQ18，实际 $duration 秒。音轨：$($record.audio)。不录麦克风或其他桌面程序；主观听感尚未验收。", '', "代码基线：$commit；录制时工作区有改动：$dirty。", '', "[播放视频]($name.mp4)") | Set-Content -LiteralPath (Join-Path $outputDir '剪辑说明.md') -Encoding utf8
     $index = Join-Path $archive '录屏索引.md'
     if (-not (Test-Path -LiteralPath $index)) { @('# 开发录屏索引', '', '只记录关键变化，最新完成的成片可用于视频开头；过程按编号回溯。失败或中断文件留在各自目录，不加入成片清单。', '') | Set-Content -LiteralPath $index -Encoding utf8 }

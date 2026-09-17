@@ -29,4 +29,4 @@
 
 必须区分数值和听感：当前模型工具返回“audio content omitted because you do not support audio input”，故**未完成模型主观听感复核**。已产出可播放完整曲与尾首拼接片段，不能把输出非零、峰值合格或成功播放称作“已经听过／无听感问题”。不等待用户而继续全部可完成的功能与实景验证。
 
-播放／静音接口见 `Game/audio/farm_audio.gd`，场景集成由 3.3、设置持久化由 4.1 管理。具体最终场景和音轨证据见任务 [3.4 交接](../../docs/task/首个可发布版本/handoffs/3.4-handoff.md)，正式环境验收完成前任务保持进行中。
+播放／静音接口见 `Game/audio/farm_audio.gd`，3.3 已接入正式场景，设置持久化由 4.1 管理。3.4 的独立及正式场景验证已完成，接口与音轨证据见 [3.4交接](../../docs/task/首个可发布版本/handoffs/3.4-handoff.md)；40秒有声阶段片及录制退出清理记录见 [3.3交接](../../docs/task/首个可发布版本/handoffs/3.3-handoff.md)。主观听感边界仍如上所述。
