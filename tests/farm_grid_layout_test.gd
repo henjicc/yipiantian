@@ -10,7 +10,12 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var layout := Layout.new()
+	# A moved/rotated field retains crop identity and local hit-testing.
+	layout.plan.fields[0].position += Vector3(.15,0,-.1)
+	layout.plan.fields[0].yaw = 8.0
 	root.add_child(layout)
+	_expect(layout.fields[0].transform.is_equal_approx(layout.plan.field_transform(0)), "Field uses shared plan transform")
+	_expect(layout.field_id(0) == "field_01", "Moving a field preserves its identity")
 	var state := Farm.new(1800000000.0)
 	for field_id: String in Farm.FIELD_IDS:
 		layout.show_field(state.get_field(field_id))

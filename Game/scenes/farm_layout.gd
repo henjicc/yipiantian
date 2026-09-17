@@ -11,6 +11,7 @@ const PlantingSoilBurst = preload("res://presentation/planting_soil_burst.gd")
 const FIELD_SIZE := Vector3(2.6, 0.16, 2.05)
 const CELL_SPAN := Vector2(0.60, 0.44)
 const CELL_ORIGIN := Vector2(-1.20, -0.88)
+var plan := preload("res://layout/courtyard_plan.gd").new()
 var fields: Array[StaticBody3D] = []
 var _crop_roots: Dictionary = {}
 var _visual_keys: Dictionary = {}
@@ -159,39 +160,37 @@ func _mesh(parent: Node3D, resource: Mesh, point: Vector3, material: Material) -
 
 func _make_fields() -> void:
 	var earthen_bank: ArrayMesh = _earthen_bank()
-	for row in 2:
-		for col in 3:
-			var index: int = fields.size()
-			var body := StaticBody3D.new()
-			body.name = "Field%d" % (index + 1)
-			body.position = Vector3(-3.3 + col * 3.25, 0.2, 0.0 + row * 2.8)
-			body.collision_layer = 1
-			body.collision_mask = 0
-			body.set_meta("field_index", index)
-			body.set_meta("field_id", FarmState.FIELD_IDS[index])
-			add_child(body)
-			fields.append(body)
-			# Logical patches share continuous heights/normals, not tile-edge grooves.
-			_mesh(body, earthen_bank, Vector3.ZERO, _ridge)
-			_mesh(body, _coping_kerb(91744 + index * 7919), Vector3.ZERO, _coping)
-			_soil_meshes[field_id(index)] = {}
-			_cell_crops[field_id(index)] = {}
-			for cell_id: String in FarmState.CELL_IDS:
-				var center: Vector3 = cell_center(cell_id)
-				var patch: MeshInstance3D = _mesh(body, TilledSoil.patch(center, CELL_SPAN, index), center, _soil)
-				patch.name = "Soil_" + cell_id
-				patch.extra_cull_margin = .09
-				patch.set_instance_shader_parameter("cell_center", Vector2(center.x, center.z))
-				_soil_meshes[field_id(index)][cell_id] = patch
-			var crops := Node3D.new()
-			crops.name = "Crops"
-			body.add_child(crops)
-			_crop_roots[field_id(index)] = crops
-			var collision := CollisionShape3D.new()
-			var shape := BoxShape3D.new()
-			shape.size = FIELD_SIZE
-			collision.shape = shape
-			body.add_child(collision)
+	for index: int in plan.fields.size():
+		var body := StaticBody3D.new()
+		body.name = "Field%d" % (index + 1)
+		body.transform = plan.field_transform(index)
+		body.collision_layer = 1
+		body.collision_mask = 0
+		body.set_meta("field_index", index)
+		body.set_meta("field_id", plan.fields[index].id)
+		add_child(body)
+		fields.append(body)
+		# Logical patches share continuous heights/normals, not tile-edge grooves.
+		_mesh(body, earthen_bank, Vector3.ZERO, _ridge)
+		_mesh(body, _coping_kerb(91744 + index * 7919), Vector3.ZERO, _coping)
+		_soil_meshes[field_id(index)] = {}
+		_cell_crops[field_id(index)] = {}
+		for cell_id: String in FarmState.CELL_IDS:
+			var center: Vector3 = cell_center(cell_id)
+			var patch: MeshInstance3D = _mesh(body, TilledSoil.patch(center, CELL_SPAN, index), center, _soil)
+			patch.name = "Soil_" + cell_id
+			patch.extra_cull_margin = .09
+			patch.set_instance_shader_parameter("cell_center", Vector2(center.x, center.z))
+			_soil_meshes[field_id(index)][cell_id] = patch
+		var crops := Node3D.new()
+		crops.name = "Crops"
+		body.add_child(crops)
+		_crop_roots[field_id(index)] = crops
+		var collision := CollisionShape3D.new()
+		var shape := BoxShape3D.new()
+		shape.size = FIELD_SIZE
+		collision.shape = shape
+		body.add_child(collision)
 
 
 func _coping_kerb(layout_seed: int) -> ArrayMesh:

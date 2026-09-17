@@ -31,9 +31,9 @@ func _build() -> void:
 func rebuild_spaces() -> void:
 	water = Space.new()
 	yard = Space.new()
-	water.configure(Rect2(-14.5, -6.0, 25.0, 19.5), .46)
-	yard.configure(Rect2(-6.25, -6.8, 12.0, 11.75), .21)
 	var environment: Node3D = get_parent()
+	water.configure(environment.plan.animal_areas.water, .46)
+	yard.configure(environment.plan.animal_areas.yard, .21)
 	for child: Node in environment.get_children():
 		if not child is Node3D or child == self: continue
 		var path: String = child.scene_file_path
@@ -60,8 +60,8 @@ func rebuild_spaces() -> void:
 			yard.block(polygon)
 	water.bake()
 	yard.bake()
-	for p: Vector2 in [Vector2(-11, 1), Vector2(-10, 6), Vector2(-3, 10), Vector2(5, 10)]: water.resting.append(water.nearest(p))
-	for p: Vector2 in [Vector2(-4.9,-1.7), Vector2(5.0,-1.6), Vector2(-.5,4.6), Vector2(-1.7,1.4)]: yard.resting.append(yard.nearest(p))
+	for p: Vector2 in environment.plan.animal_rest.water: water.resting.append(water.nearest(p))
+	for p: Vector2 in environment.plan.animal_rest.yard: yard.resting.append(yard.nearest(p))
 	for entry: Dictionary in birds:
 		entry.space = yard if entry.kind == "hen" else water
 		entry.pose.ground = entry.space.ground_height

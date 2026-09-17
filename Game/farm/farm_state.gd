@@ -2,7 +2,7 @@ extends RefCounted
 ## The sole mutable owner of planting state. No scene, clock reading or disk I/O.
 
 const Crops = preload("res://farm/crop_catalog.gd")
-const FIELD_IDS: Array[String] = ["field_01", "field_02", "field_03", "field_04", "field_05", "field_06"]
+const FIELD_IDS: Array[String] = preload("res://layout/courtyard_plan.gd").FIELD_IDS
 # Row-major: columns run along +X and rows along +Z in the presentation layer.
 const CELL_IDS: Array[String] = ["cell_01", "cell_02", "cell_03", "cell_04", "cell_05", "cell_06", "cell_07", "cell_08", "cell_09", "cell_10", "cell_11", "cell_12", "cell_13", "cell_14", "cell_15", "cell_16"]
 # JSON numbers remain exact only up to this bound.

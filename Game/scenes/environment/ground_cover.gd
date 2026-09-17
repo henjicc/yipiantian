@@ -1,10 +1,11 @@
 extends Node3D
 ## Low clustered grass joins roots, paths and soil. No gameplay or collision ownership.
 const SHADER = preload("res://scenes/environment/meadow.gdshader")
-var _rim := PackedVector2Array([Vector2(-7.5,-7.6),Vector2(-4.8,-8.4),Vector2(-1,-8.2),Vector2(2.5,-7.9),Vector2(5.6,-6.5),Vector2(6.5,-3.8),Vector2(6.4,-.8),Vector2(6.8,1.3),Vector2(5.8,4.8),Vector2(3.5,6.1),Vector2(.7,6.7),Vector2(-2.5,6.1),Vector2(-5.5,5.6),Vector2(-7.2,3.2),Vector2(-7.6,.2),Vector2(-7.1,-3.6)])
+var _rim: PackedVector2Array
 var _rng := RandomNumberGenerator.new()
 
 func build(courtyard: Node3D) -> void:
+	_rim = courtyard.plan.rim
 	_rng.seed = 943172
 	_build_trellis_bed()
 	_build_foundation_contacts()
@@ -108,16 +109,18 @@ func _allowed(p: Vector2, courtyard: Node3D) -> bool:
 	if p.y < -2.85 and p.x > -5.8 and p.x < 4.7: return false
 	if p.y < -1.95 and p.y > -3.2 and p.x > -4.4 and p.x < 4.4: return false
 	if p.x > -6.45 and p.x < -5.05 and p.y > -1.25 and p.y < 3.65: return false
-	for row: int in 2:
-		for col: int in 3:
-			var d: Vector2 = (p-Vector2(-3.3+col*3.25,row*2.8)).abs()
-			if d.x < 1.37 and d.y < 1.09: return false
-	if (absf(p.x+1.68)<.22 or absf(p.x-1.57)<.22) and p.y > -1.3 and p.y < 4.2: return false
-	if absf(p.y-4.65)<.24 and absf(p.x)<5.1: return false
-	if absf(p.y+1.75)<.23 and p.x>-5.3 and p.x<5.5: return false
-	for id: String in courtyard.SLOT_POSITIONS:
+	for index: int in courtyard.plan.fields.size():
+		var local: Vector3 = courtyard.plan.field_transform(index).affine_inverse() * Vector3(p.x,0,p.y)
+		var half: Vector2 = courtyard.plan.fields[index].size * .5 + Vector2(.07,.065)
+		if absf(local.x) < half.x and absf(local.z) < half.y: return false
+	for route: PackedVector3Array in courtyard.plan.paths:
+		for i: int in range(route.size() - 1):
+			var a := Vector2(route[i].x,route[i].z)
+			var b := Vector2(route[i+1].x,route[i+1].z)
+			if Geometry2D.get_closest_point_to_segment(p,a,b).distance_to(p) < .23: return false
+	for id: String in courtyard.plan.slots:
 		if id.begins_with("ground"):
-			var at: Vector3 = courtyard.SLOT_POSITIONS[id]
+			var at: Vector3 = courtyard.plan.slots[id]
 			if p.distance_to(Vector2(at.x,at.z))<.46: return false
 	return true
 

@@ -16,6 +16,8 @@ const HUD = preload("res://scenes/farm_hud.gd")
 const SettingsStore = preload("res://settings/settings_store.gd")
 const GameMenu = preload("res://ui/game_menu.gd")
 const CameraTuning = preload("res://ui/camera_tuning.gd")
+const CourtyardPlan = preload("res://layout/courtyard_plan.gd")
+var courtyard_plan := CourtyardPlan.new()
 
 @onready var farm: FarmLayout = $Farm
 @onready var camera: FarmCamera = $Camera3D
@@ -59,6 +61,11 @@ var _save_failed: bool = false
 var _record_session: String = ""
 var _exiting: bool = false
 
+
+func _enter_tree() -> void:
+	# Children build their geometry in _ready; share one plan before that happens.
+	$Environment.plan = courtyard_plan
+	$Farm.plan = courtyard_plan
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false

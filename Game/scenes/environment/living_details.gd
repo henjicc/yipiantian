@@ -7,7 +7,8 @@ var _house_materials: Array[ShaderMaterial] = []
 var _lantern_meshes: Array[MeshInstance3D] = []
 var _window_lights: Array[OmniLight3D] = []
 var _rope_segments: Array[MeshInstance3D] = []
-var _rope_origin := Vector3(6.32, 0.38, 3.85)
+var plan := preload("res://layout/courtyard_plan.gd").new()
+var _rope_origin: Vector3
 var _boat: Node3D
 var _wood: ShaderMaterial
 var _bamboo: ShaderMaterial
@@ -58,11 +59,11 @@ func _paint(color: Color, frequency: float = 4.0) -> ShaderMaterial:
 	material.set_shader_parameter("wash_scale", frequency)
 	return material
 
-func _group(label: String, at: Vector3, yaw: float = 0.0) -> Node3D:
+func _group(label: String) -> Node3D:
 	var node := Node3D.new()
 	node.name = label
-	node.position = at
-	node.rotation.y = deg_to_rad(yaw)
+	node.position = plan.props[label][0]
+	node.rotation.y = deg_to_rad(plan.props[label][1])
 	add_child(node)
 	return node
 
@@ -141,7 +142,7 @@ func _tray(parent: Node3D, at: Vector3, radius: float, harvest: bool) -> void:
 func _build_porch_group() -> void:
 	# Fit the table between the veranda posts at world X=2.15 and 3.80.
 	# Baskets sit forward of the post shoes and outside the splayed table legs.
-	var group := _group("PorchHarvestTable",Vector3(2.95,.41,-2.55))
+	var group := _group("PorchHarvestTable")
 	# Five rounded slats and braced tapered legs, a shallow drying tray on top.
 	for z: int in 5:
 		_beam(group,Vector3(-.44,.62,-.24+z*.12),Vector3(.44,.62,-.24+z*.12),.041,_wood)
@@ -155,7 +156,7 @@ func _build_porch_group() -> void:
 	_basket(group,Vector3(.66,0,.21),.13,.25,false)
 
 func _build_drying_rack() -> void:
-	var group := _group("SidePorchDryingRack",Vector3(-3.70,.14,-2.72),-9)
+	var group := _group("SidePorchDryingRack")
 	for x: float in [-.48,.48]:
 		_beam(group,Vector3(x,0,.28),Vector3(x,1.45,-.25),.034,_bamboo)
 		_beam(group,Vector3(x,0,-.32),Vector3(x,1.45,-.25),.031,_bamboo)
@@ -169,7 +170,7 @@ func _build_drying_rack() -> void:
 	_basket(group,Vector3(.74,0,.03),.22,.32,false)
 
 func _build_tools() -> void:
-	var group := _group("PorchFarmTools",Vector3(-2.50,.43,-2.90),12)
+	var group := _group("PorchFarmTools")
 	var iron := _paint(Color("575b50"),8.0)
 	_beam(group,Vector3(0,.1,.12),Vector3(.16,1.18,-.07),.018,_wood)
 	_beam(group,Vector3(-.19,.10,.12),Vector3(.19,.10,.12),.022,iron)
@@ -179,7 +180,8 @@ func _build_tools() -> void:
 	_beam(group,Vector3(.22,.075,.04),Vector3(.46,.075,.04),.05,iron)
 
 func _build_mooring() -> void:
-	for at: Vector3 in [Vector3(6.32,-.30,3.85),Vector3(6.05,-.3,4.48)]:
+	_rope_origin = plan.anchors.mooring + Vector3.UP * .68
+	for at: Vector3 in [plan.anchors.mooring,plan.anchors.mooring + Vector3(-.27,0,.63)]:
 		_beam(self,at,at+Vector3.UP*.82,.071,_wood)
 		_ring(self,at+Vector3.UP*.66,.075,.013,_rope)
 		_ring(self,at+Vector3.UP*.70,.075,.013,_rope)
@@ -204,7 +206,7 @@ func update_mooring() -> void:
 		node.quaternion=Quaternion(Vector3.UP,(q-p).normalized())
 
 func _build_windows() -> void:
-	var group := _group("WindowWarmth",Vector3.ZERO)
+	var group := _group("WindowWarmth")
 	for x: float in [-1.30,2.60]:
 		var lantern: Node3D = Assets.place(group,"lantern",Vector3(x,1.91,-2.40))
 		for mesh: MeshInstance3D in lantern.find_children("*","MeshInstance3D",true,false):
@@ -295,7 +297,7 @@ func _log_billet(parent: Node3D, at: Vector3, length: float, radius: float, yaw:
 
 
 func _build_water_vats() -> void:
-	var group := _group("YardWaterVats", Vector3(-5.28, .14, -0.62), 18)
+	var group := _group("YardWaterVats")
 	_vessel(group, Vector3.ZERO, .40, .60, _clay)
 	_vessel(group, Vector3(.66, 0, .18), .27, .40, _paint(Color("96785f"), 7.0))
 	# Plank lid and a long-handled dipper resting across the smaller vat.
@@ -308,7 +310,7 @@ func _build_water_vats() -> void:
 
 
 func _build_firewood() -> void:
-	var group := _group("YardFirewood", Vector3(-4.90, .14, -3.28), -14)
+	var group := _group("YardFirewood")
 	_lathe(group, Vector3(-.52, 0, .10), [Vector2(.01, 0), Vector2(.21, 0), Vector2(.215, .34), Vector2(.20, .36), Vector2(.01, .36)], _wood, 14)
 	# Axe left standing in the chopping block.
 	_beam(group, Vector3(-.50, .34, .09), Vector3(-.40, .80, .02), .019, _bamboo)
@@ -325,7 +327,7 @@ func _build_firewood() -> void:
 
 
 func _build_stone_mill() -> void:
-	var group := _group("YardStoneMill", Vector3(5.07, .14, -2.92), -95)
+	var group := _group("YardStoneMill")
 	var granite := _paint(Color("9ea49a"), 4.0)
 	granite.set_shader_parameter("stone_treatment", 1.0)
 	var pedestal := _paint(Color("8d928a"), 4.0)
@@ -338,7 +340,7 @@ func _build_stone_mill() -> void:
 
 
 func _build_jar_cluster() -> void:
-	var group := _group("YardJarCluster", Vector3(5.22, .14, 2.45), -30)
+	var group := _group("YardJarCluster")
 	_vessel(group, Vector3.ZERO, .30, .46, _clay)
 	_vessel(group, Vector3(.50, 0, .22), .22, .32, _paint(Color("8b7159"), 8.0))
 	_vessel(group, Vector3(.24, 0, -.38), .17, .24, _paint(Color("b0905f"), 9.0))
@@ -348,7 +350,7 @@ func _build_jar_cluster() -> void:
 
 
 func _build_ground_trays() -> void:
-	var group := _group("YardGroundTrays", Vector3(-5.30, .14, 2.30), 40)
+	var group := _group("YardGroundTrays")
 	_tray(group, Vector3.ZERO, .30, true)
 	_tray(group, Vector3(.58, .004, .26), .26, false)
 	# The only saturated note on this side of the yard: drying chillies.
@@ -358,7 +360,7 @@ func _build_ground_trays() -> void:
 
 
 func _build_basket_stack() -> void:
-	var group := _group("YardBasketStack", Vector3(4.25, .14, 4.22), -20)
+	var group := _group("YardBasketStack")
 	_basket(group, Vector3.ZERO, .26, .34, false)
 	_basket(group, Vector3(.02, .30, .01), .24, .30, false)
 	_basket(group, Vector3(.52, 0, .28), .21, .29, true)
@@ -367,7 +369,7 @@ func _build_basket_stack() -> void:
 
 
 func _build_yard_bucket() -> void:
-	var group := _group("YardBucket", Vector3(-2.15, .14, -1.28), 8)
+	var group := _group("YardBucket")
 	_lathe(group, Vector3.ZERO, [Vector2(.01, 0), Vector2(.145, 0), Vector2(.175, .26), Vector2(.175, .285), Vector2(.155, .29), Vector2(.15, .26), Vector2(.125, .02), Vector2(.01, .02)], _wood, 16)
 	_ring(group, Vector3(0, .08, 0), .155, .011, _iron)
 	_ring(group, Vector3(0, .25, 0), .172, .011, _iron)
@@ -381,7 +383,7 @@ func _build_yard_bucket() -> void:
 func _build_drying_line() -> void:
 	# A low A-frame in the front garden. Tall posts beside the veranda read as part
 	# of its railing and hide the porch, so the herbs hang below eye level instead.
-	var group := _group("YardDryingLine", Vector3(1.45, .14, 5.62), 20)
+	var group := _group("YardDryingLine")
 	for x: float in [-.74, .74]:
 		_beam(group, Vector3(x, 0, -.26), Vector3(x, .70, 0), .027, _bamboo)
 		_beam(group, Vector3(x, 0, .26), Vector3(x, .70, 0), .027, _bamboo)
@@ -396,7 +398,7 @@ func _build_drying_line() -> void:
 
 
 func _build_melon_pile() -> void:
-	var group := _group("YardMelonPile", Vector3(1.15, .14, 4.24), 30)
+	var group := _group("YardMelonPile")
 	var straw_mat := BoxMesh.new()
 	straw_mat.size = Vector3(.92, .030, .62)
 	_mesh(group, straw_mat, Vector3(0, .015, 0), _straw)
@@ -405,7 +407,7 @@ func _build_melon_pile() -> void:
 
 
 func _build_seed_frames() -> void:
-	var group := _group("YardSeedFrames", Vector3(-2.62, .14, 4.20), -25)
+	var group := _group("YardSeedFrames")
 	var earth := _paint(Color("6b573c"), 16.0)
 	for frame_index: int in 2:
 		var origin := Vector3(frame_index * .70, 0, frame_index * .16)

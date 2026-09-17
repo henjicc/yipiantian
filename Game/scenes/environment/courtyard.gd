@@ -18,14 +18,8 @@ const GROUND_LEVEL := 0.132
 const DECK_LEVEL := 0.41
 # Modules whose feet meet a visible surface and therefore need a contact pool.
 const CONTACT_MODULES := ["veranda", "side_wing", "stone_bridge", "climbing_trellis", "bamboo_fence"]
-const BOAT_ORIGIN := Vector3(9.0,-.50,4.3)
 const ROOT := "res://art/environment/"
-const SLOT_POSITIONS := {
-	"ground_01": Vector3(-5.35,0.16,-1.85), "ground_02": Vector3(4.70,0.16,-1.8),
-	"ground_03": Vector3(-5.0,0.16,4.7), "ground_04": Vector3(4.75,0.16,4.8),
-	"hanging_01": Vector3(-2.5,2.27,-2.05), "hanging_02": Vector3(3.8,2.27,-2.05),
-	"hanging_03": Vector3(-5.08,1.82,2.13), "hanging_04": Vector3(-4.85,1.98,-2.95),
-}
+var plan := preload("res://layout/courtyard_plan.gd").new()
 var _lod_pairs: Dictionary = {}
 var _slots: Node3D
 var _water: MeshInstance3D
@@ -57,7 +51,7 @@ func _ready() -> void:
 	cover.build(self)
 	_build_slots()
 	_build_distance()
-	_living=LivingDetails.new();_living.name="LivingDetails";add_child(_living)
+	_living=LivingDetails.new();_living.name="LivingDetails";_living.plan=plan;add_child(_living)
 	_living.configure_house(get_node("MainHouse"))
 	_living.attach_boat(_boat)
 	_build_contact_shading()
@@ -70,9 +64,9 @@ func _process(delta: float) -> void:
 	# Waterline pivot, not the original bottom origin: the hull stays in the water.
 	var roll: float = sin(_motion_time*.73)*.009 + sin(_motion_time*.39)*.003
 	var pitch: float = sin(_motion_time*.55+.4)*.005
-	_boat.rotation=Vector3(pitch,deg_to_rad(-24),roll)
+	_boat.rotation=Vector3(pitch,deg_to_rad(plan.angles.boat),roll)
 	var pivot:=Vector3(0,.35/.85,0)
-	_boat.position=BOAT_ORIGIN+Vector3.UP*(.021*sin(_motion_time*.81)) + Vector3.UP*.35 - _boat.basis*pivot
+	_boat.position=plan.anchors.boat+Vector3.UP*(.021*sin(_motion_time*.81)) + Vector3.UP*.35 - _boat.basis*pivot
 	var water_material: ShaderMaterial = _water.material_override
 	if water_material.shader.resource_path == "res://atmosphere/quiet_water.gdshader":
 		water_material.set_shader_parameter("boat_mask_enabled",true)
@@ -138,7 +132,7 @@ func _build_ground() -> void:
 	var water_material:=ShaderMaterial.new();water_material.shader=load("res://atmosphere/quiet_water.gdshader")
 	_water.material_override=water_material;_water.position.y=-0.25;add_child(_water)
 	# Nonuniform stone groups follow the bank, leaving visible grassy lobes and gaps.
-	var rim: Array[Vector2]=[Vector2(-7.5,-7.6),Vector2(-4.8,-8.4),Vector2(-1,-8.2),Vector2(2.5,-7.9),Vector2(5.6,-6.5),Vector2(6.5,-3.8),Vector2(6.4,-.8),Vector2(6.8,1.3),Vector2(5.8,4.8),Vector2(3.5,6.1),Vector2(.7,6.7),Vector2(-2.5,6.1),Vector2(-5.5,5.6),Vector2(-7.2,3.2),Vector2(-7.6,.2),Vector2(-7.1,-3.6)]
+	var rim: PackedVector2Array = plan.rim
 	for i in rim.size():
 		var a:Vector2=rim[i];var b:Vector2=rim[(i+1)%rim.size()]
 		var count:int=ceili(a.distance_to(b)/.88)
@@ -156,7 +150,7 @@ func _build_ground() -> void:
 		_tint_stone(_module("stone_%d" % (i%5),shelves[i],17+i*47,Vector3(1.45,4.8 if i%2==0 else 3.5,1.18)),Color("79867e"))
 		_tint_stone(_module("stone_%d" % ((i+2)%5),shelves[i]+Vector3(.35,-.05,.37),-25+i*33,Vector3(.88,2.0,.9)),Color("929784"))
 	# Winding flat stone footpaths, with irregular joints, no checkerboard paving.
-	var routes:Array[Array]=[[Vector3(-6.0,.115,2.9),Vector3(-5.25,.115,-1.7),Vector3(-2,.115,-1.8),Vector3(2.5,.115,-1.7),Vector3(6.2,.115,-.6)],[Vector3(-4.9,.115,4.65),Vector3(-.5,.115,4.65),Vector3(4.8,.115,4.7)],[Vector3(-1.68,.115,-1),Vector3(-1.68,.115,4.1)],[Vector3(1.57,.115,-1),Vector3(1.57,.115,4.1)]]
+	var routes: Array[PackedVector3Array] = plan.paths
 	for route in routes:
 		for k in range(route.size()-1):
 			var a:Vector3=route[k];var b:Vector3=route[k+1];var count:int=ceili(a.distance_to(b)/.48)
@@ -179,18 +173,18 @@ func _tint_stone(node: Node, color: Color) -> void:
 	for child in node.get_children():_tint_stone(child,color)
 
 func _build_architecture() -> void:
-	_asset("house","MainHouse",Vector3(.65,.13,-4.65))
-	_module("veranda",Vector3(.65,.13,-2.40))
-	var kitchen: Node3D = _life_asset("kitchen","Kitchen",Vector3(-4.5,.115,-5.0))
+	_asset("house","MainHouse",plan.anchors.house,plan.angles.house)
+	_module("veranda",plan.anchors.veranda,plan.angles.veranda)
+	var kitchen: Node3D = _life_asset("kitchen","Kitchen",plan.anchors.kitchen,plan.angles.kitchen)
 	_contact_sources.append(kitchen.get_child(0))
 	for mesh: MeshInstance3D in kitchen.find_children("*","MeshInstance3D",true,false):
 		mesh.set_instance_shader_parameter("ground_contact",Vector2(.13,.14))
-	var trellis: Node3D = _module("climbing_trellis",Vector3(-5.80,.13,1.05),90)
+	var trellis: Node3D = _module("climbing_trellis",plan.anchors.trellis,plan.angles.trellis)
 	trellis.name = "EntranceTrellis"
-	_module("stone_bridge",Vector3(8.1,-.04,-.15),-9)
-	_boat=_asset("boat","CoveredBoat",BOAT_ORIGIN,-24,.85)
+	_module("stone_bridge",plan.anchors.bridge,plan.angles.bridge)
+	_boat=_asset("boat","CoveredBoat",plan.anchors.boat,plan.angles.boat,.85)
 	# Opposite landing is a small bank, with irregular rock margins, not a floating bridge end.
-	_module("east_bank_v2",Vector3(12.65,-.02,-2.8))
+	_module("east_bank_v2",plan.anchors.east_bank,plan.angles.east_bank)
 	for index: int in 7:
 		var point := Vector3(10.52,.112,.23).lerp(Vector3(13.35,.112,-1.45),index/6.0)
 		_tint_stone(_module("stone_1",point,24+index*13,Vector3(.82,.25,.65)),Color("93907e"))
@@ -198,11 +192,8 @@ func _build_architecture() -> void:
 		var t:float=i/6.0
 		var position_on_bank:=Vector3(11.05+t*4.1,-.40,.2+sin(t*PI)*.40)
 		_tint_stone(_module("stone_%d"%(i%5),position_on_bank,i*39,Vector3(.85,2.8+(i%3)*.7,.8)),Color("829184"))
-	for i in 4:_module("bamboo_fence",Vector3(-4.8+i*2.0,.14,-7.2))
-	for z in [-2.8,-.6,3.6]:_module("bamboo_fence",Vector3(-6.65,.14,z),90)
-	for z in [-4.1,-2.0]:_module("bamboo_fence",Vector3(6.02,.14,z),75)
-	# Low front rail gives the vegetable garden a boundary; corner decoration slots stay open.
-	for x in [-3.0,-.85,1.3]:_module("bamboo_fence",Vector3(x,.14,5.15),0,Vector3(1,.68,1))
+	for fence: Dictionary in plan.fences:
+		_module("bamboo_fence",fence.position,fence.yaw,Vector3(1,fence.height,1))
 	# The right bay contains the harvest table; the old bench occupied its legs
 	# and was partly buried in the raised veranda platform.
 
@@ -265,20 +256,20 @@ func _grass_patch(at: Vector3, index: int) -> void:
 
 func _build_slots() -> void:
 	_slots=Node3D.new();_slots.name="DecorationSlots";add_child(_slots)
-	assert(SLOT_POSITIONS.size()==DECORATIONS.SLOT_TYPES.size())
-	for id:String in SLOT_POSITIONS:
+	assert(plan.slots.size()==DECORATIONS.SLOT_TYPES.size())
+	for id:String in plan.slots:
 		assert(DECORATIONS.SLOT_TYPES.has(id))
-		var marker:=Marker3D.new();marker.name=id;marker.position=SLOT_POSITIONS[id];_slots.add_child(marker)
+		var marker:=Marker3D.new();marker.name=id;marker.position=plan.slots[id];_slots.add_child(marker)
 	# Every hanging position has a real cantilever / cord ending at its top ring.
 	for id in ["hanging_01","hanging_02"]:
-		var p:Vector3=SLOT_POSITIONS[id]
+		var p:Vector3=plan.slots[id]
 		_support_line(Vector3(p.x,2.50,-2.72),Vector3(p.x,2.50,p.z),.037,Color("62543a"))
 		_support_line(Vector3(p.x,2.50,p.z),p,.012,Color("89794c"))
 	_support_line(Vector3(-5.4,2.09,2.13),Vector3(-5.08,2.09,2.13),.025,Color("89794c"))
-	_support_line(Vector3(-5.08,2.09,2.13),SLOT_POSITIONS.hanging_03,.012,Color("89794c"))
+	_support_line(Vector3(-5.08,2.09,2.13),plan.slots.hanging_03,.012,Color("89794c"))
 	_support_line(Vector3(-4.85,2.55,-3.77),Vector3(-4.85,2.55,-2.95),.035,Color("62543a"))
 	_support_line(Vector3(-4.85,2.10,-3.77),Vector3(-4.85,2.55,-3.0),.025,Color("62543a"))
-	_support_line(Vector3(-4.85,2.55,-2.95),SLOT_POSITIONS.hanging_04,.012,Color("89794c"))
+	_support_line(Vector3(-4.85,2.55,-2.95),plan.slots.hanging_04,.012,Color("89794c"))
 
 func _support_line(a:Vector3,b:Vector3,radius:float,color:Color)->void:
 	var node:=MeshInstance3D.new();node.name="LanternSupport"
@@ -332,7 +323,7 @@ func get_backdrop_material() -> ShaderMaterial:
 
 func get_decoration_slots() -> Array[Dictionary]:
 	var result:Array[Dictionary]=[]
-	for id:String in SLOT_POSITIONS:
+	for id:String in plan.slots:
 		result.append({"id":id,"type":DECORATIONS.SLOT_TYPES[id],"transform":get_slot_marker(id).transform,"allowed_turns":DECORATIONS.allowed_turns(id),"radius":.45 if id.begins_with("ground") else .2})
 	return result
 

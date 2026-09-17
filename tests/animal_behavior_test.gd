@@ -23,6 +23,11 @@ func _run() -> void:
 	await process_frame
 	var animals: Node3D = scene.get_node("Environment/CourtyardAnimals")
 	while not animals.ready_for_motion: await process_frame
+	var courtyard: Node3D = scene.get_node("Environment")
+	check(courtyard.plan == scene.courtyard_plan and scene.farm.plan == scene.courtyard_plan, "Farm and courtyard share one layout instance")
+	check(courtyard.get_node("LivingDetails").plan == scene.courtyard_plan, "Life props share the same layout instance")
+	check(courtyard.get_node("MainHouse").position.is_equal_approx(scene.courtyard_plan.anchors.house), "House anchor comes from layout")
+	check(animals.water.bounds == scene.courtyard_plan.animal_areas.water and animals.yard.bounds == scene.courtyard_plan.animal_areas.yard, "Animal activity bounds come from layout")
 	animals.set_process(false)
 	animals._rng.seed = 9182026
 	print("ANIMAL_SPACES water=", animals.water.points.size(), " yard=", animals.yard.points.size())
