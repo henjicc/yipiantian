@@ -1,0 +1,51 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\bamboo-original\\tripo-out\\bamboo-reference-70df4900\\model.glb",
+  "width_metres": 10,
+  "mesh": {
+    "bamboo_high": {
+      "triangles": 83776,
+      "open_edges": 5,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        10.0,
+        3.7316172122955322,
+        8.791677474975586
+      ],
+      "textures": [
+        {
+          "name": "Color_70df4900-367c-4e20-81a1-a5e3f1152f97",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "bamboo_low": {
+      "triangles": 23999,
+      "open_edges": 7,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        9.99476432800293,
+        3.7325072288513184,
+        8.759429931640625
+      ],
+      "textures": [
+        {
+          "name": "Color_70df4900-367c-4e20-81a1-a5e3f1152f97",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

@@ -86,6 +86,7 @@ func get_settings() -> Dictionary:
 
 
 func _apply_quality() -> void:
+	_environment.get_node("NeighborIslets").set_low_detail_enabled(_quality == "low")
 	# One concrete raster-quality step; shadows and the selected crop stay intact.
 	# Drop decorative geometry before an MSAA switch can stall shader compilation.
 	if _quality == "low" and _foreground != null:

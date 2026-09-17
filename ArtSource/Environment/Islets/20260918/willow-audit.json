@@ -1,0 +1,51 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\willow-original\\tripo-out\\willow-reference-b3c677b7\\model.glb",
+  "width_metres": 10,
+  "mesh": {
+    "willow_high": {
+      "triangles": 87177,
+      "open_edges": 1,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        10.0,
+        4.383141040802002,
+        9.991867065429688
+      ],
+      "textures": [
+        {
+          "name": "Color_b3c677b7-7e83-4aa7-b893-24825f10e35a",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "willow_low": {
+      "triangles": 23999,
+      "open_edges": 1,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        10.001131057739258,
+        4.386959552764893,
+        9.999988555908203
+      ],
+      "textures": [
+        {
+          "name": "Color_b3c677b7-7e83-4aa7-b893-24825f10e35a",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

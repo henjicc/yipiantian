@@ -1,0 +1,26 @@
+{
+  "island_bank_v2": {
+    "triangles": 4608,
+    "dimensions_godot_xyz": [
+      15.498895645141602,
+      1.1673072576522827,
+      16.26025390625
+    ],
+    "closed": true,
+    "materials": 1,
+    "plateau_y": 0.13,
+    "reimport_triangles": 4608
+  },
+  "east_bank_v2": {
+    "triangles": 2592,
+    "dimensions_godot_xyz": [
+      7.898776531219482,
+      1.1671969890594482,
+      8.951395988464355
+    ],
+    "closed": true,
+    "materials": 1,
+    "plateau_y": 0.13,
+    "reimport_triangles": 2592
+  }
+}

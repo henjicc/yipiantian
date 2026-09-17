@@ -1,6 +1,16 @@
 # 远山与河岸背景
 
-当前使用 `layers-v1/` 三张原生透明 PNG，由内置 **image_gen** 分别生成。按顺序输入已批准的 `farm-gongbi-v1.png`（全景风格）和 `greens-gongbi-v1.png`（形体／笔触质感）作为参考。实际提示词、参考顺序与工具原始落点见 [generation-record.json](layers-v1/generation-record.json)。工具未返回具体模型版本、种子及费用，本轮未调用 Tripo。
+## 现役 layers-v2：20260918 去重复与岛村层次
+
+新生成三张独立原生RGBA：`far-west.png`左高峰长谷、`far-east.png`右侧宽峰、`wooded-bank.png`低矮林岸。每张只出现一次，不翻转／平铺复制；完整提示词和工具落点见[layers-v2/generation-record.json](layers-v2/generation-record.json)，正式PNG原样复制到`Game/art/environment/backdrop/layers-v2/`，保留alpha并开启mipmaps。
+
+舞台仍为2.5D远景，三块细分支撑面在不同深度，边缘做小幅静态弯曲；宽度与高度分别控制远山和低岸的屏幕尺度，不沿用旧版的固定3:1几何比例。西山(-102,105,-400)、东山(113,100,-365)、林岸(0,63,-275)；对应尺寸320×75、310×80、380×30，加天空／薄雾共五块。昼夜、俯角和偏航同步保持；不能将绘景称为可环游的真实山脉。
+
+远岸带上移并缩小树木高度，为[真实三维邻居岛](../Islets/README.md)留下湖面。真实水面仍沿原10–18米纵深过渡；不能直接把水面延长到山卡前，否则倾斜绘景会被水遮住。远岛水下部分按共同水位裁掉，避免在绘景水域露底。旧图与首轮证据保留，不覆盖。统一验证及视频入口见邻居岛记录。
+
+## 历史 layers-v1（已被上述三张独立轮廓替换）
+
+首版使用 `layers-v1/` 三张原生透明 PNG，由内置 **image_gen** 分别生成。按顺序输入已批准的 `farm-gongbi-v1.png`（全景风格）和 `greens-gongbi-v1.png`（形体／笔触质感）作为参考。实际提示词、参考顺序与工具原始落点见 [generation-record.json](layers-v1/generation-record.json)。工具未返回具体模型版本、种子及费用，该轮未调用 Tripo。
 
 | 文件 | 内容 | 原始尺寸 |
 |---|---|---|

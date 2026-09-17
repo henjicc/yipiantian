@@ -10,6 +10,7 @@ const FallingLeaves = preload("res://presentation/falling_leaves.gd")
 const GroundCover = preload("res://scenes/environment/ground_cover.gd")
 const ContactShading = preload("res://presentation/contact_shading.gd")
 const WaterContacts = preload("res://presentation/water_contacts.gd")
+const NeighborIslets = preload("res://scenes/environment/neighbor_islets.gd")
 # World heights of the two surfaces props actually stand on in this courtyard.
 const GROUND_LEVEL := 0.132
 const DECK_LEVEL := 0.41
@@ -40,6 +41,10 @@ func _ready() -> void:
 	_rng.seed = 32026
 	_build_ground()
 	_build_architecture()
+	var neighbors := NeighborIslets.new()
+	neighbors.name = "NeighborIslets"
+	add_child(neighbors)
+	_shore_sources.append_array(neighbors.waterline_sources())
 	var water_material: ShaderMaterial = _water.material_override
 	water_material.set_shader_parameter("shore_distance", WaterContacts.build(_shore_sources, _water.position.y))
 	water_material.set_shader_parameter("shore_contacts_enabled", true)
@@ -84,26 +89,28 @@ func _module(id: String, at: Vector3, yaw_degrees: float=0, scale_value: Vector3
 	node.position=at; node.rotation.y=deg_to_rad(yaw_degrees); node.scale=scale_value
 	_apply_pigment(node, id)
 	if id in CONTACT_MODULES: _contact_sources.append(node)
-	if id == "island_bank" or id.begins_with("stone_"): _shore_sources.append(node)
+	if id in ["island_bank_v2", "east_bank_v2"] or id.begins_with("stone_"): _shore_sources.append(node)
 	return node
 
 func _apply_pigment(node: Node, module_id: String = "") -> void:
 	if node is MeshInstance3D:
 		# Layer 2 is the decal receiver set. The veranda joins the island so the
 		# deck-level contact pools land on the platform its posts stand on.
-		if module_id in ["island_bank", "veranda"]: node.set_layer_mask_value(2,true)
+		if module_id in ["island_bank_v2", "east_bank_v2", "veranda"]: node.set_layer_mask_value(2,true)
 		for surface in node.mesh.get_surface_count():
 			var original: Material = node.get_active_material(surface)
 			if original is StandardMaterial3D:
 				var painted := ShaderMaterial.new()
 				painted.shader=PIGMENT
 				painted.set_shader_parameter("base_color",original.albedo_color)
+				if module_id in ["island_bank_v2", "east_bank_v2"]:
+					painted.set_shader_parameter("base_color",Color("827452"))
 				painted.set_shader_parameter("wash_scale",3.5)
 				if module_id.begins_with("stone_") and original.albedo_texture != null:
 					painted.set_shader_parameter("painted_rock",true)
 					painted.set_shader_parameter("rock_color",STONE_ATLAS)
 				painted.set_shader_parameter("stone_treatment", 1.0 if module_id.begins_with("stone_") else 0.0)
-				painted.set_shader_parameter("ground_treatment", 1.0 if module_id == "island_bank" else 0.0)
+				painted.set_shader_parameter("ground_treatment", 1.0 if module_id in ["island_bank_v2", "east_bank_v2"] else 0.0)
 				painted.set_shader_parameter("foundation_treatment", 1.0 if module_id in ["veranda","side_wing"] else 0.0)
 				node.set_surface_override_material(surface,painted)
 	for child in node.get_children(): _apply_pigment(child, module_id)
@@ -120,7 +127,7 @@ func _asset(id: String, key: String, at: Vector3, yaw_degrees: float=0, size: fl
 	return holder
 
 func _build_ground() -> void:
-	_module("island_bank",Vector3.ZERO)
+	_module("island_bank_v2",Vector3.ZERO)
 	_water=MeshInstance3D.new();_water.name="WaterSurface"
 	var plane:=PlaneMesh.new();plane.size=Vector2(180,180);_water.mesh=plane
 	var water_material:=ShaderMaterial.new();water_material.shader=load("res://atmosphere/quiet_water.gdshader")
@@ -175,7 +182,10 @@ func _build_architecture() -> void:
 	_module("stone_bridge",Vector3(8.1,-.04,-.15),-9)
 	_boat=_asset("boat","CoveredBoat",BOAT_ORIGIN,-24,.85)
 	# Opposite landing is a small bank, with irregular rock margins, not a floating bridge end.
-	_module("island_bank",Vector3(12.65,-.02,-2.8),0,Vector3(.40,1,.46))
+	_module("east_bank_v2",Vector3(12.65,-.02,-2.8))
+	for index: int in 7:
+		var point := Vector3(10.52,.112,.23).lerp(Vector3(13.35,.112,-1.45),index/6.0)
+		_tint_stone(_module("stone_1",point,24+index*13,Vector3(.82,.25,.65)),Color("93907e"))
 	for i in 7:
 		var t:float=i/6.0
 		var position_on_bank:=Vector3(11.05+t*4.1,-.40,.2+sin(t*PI)*.40)
@@ -227,7 +237,7 @@ func _build_plants() -> void:
 	# The open river is the composition's pale negative space, but an unbroken slab
 	# of it reads as an unfinished surface. Loose outer coves give it something to
 	# interrupt, still clear of the bank, the bridge span and the mooring.
-	var lily_coves: Array[Vector3] = [Vector3(-6.35,-.40,7.25),Vector3(-.9,-.40,8.05),Vector3(5.35,-.40,7.4),Vector3(10.8,-.40,2.0),Vector3(-9.8,-.40,3.6),Vector3(-11.2,-.40,-1.8),Vector3(-7.9,-.40,9.2),Vector3(1.6,-.40,10.8),Vector3(8.9,-.40,7.9)]
+	var lily_coves: Array[Vector3] = [Vector3(-6.35,-.40,7.25),Vector3(-.9,-.40,8.05),Vector3(5.35,-.40,7.4),Vector3(14.0,-.40,3.4),Vector3(-9.8,-.40,3.6),Vector3(-11.2,-.40,-1.8),Vector3(-7.9,-.40,9.2),Vector3(1.6,-.40,10.8),Vector3(8.9,-.40,7.9)]
 	for i in lily_coves.size():
 		for j in (4 if i < 4 else 5):
 			var angle:float=j*2.4+i*.7
@@ -326,6 +336,7 @@ func set_asset_detail(key: String, low_detail: bool) -> void:
 
 func set_low_detail_enabled(enabled: bool) -> void:
 	for key:String in _lod_pairs:set_asset_detail(key,enabled)
+	get_node("NeighborIslets").set_low_detail_enabled(enabled)
 
 func get_asset_keys() -> Array:
 	return _lod_pairs.keys()

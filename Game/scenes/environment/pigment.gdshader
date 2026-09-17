@@ -36,8 +36,11 @@ void fragment(){
 	if (ground_treatment>.5) {
 		vec3 world_normal=(INV_VIEW_MATRIX*vec4(NORMAL,0.0)).xyz;
 		float top=smoothstep(.6,.95,world_normal.y);
-		painted=mix(painted,turf_colour(world_point.xz),top);
-		NORMAL=normalize(mix(NORMAL,(VIEW_MATRIX*vec4(turf_normal(world_point.xz),0.0)).xyz,top));
+		float turf=top*smoothstep(-.16,.12,world_point.y+(ground_patch-.5)*.19);
+		painted=mix(painted,turf_colour(world_point.xz),turf);
+		// Keep the rounded bank's geometric normal. The former replacement with
+		// an upward turf normal flattened the light across its entire shoulder.
+		NORMAL=normalize(NORMAL+(VIEW_MATRIX*vec4(turf_normal(world_point.xz)-vec3(0,1,0),0.0)).xyz*top);
 	}
 	float foot=(1.0-smoothstep(.13,.23+terrain_noise(world_point.xz*11.0)*.035,world_point.y))*foundation_treatment;
 	painted=mix(painted,mix(painted*.65,turf_colour(world_point.xz),.28),foot);

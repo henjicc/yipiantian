@@ -1,0 +1,51 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\cottage-original\\tripo-out\\cottage-reference-d8e7dd3b\\model.glb",
+  "width_metres": 10,
+  "mesh": {
+    "cottage_high": {
+      "triangles": 76729,
+      "open_edges": 5,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        10.0,
+        3.7124836444854736,
+        8.257193565368652
+      ],
+      "textures": [
+        {
+          "name": "Color_d8e7dd3b-4ca7-4005-82ad-71f63aea3ae1",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "cottage_low": {
+      "triangles": 23999,
+      "open_edges": 5,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        10.008331298828125,
+        3.7107551097869873,
+        8.261011123657227
+      ],
+      "textures": [
+        {
+          "name": "Color_d8e7dd3b-4ca7-4005-82ad-71f63aea3ae1",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

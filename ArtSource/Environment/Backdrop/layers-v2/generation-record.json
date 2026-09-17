@@ -1,0 +1,27 @@
+{
+  "date": "2026-09-18",
+  "tool": "image_gen",
+  "model_version": "not returned",
+  "seed": "not returned",
+  "references": [
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png",
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png"
+  ],
+  "images": [
+    {
+      "file": "far-west.png",
+      "prompt": "Generate ONE transparent RGBA background panorama cutout for a Jiangnan miniature farming game. Wide 3:1 canvas. Reference image1 gives fine gongbi light-colour painting style, image2 muted colour and matte brushwork. Only a continuous distant mountain range, no sky, no water, no buildings, no text. Asymmetric silhouettes: tallest slender overlapping blue-grey peaks on LEFT third, long low saddle through centre, two broad rounded summits on far right. Many different heights and profiles, absolutely no repeated or mirrored motifs, no regularly spaced identical peaks. Very distant atmospheric pale cool sage grey, restrained ink contours, layered light washes and subtle forest flecks. The actual painted subject occupies lower two thirds with natural transparent negative space above and soft misty alpha fade below, tapering naturally at lateral ends. Preserve transparent alpha, no white rectangle or checkerboard. Intended one unique background layer, not a repeating tile, airy fine detail not coarse noise.",
+      "original_output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb as %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-148f096b-1fc8-4194-943e-243b2b3271da.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+    },
+    {
+      "file": "far-east.png",
+      "prompt": "ONE new native-transparent RGBA wide3:1 panorama of a distant Jiangnan mountain range, only landscape silhouette with no sky or water. Use image1 for gongbi light-colour style and image2 for matte painterly palette. UNIQUE DESIGN: quiet long descending rounded foothills at left, a broad asymmetrical massif with one tall gently broken summit right-of-centre, tiny secondary rocky spurs at far right. Unlike regular rows of peaks, generous valleys and long shoulders, no repeated or mirrored patterns. Blue-grey distant rock, faint muted forest brush marks, pale atmospheric jade grey, delicate fine ink lines. Mountain silhouettes occupy lower two thirds, transparent sky above, delicate translucent mist fade across bottom and at sides. No houses, no pagoda, no captions, no lettering, no border, no checkerboard or opaque background. Preserve native alpha. High quality scenic matte painting layer for stacking with other distinct mountain forms.",
+      "original_output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb as %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-cea25e1a-4e0d-4db3-82d9-352fafc31503.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+    },
+    {
+      "file": "wooded-bank.png",
+      "prompt": "Generate ONE wide3:1 native transparent RGBA scenic layer for a Jiangnan miniature farming game. Match reference1 gongbi light-colour painting and reference2 quiet matte sage palette. Subject only: a long very LOW undulating distant wooded shore, dense variable-height willows, bamboo and soft broadleaf groves, a few tiny humble white-grey-roof cottages far apart, fields peeking between woods. Absolutely NO tall mountain peaks, no repeating pattern, no mirror copies, no regularly spaced houses. One asymmetrical grove taller left centre, another wide low grove right, a broad dip between; natural irregular silhouette spanning width. Painted land should occupy only lower half of canvas with transparent space above and a soft transparent mist fade below, no visible hard bottom strip or rectangular backing, no water or sky plane, no UI or lettering. Muted grey green foliage, cream tiny walls, fine soft selective brush contours. Distant atmospheric scale, much smaller houses than foreground scene. This is an independent low bank silhouette to layer in front of new different mountains. Preserve genuine alpha, no checkerboard.",
+      "original_output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb as %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-b5916b28-aba1-40c5-89b7-1e306467f1d2.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+    }
+  ]
+}

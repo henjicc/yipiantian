@@ -70,7 +70,8 @@ void fragment() {
 	float ring = sin(radius * 15.0 - ripple_age * 5.0);
 	float envelope = exp(-pow((radius - ripple_age * 0.55) * 3.0, 2.0)) * max(0.0, 1.0 - ripple_age / 4.0);
 	slope += (p - ripple_center) / max(radius, 0.001) * ring * envelope * 0.075;
-	float shore = shore_contacts_enabled ? sqrt(max(texture(shore_distance, (p + 24.0) / 48.0).r, 0.0)) : 2.4;
+	bool inside_shore_map = max(abs(p.x),abs(p.y)) < 24.0;
+	float shore = shore_contacts_enabled && inside_shore_map ? sqrt(max(texture(shore_distance, (p + 24.0) / 48.0).r, 0.0)) : 2.4;
 	// Hull-local capsule follows the same transform as the open-cabin mask.
 	vec2 hull_point = boat_local.xz;
 	hull_point.x -= clamp(hull_point.x, -1.24, 1.24);
