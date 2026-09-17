@@ -1,8 +1,8 @@
 # 我有一片田
 
-Windows 普通窗口版三维微缩农场。当前有可运行的简易场景原型：六块田、简化民居、水岸与 Tripo 青菜，可点击聚焦、微调视角和返回全景；供用户确认大概感觉。种植、生长、存档与完整开发暂缓，桌面壁纸宿主后置。
+Windows 普通窗口版三维微缩农场。六块田支持青菜、白萝卜的播种、浇水、现实时间生长与整田收获；江南院落含三件可解锁装饰、昼夜、声音、焦点细节及景深。农场和声音／显示设置分别保存在当前用户目录。桌面壁纸宿主、账号联网和云存档不在本版本范围。
 
-开始制作先看 [制作基准包](docs/design-baseline/README.md)：包含当前玩法、镜头与操作、已确认的工笔淡彩风格、固定参考图与提示词。按商业推广目标，在合理范围内优先用 Tripo 生成资产；具体分工与验收见 [三维资产工作流](docs/asset-workflow.md)。
+制作基准见 [制作基准包](docs/design-baseline/README.md)，当前任务与验收见 [首个版本计划](docs/task/首个可发布版本/00-任务总览.md)。单体图、Tripo、Blender 与 Godot 的实际分工见 [三维资产工作流](docs/asset-workflow.md)。商务核验按用户要求暂缓，本地候选不冒称权利清理、签名或商店上架完成。
 
 ## 打开与开发
 
@@ -17,11 +17,19 @@ pwsh -NoProfile -File scripts/godot.ps1 Import
 pwsh -NoProfile -File scripts/godot.ps1 ExportWindows
 ```
 
-也可在 Godot 项目管理器导入 [Game/project.godot](Game/project.godot)，打开 `scenes/main.tscn`，按 F6 运行当前场景或 F5 运行工程。当前展示六田场景原型，36 株青菜是同一成熟资产的重复实例，没有真实生长状态。
+也可在 Godot 项目管理器导入 [Game/project.godot](Game/project.godot)，打开 `scenes/main.tscn`，按 F6 运行当前场景或 F5 运行工程。首次进入创建并保存六田，之后恢复同一农场；作物的幼芽、幼株、成熟资源跟随权威状态变化。
 
-操作：左键点击田块聚焦；滚轮缩放；中键拖动微调角度；Shift + 中键拖动平移；“全景”或 Esc 返回上次全景；“视角复位”回默认构图。当前按钮只控制镜头，不包含尚未实现的农事操作。
+操作：左键点击田块靠近，选工具后再点击当前田块执行；滚轮调整距离，中键微调角度，Shift + 中键平移。“全景”返回，“复位”恢复构图。Esc / 右键优先取消当前操作，随后返回。“布置”处理已解锁装饰；“设置”包含三路音量、窗口／全屏、画质、景深开关、操作与来源。完整说明见 [随包使用说明](发行材料/使用说明.txt)。
 
 Windows 导出后可直接运行 `.local/builds/windows/Farm.exe`，同目录 `Farm.pck` 必须保留。原型的真实截图、处理后模型和贡献报告副本在本地 `制作留档/`，不参与 Git 同步。
+
+发行候选必须从已验收的明确提交构建。待根代理固定候选提交与版本后使用：
+
+```powershell
+pwsh -NoProfile -File scripts/package-release.ps1 -Commit <完整提交哈希> -Version 0.1.0-rc.1
+```
+
+此入口新建 `.local/releases/<版本>-<提交前8位>/`，从本地独立克隆恢复并校验 LFS 对象，在无原导入缓存的副本导入、构建，审计 PCK 后附中文说明、Godot / 字体通知、版本和 SHA-256。既有候选不会覆盖；本地克隆不是远端或异机同步证明。构建完成后仍须在仓库外中文／空格路径，用非管理员和隔离用户目录进行真实启动、保存、回访与退出验收。当前候选验证状态以 [5.2 任务](docs/task/首个可发布版本/任务/第五阶段-发行候选与交付/5.2-构建发行候选并验证干净环境.md) 为准。
 
 开发留档录屏使用 `scripts/record.ps1`：按需打开 4K 全屏窗口，自动展示逐帧输出后使用显卡编码 H.264 / 60 fps（离线演示，非性能证明），视频和中文索引保存到 `制作留档/05_开发录屏/`。自动慢镜头、手动操作和 F9 提前结束的用法见 [开发准备](docs/development-setup.md#开发录屏)。普通启动不录制。
 
@@ -63,7 +71,7 @@ Windows 导出后可直接运行 `.local/builds/windows/Farm.exe`，同目录 `F
 - 临时试验放 `.local/experiments/<名称>/`，需要 Godot 时在其中建独立工程。正式工程不得引用 `.local/` 或 `docs/ref/` 中的必要资源。
 - 采用试验成果时迁入选定源文件、导出物和必要依赖，重新导入检查；不复制整个试验工程或缓存。
 - **正式回归测试代码入库**；临时脚本、报告、测试存档排除。不使用 `*test*`、`Tests/` 或全局 `*.json` 之类过宽忽略规则。
-- 游戏存档使用 `user://`，实现测试时使用隔离位置或独立项目名，不能覆盖真实玩家数据。目前没有存档实现。
+- 游戏存档使用 `%APPDATA%/Godot/app_userdata/我有一片田/farm/`，偏好使用同级 `preferences/`。主农场为 `farm.json`，上一有效副本为 `farm.backup.json`；坏件、未来版本与写入失败不会被静默重置。恢复入口和安全备份见随包说明。测试同时注入隔离 farm 与 settings；普通发行验证使用 `tests/start-isolated-game.ps1` 的进程级 APPDATA / LOCALAPPDATA，不能覆盖玩家数据。
 - 换电脑前安装 Git LFS；克隆后执行 `git lfs install --local`、`git lfs pull`，安装固定引擎和 Windows x86_64 模板，再执行 `Import`。`.uid`、`.import`、`export_presets.cfg` 应随源文件提交；`.godot/`、导出凭据和构建产物排除。
 - 当前远端尚未指定。连接后核验托管平台 LFS 支持、额度、对象上传和独立克隆；本地提交不等于云端备份，不擅自创建公开仓库。
 
