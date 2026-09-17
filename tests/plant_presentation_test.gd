@@ -4,6 +4,7 @@ extends SceneTree
 const Farm = preload("res://farm/farm_state.gd")
 const Store = preload("res://farm/farm_store.gd")
 const Decoration = preload("res://farm/decoration_state.gd")
+const Detail = preload("res://presentation/focus_detail.gd")
 var scene: Node3D
 var output_dir: String
 var checks: int = 0
@@ -55,7 +56,8 @@ func _run() -> void:
 	_expect(_first_mesh(scene.decoration_layout._instances.flowerpot).get_meta("plant_wind_kind", "") == "flowerpot", "Loaded flowerpot has anchored foliage wind")
 	_expect(not _first_mesh(scene.get_node("Environment/EntranceTrellis")).has_meta("plant_wind_kind"), "New structural bamboo frame stays fixed; future climbing crops own their motion")
 	var frame: Node3D = scene.camera.get_node("CameraForeground")
-	_expect(frame.visible and scene.camera.attributes.dof_blur_near_enabled and not scene.camera.attributes.dof_blur_far_enabled, "Overview has near-only framing depth of field")
+	_expect(frame.visible and scene.camera.attributes.dof_blur_near_enabled and scene.camera.attributes.dof_blur_far_enabled, "Overview separates foreground and distant scenery with depth of field")
+	await _check_overview_depth()
 	var transforms: Array[Transform3D] = []
 	var plants: Array[Node3D] = []
 	for field: Node3D in scene.farm.fields:
@@ -154,6 +156,48 @@ func _first_mesh(node: Node) -> MeshInstance3D:
 		if found != null:
 			return found
 	return null
+
+
+func _check_overview_depth() -> void:
+	var camera: Camera3D = scene.camera
+	var landscape: Node3D = scene.get_node("Environment/DistantLandscape")
+	var sky: MeshInstance3D = landscape.get_node("SkyAndDistantWater")
+	var original_view: Vector3 = camera.view
+	var original_point: Vector3 = camera.focus_point
+	# Wide/close, low/high and both orbit/pan limits expose missing background
+	# coverage and a focus band that accidentally excludes a rear vegetable bed.
+	for yaw: float in [-12.0, 68.0]:
+		for pitch: float in [24.0, 40.0]:
+			for distance: float in [27.0, 38.0]:
+				camera.view = Vector3(yaw, pitch, distance)
+				camera.focus_point = original_point + Vector3(-2 if yaw < 0 else 2, 0, 2)
+				await process_frame
+				await process_frame
+				var sky_plane := Plane(sky.global_basis.z, sky.global_position)
+				var fields_clear := true
+				for field: Node3D in scene.farm.fields:
+					var depths: Vector2 = Detail.depth_range(camera, field.global_transform, AABB(Vector3(-1.4, -0.1, -1.15), Vector3(2.8, 0.75, 2.3)))
+					fields_clear = fields_clear and camera.attributes.dof_blur_near_distance <= depths.x and camera.attributes.dof_blur_far_distance >= depths.y
+				_expect(fields_clear, "All six beds stay clear at orbit/pitch/zoom limits: %s" % camera.view)
+				var covered := true
+				for corner: Vector2 in [Vector2.ZERO, Vector2(1920, 0), Vector2(0, 1080), Vector2(1920, 1080)]:
+					var hit = sky_plane.intersects_ray(camera.project_ray_origin(corner), camera.project_ray_normal(corner))
+					if hit == null:
+						covered = false
+						continue
+					var local: Vector3 = sky.to_local(hit)
+					var depth: float = -camera.global_basis.z.dot(hit - camera.global_position)
+					covered = covered and absf(local.x) < sky.mesh.size.x * 0.5 and absf(local.y) < sky.mesh.size.y * 0.5 and depth < camera.far
+				_expect(covered, "Backdrop covers the frustum without a clipped edge: %s" % camera.view)
+				var bank: Node3D = landscape.get_node("VillageBank3")
+				var left: Vector2 = camera.unproject_position(bank.to_global(Vector3(-10,0,0)))
+				var right: Vector2 = camera.unproject_position(bank.to_global(Vector3(10,0,0)))
+				_expect(absf(left.y-right.y)<0.1, "Distant waterline stays level instead of rolling into a bowl: %s" % camera.view)
+		await _shot("orbit-limit-%s" % yaw)
+	camera.view = original_view
+	camera.focus_point = original_point
+	await process_frame
+	await process_frame
 
 
 func _difference(a: Image, b: Image, requested: Rect2i) -> Dictionary:

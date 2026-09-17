@@ -1,0 +1,45 @@
+{
+  "tool": "built-in image_gen",
+  "references": [
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png",
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png"
+  ],
+  "assets": [
+    {
+      "name": "far-mountains",
+      "prompt": "Use case: stylized-concept. Production RGBA scenery cutout for a layered 2.5D Jiangnan farm background in Godot. Image 1 is approved overall game style; image 2 is approved material/brush style only. Match rounded simplified forms, selective fine brush contours, layered pale gouache/gongbi colour washes, matte painted volume. Create ONE isolated panoramic horizontal landscape strip, ideally 3072x1024 (3:1). Genuine transparent alpha background; transparent above the silhouette and outside the land, NOT white, NOT painted checkerboard. No sky, no sun, no water or reflections, no frame, no text, no UI, no foreground farm. Eye-level telephoto view, straight horizontal baseline, no perspective bending, no fisheye. Complete silhouettes within the frame with small transparent margins; base softly fades into transparency. Neutral diffuse daylight, no baked sunset, restrained contrast so runtime dusk/night tint can work. Subject: distant Jiangnan mountain ridge, one long connected chain of rounded asymmetric mountain peaks with layered rock planes, tallest peaks toward left and right thirds and a lower saddle near center. Pale desaturated slate blue and cool grey-jade, very fine sparse foliage strokes. Mountain forms occupy lower 70 percent. This is the farthest layer: broad quiet silhouette, no buildings, no distinct foreground trees, no clouds painted outside the mountains.",
+      "original": "%USERPROFILE%\\.codex\\generated_images\\01a0aeb6-f099-7e51-8398-15e24945c511\\exec-e9a126ed-ecb6-415b-8a0d-11b65fd3732c.png",
+      "source": "ArtSource/Environment/Backdrop/layers-v1/far-mountains.png",
+      "game": "Game/art/environment/backdrop/layers-v1/far-mountains.png",
+      "actual_size": [
+        2172,
+        724
+      ],
+      "sha256": "B58BAF1BFD2CE1C623BC5E42626E4546D99BCC731580F92F12D0E338BE8368F3"
+    },
+    {
+      "name": "mid-hills",
+      "prompt": "Use case: stylized-concept. Production RGBA scenery cutout for a layered 2.5D Jiangnan farm background in Godot. Image 1 is approved overall game style; image 2 is approved material/brush style only. Match rounded simplified forms, selective fine brush contours, layered pale gouache/gongbi colour washes, matte painted volume. Create ONE isolated panoramic horizontal landscape strip, ideally 3072x1024 (3:1). Genuine transparent alpha background; transparent above the silhouette and outside the land, NOT white, NOT painted checkerboard. No sky, no sun, no water or reflections, no frame, no text, no UI, no foreground farm. Eye-level telephoto view, straight horizontal baseline, no perspective bending, no fisheye. Complete silhouettes within the frame with small transparent margins; base softly fades into transparency. Neutral diffuse daylight, no baked sunset, restrained contrast so runtime dusk/night tint can work. Subject: middle-distance Jiangnan wooded hills, one low rolling chain with rounded forest clumps and small visible mossy rock faces. Soft muted jade and blue-green, moderate painterly detail, tiny conifer silhouettes on occasional ridges. Uneven silhouette with two clusters and open low saddle, no buildings. Hills occupy lower 55 percent. More defined and darker than distant mountains, but still gently painted and calm.",
+      "original": "%USERPROFILE%\\.codex\\generated_images\\01a0aeb6-f099-7e51-8398-15e24945c511\\exec-e511eff8-c639-48c4-abd5-177b5a67fd22.png",
+      "source": "ArtSource/Environment/Backdrop/layers-v1/mid-hills.png",
+      "game": "Game/art/environment/backdrop/layers-v1/mid-hills.png",
+      "actual_size": [
+        2172,
+        724
+      ],
+      "sha256": "C721850BA6F52FC3B9178D2F6DE74C8D5030A918C57773380CD5FECC498C3F7E"
+    },
+    {
+      "name": "near-bank",
+      "prompt": "Use case: stylized-concept. Production RGBA scenery cutout for a layered 2.5D Jiangnan farm background in Godot. Image 1 is approved overall game style; image 2 is approved material/brush style only. Match rounded simplified forms, selective fine brush contours, layered pale gouache/gongbi colour washes, matte painted volume. Create ONE isolated panoramic horizontal landscape strip, ideally 3072x1024 (3:1). Genuine transparent alpha background; transparent above the silhouette and outside the land, NOT white, NOT painted checkerboard. No sky, no sun, no water or reflections, no frame, no text, no UI, no foreground farm. Eye-level telephoto view, straight horizontal baseline, no perspective bending, no fisheye. Complete silhouettes within the frame with small transparent margins; base softly fades into transparency. Neutral diffuse daylight, no baked sunset, restrained contrast so runtime dusk/night tint can work. Subject: a thin distant lakeside Jiangnan village bank, horizontally arranged willow and broadleaf tree groves with a handful of tiny grey tiled roofs and warm ivory walls peeking through, one small stone arch bridge among the houses. Low gentle land profile, buildings stay small compared to trees, no tall tower. Rich muted moss and grey-jade foliage with tea-brown trunks; lower 50 percent of the image occupied, the rest truly transparent. No lake/water/sky, this isolated bank is the nearest background layer.",
+      "original": "%USERPROFILE%\\.codex\\generated_images\\01a0aeb6-f099-7e51-8398-15e24945c511\\exec-250998f5-170e-493b-ae09-f34f47a6c2fa.png",
+      "source": "ArtSource/Environment/Backdrop/layers-v1/near-bank.png",
+      "game": "Game/art/environment/backdrop/layers-v1/near-bank.png",
+      "actual_size": [
+        2172,
+        724
+      ],
+      "sha256": "46F767935D2A74024309398058D6794B8B7E84EFB6C450701F23BA7DDE016756"
+    }
+  ]
+}

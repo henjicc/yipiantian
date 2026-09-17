@@ -2,7 +2,7 @@ extends Node3D
 ## Spatial truth and ambient scenery only; no farm state, unlock rules or saving.
 const DECORATIONS = preload("res://farm/decoration_catalog.gd")
 const PIGMENT = preload("res://scenes/environment/pigment.gdshader")
-const BACKDROP = preload("res://scenes/environment/backdrop.gdshader")
+const LayeredLandscape = preload("res://scenes/environment/layered_landscape.gd")
 const LivingDetails = preload("res://scenes/environment/living_details.gd")
 const PlantWind = preload("res://presentation/plant_wind.gd")
 const GroundCover = preload("res://scenes/environment/ground_cover.gd")
@@ -66,9 +66,11 @@ func _process(delta: float) -> void:
 		water_material.set_shader_parameter("boat_mask_enabled",true)
 		water_material.set_shader_parameter("world_to_boat",_boat.global_transform.affine_inverse())
 	for i: int in _floaters.size():
-		var phase: float = _motion_time*.64+i*1.7
-		_floaters[i].position=_floater_origins[i]+Vector3.UP*sin(phase)*.009
-		_floaters[i].rotation.z=sin(phase*.83)*.006
+		var phase: float = _motion_time*.88+i*1.7
+		var drift := Vector3(sin(phase*.61)*.025, sin(phase)*.024, cos(phase*.73)*.018)
+		_floaters[i].position=_floater_origins[i]+drift
+		_floaters[i].rotation.x=sin(phase*.79)*.020
+		_floaters[i].rotation.z=sin(phase*.83)*.028
 	_living.update_mooring()
 
 func set_window_warmth(amount: float) -> void:
@@ -267,19 +269,9 @@ func _support_line(a:Vector3,b:Vector3,radius:float,color:Color)->void:
 	node.quaternion=Quaternion(Vector3.UP,axis)
 
 func _build_distance() -> void:
-	var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var segments:int=96
-	# Full ring covers every legal yaw/pan; lower skirt remains behind the water.
-	for i in segments:
-		var a:float=float(i)/segments;var b:float=float(i+1)/segments
-		var pa:=Vector3(sin(a*TAU)*65,0,cos(a*TAU)*65)
-		var pb:=Vector3(sin(b*TAU)*65,0,cos(b*TAU)*65)
-		for pair in [[pa+Vector3(0,-50,0),Vector2(a*2,1)],[pa+Vector3(0,20,0),Vector2(a*2,0)],[pb+Vector3(0,20,0),Vector2(b*2,0)],[pa+Vector3(0,-50,0),Vector2(a*2,1)],[pb+Vector3(0,20,0),Vector2(b*2,0)],[pb+Vector3(0,-50,0),Vector2(b*2,1)]]:
-			surface.set_uv(pair[1]);surface.add_vertex(pair[0])
-	var backdrop:=MeshInstance3D.new();backdrop.name="DistantRiverPanorama";backdrop.mesh=surface.commit()
-	var material:=ShaderMaterial.new();material.shader=BACKDROP
-	material.set_shader_parameter("landscape",load(ROOT+"backdrop/river-distance.png"));backdrop.material_override=material
-	backdrop.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(backdrop)
+	var landscape := LayeredLandscape.new()
+	landscape.name = "DistantLandscape"
+	add_child(landscape)
 
 func _build_contact_shading() -> void:
 	var shading: Node3D = ContactShading.new()
@@ -296,8 +288,7 @@ func get_water_surface() -> MeshInstance3D:
 	return _water
 
 func get_backdrop_material() -> ShaderMaterial:
-	var backdrop: MeshInstance3D=get_node("DistantRiverPanorama")
-	return backdrop.material_override as ShaderMaterial
+	return get_node("DistantLandscape").material
 
 func get_decoration_slots() -> Array[Dictionary]:
 	var result:Array[Dictionary]=[]

@@ -10,15 +10,16 @@ const HOURS: Array[float] = [0.0, 5.0, 6.5, 9.0, 12.0, 16.5, 18.5, 20.0, 24.0]
 const SUN: Array[float] = [0.24, 0.24, 0.88, 1.18, 1.25, 1.28, 0.66, 0.24, 0.24]
 # Daylight fill is deliberately far below the key light: an even sky term carries no
 # surface orientation, so raising it flattens every form. Night keeps a usable floor.
-const AMBIENT: Array[float] = [0.26, 0.26, 0.15, 0.11, 0.115, 0.10, 0.15, 0.26, 0.26]
+const AMBIENT: Array[float] = [0.20, 0.20, 0.13, 0.11, 0.115, 0.075, 0.105, 0.20, 0.20]
 const NIGHT: Array[float] = [1.0, 1.0, 0.12, 0.0, 0.0, 0.0, 0.50, 1.0, 1.0]
 const SUN_COLORS: Array[Color] = [Color("a8c5ed"), Color("a8c5ed"), Color("ffe4c5"), Color("fff5e7"), Color("fff8ed"), Color("fff0d6"), Color("ffca9e"), Color("a8c5ed"), Color("a8c5ed")]
 const AMBIENT_COLORS: Array[Color] = [Color("8da8cf"), Color("8da8cf"), Color("c7bda8"), Color("d2cdb8"), Color("d8d2bc"), Color("d9c7a4"), Color("bda694"), Color("8da8cf"), Color("8da8cf")]
 const BACKGROUND: Array[Color] = [Color("465c6c"), Color("465c6c"), Color("cbd9d5"), Color("dbe2df"), Color("dbe2df"), Color("e4d9c1"), Color("b3bbc3"), Color("465c6c"), Color("465c6c")]
 # Sky ambient is the majority of the fill, so it has to follow the clock as well;
 # a fixed cool dome previously held the whole scene cold through the golden hour.
-const SKY_TOP: Array[Color] = [Color("2b3a52"), Color("2b3a52"), Color("7d9ec0"), Color("86aac6"), Color("88acc3"), Color("8fa6b4"), Color("6b7f9c"), Color("2b3a52"), Color("2b3a52")]
-const SKY_HORIZON: Array[Color] = [Color("4a5568"), Color("4a5568"), Color("e8c9a8"), Color("dcd7bd"), Color("ded8c2"), Color("f0d3a6"), Color("e8b287"), Color("4a5568"), Color("4a5568")]
+const SKY_TOP: Array[Color] = [Color("26344d"), Color("26344d"), Color("7d9ec0"), Color("86aac6"), Color("88acc3"), Color("687e93"), Color("485970"), Color("26344d"), Color("26344d")]
+const SKY_HORIZON: Array[Color] = [Color("3b485e"), Color("3b485e"), Color("c3b6aa"), Color("dcd7bd"), Color("ded8c2"), Color("bfa58b"), Color("877d86"), Color("3b485e"), Color("3b485e")]
+const BACKDROP_TINT: Array[Color] = [Color("354d69"), Color("354d69"), Color("a8b2b9"), Color.WHITE, Color.WHITE, Color("b4afa5"), Color("65768c"), Color("354d69"), Color("354d69")]
 const GROUND_HORIZON: Array[Color] = [Color("232a2c"), Color("232a2c"), Color("8a7f68"), Color("a09880"), Color("a89c82"), Color("b0997a"), Color("8f7a66"), Color("232a2c"), Color("232a2c")]
 const GROUND_BOTTOM: Array[Color] = [Color("12171a"), Color("12171a"), Color("3a352c"), Color("44403a"), Color("4a4238"), Color("52443a"), Color("3a3230"), Color("12171a"), Color("12171a")]
 const ELEVATION: Array[float] = [48.0, 48.0, 25.0, 47.0, 58.0, 34.0, 16.0, 48.0, 48.0]
@@ -33,6 +34,7 @@ var _world: WorldEnvironment
 var _sky_material: ProceduralSkyMaterial
 var _water_material: ShaderMaterial
 var _backdrop_material: ShaderMaterial
+var _backdrop_values: Dictionary = {}
 var _lantern_lights: Array[OmniLight3D] = []
 var _preview_hour: float = -1.0
 var _elapsed: float = 0.0
@@ -56,11 +58,11 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	_world.environment.adjustment_contrast = 1.04
 	# AgX desaturates towards the shoulder; the washes need that chroma back.
 	_world.environment.adjustment_saturation = 1.18
-	# Per-channel remap pulling shadows off blue and paper towards warm ivory. The
-	# reference keeps its darks warm; an untinted engine curve leaves them cyan.
+	# Restrained cool shadow toe against warm ivory highlights separates the
+	# evening background from lit paper windows without washing out the beds.
 	var grade := Gradient.new()
 	grade.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
-	grade.colors = PackedColorArray([Color(0.022, 0.014, 0.012), Color(0.53, 0.505, 0.462), Color(1.0, 0.984, 0.946)])
+	grade.colors = PackedColorArray([Color(0.009, 0.013, 0.020), Color(0.52, 0.505, 0.482), Color(1.0, 0.984, 0.946)])
 	var grade_texture := GradientTexture1D.new()
 	grade_texture.gradient = grade
 	grade_texture.width = 256
@@ -99,7 +101,12 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	_world.environment.glow_bloom = 0.0
 	_world.environment.glow_hdr_threshold = 1.35
 	_world.environment.fog_enabled = true
-	_world.environment.fog_density = 0.0012
+	_world.environment.fog_mode = Environment.FOG_MODE_DEPTH
+	_world.environment.fog_depth_begin = 48.0
+	_world.environment.fog_depth_end = 135.0
+	_world.environment.fog_depth_curve = 1.5
+	_world.environment.fog_density = 0.33
+	_world.environment.fog_sky_affect = 0.0
 	# PCSS produces stippled self-shadowing on the curved thin leaves in 4.7.2.
 	# Filtered PCF keeps real shadows, with a restrained constant soft edge.
 	_sun.light_angular_distance = 0.0
@@ -200,6 +207,7 @@ static func sample_hour(hour: float) -> Dictionary:
 		"ground_horizon": GROUND_HORIZON[index].lerp(GROUND_HORIZON[index + 1], blend),
 		"ground_bottom": GROUND_BOTTOM[index].lerp(GROUND_BOTTOM[index + 1], blend),
 		"water_color": WATER_COLORS[index].lerp(WATER_COLORS[index + 1], blend),
+		"backdrop_tint": BACKDROP_TINT[index].lerp(BACKDROP_TINT[index + 1], blend),
 	}
 
 
@@ -209,6 +217,7 @@ func _apply_clock() -> void:
 		var local: Dictionary = Time.get_datetime_dict_from_system(false)
 		hour = float(local.hour) + float(local.minute) / 60.0 + float(local.second) / 3600.0
 	var values: Dictionary = sample_hour(hour)
+	_backdrop_values = values
 	_sun.light_energy = values.sun_energy
 	_sun.light_color = values.sun_color
 	_sun.rotation_degrees = Vector3(-values.elevation, values.azimuth, 0.0)
@@ -222,15 +231,15 @@ func _apply_clock() -> void:
 		_sky_material.ground_horizon_color = values.ground_horizon
 		_sky_material.ground_bottom_color = values.ground_bottom
 	_world.environment.background_color = values.background
-	_world.environment.fog_light_color = values.background
+	_world.environment.fog_light_color = values.sky_horizon
 	if not is_equal_approx(_window_warmth, values.window_warmth):
 		_window_warmth = values.window_warmth
 		window_warmth_changed.emit(_window_warmth)
 	if not is_equal_approx(_night_weight, values.night_weight):
 		_night_weight = values.night_weight
 		_apply_lanterns()
-		_apply_backdrop()
 		night_weight_changed.emit(_night_weight)
+	_apply_backdrop()
 
 
 func _apply_lanterns() -> void:
@@ -244,7 +253,10 @@ func _apply_backdrop() -> void:
 	if _water_material != null:
 		_water_material.set_shader_parameter("reflection_tint", Color.WHITE.lerp(Color("7086a0"), maxf(_night_weight, 0.0)))
 	if _backdrop_material != null:
-		_backdrop_material.set_shader_parameter("atmosphere_tint", Color.WHITE.lerp(Color("7086a0"), maxf(_night_weight, 0.0)))
+		_backdrop_material.set_shader_parameter("atmosphere_tint", _backdrop_values.backdrop_tint)
+		_backdrop_material.set_shader_parameter("sky_top", _backdrop_values.sky_top)
+		_backdrop_material.set_shader_parameter("sky_horizon", _backdrop_values.sky_horizon)
+		_backdrop_material.set_shader_parameter("lake_horizon", _backdrop_values.water_color)
 
 
 func _exit_tree() -> void:

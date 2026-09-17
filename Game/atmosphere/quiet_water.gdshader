@@ -34,8 +34,11 @@ void vertex() {
 
 void fragment() {
 	vec2 p = world_position.xz;
-	float water_radius = length(p);
-	if (water_radius >= 23.0) {
+	// Fade along the view's horizontal depth, not a circle around the island.
+	// A radial cutout exposed the matte lake earlier at both sides, visually
+	// curling an otherwise flat water plane into a bowl when the camera orbited.
+	float lake_depth = dot(p, normalize(-INV_VIEW_MATRIX[2].xz));
+	if (lake_depth >= 18.0) {
 		discard;
 	}
 	// An open hull is not a solid depth occluder. Exclude only its inner volume;
@@ -47,7 +50,7 @@ void fragment() {
 	vec2 flow = vec2(dot(p, vec2(0.848, -0.530)), dot(p, vec2(0.530, 0.848)));
 	vec2 mirrored = 1.0 - abs(1.0 - mod(flow * vec2(0.11, 0.14) + vec2(0.35, 0.6), 2.0));
 	vec3 pigment = texture(painted_water, vec2(mirrored.x, 0.90 + mirrored.y * 0.08)).rgb;
-	float distance_fade = 1.0 - smoothstep(15.0, 34.0, length(p));
+	float distance_fade = 1.0 - smoothstep(15.0, 34.0, lake_depth);
 	// Analytic slopes of centimetre-scale crossing waves. Unlike translating the
 	// painted pigment, these normals change real light/view-dependent highlights.
 	vec2 d1 = vec2(0.530, 0.848);
@@ -130,7 +133,7 @@ void fragment() {
 	float reflection_weight = 0.16 + fresnel * 0.44;
 	// Soft sky reflection is stable when orbiting. Local objects are anchored by
 	// their real submerged continuation, avoiding stepped screen-ray silhouettes.
-	reflection_weight *= 1.0 - smoothstep(15.0, 23.0, water_radius);
+	reflection_weight *= 1.0 - smoothstep(15.0, 23.0, lake_depth);
 	ALBEDO = colour * (1.0 - reflection_weight);
 	// Screen/sky reflection already contains illumination. Do not light it twice.
 	EMISSION = reflection * reflection_tint.rgb * reflection_weight;
@@ -144,7 +147,7 @@ void fragment() {
 	METALLIC = 0.0;
 	SPECULAR = 0.5;
 	// Match the courtyard water-to-painted-distance transition; no opaque horizon.
-	ALPHA = 1.0 - smoothstep(13.0, 23.0, length(world_position.xz));
+	ALPHA = 1.0 - smoothstep(10.0, 18.0, lake_depth);
 }
 
 void light() {

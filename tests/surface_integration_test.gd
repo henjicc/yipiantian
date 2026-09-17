@@ -77,9 +77,13 @@ func _run() -> void:
 	scene.camera.position=Vector3(4.4,2.6,1.8);scene.camera.look_at(Vector3(2,.45,-2.35))
 	var environment: Environment=scene.get_node("WorldEnvironment").environment
 	environment.ssao_enabled=false
+	# Sky radiance and SSIL need rendered frames after night->day/camera changes.
+	# A .15 s wait is only two frames under the normal background 15 fps cap.
+	for frame: int in 12: await RenderingServer.frame_post_draw
 	await shot("08-contact-off")
 	var without_ao: Image=root.get_texture().get_image()
 	environment.ssao_enabled=true
+	for frame: int in 12: await RenderingServer.frame_post_draw
 	await shot("09-contact-on")
 	var with_ao: Image=root.get_texture().get_image()
 	# Fixed camera: basket foot after the porch-table clearance fix, and left post.

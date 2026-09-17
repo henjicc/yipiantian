@@ -24,7 +24,7 @@ var _decoration_return_view: Vector3 = DEFAULT_VIEW
 func _ready() -> void:
 	fov = 29.0
 	near = 0.1
-	far = 150.0
+	far = 600.0
 	_apply_pose()
 
 

@@ -117,6 +117,11 @@ func _run() -> void:
 		var before: Dictionary = Atmosphere.sample_hour(hour - 0.001)
 		var after: Dictionary = Atmosphere.sample_hour(hour + 0.001)
 		_expect(absf(before.sun_energy - after.sun_energy) < 0.001, "Continuous light transition at %.1f" % hour)
+		_expect(absf(before.backdrop_tint.r - after.backdrop_tint.r) < 0.001 and absf(before.sky_horizon.b - after.sky_horizon.b) < 0.001, "Layered landscape and mist remain continuous at %.1f" % hour)
+	var evening: Dictionary = Atmosphere.sample_hour(18.0)
+	var night: Dictionary = Atmosphere.sample_hour(22.0)
+	_expect(evening.backdrop_tint.r < 0.7 and evening.backdrop_tint.b > evening.backdrop_tint.r, "Evening background darkens and cools before full night")
+	_expect(night.backdrop_tint.r < evening.backdrop_tint.r and night.backdrop_tint.b < evening.backdrop_tint.b, "Distant scenery continues darkening into night")
 	var farm = Farm.new(1000.0)
 	var before_visuals: Dictionary = farm.snapshot()
 	for pair in [[6.5, "dawn"], [12.0, "day"], [18.0, "dusk"], [22.0, "night"]]:

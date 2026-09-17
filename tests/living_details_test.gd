@@ -32,10 +32,24 @@ func _run() -> void:
 	var base: Transform3D = boat.transform
 	var highest: float = -INF
 	var lowest: float = INF
+	var lotus: Node3D = scene.get_node("Lotus0_0")
+	var lotus_base: Transform3D = lotus.transform
+	var lotus_high: float = -INF
+	var lotus_low: float = INF
+	var lotus_drift: float = 0.0
+	var lotus_roll: float = 0.0
 	for frame: int in 1200:
 		scene._process(1.0/60.0)
 		highest=maxf(highest,boat.position.y)
 		lowest=minf(lowest,boat.position.y)
+		lotus_high=maxf(lotus_high,lotus.position.y)
+		lotus_low=minf(lotus_low,lotus.position.y)
+		lotus_drift=maxf(lotus_drift,Vector2(lotus.position.x-lotus_base.origin.x,lotus.position.z-lotus_base.origin.z).length())
+		lotus_roll=maxf(lotus_roll,absf(lotus.rotation.z))
+	_expect(lotus_high-lotus_low > .04 and lotus_high-lotus_low < .06,"Lotus visibly rises and falls without jumping out of the water")
+	_expect(lotus_drift > .02 and lotus_drift < .04,"Lotus drifts gently while staying in its authored cove")
+	_expect(lotus_roll > .02 and lotus_roll < .035,"Lotus has visible bounded wave-driven tilt")
+	_expect(lotus.scale.is_equal_approx(lotus_base.basis.get_scale()),"Lotus motion preserves authored model size")
 	_expect(highest-lowest > .025 and highest-lowest < .06,"Boat has bounded, visible slow buoyancy")
 	_expect(boat.position.distance_to(base.origin) < .06,"Boat remains moored near authored position")
 	_expect(absf(boat.rotation.z)<.013 and absf(boat.rotation.x)<.006,"Boat tilt stays subtle around the waterline")

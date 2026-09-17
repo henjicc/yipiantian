@@ -7,7 +7,7 @@ const PROFILES := {
 	"tree": Vector4(0.042, 0.42, 1.0, 0.008),
 	"bamboo": Vector4(0.026, 0.16, 0.0, 0.007),
 	"flowers": Vector4(0.012, 0.18, 0.0, 0.003),
-	"lotus": Vector4(0.008, 0.28, 0.0, 0.003),
+	"lotus": Vector4(0.035, 0.15, 0.0, 0.012),
 	"grass": Vector4(0.018, 0.08, 0.0, 0.003),
 	"greens": Vector4(0.005, 0.20, 0.0, 0.0015),
 	"radish": Vector4(0.005, 0.42, 0.0, 0.0015),
