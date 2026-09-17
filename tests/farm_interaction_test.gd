@@ -41,7 +41,7 @@ func _run() -> void:
 	await _motion(_point(0,"cell_01"), Vector2.ZERO)
 	_expect(scene.hover_field == 0 and scene.hover_cell == "cell_01", "Hover targets exact cell without clicking")
 	_expect(scene.farm_state.snapshot() == initial, "Hover never modifies farm state")
-	_expect(scene.tool_cursor.badge.visible and scene.tool_cursor.badge.texture.resource_path.ends_with("spinach.png"), "Carried transparent crop follows pointer")
+	_expect(scene.tool_cursor._key == "spinach" and scene.tool_cursor._cursor_texture.get_width() > scene.tool_cursor._cursor_pixels, "Carried crop shares hardware cursor texture")
 	var distance: float = scene.camera.view.z
 	await _button(_point(0,"cell_01"), true, MOUSE_BUTTON_WHEEL_DOWN)
 	_expect(scene.selected_crop == "lettuce" and scene.camera.view.z == distance, "Armed wheel changes seeds rather than zoom")
@@ -78,7 +78,7 @@ func _run() -> void:
 	await _button(_point(0,"cell_03"), false)
 	_expect(scene.farm_state.snapshot() == before, "Dragged click never plants")
 	await _motion(scene.hud.get_node("Layout/FarmControls/Tools").get_global_rect().get_center(),Vector2.ZERO)
-	_expect(scene.hover_cell.is_empty() and not scene.tool_cursor.badge.visible, "UI clears world preview and carried badge")
+	_expect(scene.hover_cell.is_empty() and scene.tool_cursor._key.is_empty(), "UI clears world preview and carried badge")
 	await _button(_point(0,"cell_03"),true)
 	await _motion(scene.hud.get_node("Layout/FarmControls/Tools").get_global_rect().get_center(),Vector2.ZERO)
 	await _button(scene.hud.get_node("Layout/FarmControls/Tools").get_global_rect().get_center(),false)
@@ -86,7 +86,7 @@ func _run() -> void:
 	await _choose("carrot")
 	scene.notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT)
 	await physics_frame
-	_expect(scene.selected_tool.is_empty() and not scene.tool_cursor.badge.visible, "Focus loss clears armed cursor and gestures")
+	_expect(scene.selected_tool.is_empty() and scene.tool_cursor._key.is_empty(), "Focus loss clears armed cursor and gestures")
 	scene._focus_field(0)
 	await create_timer(.9).timeout
 	await _choose("garlic")

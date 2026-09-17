@@ -158,36 +158,38 @@ func _build_farm_controls(root: Control) -> void:
 	cancel.hide()
 	_crop_row = _choice_row(root, "CropChoices", 435)
 	for crop_id: String in Crops.crop_ids():
-		var card := Button.new()
-		card.name = crop_id
-		card.custom_minimum_size = Vector2(66, 84)
-		card.toggle_mode = true
+		var card := _choice_card(_crop_row, crop_id, Crops.definition(crop_id).name, load(Crops.icon_path(crop_id)))
 		card.pressed.connect(func() -> void: crop_requested.emit(crop_id))
-		_crop_row.add_child(card)
-		var picture := TextureRect.new()
-		picture.texture = load(Crops.icon_path(crop_id))
-		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		picture.position = Vector2(7, 3)
-		picture.size = Vector2(52, 54)
-		card.add_child(picture)
-		var caption := _label(card, Crops.definition(crop_id).name, 16)
-		caption.position = Vector2(0, 57)
-		caption.size = Vector2(66, 22)
-		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_crop_buttons[crop_id] = card
-	_tool_row = _choice_row(root, "ToolChoices", 170)
+	_tool_row = _choice_row(root, "ToolChoices", 69)
 	for item: Array in [["water", "浇水"], ["harvest", "收获"]]:
-		var button := _button(_tool_row, item[1], 144)
-		button.name = item[0].capitalize()
-		button.icon = load("res://art/ui/%s.svg" % item[0])
-		button.toggle_mode = true
-		button.expand_icon = true
-		button.add_theme_constant_override("icon_max_width", 32)
+		var button := _choice_card(_tool_row, item[0].capitalize(), item[1], load("res://art/ui/crops/%s.png" % item[0]))
 		button.button_down.connect(func() -> void: tool_press_started.emit(item[0]))
 		button.pressed.connect(func() -> void: tool_requested.emit(item[0]))
 		_buttons[item[0]] = button
+
+
+func _choice_card(parent: Control, card_name: String, text: String, texture: Texture2D) -> Button:
+	var card := Button.new()
+	card.name = card_name
+	card.custom_minimum_size = Vector2(66, 84)
+	card.toggle_mode = true
+	parent.add_child(card)
+	var picture := TextureRect.new()
+	picture.name = "Icon"
+	picture.texture = texture
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	picture.position = Vector2(7, 3)
+	picture.size = Vector2(52, 54)
+	card.add_child(picture)
+	var caption := _label(card, text, 16)
+	caption.name = "Caption"
+	caption.position = Vector2(0, 57)
+	caption.size = Vector2(66, 22)
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return card
 
 
 func _choice_row(root: Control, row_name: String, half_width: float) -> HBoxContainer:
@@ -397,11 +399,12 @@ func show_state(_cell: Dictionary, harvested: Dictionary, tool: String, crop_id:
 		var card: Button = _crop_buttons[id]
 		card.disabled = traveling or palette != "sow"
 		card.set_pressed_no_signal(tool == "sow" and id == crop_id)
-		card.get_child(1).add_theme_color_override("font_color", FarmTheme.PAPER if card.button_pressed else INK)
+		card.get_node("Caption").add_theme_color_override("font_color", FarmTheme.PAPER if card.button_pressed else INK)
 	for tool_id: String in _buttons:
 		var button: Button = _buttons[tool_id]
 		button.disabled = traveling or palette != "tools"
 		button.set_pressed_no_signal(tool_id == tool)
+		button.get_node("Caption").add_theme_color_override("font_color", FarmTheme.PAPER if button.button_pressed else INK)
 	for entry: String in ["Sow", "Tools"]:
 		var button: Button = _tools.get_node(entry)
 		button.disabled = traveling

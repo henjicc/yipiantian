@@ -588,7 +588,7 @@ func _update_hover() -> void:
 		hover_cell = cell_id
 		farm.select_cell(index, cell_id)
 		_refresh_hud()
-	tool_cursor.show_tool("" if blocked else selected_tool, selected_crop, _pointer_position)
+	tool_cursor.show_tool("" if blocked else selected_tool, selected_crop)
 
 
 func _apply_tool() -> void:
