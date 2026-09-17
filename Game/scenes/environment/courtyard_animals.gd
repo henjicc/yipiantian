@@ -1,35 +1,131 @@
 extends Node3D
-## Ambient life only: bounded paths avoid beds, bridge, boat and lily coves.
+## Goal selection, safe routes, local yielding and distance-driven skeletal movement.
 const Assets = preload("res://scenes/environment/courtyard_assets.gd")
+const Space = preload("res://scenes/environment/animal_space.gd")
+const Pose = preload("res://scenes/environment/bird_pose.gd")
+const PROFILES := {
+	"duck": {"speed": .32, "radius": .30, "draft": .20, "turn": 1.8, "pause": Vector2(2.5, 7.0), "range": 6.0},
+	"goose": {"speed": .27, "radius": .38, "draft": .29, "turn": 1.5, "pause": Vector2(3.0, 8.0), "range": 6.5},
+	"hen": {"speed": .23, "radius": .14, "draft": 0.0, "turn": 2.8, "pause": Vector2(2.0, 5.0), "range": 4.0},
+}
+var water := Space.new()
+var yard := Space.new()
+var birds: Array[Dictionary] = []
 var _swimmers: Array[Dictionary] = []
 var _hens: Array[Node3D] = []
 var _time: float = 0.0
+var _rng := RandomNumberGenerator.new()
+var ready_for_motion: bool = false
 
 func _ready() -> void:
-	for i: int in 3:
-		var bird: Node3D = Assets.place(self,"duck",Vector3.ZERO,0,.88 if i == 2 else 1.0)
-		bird.name = "LakeDuck%d" % (i+1)
-		_play(bird,"Paddle",float(i)*1.15)
-		_swimmers.append({"node":bird,"center":Vector2(-9.15,.90),"radius":Vector2(.95,.58),"phase":i*TAU/3.0,"speed":.075,"draft":.20,"heading_offset":0.0,"wake":_wake(.32)})
-	for i: int in 2:
-		var bird: Node3D = Assets.place(self,"goose",Vector3.ZERO)
-		bird.name = "LakeGoose%d" % (i+1)
-		_play(bird,"Paddle",float(i)*1.8)
-		_swimmers.append({"node":bird,"center":Vector2(2.9,8.85),"radius":Vector2(1.0,.40),"phase":i*PI,"speed":.065,"draft":.29,"heading_offset":PI,"wake":_wake(.43)})
-	for i: int in 2:
-		var hen: Node3D = Assets.place(self,"hen",Vector3(-.70+i*.75,.14,4.58),-45+i*130,.88+i*.12)
-		hen.name = "YardHen%d" % (i+1)
-		_play(hen,"Forage",i*1.9)
-		_hens.append(hen)
-	_update_swimmers()
+	_rng.randomize()
+	_build.call_deferred()
 
-func _play(root: Node3D, keyword: String, phase: float) -> void:
-	for player: AnimationPlayer in root.find_children("*","AnimationPlayer",true,false):
-		for id: StringName in player.get_animation_list():
-			if String(id).contains(keyword):
-				player.get_animation(id).loop_mode = Animation.LOOP_LINEAR
-				player.play(id)
-				player.seek(phase,true)
+func _build() -> void:
+	rebuild_spaces()
+	for i: int in 3: _spawn("duck", "LakeDuck%d" % (i + 1), Vector2(-10.7 + i * .8, 1.7 + i * .6), .88 if i == 2 else 1.0)
+	for i: int in 2: _spawn("goose", "LakeGoose%d" % (i + 1), Vector2(1.5 + i * 1.4, 9.3), 1.0)
+	for i: int in 2: _spawn("hen", "YardHen%d" % (i + 1), Vector2(-.7 + i * .8, 4.62), .88 + i * .12)
+	ready_for_motion = true
+
+func rebuild_spaces() -> void:
+	water = Space.new()
+	yard = Space.new()
+	water.configure(Rect2(-14.5, -6.0, 25.0, 19.5), .46)
+	yard.configure(Rect2(-6.25, -6.8, 12.0, 11.75), .15)
+	var environment: Node3D = get_parent()
+	for child: Node in environment.get_children():
+		if not child is Node3D or child == self: continue
+		var path: String = child.scene_file_path
+		if child.name == "NeighborIslets":
+			for island: Node3D in child.waterline_sources(): water.block(Space.footprint(island, -.55, .55, false))
+		if path.contains("island_bank") or path.contains("east_bank"):
+			water.block(Space.footprint(child, -.35, .16))
+		elif path.contains("stone_") or child.name == "CoveredBoat" or String(child.name).begins_with("Lotus"):
+			water.block(Space.footprint(child, -.55, .55))
+		if path.contains("island_bank") or path.contains("stone_"): yard.add_floor(child)
+		if child.name in ["WaterSurface", "GroundCover", "DistantLandscape", "NeighborIslets", "ContactShading", "DecorationSlots", "OsmanthusLeaves"]: continue
+		if path.contains("island_bank") or path.contains("east_bank") or String(child.name).begins_with("BankGrass"): continue
+		if child.name == "LivingDetails":
+			for prop: Node in child.get_children():
+				if prop is Node3D: yard.block(Space.footprint(prop, .19, .70))
+		else: yard.block(Space.footprint(child, .23, .70))
+	var farm: Node3D = environment.get_parent().get_node_or_null("Farm")
+	if farm != null:
+		for field: Node3D in farm.fields:
+			var polygon := PackedVector2Array()
+			for corner: Vector2 in [Vector2(-1.32,-1.06),Vector2(1.32,-1.06),Vector2(1.32,1.06),Vector2(-1.32,1.06)]:
+				var p: Vector3 = field.to_global(Vector3(corner.x, 0, corner.y))
+				polygon.append(Vector2(p.x, p.z))
+			yard.block(polygon)
+	water.bake()
+	yard.bake()
+	for p: Vector2 in [Vector2(-11, 1), Vector2(-10, 6), Vector2(-3, 10), Vector2(5, 10)]: water.resting.append(water.nearest(p))
+	for p: Vector2 in [Vector2(-4.9,-1.7), Vector2(5.0,-1.6), Vector2(-.5,4.6), Vector2(-1.7,1.4)]: yard.resting.append(yard.nearest(p))
+	for entry: Dictionary in birds:
+		entry.space = yard if entry.kind == "hen" else water
+		entry.pose.ground = entry.space.ground_height
+		entry.route = PackedVector2Array()
+		entry.state = "observe"
+		entry.timer = 0.0
+
+func _spawn(kind: String, label: String, start: Vector2, size: float) -> void:
+	var space: RefCounted = yard if kind == "hen" else water
+	var p: Vector2 = space.nearest(start)
+	var bird: Node3D = Assets.place(self, kind, Vector3(p.x, .13 if kind == "hen" else -.25 - (.20 if kind == "duck" else .29), p.y), 0, size)
+	bird.name = label
+	bird.set_meta("species", kind)
+	var pose := Pose.new()
+	pose.configure(bird, kind)
+	pose.ground = space.ground_height
+	var entry: Dictionary = {"node": bird, "kind": kind, "space": space, "pose": pose, "position": p,
+		"velocity": Vector2.ZERO, "heading": 0.0, "speed": PROFILES[kind].speed,
+		"radius": PROFILES[kind].radius, "buddy": null, "follow_time": 0.0, "repath": 0.0,
+		"state": "observe", "timer": _rng.randf_range(.5, 3.0), "route": PackedVector2Array(),
+		"waypoint": 0, "stuck": 0.0, "phase": _rng.randf_range(0, TAU), "wake_strength": 0.0,
+		"wake": null if kind == "hen" else _wake(.32 if kind == "duck" else .43), "recoveries": 0}
+	birds.append(entry)
+	if kind == "hen": _hens.append(bird)
+	else: _swimmers.append(entry)
+
+func _choose(entry: Dictionary) -> void:
+	var space: RefCounted = entry.space
+	var start: Vector2 = entry.position
+	for attempt: int in 16:
+		entry.buddy = null
+		var target: Vector2
+		var pick: float = _rng.randf()
+		if pick < .16:
+			target = space.resting[_rng.randi_range(0, space.resting.size() - 1)]
+		elif pick < .40 and entry.kind != "hen":
+			var companion: Dictionary = _swimmers[_rng.randi_range(0, _swimmers.size() - 1)]
+			if companion == entry: continue
+			entry.buddy = companion.node
+			target = companion.position + Vector2.from_angle(_rng.randf_range(0, TAU)) * _rng.randf_range(1.0, 1.8)
+		else:
+			target = start + Vector2.from_angle(_rng.randf_range(0, TAU)) * _rng.randf_range(1.1, PROFILES[entry.kind].range)
+		target = space.nearest(target)
+		if start.distance_to(target) < .7: continue
+		var route: PackedVector2Array = space.path(start, target)
+		if route.is_empty(): continue
+		entry.route = route
+		entry.waypoint = 0
+		entry.state = "walk" if entry.kind == "hen" else "swim"
+		entry.timer = 0.0
+		entry.stuck = 0.0
+		entry.follow_time = _rng.randf_range(10.0, 20.0)
+		entry.repath = 2.0
+		return
+	_idle(entry)
+
+func _idle(entry: Dictionary) -> void:
+	var choices: Array = ["rest", "observe", "peck", "preen"] if entry.kind == "hen" else ["rest", "probe", "preen", "observe"]
+	entry.state = choices[_rng.randi_range(0, choices.size() - 1)]
+	var pause: Vector2 = PROFILES[entry.kind].pause
+	entry.timer = _rng.randf_range(pause.x, pause.y)
+	entry.route = PackedVector2Array()
+	entry.stuck = 0.0
+	entry.buddy = null
 
 func _wake(radius: float) -> MeshInstance3D:
 	var surface := SurfaceTool.new()
@@ -53,20 +149,91 @@ func _wake(radius: float) -> MeshInstance3D:
 	return wake
 
 func _process(delta: float) -> void:
-	_time += delta
-	_update_swimmers()
+	if not ready_for_motion: return
+	var remaining: float = minf(delta, .15)
+	while remaining > 0.0:
+		var step: float = minf(remaining, 1.0 / 30.0)
+		_time += step
+		for entry: Dictionary in birds: _advance(entry, step)
+		remaining -= step
 
-func _update_swimmers() -> void:
-	for entry: Dictionary in _swimmers:
-		var phase: float = _time*entry.speed+entry.phase
-		var center: Vector2 = entry.center
-		var radius: Vector2 = entry.radius
-		var bird: Node3D = entry.node
-		bird.position = Vector3(center.x+cos(phase)*radius.x,-.25-entry.draft+sin(_time*1.3+entry.phase)*.009,center.y+sin(phase)*radius.y)
-		# Imported duck faces +Z, goose -Z (verified from head vertices).
-		var heading: float = atan2(-sin(phase)*radius.x,cos(phase)*radius.y)
-		bird.rotation.y = heading + entry.heading_offset
-		bird.rotation.z = sin(_time*1.1+entry.phase)*.018
-		var wake: MeshInstance3D = entry.wake
-		wake.position = Vector3(bird.position.x,-.235,bird.position.z)
-		wake.rotation.y = heading
+func _advance(entry: Dictionary, delta: float) -> void:
+	var p: Vector2 = entry.position
+	var desired := Vector2.ZERO
+	var route_velocity := Vector2.ZERO
+	var moving: bool = entry.state in ["walk", "swim"]
+	if moving and entry.buddy != null:
+		entry.follow_time -= delta
+		entry.repath -= delta
+		if entry.follow_time <= 0.0: entry.buddy = null
+		elif entry.repath <= 0.0:
+			entry.repath = 2.0
+			var companion: Node3D = entry.buddy
+			var companion_heading: float = companion.rotation.y - (PI if companion.get_meta("species") == "goose" else 0.0)
+			var behind: Vector3 = companion.position - Vector3(sin(companion_heading), 0, cos(companion_heading)) * 1.2
+			var route: PackedVector2Array = entry.space.path(p, Vector2(behind.x, behind.z))
+			if not route.is_empty():
+				entry.route = route
+				entry.waypoint = 0
+	if moving:
+		var route: PackedVector2Array = entry.route
+		while entry.waypoint < route.size():
+			var can_turn: bool = entry.waypoint + 1 >= route.size() or entry.space.clear_segment(p, route[entry.waypoint + 1])
+			var close: bool = p.distance_to(route[entry.waypoint]) < .025 and can_turn
+			var shortcut: bool = entry.waypoint + 1 < route.size() and p.distance_to(route[entry.waypoint]) < .16 and can_turn
+			if not close and not shortcut: break
+			entry.waypoint += 1
+		if entry.waypoint >= route.size(): _idle(entry)
+		else:
+			var offset: Vector2 = route[entry.waypoint] - p
+			var arrival: float = clampf(offset.length() / .32, .16, 1.0) if entry.waypoint == route.size() - 1 else 1.0
+			desired = offset.normalized() * entry.speed * arrival
+			route_velocity = desired
+	else:
+		entry.timer -= delta
+		if entry.timer <= 0: _choose(entry)
+	for other: Dictionary in birds:
+		if other == entry or other.space != entry.space: continue
+		var away: Vector2 = p - other.position
+		var safe: float = entry.radius + other.radius + .12
+		if away.length() < safe + .5 and away.length() > .001:
+			var urgency: float = 1.0 - smoothstep(safe, safe + .5, away.length())
+			desired += away.normalized() * urgency * entry.speed
+			if moving and urgency > .1: desired += Vector2(-away.y, away.x).normalized() * .09
+	var velocity: Vector2 = (entry.velocity as Vector2).move_toward(desired.limit_length(entry.speed), delta * .65)
+	if velocity.length() > .015:
+		var target_heading: float = atan2(velocity.x, velocity.y)
+		entry.heading = rotate_toward(entry.heading, target_heading, delta * PROFILES[entry.kind].turn)
+		velocity *= maxf(0.0, cos(angle_difference(entry.heading, target_heading)))
+	var next: Vector2 = p + velocity * delta
+	var safe_step: bool = entry.space.clear_segment(p, next)
+	if not safe_step and not route_velocity.is_zero_approx():
+		# Inertia/separation must not pin a bird against the inside of a turn.
+		velocity = route_velocity
+		next = p + velocity * delta
+		safe_step = entry.space.clear_segment(p, next)
+	for other: Dictionary in birds:
+		if other == entry or other.space != entry.space: continue
+		if next.distance_to(other.position) < entry.radius + other.radius and next.distance_to(other.position) < p.distance_to(other.position): safe_step = false
+	if not safe_step:
+		velocity = Vector2.ZERO
+		next = p
+	entry.velocity = velocity
+	entry.position = next
+	var distance: float = next.distance_to(p)
+	if moving:
+		entry.stuck = entry.stuck + delta if distance < .001 * delta else 0.0
+		if entry.stuck > 2.5:
+			entry.recoveries += 1
+			_choose(entry)
+	var bird: Node3D = entry.node
+	var height: float = entry.space.ground_height(next) if entry.kind == "hen" else -.25 - PROFILES[entry.kind].draft * bird.scale.x
+	if entry.kind != "hen": height += sin(_time * 1.3 + entry.phase) * .007
+	bird.position = Vector3(next.x, move_toward(bird.position.y, height, delta * .3), next.y)
+	bird.rotation.y = entry.heading + (PI if entry.kind == "goose" else 0.0)
+	entry.pose.update(delta, distance, velocity.length(), entry.state, _time + entry.phase)
+	if entry.wake != null:
+		entry.wake_strength = move_toward(entry.wake_strength, clampf(velocity.length() / entry.speed, 0, 1), delta * 1.4)
+		entry.wake.position = Vector3(next.x, -.235, next.y)
+		entry.wake.rotation.y = entry.heading
+		entry.wake.material_override.set_shader_parameter("strength", entry.wake_strength)

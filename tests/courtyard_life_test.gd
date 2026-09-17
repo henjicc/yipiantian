@@ -32,7 +32,7 @@ func _run() -> void:
 		if bird.name.begins_with("Lake") or bird.name.begins_with("YardHen"):
 			var players: Array[Node]=bird.find_children("*","AnimationPlayer",true,false)
 			check(not players.is_empty(),"Bird rig animation imported: "+bird.name)
-			if not players.is_empty(): check(players[0].is_playing(),"Bird motion running: "+bird.name)
+			check(animals.ready_for_motion,"Distance-driven bird rig ready: "+bird.name)
 	check(not environment.get_node("OsmanthusLeaves").is_processing(),"Petals use render-time motion without CPU streaming")
 	await shot("01-day-overview.png")
 	scene.focus_detail.set_fog_strength(0.0)
