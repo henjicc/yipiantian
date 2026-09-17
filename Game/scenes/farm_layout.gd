@@ -6,16 +6,18 @@ const FarmState = preload("res://farm/farm_state.gd")
 const PlantWind = preload("res://presentation/plant_wind.gd")
 const SoilShader = preload("res://scenes/environment/soil.gdshader")
 const PigmentShader = preload("res://scenes/environment/pigment.gdshader")
+const TilledSoil = preload("res://presentation/tilled_soil.gd")
+const PlantingSoilBurst = preload("res://presentation/planting_soil_burst.gd")
 const FIELD_SIZE := Vector3(2.6, 0.16, 2.05)
 const CELL_SPAN := Vector2(0.60, 0.44)
 const CELL_ORIGIN := Vector2(-1.20, -0.88)
 var fields: Array[StaticBody3D] = []
-var _frames: Array[Node3D] = []
 var _crop_roots: Dictionary = {}
 var _visual_keys: Dictionary = {}
 var _soil_meshes: Dictionary = {}
 var _cell_crops: Dictionary = {}
-var _cell_frame: Node3D
+var _planting_tweens: Dictionary = {}
+var _planted: Dictionary = {}
 var _wet_soil: ShaderMaterial
 var _soil: ShaderMaterial
 var _ridge: ShaderMaterial
@@ -26,9 +28,9 @@ var _plant_wind := PlantWind.new()
 func _ready() -> void:
 	# Pale soil sat at the same value as the sage crops, so neither read. Rich
 	# earth gives the leaves something to stand against, as in the reference.
-	_soil = _soil_material("6a5033", 0.0)
-	_wet_soil = _soil_material("4c3a24", 1.0)
-	_ridge = _soil_material("6a5033", 0.0)
+	_soil = _soil_material("665442", 0.0)
+	_wet_soil = _soil_material("665442", 1.0)
+	_ridge = _soil_material("665442", 0.0)
 	_coping = ShaderMaterial.new()
 	_coping.shader = PigmentShader
 	_coping.set_shader_parameter("base_color", Color("6f6c5b"))
@@ -40,8 +42,9 @@ func _ready() -> void:
 
 
 func select_field(index: int) -> void:
-	for i in _frames.size():
-		_frames[i].visible = i == index
+	for i: int in fields.size():
+		for patch: MeshInstance3D in _soil_meshes[field_id(i)].values():
+			patch.set_instance_shader_parameter("field_selected", 1.0 if i == index else 0.0)
 
 
 func field_id(index: int) -> String:
@@ -66,9 +69,9 @@ func cell_at(index: int, world_position: Vector3) -> String:
 
 
 func select_cell(index: int, cell_id: String) -> void:
-	_cell_frame.visible = index >= 0 and not cell_id.is_empty()
-	if _cell_frame.visible:
-		_cell_frame.position = fields[index].position + cell_center(cell_id)
+	for i: int in fields.size():
+		for id: String in FarmState.CELL_IDS:
+			_soil_meshes[field_id(i)][id].set_instance_shader_parameter("cell_selected", 1.0 if i == index and id == cell_id else 0.0)
 
 
 func show_field(field: Dictionary) -> void:
@@ -80,6 +83,9 @@ func show_field(field: Dictionary) -> void:
 			continue
 		_visual_keys[identity] = key
 		_soil_meshes[field.id][cell_id].material_override = _wet_soil if cell.watered else _soil
+		var root_size: float = {"empty": 1.0, "sprout": .38, "young": .68, "mature": 1.0}[cell.stage]
+		_soil_meshes[field.id][cell_id].set_instance_shader_parameter("root_size", root_size)
+		_update_planting(identity, _soil_meshes[field.id][cell_id], cell.stage != "empty")
 		var stage_key: String = "%s/%s" % [cell.crop_id, cell.stage]
 		var existing: Node3D = _cell_crops[field.id].get(cell_id)
 		if existing != null and existing.get_meta("stage_key") == stage_key:
@@ -96,17 +102,34 @@ func show_field(field: Dictionary) -> void:
 		crop.set_meta("field_id", field.id)
 		crop.set_meta("stage_key", stage_key)
 		crop.position = cell_center(cell_id) - Vector3.UP * CropVisuals.planting_depth(cell.crop_id, cell.stage)
+		crop.position.y += TilledSoil.height_at(Vector2(crop.position.x, crop.position.z)) - .008
 		crop.rotation.y = float(FarmState.CELL_IDS.find(cell_id)) * 0.23
 		_crop_roots[field.id].add_child(crop)
 		_cell_crops[field.id][cell_id] = crop
 		_plant_wind.apply(crop, cell.crop_id)
 
 
-func _material(hex: String) -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(hex)
-	material.roughness = 0.95
-	return material
+func _update_planting(identity: String, patch: MeshInstance3D, planted: bool) -> void:
+	var initial: bool = not _planted.has(identity)
+	if not initial and _planted[identity] == planted:
+		return
+	_planted[identity] = planted
+	if _planting_tweens.has(identity):
+		_planting_tweens[identity].kill()
+		_planting_tweens.erase(identity)
+	var target: float = 1.0 if planted else 0.0
+	if initial:
+		patch.set_instance_shader_parameter("planted", target)
+		return
+	if planted:
+		var burst := PlantingSoilBurst.new()
+		burst.position = patch.position + Vector3.UP * .055
+		patch.get_parent().add_child(burst)
+	var current: float = float(patch.get_instance_shader_parameter("planted"))
+	var tween: Tween = create_tween()
+	_planting_tweens[identity] = tween
+	tween.tween_method(func(value: float) -> void: patch.set_instance_shader_parameter("planted", value), current, target, .42).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.finished.connect(func() -> void: _planting_tweens.erase(identity))
 
 
 func _soil_material(hex: String, wetness: float) -> ShaderMaterial:
@@ -114,6 +137,7 @@ func _soil_material(hex: String, wetness: float) -> ShaderMaterial:
 	material.shader = SoilShader
 	material.set_shader_parameter("soil_color", Color(hex))
 	material.set_shader_parameter("wetness", wetness)
+	material.set_shader_parameter("soil_detail", preload("res://art/environment/soil/loam.png"))
 	return material
 
 
@@ -126,25 +150,12 @@ func _mesh(parent: Node3D, resource: Mesh, point: Vector3, material: Material) -
 	return instance
 
 
-func _box(parent: Node3D, point: Vector3, dimensions: Vector3, material: Material) -> MeshInstance3D:
-	var resource := BoxMesh.new()
-	resource.size = dimensions
-	return _mesh(parent, resource, point, material)
-
-
 func _make_fields() -> void:
-	var soil_patch: ArrayMesh = _soil_patch()
+	var soil_patches: Dictionary = {}
+	for cell_id: String in FarmState.CELL_IDS:
+		soil_patches[cell_id] = TilledSoil.patch(cell_center(cell_id), CELL_SPAN)
 	var earthen_bank: ArrayMesh = _earthen_bank()
 	var coping: ArrayMesh = _coping_kerb()
-	var selected := _material("4d806c")
-	selected.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_cell_frame = Node3D.new()
-	_cell_frame.name = "SelectedCell"
-	add_child(_cell_frame)
-	for side: int in [-1, 1]:
-		_box(_cell_frame, Vector3(side * .291, .014, 0), Vector3(.014, .012, .426), selected)
-		_box(_cell_frame, Vector3(0, .014, side * .213), Vector3(.596, .012, .014), selected)
-	_cell_frame.hide()
 	for row in 2:
 		for col in 3:
 			var index: int = fields.size()
@@ -157,15 +168,18 @@ func _make_fields() -> void:
 			body.set_meta("field_id", FarmState.FIELD_IDS[index])
 			add_child(body)
 			fields.append(body)
-			# A shallow shared bed under sixteen soil pads makes narrow natural furrows,
-			# without raised UI dividers or a separate collision body per plant.
+			# Logical patches share continuous heights/normals, not tile-edge grooves.
 			_mesh(body, earthen_bank, Vector3.ZERO, _ridge)
 			_mesh(body, coping, Vector3.ZERO, _coping)
 			_soil_meshes[field_id(index)] = {}
 			_cell_crops[field_id(index)] = {}
 			for cell_id: String in FarmState.CELL_IDS:
 				var center: Vector3 = cell_center(cell_id)
-				_soil_meshes[field_id(index)][cell_id] = _mesh(body, soil_patch, center, _soil)
+				var patch: MeshInstance3D = _mesh(body, soil_patches[cell_id], center, _soil)
+				patch.name = "Soil_" + cell_id
+				patch.extra_cull_margin = .09
+				patch.set_instance_shader_parameter("cell_center", Vector2(center.x, center.z))
+				_soil_meshes[field_id(index)][cell_id] = patch
 			var crops := Node3D.new()
 			crops.name = "Crops"
 			body.add_child(crops)
@@ -175,29 +189,6 @@ func _make_fields() -> void:
 			shape.size = FIELD_SIZE
 			collision.shape = shape
 			body.add_child(collision)
-			var frame := Node3D.new()
-			body.add_child(frame)
-			_frames.append(frame)
-			for side in [-1, 1]:
-				_box(frame, Vector3(side * 1.39, 0.16, 0), Vector3(0.045, 0.04, 2.3), selected)
-				_box(frame, Vector3(0, 0.16, side * 1.13), Vector3(2.8, 0.04, 0.045), selected)
-			frame.visible = false
-
-
-func _soil_patch() -> ArrayMesh:
-	# Contiguous soft furrows retain exact grid coordinates without sixteen raised tiles.
-	var surface := SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for row: int in 8:
-		for col: int in 10:
-			for offset: Vector2i in [Vector2i(0,0),Vector2i(1,0),Vector2i(1,1),Vector2i(0,0),Vector2i(1,1),Vector2i(0,1)]:
-				var uv := Vector2((col+offset.x)/10.0,(row+offset.y)/8.0)
-				var edge: float = minf(minf(uv.x,1.0-uv.x),minf(uv.y,1.0-uv.y))
-				var height: float = -.004*(1.0-smoothstep(0.0,.08,edge))
-				surface.set_uv(uv)
-				surface.add_vertex(Vector3((uv.x-.5)*CELL_SPAN.x,height,(uv.y-.5)*CELL_SPAN.y))
-	surface.generate_normals()
-	return surface.commit()
 
 
 func _coping_kerb() -> ArrayMesh:
@@ -257,7 +248,7 @@ func _kerb_stone(surface: SurfaceTool, stones: Array[Mesh], rng: RandomNumberGen
 func _earthen_bank() -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rings: Array[Vector3] = [Vector3(1.20,.076,.88),Vector3(1.29,.055,.97),Vector3(1.39,-.027,1.075),Vector3(1.51,-.066,1.20)]
+	var rings: Array[Vector3] = [Vector3(1.20,.08,.88),Vector3(1.29,.055,.97),Vector3(1.39,-.027,1.075),Vector3(1.51,-.066,1.20)]
 	for band: int in 3:
 		for segment: int in 80:
 			for corner: Vector2i in [Vector2i(0,0),Vector2i(0,1),Vector2i(1,1),Vector2i(0,0),Vector2i(1,1),Vector2i(1,0)]:

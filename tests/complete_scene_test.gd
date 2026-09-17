@@ -57,7 +57,8 @@ func _run() -> void:
 			var cell: Dictionary = field.cells[cell_id]
 			var plant: Node3D = plants.get_node(NodePath(cell_id))
 			_expect(plant.scene_file_path == Crops.scene_path(cell.crop_id, cell.stage) and plant.scale == Vector3.ONE, "Correct mixed-cell formal stage resource at authored meter scale")
-			_expect(is_equal_approx(plant.position.y, scene.farm.FIELD_SIZE.y / 2.0 - Crops.planting_depth(cell.crop_id, cell.stage)), "Formal crop uses fixed soil planting depth")
+			var anchor: float = scene.farm.FIELD_SIZE.y / 2.0 + scene.farm.TilledSoil.height_at(Vector2(plant.position.x, plant.position.z)) - .008
+			_expect(is_equal_approx(plant.position.y, anchor - Crops.planting_depth(cell.crop_id, cell.stage)), "Formal crop follows the continuous soil surface and species planting depth")
 		# Stop inside the shallow soil body; the former crop-height collider is gone.
 		var point: Vector3 = body.global_position
 		var ray := PhysicsRayQueryParameters3D.create(scene.camera.global_position, point, 1)

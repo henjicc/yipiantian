@@ -8,6 +8,8 @@ template_state: ready
 
 ## 当前事实
 
+- 2026-09-17 六田土面改为连续浅垄、生成土壤纹理与合并小土块；悬空绿框改为土面四角提示，作物按阶段配低矮培土，播种短时土屑、收获回落。图片工具生成参考与正式纹理，Godot 实现几何和反馈，无新增 Tripo 模型；96 格与保存规则不变。调研、源码、定向验证和视频补拍入口见 [松土记录](../ArtSource/Environment/Soil/README.md)，待用户观察签收。
+
 - 2026-09-17 按用户指定将游戏字体统一替换为内置汇文明朝体；中文文件名可正常导入与打包，HUD／设置／说明页及样片文字采用同一字体，无需系统安装。原 Noto 字体归档在 `ArtSource/UI/历史字体/`，不进入现役游戏包。版本与来源见 [UI 记录](../ArtSource/UI/README.md)。
 
 - 三维资产生产、拆件动画、LOD 修复与相关视频素材检索已有项目级技能 [farm-3d-asset-pipeline](../.agents/skills/farm-3d-asset-pipeline/SKILL.md)，支持隐式调用并由 AGENTS.md 路由。2026-09-17 桂花与 LOD 重大调整的视频节点、四阶段来源链和待补拍镜头见 [树木素材入口](../ArtSource/Environment/Trees/README.md#视频节点20260917-osmanthus-lod)；查找素材先读该入口，不凭聊天记忆重做生成。

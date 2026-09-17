@@ -54,9 +54,22 @@ func _run() -> void:
 	_expect(crops.get_node("cell_01").get_meta("stage_key") == "greens/young", "Selected crop alone advances to young visual")
 	_expect(neighbor.get_instance_id() == previous_id and neighbor.transform == previous_transform, "Neighbor stage and anchor are unchanged")
 	layout.select_cell(0, "cell_01")
-	_expect(layout._cell_frame.visible and layout._cell_frame.position == first.position + Layout.cell_center("cell_01"), "Selected-cell outline follows its exact soil location")
+	_expect(pad.get_instance_shader_parameter("cell_selected") == 1.0 and layout._soil_meshes.field_01.cell_02.get_instance_shader_parameter("cell_selected") == 0.0, "Selection is applied only to the chosen ground surface")
 	layout.select_cell(-1, "")
-	_expect(not layout._cell_frame.visible, "Returning to overview clears the small outline")
+	_expect(pad.get_instance_shader_parameter("cell_selected") == 0.0, "Returning to overview clears the ground selection")
+	# Both sides of each shared cell edge use the same height function.
+	var left: Array = pad.mesh.surface_get_arrays(0)
+	var right_pad: MeshInstance3D = layout._soil_meshes.field_01.cell_02
+	var right: Array = right_pad.mesh.surface_get_arrays(0)
+	var seam_error: float = 0.0
+	for v: Vector3 in left[Mesh.ARRAY_VERTEX]:
+		if not is_equal_approx(v.x,.3): continue
+		var closest: float = INF
+		for other: Vector3 in right[Mesh.ARRAY_VERTEX]:
+			if is_equal_approx(other.x,-.3) and is_equal_approx(other.z,v.z):
+				closest = minf(closest, absf(v.y-other.y))
+		seam_error = maxf(seam_error,closest)
+	_expect(seam_error < .00001, "Adjacent soil patches meet without cracks or tile grooves")
 	layout.free()
 	await process_frame
 	print("FARM_GRID_LAYOUT_TEST checks=%d failures=%d" % [checks, failures.size()])
