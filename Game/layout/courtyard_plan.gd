@@ -13,12 +13,7 @@ var flower_centres: Array[Vector3] = [Vector3(-5.8,.13,3.45),Vector3(5.25,.13,3.
 var lily_coves: Array[Vector3] = [Vector3(-6.35,-.40,7.25),Vector3(-.9,-.40,8.05),Vector3(5.35,-.40,7.4),Vector3(14.0,-.40,3.4),Vector3(-9.8,-.40,3.6),Vector3(-11.2,-.40,-1.8),Vector3(-7.9,-.40,9.2),Vector3(1.6,-.40,10.8),Vector3(8.9,-.40,7.9)]
 var fields: Array[Dictionary] = []
 var rim := PackedVector2Array([Vector2(-7.5,-7.6),Vector2(-4.8,-8.4),Vector2(-1,-8.2),Vector2(2.5,-7.9),Vector2(5.6,-6.5),Vector2(6.5,-3.8),Vector2(6.4,-.8),Vector2(6.8,1.3),Vector2(5.8,4.8),Vector2(3.5,6.1),Vector2(.7,6.7),Vector2(-2.5,6.1),Vector2(-5.5,5.6),Vector2(-7.2,3.2),Vector2(-7.6,.2),Vector2(-7.1,-3.6)])
-var paths: Array[PackedVector3Array] = [
-	PackedVector3Array([Vector3(-6,.115,2.9),Vector3(-5.25,.115,-1.7),Vector3(-2,.115,-1.8),Vector3(2.5,.115,-1.7),Vector3(6.2,.115,-.6)]),
-	PackedVector3Array([Vector3(-4.9,.115,4.65),Vector3(-.5,.115,4.65),Vector3(4.8,.115,4.7)]),
-	PackedVector3Array([Vector3(-1.68,.115,-1),Vector3(-1.68,.115,4.1)]),
-	PackedVector3Array([Vector3(1.57,.115,-1),Vector3(1.57,.115,4.1)]),
-]
+var paths: Array[PackedVector3Array] = [] # Derived by courtyard_circulation after real obstacles exist.
 var anchors := {
 	"house": Vector3(.65,.13,-4.65), "veranda": Vector3(.65,.13,-2.4),
 	"kitchen": Vector3(-4.5,.115,-5), "trellis": Vector3(-5.8,.13,1.05),
@@ -37,16 +32,16 @@ var props := {
 	"SidePorchDryingRack": [Vector3(-3.7,.14,-2.72),-9.0],
 	"PorchFarmTools": [Vector3(-2.5,.43,-2.9),12.0],
 	"WindowWarmth": [Vector3.ZERO,0.0],
-	"YardWaterVats": [Vector3(-5.28,.14,-.62),18.0],
-	"YardFirewood": [Vector3(-4.9,.14,-3.28),-14.0],
+	"YardWaterVats": [Vector3(-5.7,.14,-2.02),18.0],
+	"YardFirewood": [Vector3(-4.5,.14,-6.8),90.0],
 	"YardStoneMill": [Vector3(5.07,.14,-2.92),-95.0],
-	"YardJarCluster": [Vector3(5.22,.14,2.45),-30.0],
-	"YardGroundTrays": [Vector3(-5.3,.14,2.3),40.0],
-	"YardBasketStack": [Vector3(4.25,.14,4.22),-20.0],
-	"YardBucket": [Vector3(-2.15,.14,-1.28),8.0],
+	"YardJarCluster": [Vector3(5.3,.14,-1.6),-30.0],
+	"YardGroundTrays": [Vector3(-4.05,.14,4.85),40.0],
+	"YardBasketStack": [Vector3(3.95,.14,4.55),-20.0],
+	"YardBucket": [Vector3(-3.6,.14,-1.42),8.0],
 	"YardDryingLine": [Vector3(1.45,.14,5.62),20.0],
-	"YardMelonPile": [Vector3(1.15,.14,4.24),30.0],
-	"YardSeedFrames": [Vector3(-2.62,.14,4.2),-25.0],
+	"YardMelonPile": [Vector3(0,.14,4.5),30.0],
+	"YardSeedFrames": [Vector3(-2.62,.14,4.65),-25.0],
 }
 var fences: Array[Dictionary] = []
 var animal_areas := {"water": Rect2(-14.5,-6,25,19.5), "yard": Rect2(-6.25,-6.8,12,11.75)}
@@ -72,6 +67,7 @@ var site: String = "original"
 var shore_expansion := Vector2.ZERO
 
 func _init() -> void:
+	animal_areas.yard = land_bounds()
 	for i: int in 7:
 		var t: float = i / 6.0
 		east_stones.append(Vector3(11.05+t*4.1,-.40,.2+sin(t*PI)*.40))
@@ -79,13 +75,17 @@ func _init() -> void:
 		var cells: Array[String] = []
 		for i: int in 16: cells.append("cell_%02d" % (i+1))
 		fields.append({"id": FIELD_IDS[index], "position": Vector3(-3.3 + index % 3 * 3.25,.2,int(index / 3) * 2.8), "yaw": 0.0, "size": Vector2(2.6,2.05), "columns":4, "rows":4, "cells":cells, "seed":91744+index*7919})
-	for i: int in 4: fences.append({"position": Vector3(-4.8+i*2,.14,-7.2), "yaw": 0.0, "height": 1.0})
-	for z: float in [-2.8,-.6,3.6]: fences.append({"position": Vector3(-6.65,.14,z), "yaw": 90.0, "height": 1.0})
-	for z: float in [-4.1,-2]: fences.append({"position": Vector3(6.02,.14,z), "yaw": 75.0, "height": 1.0})
-	for x: float in [-3,-.85,1.3]: fences.append({"position": Vector3(x,.14,5.15), "yaw": 0.0, "height": .68})
 
 func field_transform(index: int) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, deg_to_rad(fields[index].yaw)), fields[index].position)
+
+func field_polygon(index: int, margin: float = 0.0) -> PackedVector2Array:
+	var half: Vector2 = fields[index].size*.5+Vector2.ONE*margin
+	var polygon := PackedVector2Array()
+	for p: Vector2 in [Vector2(-half.x,-half.y),Vector2(half.x,-half.y),Vector2(half.x,half.y),Vector2(-half.x,half.y)]:
+		var point: Vector3 = field_transform(index)*Vector3(p.x,0,p.y)
+		polygon.append(Vector2(point.x,point.z))
+	return polygon
 
 func snapshot() -> Dictionary:
 	var encoded: Array[Dictionary] = []

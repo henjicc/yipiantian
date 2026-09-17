@@ -14,6 +14,9 @@ const NeighborIslets = preload("res://scenes/environment/neighbor_islets.gd")
 const CourtyardAssets = preload("res://scenes/environment/courtyard_assets.gd")
 const CourtyardAnimals = preload("res://scenes/environment/courtyard_animals.gd")
 const BankGeometry = preload("res://layout/bank_geometry.gd")
+const Circulation = preload("res://layout/courtyard_circulation.gd")
+const FenceGeometry = preload("res://layout/fence_geometry.gd")
+const Space = preload("res://scenes/environment/animal_space.gd")
 # World heights of the two surfaces props actually stand on in this courtyard.
 const GROUND_LEVEL := 0.132
 const DECK_LEVEL := 0.41
@@ -33,6 +36,8 @@ var _floater_origins: Array[Vector3] = []
 var _motion_time: float = 0.0
 var _contact_sources: Array[Node3D] = []
 var _shore_sources: Array[Node3D] = []
+var circulation := Circulation.new()
+var layout_obstacles: Dictionary = {}
 
 func _ready() -> void:
 	_rng.seed = 32026
@@ -42,23 +47,45 @@ func _ready() -> void:
 	neighbors.name = "NeighborIslets"
 	add_child(neighbors)
 	_shore_sources.append_array(neighbors.waterline_sources())
-	var water_material: ShaderMaterial = _water.material_override
-	water_material.set_shader_parameter("shore_distance", WaterContacts.build(_shore_sources, _water.position.y))
-	water_material.set_shader_parameter("shore_contacts_enabled", true)
 	_build_plants()
-	var cover := GroundCover.new()
-	cover.name = "GroundCover"
-	add_child(cover)
-	cover.build(self)
 	_build_slots()
 	_build_distance()
 	_living=LivingDetails.new();_living.name="LivingDetails";_living.plan=plan;add_child(_living)
 	_living.configure_house(get_node("MainHouse"))
 	_living.attach_boat(_boat)
+	layout_obstacles = _circulation_obstacles()
+	circulation.build(plan,layout_obstacles)
+	_build_paths()
+	var fence: Node3D = FenceGeometry.build(plan.fences)
+	add_child(fence)
+	_contact_sources.append(fence)
+	var cover := GroundCover.new()
+	cover.name = "GroundCover"
+	add_child(cover)
+	cover.build(self)
+	var water_material: ShaderMaterial = _water.material_override
+	water_material.set_shader_parameter("shore_distance", WaterContacts.build(_shore_sources, _water.position.y))
+	water_material.set_shader_parameter("shore_contacts_enabled", true)
 	_build_contact_shading()
 	var animals := CourtyardAnimals.new()
 	animals.name = "CourtyardAnimals"
 	add_child(animals)
+
+func _circulation_obstacles() -> Dictionary:
+	var result: Dictionary = {}
+	for node: Node3D in get_children():
+		if node.name in ["WaterSurface","DistantLandscape","NeighborIslets","DecorationSlots","OsmanthusLeaves","LivingDetails"]: continue
+		if node.has_meta("bank_role") or String(node.name).begins_with("BankGrass"): continue
+		# Include shoreline rocks and flower clumps too: a route through them
+		# would look open in layout data but still be blocked to the actual hens.
+		var bottom: float = .05 if node.name in ["MainHouse","Kitchen","PorchDeck","EntranceTrellis"] else .23
+		var polygon: PackedVector2Array = Space.footprint(node,bottom,.75)
+		if polygon.size()>=3: result[String(node.name)] = polygon
+	for prop: Node in _living.get_children():
+		if prop is Node3D and plan.props.has(String(prop.name)) and prop.position.y<.3:
+			var polygon: PackedVector2Array = Space.footprint(prop,.05,.70)
+			if polygon.size()>=3: result[String(prop.name)] = polygon
+	return result
 
 func _process(delta: float) -> void:
 	_motion_time += delta
@@ -165,19 +192,27 @@ func _build_ground() -> void:
 	for i in shelves.size():
 		_tint_stone(_module("stone_%d" % (i%5),shelves[i],17+i*47,Vector3(1.45,4.8 if i%2==0 else 3.5,1.18)),Color("79867e"))
 		_tint_stone(_module("stone_%d" % ((i+2)%5),shelves[i]+Vector3(.35,-.05,.37),-25+i*33,Vector3(.88,2.0,.9)),Color("929784"))
-	# Winding flat stone footpaths, with irregular joints, no checkerboard paving.
+func _build_paths() -> void:
+	# A separate seed makes a route change independent of all surrounding foliage.
+	var road_rng := RandomNumberGenerator.new()
+	road_rng.seed=931772
+	var placed := PackedVector2Array()
 	var routes: Array[PackedVector3Array] = plan.paths
 	for route in routes:
 		for k in range(route.size()-1):
-			var a:Vector3=route[k];var b:Vector3=route[k+1];var count:int=ceili(a.distance_to(b)/.48)
+			var a:Vector3=route[k];var b:Vector3=route[k+1];var count:int=maxi(1,ceili(a.distance_to(b)/.40))
 			for j in count:
-				var p:Vector3=a.lerp(b,float(j)/count);p.x+=_rng.randf_range(-.055,.055);p.z+=_rng.randf_range(-.07,.07)
-				# Untinted slabs came out near white and became the brightest thing on
-				# the island, pulling attention off the beds. Warm grey flagstones.
-				# Only flat slabs and low wedges serve as footpath stones. Consume the
-				# same random draw so the rest of the established scene stays stable.
-				var shape: int = _rng.randi_range(0,4)
-				_tint_stone(_module("stone_%d" % (1 if shape < 3 else 2),p,_rng.randf_range(-18,18),Vector3(.64,.28,.72)),Color("93907e")*_rng.randf_range(.90,1.08))
+				var p:Vector3=a.lerp(b,float(j)/count)
+				var point := Vector2(p.x,p.z)
+				var duplicate: bool = false
+				for old: Vector2 in placed:
+					if old.distance_squared_to(point)<.27*.27: duplicate=true;break
+				if duplicate: continue
+				placed.append(point)
+				var shape: int = 1 if road_rng.randf()<.65 else 2
+				var stone: Node3D = _module("stone_%d"%shape,p,road_rng.randf_range(-180,180),Vector3(.40,.28,.40))
+				stone.set_meta("path_stone",true)
+				_tint_stone(stone,Color("93907e")*road_rng.randf_range(.90,1.08))
 
 func _tint_stone(node: Node, color: Color) -> void:
 	if node is MeshInstance3D:
@@ -190,7 +225,7 @@ func _tint_stone(node: Node, color: Color) -> void:
 
 func _build_architecture() -> void:
 	_asset("house","MainHouse",plan.anchors.house,plan.angles.house)
-	_module("veranda",plan.anchors.veranda,plan.angles.veranda)
+	_module("veranda",plan.anchors.veranda,plan.angles.veranda).name = "PorchDeck"
 	var kitchen: Node3D = _life_asset("kitchen","Kitchen",plan.anchors.kitchen,plan.angles.kitchen)
 	_contact_sources.append(kitchen.get_child(0))
 	for mesh: MeshInstance3D in kitchen.find_children("*","MeshInstance3D",true,false):
@@ -207,12 +242,11 @@ func _build_architecture() -> void:
 	for i in 7:
 		var position_on_bank: Vector3 = plan.east_stones[i]
 		_tint_stone(_module("stone_%d"%(i%5),position_on_bank,i*39,Vector3(.85,2.8+(i%3)*.7,.8)),Color("829184"))
-	for fence: Dictionary in plan.fences:
-		_module("bamboo_fence",fence.position,fence.yaw,Vector3(1,fence.height,1))
 	# The right bay contains the harvest table; the old bench occupied its legs
 	# and was partly buried in the raised veranda platform.
 
 func _build_plants() -> void:
+	_rng.seed=87311
 	for tree: Dictionary in plan.trees:
 		_life_asset(tree.asset,tree.id,tree.at,tree.yaw,tree.size,tree.wind)
 	var osmanthus: Node3D = get_node("WestTree")
@@ -300,6 +334,7 @@ func _build_contact_shading() -> void:
 	var shading: Node3D = ContactShading.new()
 	shading.name = "ContactShading"
 	add_child(shading)
+	shading.configure_bounds(plan.land_bounds().grow(.6))
 	for source: Node3D in _contact_sources:
 		shading.collect(source, [GROUND_LEVEL, DECK_LEVEL])
 	shading.collect(get_node("MainHouse"), [GROUND_LEVEL])

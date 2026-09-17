@@ -17,6 +17,12 @@ const CELL := 0.20
 const TINT := Color(0.13, 0.115, 0.095)
 
 var _levels: Dictionary = {}
+var _origin: Vector2 = ORIGIN
+var _extent: Vector2 = EXTENT
+
+func configure_bounds(bounds: Rect2) -> void:
+	_origin = bounds.position
+	_extent = bounds.size
 
 
 ## `planes` are world Y heights of the surfaces this node can rest on.
@@ -67,8 +73,8 @@ func bake() -> void:
 		decal.texture_albedo = texture
 		# A tight vertical box keeps each level's pools off the other level's
 		# geometry: ground pools must not reappear along the veranda deck edge.
-		decal.size = Vector3(EXTENT.x, 0.24, EXTENT.y)
-		decal.position = Vector3(ORIGIN.x + EXTENT.x * 0.5, plane + 0.045, ORIGIN.y + EXTENT.y * 0.5)
+		decal.size = Vector3(_extent.x, 0.24, _extent.y)
+		decal.position = Vector3(_origin.x + _extent.x * 0.5, plane + 0.045, _origin.y + _extent.y * 0.5)
 		decal.cull_mask = 2
 		decal.upper_fade = 0.2
 		decal.lower_fade = 0.2
@@ -81,7 +87,7 @@ func _paint(cells: Dictionary) -> ImageTexture:
 		return null
 	var data := PackedByteArray()
 	data.resize(RESOLUTION * RESOLUTION * 4)
-	var scale: Vector2 = Vector2(RESOLUTION, RESOLUTION) / EXTENT
+	var scale: Vector2 = Vector2(RESOLUTION, RESOLUTION) / _extent
 	var red: int = roundi(TINT.r * 255.0)
 	var green: int = roundi(TINT.g * 255.0)
 	var blue: int = roundi(TINT.b * 255.0)
@@ -95,14 +101,14 @@ func _paint(cells: Dictionary) -> ImageTexture:
 		var radius: float = clampf(spread * 0.5 + 0.125, 0.14, 0.44)
 		var strength: float = lerpf(0.66, 0.26, smoothstep(0.10, 0.75, spread))
 		var pixel_radius: Vector2 = Vector2(radius, radius) * scale
-		var middle: Vector2 = (centre - ORIGIN) * scale
+		var middle: Vector2 = (centre - _origin) * scale
 		var min_x: int = maxi(0, floori(middle.x - pixel_radius.x))
 		var max_x: int = mini(RESOLUTION - 1, ceili(middle.x + pixel_radius.x))
 		var min_y: int = maxi(0, floori(middle.y - pixel_radius.y))
 		var max_y: int = mini(RESOLUTION - 1, ceili(middle.y + pixel_radius.y))
 		for y: int in range(min_y, max_y + 1):
 			for x: int in range(min_x, max_x + 1):
-				var distance: float = (Vector2(x + 0.5, y + 0.5) - middle).length() / maxf(pixel_radius.x, 0.001)
+				var distance: float = ((Vector2(x + 0.5, y + 0.5) - middle)/scale).length() / radius
 				if distance >= 1.0:
 					continue
 				var alpha: int = roundi(strength * pow(1.0 - distance, 2.0) * 255.0)

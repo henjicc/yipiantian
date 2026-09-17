@@ -1,7 +1,17 @@
 extends RefCounted
 ## World-XZ navigation, built once from visible scene geometry. Rebuilt after layout edits.
 const CELL := 0.16
-var grid := AStarGrid2D.new()
+class EdgeGrid extends AStarGrid2D:
+	# A free pair of samples can still straddle a thin polygon tip. Grid solidity
+	# alone cannot express that blocked edge; cache it during bake, not per frame.
+	var blocked_edges: Dictionary = {}
+	func _compute_cost(a: Vector2i,b: Vector2i) -> float:
+		if blocked_edges.has(Vector4i(a.x,a.y,b.x,b.y)): return INF
+		return Vector2(a).distance_to(Vector2(b))
+	func _estimate_cost(a: Vector2i,b: Vector2i) -> float:
+		return Vector2(a).distance_to(Vector2(b))
+
+var grid := EdgeGrid.new()
 var bounds: Rect2
 var obstacles: Array[PackedVector2Array] = []
 var _obstacle_cells: Dictionary = {}
@@ -37,6 +47,7 @@ func block(polygon: PackedVector2Array) -> void:
 
 func bake() -> void:
 	points.clear()
+	grid.blocked_edges.clear()
 	for y: int in grid.region.size.y:
 		for x: int in grid.region.size.x:
 			var id := Vector2i(x, y)
@@ -44,6 +55,14 @@ func bake() -> void:
 			var solid: bool = not contains(p)
 			grid.set_point_solid(id, solid)
 			if not solid: points.append(p)
+	for p: Vector2 in points:
+		var a := Vector2i(((p-bounds.position)/CELL).round())
+		for direction: Vector2i in [Vector2i.RIGHT,Vector2i.DOWN,Vector2i(1,1),Vector2i(1,-1)]:
+			var b: Vector2i = a+direction
+			if not grid.is_in_boundsv(b) or grid.is_point_solid(b): continue
+			if not clear_segment(p,grid.get_point_position(b)):
+				grid.blocked_edges[Vector4i(a.x,a.y,b.x,b.y)]=true
+				grid.blocked_edges[Vector4i(b.x,b.y,a.x,a.y)]=true
 
 func contains(p: Vector2) -> bool:
 	if not bounds.grow(-radius).has_point(p): return false

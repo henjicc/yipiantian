@@ -14,7 +14,7 @@
 
 现役主岛与右岸改由 `Game/layout/courtyard_plan.gd` 的轮廓及 `bank_geometry.gd` 在建场时生成；沿用上面的造型和材质，旧 Blender 源及GLB保持原件。新增模型不经Tripo，不产生费用。主岛4604三角、右岸2588三角，单材质、不额外生成自动LOD。顶底使用轮廓三角化而非固定中心扇，保持凹轮廓边界；索引闭合、共享平滑法线。普通轮廓、扩大、不规则、岸坡宽度及高度变体已进行网格检查。
 
-场景用 `bank_role` 元数据识别主岛与右岸，不再通过GLB文件名推断；水线距离场读取生成网格，鸡的安全区域受真实平地轮廓约束，草地密度和采样边界也跟随平地。当前默认场景的六田角落、右桥出口支承与7只动物初始化通过；全景、前岸和桥头正反近景已检查。此项还不是完整扩建：当前受控向西／向南扩岸（新Plan的 `expand_shore`）已同步岸树、竹花、荷花、岸石、船泊位和动物范围；屋、桥、右岸保持实际尺寸与既定支承。全景／布置取景距离及世界雾清晰区随扩岸更新。建筑草地避让使用实际脚印，墙脚贴花和藤架土床跟随锚点。玩家预览／保存、围栏道路重新生成、任意桥头迁移与地面高度联动全部摆件仍在第08–13项后续工作内。
+场景用 `bank_role` 元数据识别主岛与右岸，不再通过GLB文件名推断；水线距离场读取生成网格，鸡的安全区域受真实平地轮廓约束，草地密度和采样边界也跟随平地。当前默认场景的六田角落、右桥出口支承与7只动物初始化通过；全景、前岸和桥头正反近景已检查。此项还不是完整扩建：当前受控向西／向南扩岸（新Plan的 `expand_shore`）已同步岸树、竹花、荷花、岸石、船泊位和动物范围；屋、桥、右岸保持实际尺寸与既定支承。全景／布置取景距离及世界雾清晰区随扩岸更新。建筑草地避让使用实际脚印，墙脚贴花和藤架土床跟随锚点。布局保存与道路围栏重新生成已接入，见下方节点；玩家预览／撤销、任意桥头迁移与地面高度联动全部摆件仍在第08–13项后续工作内。
 
 定向入口 `tests/bank_layout_test.gd`（`--visual`输出近景）。证据 `.local/verification/layout-banks/` 与 `layout-banks-visual.log`。无录屏，需要时可从留存版本与当前源码补拍。
 
@@ -27,3 +27,12 @@ Godot 4.7.2实测：`Geometry2D.triangulate_polygon` 输出二维逆时针索引
 定向证据：`farm_state_test.gd` 371项、`farm_store_test.gd` 55项（384格约187KB，当前读盘上限512KB）、`farm_grid_layout_test.gd` 111项通过；`variable_fields_test.gd --visual` 实际七田、5×3／3×4、旋转、第五列播种、土面接缝、鸡禁入、景深清晰区、重进及破损存档恢复通过，本轮正常退出无清理告警。截图位于 `.local/verification/variable-fields/`，日志 `field-state-v5.log`、`field-store-v5.log`、`field-grid-v5.log`、`variable-fields-visual.log`。不是完整扩建或最终发行验收，无新增资产与录屏。
 
 存档注意：JSON数字恢复后需把布局数组重新解码为引擎向量和整数，保持布局比较与初始化一致。Godot的默认JSON数字输出不承诺所有浮点位精确往返，见[JSON.stringify官方说明](https://docs.godotengine.org/en/stable/classes/class_json.html#class-json-method-stringify)；当前向量由布局解码规范化，不能直接用未经规范化的JSON数组与场景参数判定布局变化。
+
+
+道路围栏节点：`courtyard_circulation.gd` 在真实建筑、植被和摆件建好后提取低处脚印，并加入田界生成静态可行走空间。以屋前真实宽石阶的可达边缘为入口，连接厨房、桥头、泊位、藤架与各田；复用原Tripo石板，单独随机种子使改路不改变植被变体。`fence_geometry.gd` 沿平地内沿生成竹栏、共用转角立柱、合并为两份材质网格；建筑、花石和道路附近留空。动物按每段围栏构建窄障碍，不能把整圈合并网格的凸包当作障碍封死院子。接触阴影覆盖真实布局包围盒，并按世界距离绘制圆形接触，避免非方形扩岸拉伸阴影。默认田和主要建筑未移动；水缸、水桶、晒盘、育苗架、柚子、篮子退离田界，陶罐移到桥侧屋前，柴堆移到厨房后空地，清理田边重叠及厨房堵路。
+
+定向入口 `tests/courtyard_circulation_test.gd`，普通模式为六田，`--expanded --visual` 为向西2.6米／向南3米、首田移到新西侧并旋转8°、南侧新增第七田。两种布局均通过田与模型／地面冲突、道路全段避障、重要入口连通、围栏留口和鸡的实际寻路、移动摆件支承和互不重叠、阴影覆盖检查；无效重叠／岛外田会被空间检查识别。截图 `.local/verification/circulation/{original,expanded}/`；通过日志 `circulation-original-check.log`、`circulation-expanded.log`。当前空间检查用于布局层，玩家预览／确认的接入仍属第13项，不能声称已有交互式编辑器。
+
+Godot4.7.2导航经验：AStarGrid2D的非实心格点不保证两点间没有几何尖角。实际扩展布局中，厨房旁两点 `(-4.44,-2.64)` 与 `(-4.44,-2.80)` 都可站立，但连线穿过摆件脚印；此前路径平滑阶段直接拒绝整条路线。现建图时缓存这些不可通行的相邻边，通过 `_compute_cost` 排除，同时保留整段碰撞验证；薄三角可绕行、横贯薄墙不可穿行的用例已覆盖。官方入口：[AStarGrid2D自定义代价](https://docs.godotengine.org/en/stable/classes/class_astargrid2d.html#class-astargrid2d-private-method-compute-cost)、[Geometry2D](https://docs.godotengine.org/en/stable/classes/class_geometry2d.html)。只改格点或启用禁止切角的对角模式不足以处理真实模型的尖角；惯性和同伴避让也须保留通向下一转角的可见路线。
+
+动物受道路布局影响的回归：`tests/animal_behavior_test.gd` 原有360秒七只动物模拟通过，日志 `circulation-animal-corners.log`；两只鸡分别移动约59.8／55.6米，卡住恢复各6次（同布局修复前33／29次），全部留在允许区并维持间距，要求的日常动作均出现。含验证开销的本机单步样本约0.72ms，不外推长期整机性能。本节点复用现有模型，无新生成费用、无录屏；主岛高度和桥头任意迁移、玩家编辑及后续玩法仍待继续完成。

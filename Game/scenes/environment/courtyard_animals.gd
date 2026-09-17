@@ -39,6 +39,13 @@ func rebuild_spaces() -> void:
 		if not child is Node3D or child == self: continue
 		var path: String = child.scene_file_path
 		var bank_role: String = child.get_meta("bank_role", "")
+		if child.has_meta("fence_spans"):
+			for span: Dictionary in child.get_meta("fence_spans"):
+				var a := Vector2(span.a.x,span.a.z)
+				var b := Vector2(span.b.x,span.b.z)
+				var side := Vector2(-(b-a).y,(b-a).x).normalized()*.064
+				yard.block(PackedVector2Array([a-side,b-side,b+side,a+side]))
+			continue
 		if child.name == "NeighborIslets":
 			for island: Node3D in child.waterline_sources(): water.block(Space.footprint(island, -.55, .55, false))
 		if not bank_role.is_empty():
@@ -209,6 +216,14 @@ func _advance(entry: Dictionary, delta: float) -> void:
 		entry.heading = rotate_toward(entry.heading, target_heading, delta * PROFILES[entry.kind].turn)
 		velocity *= maxf(0.0, cos(angle_difference(entry.heading, target_heading)))
 	var next: Vector2 = p + velocity * delta
+	if moving and entry.waypoint < entry.route.size() and absf(velocity.cross(route_velocity))>.0001:
+		# Separation and turn inertia may push a safe route around the wrong side
+		# of a polygon tip. Keep sight of the next corner instead of waiting until
+		# the following frame is pinned against it.
+		var corner: Vector2 = entry.route[entry.waypoint]
+		if entry.space.clear_segment(p,corner) and not entry.space.clear_segment(next,corner):
+			velocity = route_velocity
+			next = p+velocity*delta
 	var safe_step: bool = entry.space.clear_segment(p, next)
 	if not safe_step and not route_velocity.is_zero_approx():
 		# Inertia/separation must not pin a bird against the inside of a turn.
