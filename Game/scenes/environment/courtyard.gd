@@ -1,8 +1,10 @@
 extends Node3D
-## Spatial truth only: no farm state, unlock rules, saving, lighting or water animation.
+## Spatial truth and ambient scenery only; no farm state, unlock rules or saving.
 const DECORATIONS = preload("res://farm/decoration_catalog.gd")
 const PIGMENT = preload("res://scenes/environment/pigment.gdshader")
 const BACKDROP = preload("res://scenes/environment/backdrop.gdshader")
+const LivingDetails = preload("res://scenes/environment/living_details.gd")
+const PlantWind = preload("res://presentation/plant_wind.gd")
 const ROOT := "res://art/environment/"
 const SLOT_POSITIONS := {
 	"ground_01": Vector3(-5.35,0.16,-1.85), "ground_02": Vector3(4.70,0.16,-1.8),
@@ -14,6 +16,12 @@ var _lod_pairs: Dictionary = {}
 var _slots: Node3D
 var _water: MeshInstance3D
 var _rng := RandomNumberGenerator.new()
+var _plant_wind := PlantWind.new()
+var _living: Node3D
+var _boat: Node3D
+var _floaters: Array[Node3D] = []
+var _floater_origins: Array[Vector3] = []
+var _motion_time: float = 0.0
 
 func _ready() -> void:
 	_rng.seed = 32026
@@ -22,6 +30,26 @@ func _ready() -> void:
 	_build_plants()
 	_build_slots()
 	_build_distance()
+	_living=LivingDetails.new();_living.name="LivingDetails";add_child(_living)
+	_living.configure_house(get_node("MainHouse"))
+	_living.attach_boat(_boat)
+
+func _process(delta: float) -> void:
+	_motion_time += delta
+	# Waterline pivot, not the original bottom origin: the hull stays in the water.
+	var roll: float = sin(_motion_time*.73)*.009 + sin(_motion_time*.39)*.003
+	var pitch: float = sin(_motion_time*.55+.4)*.005
+	_boat.rotation=Vector3(pitch,deg_to_rad(-24),roll)
+	var pivot:=Vector3(0,.35/.85,0)
+	_boat.position=Vector3(8.0,-.60,3.3)+Vector3.UP*(.021*sin(_motion_time*.81)) + Vector3.UP*.35 - _boat.basis*pivot
+	for i: int in _floaters.size():
+		var phase: float = _motion_time*.64+i*1.7
+		_floaters[i].position=_floater_origins[i]+Vector3.UP*sin(phase)*.009
+		_floaters[i].rotation.z=sin(phase*.83)*.006
+	_living.update_mooring()
+
+func set_window_warmth(amount: float) -> void:
+	if _living != null:_living.set_window_warmth(amount)
 
 func _module(id: String, at: Vector3, yaw_degrees: float=0, scale_value: Vector3=Vector3.ONE) -> Node3D:
 	var node: Node3D = (load(ROOT+"modules/"+id+".glb") as PackedScene).instantiate()
@@ -48,6 +76,8 @@ func _asset(id: String, key: String, at: Vector3, yaw_degrees: float=0, size: fl
 	var high: Node3D=(load(ROOT+id+"/"+id+"_high.glb") as PackedScene).instantiate()
 	var low: Node3D=(load(ROOT+id+"/"+id+"_low.glb") as PackedScene).instantiate()
 	holder.add_child(high);holder.add_child(low);low.visible=false
+	if id in ["tree","bamboo","flowers","lotus","trellis"]:
+		_plant_wind.apply(high,id);_plant_wind.apply(low,id)
 	_lod_pairs[key]=[high,low]
 	return holder
 
@@ -88,7 +118,9 @@ func _tint_stone(node: Node, color: Color) -> void:
 	if node is MeshInstance3D:
 		for index in node.mesh.get_surface_count():
 			var material: Material = node.get_active_material(index)
-			if material is ShaderMaterial:material.set_shader_parameter("base_color",color)
+			if material is ShaderMaterial:
+				material.set_shader_parameter("base_color",color)
+				material.set_shader_parameter("stone_treatment",1.0)
 	for child in node.get_children():_tint_stone(child,color)
 
 func _build_architecture() -> void:
@@ -98,7 +130,7 @@ func _build_architecture() -> void:
 	_asset("trellis","EntranceTrellis",Vector3(-6.2,.13,1.1),14,1.10)
 	_module("entrance_canopy",Vector3(-6.10,.13,3.68),-8)
 	_module("stone_bridge",Vector3(8.1,-.04,-.15),-9)
-	_asset("boat","CoveredBoat",Vector3(8.0,-.60,3.3),-24,.85)
+	_boat=_asset("boat","CoveredBoat",Vector3(8.0,-.60,3.3),-24,.85)
 	# Opposite landing is a small bank, with irregular rock margins, not a floating bridge end.
 	_module("island_bank",Vector3(12.65,-.02,-2.8),0,Vector3(.40,1,.46))
 	for i in 7:
@@ -146,7 +178,8 @@ func _build_plants() -> void:
 	for i in lily_coves.size():
 		for j in 4:
 			var angle:float=j*2.4+i*.7
-			_asset("lotus","Lotus%d_%d"%[i,j],lily_coves[i]+Vector3(cos(angle)*.72,0,sin(angle)*.6),i*41+j*79,_rng.randf_range(.82,1.15))
+			var lotus: Node3D=_asset("lotus","Lotus%d_%d"%[i,j],lily_coves[i]+Vector3(cos(angle)*.72,0,sin(angle)*.6),i*41+j*79,_rng.randf_range(.82,1.15))
+			_floaters.append(lotus);_floater_origins.append(lotus.position)
 
 func _grass_patch(at: Vector3, index: int) -> void:
 	# Small opaque curved blades fill the soil contact below the existing flower assets.
@@ -171,6 +204,7 @@ func _grass_patch(at: Vector3, index: int) -> void:
 	var mesh:=MeshInstance3D.new();mesh.name="BankGrass%d"%index;mesh.mesh=surface.commit();mesh.position=at
 	var material:=ShaderMaterial.new();material.shader=PIGMENT;material.set_shader_parameter("base_color",Color("697f4f"));material.set_shader_parameter("wash_scale",8.0)
 	mesh.material_override=material;add_child(mesh)
+	_plant_wind.apply(mesh,"grass")
 
 func _build_slots() -> void:
 	_slots=Node3D.new();_slots.name="DecorationSlots";add_child(_slots)

@@ -59,7 +59,7 @@ func _run() -> void:
 	decorations.place("pot", "ground_01", 0)
 	decorations.place("flowerpot", "ground_02", 0)
 	decorations.place("lantern", "hanging_01", 0)
-	_expect(store.save(data, decorations.snapshot()).ok, "Maximum 54-plant / 3-decoration fixture is saved through the real owners")
+	_expect(store.save(data, decorations.snapshot()).ok, "Maximum 96-plant / 3-decoration fixture is saved through the real owners")
 	var preferences := Settings.new(output_dir.path_join("preferences"))
 	_expect(preferences.load_settings().ok and preferences.save(Settings.DEFAULTS.duplicate(true)).ok, "Windowed standard preferences are isolated")
 	if not failures.is_empty():
@@ -80,7 +80,7 @@ func _run() -> void:
 	_expect(rendered == resolution, "Actual rendered image matches the requested native resolution")
 	_expect(scene.farm.fields.size() == 6 and scene.decoration_layout.lantern_anchors().size() == 1, "Full farm and placed lantern are present")
 	for body: StaticBody3D in scene.farm.fields:
-		_expect(body.get_node("Crops").get_child_count() == 9, "Each field has nine mature crop instances")
+		_expect(body.get_node("Crops").get_child_count() == 16, "Each field has sixteen mature crop instances")
 	_initial_harvested = scene.farm_state.snapshot().harvested
 	_scene_started = Time.get_ticks_usec()
 	_write("ready.json", {"pid": OS.get_process_id(), "engine_startup_seconds": float(_scene_started) / 1e6, "actual_image_size": [rendered.x, rendered.y], "window_size": [root.size.x, root.size.y], "suite": suite, "runtime": "Godot standard executable, production scene, no editor UI; not export release", "engine": Engine.get_version_info(), "adapter": RenderingServer.get_video_adapter_name(), "renderer": RenderingServer.get_current_rendering_method(), "vsync_mode": DisplayServer.window_get_vsync_mode(), "cap_fps": 60})

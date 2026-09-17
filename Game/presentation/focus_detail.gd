@@ -3,6 +3,10 @@ extends Node
 
 const FOCUS_BIAS: float = 128.0
 const OVERVIEW_BIAS: float = 0.0
+const CameraForeground = preload("res://presentation/camera_foreground.gd")
+const PlantWind = preload("res://presentation/plant_wind.gd")
+var _decoration_wind := PlantWind.new()
+var _foreground: Node3D
 var _camera: Camera3D
 var _attributes: CameraAttributesPractical
 var _target: Node3D
@@ -26,6 +30,10 @@ func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations
 	_attributes.dof_blur_near_transition = 2.0
 	_attributes.dof_blur_far_transition = 5.0
 	_camera.attributes = _attributes
+	_foreground = CameraForeground.new()
+	_foreground.name = "CameraForeground"
+	_camera.add_child(_foreground)
+	_foreground.configure(_camera, _fields, _environment)
 	# Run after the camera pose so the clear band follows current projected depth.
 	process_priority = 10
 	for field: Node3D in _fields:
@@ -73,6 +81,9 @@ func get_settings() -> Dictionary:
 
 func _apply_quality() -> void:
 	# One concrete raster-quality step; shadows and the selected crop stay intact.
+	# Drop decorative geometry before an MSAA switch can stall shader compilation.
+	if _quality == "low" and _foreground != null:
+		_foreground.set_overview_visible(false, true)
 	_camera.get_viewport().msaa_3d = Viewport.MSAA_2X if _quality == "low" else Viewport.MSAA_4X
 
 
@@ -84,6 +95,8 @@ func refresh_field(field: Node3D) -> void:
 
 func refresh_decorations() -> void:
 	_set_bias(_decorations, OVERVIEW_BIAS)
+	for child: Node in _decorations.get_children():
+		_apply_decoration_wind(child)
 
 
 func refresh_details() -> void:
@@ -119,17 +132,31 @@ func _on_crop_added(node: Node, field: Node3D) -> void:
 func _on_decoration_added(node: Node) -> void:
 	# Includes new confirmed, recovered and preview instances, without touching state.
 	_set_bias(node, OVERVIEW_BIAS)
+	_apply_decoration_wind(node)
+
+
+func _apply_decoration_wind(node: Node) -> void:
+	if node is Node3D and node.scene_file_path.begins_with("res://art/decorations/flowerpot/"):
+		_decoration_wind.apply(node, "flowerpot")
 
 
 func _process(delta: float) -> void:
 	if _camera == null:
 		return
-	var active: bool = is_instance_valid(_target) and _dof_enabled and _quality == "standard" and _dof_strength > 0.0
+	var framing: bool = not is_instance_valid(_target) and not _decorations.active and _quality == "standard"
+	_foreground.set_overview_visible(framing)
+	var allowed: bool = _dof_enabled and _quality == "standard" and _dof_strength > 0.0
+	var active: bool = is_instance_valid(_target) and allowed
+	var frame_blur: bool = framing and allowed
 	var approach: float = 1.0 - smoothstep(12.0, 18.0, _camera.global_position.distance_to(_target.global_position)) if active else 0.0
-	var target_amount: float = 0.045 * _dof_strength * approach
+	var target_amount: float = (0.13 if frame_blur else 0.045 * approach) * _dof_strength
 	_attributes.dof_blur_amount = move_toward(_attributes.dof_blur_amount, target_amount, delta * 0.12)
-	_attributes.dof_blur_near_enabled = active and _attributes.dof_blur_amount > 0.0001
-	_attributes.dof_blur_far_enabled = _attributes.dof_blur_near_enabled
+	_attributes.dof_blur_near_enabled = (active or frame_blur) and _attributes.dof_blur_amount > 0.0001
+	_attributes.dof_blur_far_enabled = active and _attributes.dof_blur_near_enabled
+	if frame_blur:
+		_attributes.dof_blur_near_distance = 8.5
+		_attributes.dof_blur_near_transition = 2.0
+		_band_initialized = false
 	if active:
 		var depths: Vector2 = depth_range(_camera, _target.global_transform, _target_bounds)
 		var near_edge: float = maxf(0.1, depths.x - 0.6)

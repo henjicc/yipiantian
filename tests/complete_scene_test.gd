@@ -30,7 +30,12 @@ func _run() -> void:
 	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("preferences"))
 	root.add_child(scene)
 	await physics_frame
-	scene.atmosphere.set_preview_hour(12.0)
+	# Match the presentation clock in evidence without changing the OS or farm time.
+	for child: Node in scene.hud.get_children():
+		if child is Timer and child.timeout.is_connected(Callable(scene.hud, "_update_clock")):
+			child.stop()
+	_set_hour(12.0)
+	await create_timer(1.25).timeout
 	await _capture("01-initial-day.png")
 	var data: Dictionary = scene.farm_state.snapshot()
 	for index in 6:
@@ -45,7 +50,7 @@ func _run() -> void:
 		var body: StaticBody3D = scene.farm.fields[index]
 		var field: Dictionary = scene.farm_state.get_field(Farm.FIELD_IDS[index])
 		var plants: Node3D = body.get_node("Crops")
-		_expect(plants.get_child_count() == 9 and body.get_meta("field_id") == field.id, "Stable field identity with nine independently grouped plants")
+		_expect(plants.get_child_count() == 16 and body.get_meta("field_id") == field.id, "Stable field identity with sixteen independently grouped plants")
 		var plant: Node3D = plants.get_child(0)
 		_expect(plant.scene_file_path == Crops.scene_path(field.crop_id, field.stage) and plant.scale == Vector3.ONE, "Correct formal stage resource at authored meter scale")
 		_expect(is_equal_approx(plant.position.y, scene.farm.FIELD_SIZE.y / 2.0 - Crops.planting_depth(field.crop_id, field.stage)), "Formal crop uses fixed soil planting depth")
@@ -59,6 +64,12 @@ func _run() -> void:
 	_expect(scene.farm_state.restore_snapshot(mature), "Maximum-density visual fixture preserves the farm schema")
 	scene.refresh_farm()
 	await _capture("02b-all-mature.png")
+	_set_hour(16.5)
+	await create_timer(1.0).timeout
+	await _capture("02c-golden-hour.png")
+	await create_timer(3.0).timeout
+	await _capture("02d-golden-hour-motion.png")
+	_set_hour(12.0)
 	_expect(scene.farm_state.restore_snapshot(data), "Restore the six-stage fixture after maximum-density comparison")
 	scene.refresh_farm()
 	for index in [0, 2, 3, 5]:
@@ -76,7 +87,7 @@ func _run() -> void:
 	await _capture("05-overview-limit.png")
 	scene._reset_view()
 	await create_timer(0.85).timeout
-	scene.atmosphere.set_preview_hour(21.0)
+	_set_hour(21.0)
 	await _capture("06-night.png")
 	for failure: String in failures:
 		push_error(failure)
@@ -92,6 +103,13 @@ func _capture(filename: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	_expect(root.get_texture().get_image().save_png(captures.path_join(filename)) == OK, "Write formal-scene evidence")
+
+
+func _set_hour(hour: float) -> void:
+	scene.atmosphere.set_preview_hour(hour)
+	var minutes: int = int(round(hour * 60.0)) % 1440
+	scene.hud._clock.text = "%02d:%02d" % [floori(minutes / 60.0), minutes % 60]
+	scene.hud._day_icon.texture = scene.hud.SUN if minutes >= 360 and minutes < 1080 else scene.hud.MOON
 
 
 func _expect(condition: bool, message: String) -> void:

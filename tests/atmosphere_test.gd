@@ -113,7 +113,7 @@ func _run() -> void:
 	_expect(_peak() > 0.00001, "Actual audio resumes after restore")
 	# The visual sampler remains cyclic and continuous at midnight and each key.
 	_expect(Atmosphere.sample_hour(0) == Atmosphere.sample_hour(24), "Midnight visual wraps without a jump")
-	for hour in [5.0, 6.5, 9.0, 16.0, 18.0, 20.0]:
+	for hour in [5.0, 6.5, 9.0, 12.0, 16.5, 18.5, 20.0]:
 		var before: Dictionary = Atmosphere.sample_hour(hour - 0.001)
 		var after: Dictionary = Atmosphere.sample_hour(hour + 0.001)
 		_expect(absf(before.sun_energy - after.sun_energy) < 0.001, "Continuous light transition at %.1f" % hour)

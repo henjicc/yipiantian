@@ -3,6 +3,8 @@ extends Node3D
 
 const CropVisuals = preload("res://art/crops/crop_visual_catalog.gd")
 const FarmState = preload("res://farm/farm_state.gd")
+const PlantWind = preload("res://presentation/plant_wind.gd")
+const SoilShader = preload("res://scenes/environment/soil.gdshader")
 const FIELD_SIZE := Vector3(2.6, 0.16, 2.05)
 var fields: Array[StaticBody3D] = []
 var _frames: Array[Node3D] = []
@@ -10,17 +12,18 @@ var _crop_roots: Dictionary = {}
 var _visual_keys: Dictionary = {}
 var _soil_meshes: Dictionary = {}
 var _ridge_meshes: Dictionary = {}
-var _wet_soil: StandardMaterial3D
-var _soil: StandardMaterial3D
-var _ridge: StandardMaterial3D
-var _wet_ridge: StandardMaterial3D
+var _wet_soil: ShaderMaterial
+var _soil: ShaderMaterial
+var _ridge: ShaderMaterial
+var _wet_ridge: ShaderMaterial
+var _plant_wind := PlantWind.new()
 
 
 func _ready() -> void:
-	_soil = _material("80684d")
-	_wet_soil = _material("62533e")
-	_ridge = _material("766046")
-	_wet_ridge = _material("574933")
+	_soil = _soil_material("80684d", 0.0)
+	_wet_soil = _soil_material("62533e", 1.0)
+	_ridge = _soil_material("766046", 0.0)
+	_wet_ridge = _soil_material("574933", 1.0)
 	_make_fields()
 
 
@@ -53,19 +56,28 @@ func show_field(field: Dictionary) -> void:
 	if field.stage == "empty":
 		return
 	# Fixed anchors/heading across phases; only the approved stage resource changes.
-	for a in 3:
-		for b in 3:
+	for a in 4:
+		for b in 4:
 			var crop: Node3D = CropVisuals.instantiate(field.crop_id, field.stage)
-			crop.name = "Plant%d" % (a * 3 + b + 1)
-			crop.position = Vector3(-0.8 + a * 0.8, FIELD_SIZE.y / 2.0 - CropVisuals.planting_depth(field.crop_id, field.stage), -0.65 + b * 0.65)
-			crop.rotation.y = float(a * 3 + b) * 0.23
+			crop.name = "Plant%d" % (a * 4 + b + 1)
+			crop.position = Vector3(-0.90 + a * 0.60, FIELD_SIZE.y / 2.0 - CropVisuals.planting_depth(field.crop_id, field.stage), -0.66 + b * 0.44)
+			crop.rotation.y = float(a * 4 + b) * 0.23
 			crops.add_child(crop)
+			_plant_wind.apply(crop, field.crop_id)
 
 
 func _material(hex: String) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(hex)
 	material.roughness = 0.95
+	return material
+
+
+func _soil_material(hex: String, wetness: float) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = SoilShader
+	material.set_shader_parameter("soil_color", Color(hex))
+	material.set_shader_parameter("wetness", wetness)
 	return material
 
 

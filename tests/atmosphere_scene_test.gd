@@ -43,14 +43,18 @@ func _run() -> void:
 	_expect(material is ShaderMaterial and material.shader.resource_path == "res://atmosphere/quiet_water.gdshader", "Formal water actually uses the animated shader")
 	var lights: Array[Node] = scene.find_children("FarmLanternLight", "OmniLight3D", true, false)
 	_expect(lights.size() == 1, "Only the one placed lantern emits light")
+	var porch_lights: Array[Node] = courtyard.get_node("LivingDetails").find_children("*", "OmniLight3D", true, false)
+	_expect(porch_lights.size() == 2, "House has its own two local window lights")
 	var before_visuals: Dictionary = scene.farm_state.snapshot()
 	for pair in [[6.5, "dawn"], [12.0, "day"], [18.0, "dusk"], [22.0, "night"]]:
 		scene.atmosphere.set_preview_hour(pair[0])
 		await create_timer(0.3).timeout
 		if pair[1] == "day":
+			_expect(porch_lights[0].light_energy < 0.2, "Daytime window light remains restrained")
 			_expect(is_zero_approx(lights[0].light_energy), "Lantern is off in daylight")
 			_expect(courtyard.get_backdrop_material().get_shader_parameter("atmosphere_tint") == Color.WHITE, "Daylight preserves original backdrop colours")
 		if pair[1] == "night":
+			_expect(porch_lights[0].light_energy > 0.5, "Production day-night signal warms the house independently of earned lanterns")
 			_expect(lights[0].light_energy > 0.0, "Placed lantern warms the night")
 			_expect(courtyard.get_backdrop_material().get_shader_parameter("atmosphere_tint") != Color.WHITE, "Night also darkens unshaded distant panorama")
 		await _screenshot("formal_%s_overview.png" % pair[1])
