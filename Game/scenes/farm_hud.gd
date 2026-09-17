@@ -9,11 +9,19 @@ signal retry_requested
 signal recovery_requested
 signal exit_requested
 signal decoration_requested
+signal settings_requested
 
 const Crops = preload("res://farm/crop_catalog.gd")
-const INK := Color("465650")
+const FarmTheme = preload("res://ui/farm_theme.gd")
+const INK := FarmTheme.INK
+const SUN = preload("res://art/ui/sun.svg")
+const MOON = preload("res://art/ui/moon.svg")
 var _status: Label
 var _harvested: Label
+var _harvest_detail: Label
+var _clock: Label
+var _day_icon: TextureRect
+var _settings: Button
 var _feedback: Label
 var _tool_status: Label
 var _tools: HBoxContainer
@@ -35,74 +43,87 @@ func _ready() -> void:
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(["Microsoft YaHei UI", "Microsoft YaHei"])
-	var theme := Theme.new()
-	theme.default_font = font
-	theme.default_font_size = 18
-	root.theme = theme
+	root.theme = FarmTheme.create()
 	var left_plate := _status_plate(root)
-	left_plate.position = Vector2(18, 12)
-	left_plate.size = Vector2(570, 110)
+	left_plate.position = Vector2(18, 18)
+	left_plate.size = Vector2(300, 74)
+	var basket := TextureRect.new()
+	basket.texture = preload("res://art/ui/basket.svg")
+	basket.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	basket.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	basket.position = Vector2(28, 29)
+	basket.size = Vector2(50, 50)
+	root.add_child(basket)
 	var right_plate := _status_plate(root)
 	right_plate.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	right_plate.offset_left = -348
+	right_plate.offset_left = -182
 	right_plate.offset_right = -18
 	right_plate.offset_top = 18
-	right_plate.offset_bottom = 68
-	var title := _label(root, "我有一片田", 26)
-	title.position = Vector2(30, 22)
+	right_plate.offset_bottom = 76
+	_day_icon = TextureRect.new()
+	_day_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_day_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_day_icon)
+	_day_icon.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_day_icon.offset_left = -169
+	_day_icon.offset_right = -133
+	_day_icon.offset_top = 29
+	_day_icon.offset_bottom = 65
+	_clock = _label(root, "", 26)
+	_clock.name = "LocalClock"
+	_clock.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_clock.offset_left = -120
+	_clock.offset_right = -30
+	_clock.offset_top = 26
+	_clock.offset_bottom = 65
 	_status = _label(root, "全景", 19)
 	_status.name = "FieldStatus"
-	_status.position = Vector2(30, 65)
+	_tag(_status, -162, -120)
 	_session = _label(root, "正在读取存档", 14)
 	_session.name = "SessionStatus"
-	_session.position = Vector2(30, 96)
-	_harvested = _label(root, "", 18)
+	_session.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	_session.offset_left = 20
+	_session.offset_right = 130
+	_session.offset_top = -42
+	_session.offset_bottom = -15
+	_session.add_theme_stylebox_override("normal", FarmTheme.paper(FarmTheme.PAPER, 10))
+	_harvested = _label(root, "", 24)
 	_harvested.name = "Harvested"
-	_harvested.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_harvested.offset_left = -330
-	_harvested.offset_right = -30
-	_harvested.offset_top = 30
-	_harvested.offset_bottom = 60
-	_harvested.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_harvested.position = Vector2(91, 24)
+	_harvest_detail = _label(root, "", 16)
+	_harvest_detail.position = Vector2(91, 58)
 	_feedback = _label(root, "", 19)
 	_feedback.name = "Feedback"
-	_feedback.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_feedback.offset_left = -380
-	_feedback.offset_right = 380
-	_feedback.offset_top = -196
-	_feedback.offset_bottom = -168
-	_feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tag(_feedback, -214, -172)
+	_feedback.hide()
 	_tool_status = _label(root, "", 17)
 	_tool_status.name = "ToolStatus"
-	_tool_status.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_tool_status.offset_left = -380
-	_tool_status.offset_right = 380
-	_tool_status.offset_top = -161
-	_tool_status.offset_bottom = -133
-	_tool_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tag(_tool_status, -112, -78)
+	_tool_status.hide()
 	_tools = HBoxContainer.new()
 	_tools.name = "FarmControls"
 	root.add_child(_tools)
 	_tools.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_tools.offset_left = -296
-	_tools.offset_right = 296
-	_tools.offset_top = -120
-	_tools.offset_bottom = -74
+	_tools.offset_left = -320
+	_tools.offset_right = 320
+	_tools.offset_top = -68
+	_tools.offset_bottom = -14
+	_tools.alignment = BoxContainer.ALIGNMENT_CENTER
 	_tools.add_theme_constant_override("separation", 10)
 	_tools.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_crop = OptionButton.new()
 	_crop.name = "CropChoice"
-	_crop.custom_minimum_size = Vector2(166, 44)
-	_style_button(_crop)
+	_crop.custom_minimum_size = Vector2(146, 54)
 	for crop_id: String in Crops.crop_ids():
 		_crop.add_item(Crops.definition(crop_id).name)
 	_crop.item_selected.connect(func(index: int) -> void: crop_requested.emit(Crops.crop_ids()[index]))
 	_tools.add_child(_crop)
 	for item: Array in [["sow", "播种"], ["water", "浇水"], ["harvest", "收获"]]:
-		var button := _button(_tools, item[1], 132)
+		var button := _button(_tools, item[1], 144)
 		button.name = item[0].capitalize()
+		button.icon = load("res://art/ui/%s.svg" % item[0])
+		button.expand_icon = true
+		button.add_theme_constant_override("icon_max_width", 32)
 		button.toggle_mode = true
 		button.pressed.connect(func() -> void: tool_requested.emit(item[0]))
 		_buttons[item[0]] = button
@@ -110,19 +131,28 @@ func _ready() -> void:
 	_view_controls = bar
 	bar.name = "ViewControls"
 	root.add_child(bar)
-	bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	bar.offset_left = -225
-	bar.offset_right = 225
-	bar.offset_top = -60
-	bar.offset_bottom = -16
-	bar.add_theme_constant_override("separation", 12)
+	bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	bar.offset_left = -410
+	bar.offset_right = -18
+	bar.offset_top = 88
+	bar.offset_bottom = 130
+	bar.add_theme_constant_override("separation", 8)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_button(bar, "全景", 142).pressed.connect(func() -> void: overview_requested.emit())
-	_button(bar, "视角复位", 142).pressed.connect(func() -> void: reset_requested.emit())
-	var decorate := _button(bar, "布置", 142)
+	_button(bar, "全景", 84).pressed.connect(func() -> void: overview_requested.emit())
+	_button(bar, "复位", 84).pressed.connect(func() -> void: reset_requested.emit())
+	var decorate := _button(bar, "布置", 84)
 	decorate.name = "Decorate"
 	decorate.pressed.connect(func() -> void: decoration_requested.emit())
+	_settings = _button(bar, "设置", 100)
+	_settings.name = "Settings"
+	_settings.pressed.connect(func() -> void: settings_requested.emit())
 	_build_storage_overlay(root)
+	_update_clock()
+	var timer := Timer.new()
+	timer.wait_time = 1.0
+	timer.timeout.connect(_update_clock)
+	add_child(timer)
+	timer.start()
 
 
 func _build_storage_overlay(root: Control) -> void:
@@ -168,11 +198,7 @@ func _build_storage_overlay(root: Control) -> void:
 func _status_plate(parent: Control) -> Panel:
 	var panel := Panel.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.94, 0.91, 0.84, 0.93)
-	style.set_corner_radius_all(14)
-	style.border_color = Color("b4ad94")
-	style.set_border_width_all(1)
+	var style: StyleBoxFlat = FarmTheme.paper()
 	panel.add_theme_stylebox_override("panel", style)
 	parent.add_child(panel)
 	return panel
@@ -189,6 +215,20 @@ func show_storage_issue(kind: String, unsaved: bool) -> void:
 	_recover.visible = not unsaved and kind == "recovery_available"
 	_exit.text = "仍然退出（最新进度未保存）" if unsaved else "退出"
 	_storage_overlay.show()
+	var choices: Array[Control] = [_retry]
+	if _recover.visible:
+		choices.append(_recover)
+	choices.append(_exit)
+	for index: int in choices.size():
+		var control: Control = choices[index]
+		var previous: NodePath = control.get_path_to(choices[posmod(index - 1, choices.size())])
+		var following: NodePath = control.get_path_to(choices[(index + 1) % choices.size()])
+		control.focus_previous = previous
+		control.focus_next = following
+		control.focus_neighbor_top = previous
+		control.focus_neighbor_left = previous
+		control.focus_neighbor_bottom = following
+		control.focus_neighbor_right = following
 	_retry.grab_focus()
 
 
@@ -198,24 +238,32 @@ func show_saved() -> void:
 
 
 func show_decoration_mode(active: bool) -> void:
-	_view_controls.visible = not active
-	_tools.visible = not active and not _status.text.begins_with("全景")
-	_feedback.visible = not active
-	_tool_status.visible = not active
+	_view_controls.get_child(0).disabled = active
+	_view_controls.get_child(1).disabled = active
+	_view_controls.get_node("Decorate").text = "完成" if active else "布置"
+	_tools.visible = not active
+	_status.visible = not active
+	_feedback.visible = not active and not _feedback.text.is_empty()
+	_tool_status.visible = not active and not _tool_status.text.is_empty()
 
 
 func show_state(field: Dictionary, harvested: Dictionary, tool: String, crop_id: String, traveling: bool) -> void:
-	_harvested.text = "青菜 %d 篮  ·  白萝卜 %d 篮" % [harvested.greens, harvested.radish]
-	_tools.visible = not field.is_empty()
+	_harvested.text = "%d 篮" % (harvested.greens + harvested.radish)
+	_harvest_detail.text = "青菜 %d  ·  白萝卜 %d" % [harvested.greens, harvested.radish]
+	_tools.visible = true
 	_crop.select(Crops.crop_ids().find(crop_id))
+	_crop.visible = not field.is_empty()
 	_crop.disabled = traveling
 	for tool_id: String in _buttons:
 		var button: Button = _buttons[tool_id]
-		button.disabled = traveling
+		button.disabled = traveling or field.is_empty()
 		button.set_pressed_no_signal(tool == tool_id)
+		button.text = ("✓ " if tool == tool_id else "") + {"sow": "播种", "water": "浇水", "harvest": "收获"}[tool_id]
 	if field.is_empty():
-		_status.text = "全景"
+		_status.text = "全景 · 点击田块靠近"
 		_tool_status.text = ""
+		_fit_tag(_status)
+		_fit_tag(_tool_status)
 		return
 	var title: String = "第 %d 块田" % int(field.id.trim_prefix("field_"))
 	if field.stage == "empty":
@@ -228,6 +276,8 @@ func show_state(field: Dictionary, harvested: Dictionary, tool: String, crop_id:
 			if field.watered:
 				_status.text += " · 已浇水"
 	_tool_status.text = "镜头移动中" if traveling else ("" if tool.is_empty() else "已选%s · 点击当前田块" % {"sow": "播种", "water": "浇水", "harvest": "收获"}[tool])
+	_fit_tag(_status)
+	_fit_tag(_tool_status)
 
 
 func show_result(result: Dictionary, tool: String, crop_id: String) -> void:
@@ -242,16 +292,19 @@ func show_result(result: Dictionary, tool: String, crop_id: String) -> void:
 			"already_watered": "这一轮已经浇过水", "not_mature": "作物还在生长", "harvest_limit": "收获记录已满",
 			"invalid_time": "系统时间暂不可用", "invalid_field": "没有选中田块", "invalid_crop": "请选择作物"
 		}.get(result.reason, "操作未完成")
+	_fit_tag(_feedback)
 
 
 func clear_feedback() -> void:
 	_feedback.text = ""
+	_feedback.hide()
 
 
 func show_unlocks(item_ids: Array[String]) -> void:
 	const Decorations = preload("res://farm/decoration_catalog.gd")
 	for item_id: String in item_ids:
 		_feedback.text += " · %s已解锁" % Decorations.ITEMS[item_id].name
+	_fit_tag(_feedback)
 
 
 func _label(parent: Control, text: String, font_size: int) -> Label:
@@ -268,27 +321,32 @@ func _button(parent: Control, text: String, width: float) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(width, 44)
-	_style_button(button)
 	parent.add_child(button)
 	return button
 
 
-static func _style_button(button: BaseButton) -> void:
-	button.add_theme_color_override("font_color", INK)
-	button.add_theme_color_override("font_focus_color", INK)
-	button.add_theme_color_override("font_hover_color", Color("354c3d"))
-	button.add_theme_color_override("font_pressed_color", Color("f5eddc"))
-	button.add_theme_color_override("font_disabled_color", Color("888a7b"))
-	for state: String in ["normal", "hover", "pressed", "focus", "disabled"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color("f0e8d4")
-		if state == "hover":
-			style.bg_color = Color("e0dcc1")
-		elif state == "pressed":
-			style.bg_color = Color("527664")
-		style.set_corner_radius_all(14)
-		style.border_color = Color("9d9b7c")
-		style.set_border_width_all(2 if state == "focus" else 1)
-		if state == "focus":
-			style.draw_center = false
-		button.add_theme_stylebox_override(state, style)
+func _tag(label: Label, top: float, bottom: float) -> void:
+	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	label.offset_top = top
+	label.offset_bottom = bottom
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_stylebox_override("normal", FarmTheme.paper(FarmTheme.PAPER, 12))
+	_fit_tag(label)
+
+
+func _fit_tag(label: Label) -> void:
+	var width: float = minf(760, FarmTheme.FONT.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x + 40)
+	label.offset_left = -width * 0.5
+	label.offset_right = width * 0.5
+	label.visible = not label.text.is_empty()
+
+
+func _update_clock() -> void:
+	var local: Dictionary = Time.get_datetime_dict_from_system(false)
+	_clock.text = "%02d:%02d" % [local.hour, local.minute]
+	_day_icon.texture = SUN if local.hour >= 6 and local.hour < 18 else MOON
+
+
+func show_settings_issue(has_issue: bool) -> void:
+	_settings.text = "设置 !" if has_issue else "设置"

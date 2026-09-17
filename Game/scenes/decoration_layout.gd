@@ -258,6 +258,10 @@ func _clear_preview() -> void:
 	_preview = null
 
 
+func cancel_pointer_gesture() -> void:
+	_cancel_press()
+
+
 func _cancel_press() -> void:
 	_press_slot = ""
 	_press_position = Vector2.INF

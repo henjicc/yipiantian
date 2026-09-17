@@ -11,6 +11,8 @@ const DayNight = preload("res://atmosphere/day_night.gd")
 const WindowActivity = preload("res://atmosphere/window_activity.gd")
 const FocusDetail = preload("res://presentation/focus_detail.gd")
 const HUD = preload("res://scenes/farm_hud.gd")
+const SettingsStore = preload("res://settings/settings_store.gd")
+const GameMenu = preload("res://ui/game_menu.gd")
 
 @onready var farm: FarmLayout = $Farm
 @onready var camera: FarmCamera = $Camera3D
@@ -25,6 +27,12 @@ var window_activity: WindowActivity
 var focus_detail: FocusDetail
 var store: FarmStore
 var hud: HUD
+var settings_store: SettingsStore
+var game_menu: GameMenu
+var settings_values: Dictionary = {}
+var _settings_dirty: bool = false
+var _settings_issue: String = ""
+var _allow_leave_settings: bool = false
 var selected_field: int = -1
 var selected_tool: String = ""
 var selected_crop: String = "greens"
@@ -41,6 +49,7 @@ var _record_session: String = ""
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
+	get_window().min_size = Vector2i(960, 600)
 	# Recording is explicitly isolated before any player-state load. A release package
 	# does not carry the recording implementation and refuses its launch parameter.
 	for argument in OS.get_cmdline_user_args():
@@ -56,6 +65,7 @@ func _ready() -> void:
 				get_tree().quit(1)
 				return
 			store = FarmStore.new(_record_session.path_join("farm"))
+			settings_store = SettingsStore.new(_record_session.path_join("preferences"))
 	if store == null:
 		store = FarmStore.new()
 	hud = HUD.new()
@@ -69,6 +79,7 @@ func _ready() -> void:
 	hud.recovery_requested.connect(_recover_storage)
 	hud.exit_requested.connect(func() -> void: get_tree().quit())
 	hud.decoration_requested.connect(_begin_decoration)
+	hud.settings_requested.connect(_open_menu)
 	camera.motion_finished.connect(_refresh_hud)
 	_load_game()
 	# The courtyard owns all slot transforms and art; no duplicate fallback layout.
@@ -100,6 +111,7 @@ func _ready() -> void:
 	focus_detail.name = "FocusDetail"
 	add_child(focus_detail)
 	focus_detail.configure(camera, farm.fields, courtyard, decoration_layout)
+	_setup_settings()
 	var timer := Timer.new()
 	timer.name = "SettlementTimer"
 	timer.wait_time = 1.0
@@ -153,6 +165,8 @@ func _save_farm() -> bool:
 	var result: Dictionary = store.save(farm_state.snapshot(), decoration_state.snapshot())
 	_save_failed = not result.ok
 	if _save_failed:
+		if game_menu != null:
+			game_menu.dismiss()
 		if decoration_layout != null:
 			decoration_layout.finish_mode()
 		_cancel_input()
@@ -182,11 +196,17 @@ func _recover_storage() -> void:
 
 func _request_exit() -> void:
 	_cancel_input()
-	if decoration_layout != null:
-		decoration_layout.finish_mode()
 	if not _loaded:
 		get_tree().quit()
 		return
+	if game_menu != null:
+		if (_settings_dirty or not _settings_issue.is_empty()) and not _allow_leave_settings:
+			_open_menu()
+			if not _save_settings():
+				return
+		game_menu.dismiss()
+	if decoration_layout != null:
+		decoration_layout.finish_mode()
 	settle_farm()
 	if _save_farm():
 		get_tree().quit()
@@ -217,6 +237,9 @@ func _refresh_hud() -> void:
 func _begin_decoration() -> void:
 	if not _loaded or _save_failed or decoration_layout == null:
 		return
+	if decoration_layout.active:
+		decoration_layout.finish_mode()
+		return
 	_return_overview()
 	decoration_layout.begin_mode()
 	farm_audio.play_ui()
@@ -229,6 +252,14 @@ func _refresh_lanterns() -> void:
 
 func _input(event: InputEvent) -> void:
 	if not _loaded or _save_failed:
+		return
+	if game_menu != null and game_menu.visible:
+		if (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT):
+			if decoration_layout.active and not decoration_layout.selected_item.is_empty():
+				decoration_layout.cancel_preview()
+			else:
+				_request_menu_close()
+			get_viewport().set_input_as_handled()
 		return
 	if decoration_layout != null and decoration_layout.active:
 		decoration_layout.observe_input(event)
@@ -258,7 +289,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not _loaded or _save_failed:
+	if not _loaded or _save_failed or (game_menu != null and game_menu.visible):
 		return
 	if decoration_layout != null and decoration_layout.active:
 		decoration_layout.handle_input(event)
@@ -289,6 +320,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if game_menu != null and game_menu.visible:
+		_cancel_input()
+		return
 	# Space queries belong to the physics boundary. Each gesture carries its admission
 	# state so a click made in flight can never become an action after the tween ends.
 	var picks: Array[Dictionary] = _picks
@@ -423,3 +457,90 @@ func _cancel_input() -> void:
 	_pressed_field = -1
 	_press_context = {}
 	_picks.clear()
+
+
+func _setup_settings() -> void:
+	if settings_store == null:
+		settings_store = SettingsStore.new()
+	var loaded: Dictionary = settings_store.load_settings()
+	settings_values = loaded.settings
+	if not loaded.ok:
+		_settings_issue = {
+			"corrupt": "设置文件无法读取，已使用默认设置；原件保留。保存设置时会先留存原件。",
+			"unsupported": "设置来自较新版本，本次使用默认设置；原件保留，暂时不能覆盖。",
+		}.get(loaded.kind, "设置暂时无法读取，本次使用默认设置；农场进度不受影响。")
+	game_menu = GameMenu.new()
+	game_menu.name = "GameMenu"
+	add_child(game_menu)
+	game_menu.settings_changed.connect(_change_settings)
+	game_menu.save_requested.connect(_save_settings)
+	game_menu.close_requested.connect(_request_menu_close)
+	game_menu.quit_requested.connect(_request_exit)
+	_apply_settings()
+	hud.show_settings_issue(not _settings_issue.is_empty())
+
+
+func _apply_settings() -> void:
+	farm_audio.set_volumes(settings_values.master, settings_values.music, settings_values.effects)
+	focus_detail.set_quality(settings_values.quality)
+	focus_detail.set_depth_of_field(settings_values.dof_enabled)
+	# Headless validation has no OS window; preference validation remains identical.
+	if DisplayServer.get_name() != "headless":
+		var window: Window = get_window()
+		var desired: Window.Mode = Window.MODE_FULLSCREEN if settings_values.fullscreen else Window.MODE_WINDOWED
+		if window.mode != desired:
+			_cancel_input()
+			window.mode = desired
+			if not settings_values.fullscreen:
+				window.borderless = false
+
+
+func _open_menu() -> void:
+	if game_menu == null or not _loaded or _save_failed:
+		return
+	_cancel_input()
+	decoration_layout.cancel_pointer_gesture()
+	selected_tool = ""
+	_allow_leave_settings = false
+	_refresh_hud()
+	game_menu.present(settings_values, _settings_issue)
+	farm_audio.play_ui()
+
+
+func _change_settings(value: Dictionary) -> void:
+	if not SettingsStore.valid_settings(value):
+		return
+	settings_values = value.duplicate(true)
+	_settings_dirty = true
+	_allow_leave_settings = false
+	_apply_settings()
+	hud.show_settings_issue(true)
+
+
+func _save_settings() -> bool:
+	var result: Dictionary = settings_store.save(settings_values)
+	if result.ok:
+		_settings_dirty = false
+		_settings_issue = ""
+		_allow_leave_settings = false
+		game_menu.set_status("设置已保存。")
+	else:
+		_settings_issue = "设置未能保存，本次调整仍然有效。可重试保存；农场进度不受影响。"
+		if result.kind in ["unsupported", "unsupported_pending"]:
+			_settings_issue = "设置来自较新版本，未能保存；原件保留，本次调整只在当前窗口有效。"
+		_allow_leave_settings = true
+		game_menu.set_status(_settings_issue, true)
+	hud.show_settings_issue(not result.ok)
+	return result.ok
+
+
+func _request_menu_close() -> void:
+	_cancel_input()
+	decoration_layout.cancel_pointer_gesture()
+	if (_settings_dirty or not _settings_issue.is_empty()) and not _allow_leave_settings:
+		if not _save_settings():
+			return
+	game_menu.dismiss()
+	_allow_leave_settings = false
+	_refresh_hud()
+	hud.get_node("Layout/ViewControls/Settings").grab_focus()

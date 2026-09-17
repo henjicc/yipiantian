@@ -27,6 +27,7 @@ func _run() -> void:
 	scene = load("res://scenes/main.tscn").instantiate()
 	scene.clock = func() -> float: return now
 	scene.store = load("res://farm/farm_store.gd").new(captures.path_join("save-%d" % Time.get_ticks_usec()))
+	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("preferences"))
 	root.add_child(scene)
 	await physics_frame
 	scene.atmosphere.set_preview_hour(12.0)

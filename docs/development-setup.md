@@ -10,7 +10,7 @@
 - Windows x86_64 的 debug / release 模板安装在 `%USERPROFILE%/AppData/Roaming/Godot/export_templates/4.7.2.stable/`，未安装其他平台模板。引擎与模板来自 [官方下载页](https://godotengine.org/download/windows/) 及 [对应发布](https://github.com/godotengine/godot-builds/releases/tag/4.7.2-stable)，两个下载包均通过该发布 `SHA512-SUMS.txt` 校验。
 - 本机软件路径只记在本文，工程启动脚本通过用户目录和根 [.godot-version](../.godot-version) 定位，不把账号路径写死进游戏。换位置时传 `-GodotPath` 或设置环境变量 `GODOT_EXE`，精确版本不符时入口拒绝执行。
 - 标准版包含脚本编辑器、调试器和 CLI，可直接开始；当前无需 .NET SDK、C++ 工具链、Godot MCP、联网账号或 LLM API Key。
-- 日常执行根 [README](../README.md) 的 Editor / Run / Import / ExportWindows 入口。导出结果为 `.local/builds/windows/Farm.exe` 与 `Farm.pck`，两者一起保留；不要只搬 exe。当前未配置签名与自定义程序图标，发行打包时再处理。
+- 日常执行根 [README](../README.md) 的 Editor / Run / Import / ExportWindows 入口。导出结果为 `.local/builds/windows/Farm.exe` 与 `Farm.pck`，两者一起保留；不要只搬 exe。程序已使用正式青菜图标，当前未签名，正式发行打包由5.2处理。
 
 ## 工程基线与验证边界
 
@@ -78,6 +78,16 @@ Godot 4.7.2 本次验证：headless 测试须显式设置根窗口 / Viewport �
 | Git LFS 本地可用 | 已完成本地 clean / smudge 往返；真实模型与远端对象上传仍未验证，不等同云端备份成功 |
 
 Godot 命令依据：[CLI 文档](https://docs.godotengine.org/en/4.7/tutorials/editor/command_line_tutorial.html)；仓库边界依据：[版本控制文档](https://docs.godotengine.org/en/4.7/tutorials/best_practices/version_control_systems.html)。
+
+## 成品界面与独立设置验证
+
+Godot 4.7.2 / Windows 10 19045：偏好保存在 `user://preferences/settings.json`，农场仍独立保存在 `user://farm/`；主场景夹具须同时注入 `store` 与 `settings_store` 到隔离目录，避免运行测试改变玩家音量或显示设置。设置 I/O、菜单和场景接线入口分别为 `tests/settings_store_test.gd`、`tests/game_menu_test.gd`、`tests/ui_settings_scene_test.gd`，按既有 `Run -ExtraArgs @('--headless','--script',绝对脚本路径)` 调用。
+
+实际窗口下限由主窗口 `min_size = Vector2i(960,600)` 设置；本版本尝试写 `display/window/size/min_width` / `min_height` 不会改变运行窗口下限。普通发行程序以原生缩窗实测夹持至 960×600；引擎内逻辑布局通过不能替代这项系统窗口验证。中文字体采用随工程分发的 Noto Serif CJK SC，来源与原文件哈希见 `ArtSource/UI/README.md`，字体 OFL 随包保留。
+
+原生 OptionButton 弹窗会读取 `Input` 的鼠标按住状态；只向根 Viewport 强发 `push_input` 会出现按下打开、松开误关，不能直接判成游戏缺陷。`farm_interaction_test.gd` 改用带实际 window_id 的 `Input.parse_input_event` 后 44 项通过，普通发行程序另以真实鼠标确认选择白萝卜成功。菜单与存档失败遮罩须为当前可见按钮设置循环焦点，防止 Tab 跳到底层农事控件。
+
+普通发行程序测试使用进程级 APPDATA / LOCALAPPDATA 隔离；`tests/native-game-lifecycle.ps1` 读取对应启动元数据并校验 PID、exe 和进程启动时间，只操作所属窗口。4.1 已验证三次正常退出、设置持久化、全屏／窗口、150% DPI、最小化恢复及短时 UTC 回访，证据入口见 [4.1 交接](task/首个可发布版本/handoffs/4.1-handoff.md)。这不等于其他电脑、系统休眠或 30 分钟性能验收。
 
 ## Blender 新版对 AI 的实际帮助
 
@@ -159,11 +169,11 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 
 依据：[Godot Movie Maker](https://docs.godotengine.org/en/stable/tutorials/animation/creating_movies.html) 说明固定步长与离线边界、AVI 上限；[FFmpeg gfxcapture](https://ffmpeg.org/ffmpeg-filters.html#gfxcapture) 不保证固定采集率；[FFmpeg 帧率选项](https://ffmpeg.org/ffmpeg.html#Advanced-options) 说明 CFR 补帧 / 丢帧行为。这里的稳定性结论只覆盖当前版本、场景和实测素材。
 
-## 后续需要用户准备的内容
+## 后续协作边界
 
 1. 软件方面当前没有必须补装项。Godot、Blender 与 Tripo 已有入口；遇到特定需求再添加工具。
-2. 确定首个可玩闭环与画面目标，例如一种作物的播种、生长、收获和保存重开；这仍是候选，不自动开工。
+2. 首版范围与画面目标已定稿并获自主实施授权；六田两作物、保存回访、三件装饰及成品界面按任务总览推进，不再重复等待开工确认。
 3. 需要云端同步时提供仓库地址或指定托管平台与可见性；现阶段只做本地 Git 提交。
-4. 风格样本出现后由用户判断审美，技术检查由开发侧完成；当前不需要购买新资产或付费生成样本。
+4. 开发侧按固定参考图完成视觉校对，保留实际差距；尚未取得的用户试玩意见不能写成用户签收。已有素材生成授权与商务核验暂缓边界见任务总览。
 
 官方文档、社区检索入口、已安装技能及未采用框架见 [Godot 资料及工具](godot-resources.md)。

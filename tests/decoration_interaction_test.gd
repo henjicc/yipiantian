@@ -118,6 +118,7 @@ func _run() -> void:
 func _open_scene() -> void:
 	scene = load("res://scenes/main.tscn").instantiate()
 	scene.store = Store.new(folder)
+	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("preferences"))
 	scene.clock = func() -> float: return now
 	root.add_child(scene)
 	await process_frame

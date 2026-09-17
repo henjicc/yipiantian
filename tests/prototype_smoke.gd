@@ -18,6 +18,7 @@ func _run() -> void:
 	scene = load("res://scenes/main.tscn").instantiate()
 	var isolated: String = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/scene-save-%d" % Time.get_ticks_usec())
 	scene.store = load("res://farm/farm_store.gd").new(isolated)
+	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("preferences"))
 	root.add_child(scene)
 	await create_timer(0.5).timeout
 	var camera: Camera3D = scene.camera

@@ -8,7 +8,7 @@ signal cancel_requested
 signal finish_requested
 
 const Catalog = preload("res://farm/decoration_catalog.gd")
-const FarmHUD = preload("res://scenes/farm_hud.gd")
+const FarmTheme = preload("res://ui/farm_theme.gd")
 var _items: Dictionary = {}
 var _status: Label
 var _confirm: Button
@@ -23,12 +23,7 @@ func _ready() -> void:
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(["Microsoft YaHei UI", "Microsoft YaHei"])
-	var theme := Theme.new()
-	theme.default_font = font
-	theme.default_font_size = 18
-	root.theme = theme
+	root.theme = FarmTheme.create()
 	var box := VBoxContainer.new()
 	box.name = "Controls"
 	root.add_child(box)
@@ -41,7 +36,7 @@ func _ready() -> void:
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_status = Label.new()
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_status.add_theme_color_override("font_color", FarmHUD.INK)
+	_status.add_theme_stylebox_override("normal", FarmTheme.paper(FarmTheme.PAPER, 12))
 	box.add_child(_status)
 	var items := HBoxContainer.new()
 	items.add_theme_constant_override("separation", 10)
@@ -77,6 +72,8 @@ func present(items: Dictionary, selected: String, preview_slot: String, can_conf
 		var button: Button = _items[item_id]
 		var item: Dictionary = items[item_id]
 		button.text = Catalog.ITEMS[item_id].name + (" · 已摆放" if not item.slot_id.is_empty() else "") if item.unlocked else Catalog.ITEMS[item_id].name + "\n" + Catalog.requirement(item_id)
+		if selected == item_id:
+			button.text = "✓ " + button.text
 		button.disabled = traveling
 		button.set_pressed_no_signal(selected == item_id)
 	_confirm.disabled = traveling or not can_confirm
@@ -88,6 +85,5 @@ func _button(parent: Control, text: String, width: float) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(width, 48)
-	FarmHUD._style_button(button)
 	parent.add_child(button)
 	return button

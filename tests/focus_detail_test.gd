@@ -50,6 +50,7 @@ func _run() -> void:
 	root.content_scale_size = Vector2i(1920, 1080)
 	scene = load("res://scenes/main.tscn").instantiate()
 	scene.store = Store.new(save_dir)
+	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("preferences"))
 	scene.clock = func() -> float: return now
 	root.add_child(scene)
 	root.grab_focus()

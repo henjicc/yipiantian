@@ -21,6 +21,7 @@ func _run() -> void:
 	scene.clock = func() -> float: return now
 	var isolated: String = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/scene-save-%d" % Time.get_ticks_usec())
 	scene.store = load("res://farm/farm_store.gd").new(isolated)
+	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("preferences"))
 	root.add_child(scene)
 	scene.farm_changed.connect(func(_result: Dictionary) -> void: actions += 1)
 	await create_timer(0.6).timeout
@@ -140,6 +141,9 @@ func _run() -> void:
 	await _button(_point(1), true, MOUSE_BUTTON_WHEEL_UP)
 	_expect(scene.camera.view.z < distance_before and scene.farm_state.snapshot() == harvested, "Wheel zoom has no farming side effects")
 	# The native crop selector must be usable; choose the second crop using actual GUI keyboard events.
+	if scene.camera.is_transitioning():
+		await scene.camera.motion_finished
+	await process_frame
 	await _click(_control("CropChoice").get_global_rect().get_center())
 	var choice: OptionButton = _control("CropChoice")
 	_expect(choice.get_popup().visible, "Crop choice opens its actual popup")
@@ -197,7 +201,10 @@ func _button(point: Vector2, down: bool, button_index: MouseButton = MOUSE_BUTTO
 	event.pressed = down
 	event.button_index = button_index
 	event.double_click = double
-	root.push_input(event)
+	# Native popups read Input's held-button state when they open. Parsing through
+	# Input updates that state; Viewport.push_input alone does not model a real mouse.
+	event.window_id = root.get_window_id()
+	Input.parse_input_event(event)
 	await physics_frame
 	await process_frame
 
@@ -213,7 +220,8 @@ func _motion(point: Vector2, relative: Vector2, shift: bool = false) -> void:
 	event.position = point
 	event.relative = relative
 	event.shift_pressed = shift
-	root.push_input(event)
+	event.window_id = root.get_window_id()
+	Input.parse_input_event(event)
 	await process_frame
 
 
