@@ -1,0 +1,57 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\reed-original\\model.glb",
+  "original": {
+    "triangles": 28985,
+    "open_edges": 4,
+    "zero_area_faces": 0,
+    "materials": 1,
+    "uv_layers": 1
+  },
+  "mesh": {
+    "reed_high": {
+      "triangles": 5999,
+      "open_edges": 4,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        1.1887304782867432,
+        1.3490601778030396,
+        0.5786412954330444
+      ],
+      "textures": [
+        {
+          "name": "Color_9aa6d6b7-12c6-41fa-a10c-65309e2d40e2",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "reed_low": {
+      "triangles": 1799,
+      "open_edges": 4,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        1.1741783618927002,
+        1.344759464263916,
+        0.5758941769599915
+      ],
+      "textures": [
+        {
+          "name": "Color_9aa6d6b7-12c6-41fa-a10c-65309e2d40e2",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

@@ -1,28 +1,58 @@
 extends Node3D
 ## Generated complete homesteads in world space; distant tiers share source UVs.
 const ROOT := "res://art/environment/islets/"
+const EXPANSION := "res://art/environment/archipelago/"
+const MarshPlants = preload("res://scenes/environment/marsh_plants.gd")
 var _islets: Array[Dictionary] = []
 var _low_quality: bool = false
 var _materials: Array[ShaderMaterial] = []
 var _haze := Color.TRANSPARENT
+var _lake_plants: Node3D
 
 func _ready() -> void:
-	_add("WillowNeighbor", "willow", Vector3(-16,-.68,-3), 28, .85)
-	_add("BambooNeighbor", "bamboo", Vector3(-23,-.65,-18), 35, .90)
-	_add("EasternCottage", "cottage", Vector3(10,-.62,-17), -28, .85)
-	_add("FarWillow", "willow", Vector3(-16.5,-.48,-17), 65, .48)
-	_add("FarBamboo", "bamboo", Vector3(2.1,-.46,-25), 15, .48)
+	_add("WillowNeighbor", "willow", Vector3(-16,-.68,-3), 28)
+	_add("BambooNeighbor", "bamboo", Vector3(-23,-.65,-18), 35)
+	_add("EasternCottage", "cottage", Vector3(10,-.62,-17), -28)
+	_add("FarWillow", "willow", _world_position(-7,38,-.68), 65)
+	_add("FarBamboo", "bamboo", _world_position(12,29,-.65), 15)
+	# Coordinates are fixed in the world, composed as staggered inhabited shores.
+	_far_islet("RiceHamlet", "rice_hamlet", -23, 37, 12)
+	_far_islet("MulberryCourt", "mulberry_court", -8, 49, 42)
+	_far_islet("BambooInlet", "bamboo_inlet", 8, 43, 10)
+	_far_islet("CanalCourts", "canal_courts", 25, 38, -15)
+	_far_islet("WillowMeadow", "willow_meadow", 2, 65, 26)
+	for index: int in _islets.size():
+		var entry: Dictionary = _islets[index]
+		var plants := MarshPlants.new()
+		plants.name = "WaterlinePlants"
+		entry.node.add_child(plants)
+		plants.populate(entry.high, 91820+index)
+		entry.plants = plants
+	_lake_plants=MarshPlants.new()
+	_lake_plants.name="OpenWaterTrapa"
+	add_child(_lake_plants)
+	_lake_plants.populate_lake()
 
-func _add(label: String, asset: String, at: Vector3, yaw: float, size: float) -> void:
+func _world_position(across: float, depth: float, height: float) -> Vector3:
+	var heading := Basis(Vector3.UP,deg_to_rad(27.5))
+	var point: Vector3 = heading*Vector3(across,0,-depth)
+	point.y = height
+	return point
+
+func _far_islet(label: String, asset: String, across: float, depth: float, yaw: float) -> void:
+	_add(label,asset,_world_position(across,depth,-.5),yaw,EXPANSION)
+
+func _add(label: String, asset: String, at: Vector3, yaw: float, directory: String = ROOT) -> void:
 	var holder := Node3D.new()
 	holder.name = label
 	add_child(holder)
 	holder.position = at
 	holder.rotation.y = deg_to_rad(yaw)
-	holder.scale = Vector3.ONE*size
+	# All islands share the authored ten-metre span. Perspective alone changes
+	# their apparent size; layout never scales a distant household down or up.
 	var levels: Array[Node3D] = []
 	for tier: String in ["high", "low"]:
-		var node: Node3D = (load(ROOT+asset+"_"+tier+".glb") as PackedScene).instantiate()
+		var node: Node3D = (load(directory+asset+"_"+tier+".glb") as PackedScene).instantiate()
 		holder.add_child(node)
 		levels.append(node)
 		for geometry: MeshInstance3D in node.find_children("*", "MeshInstance3D", true, false):
@@ -45,15 +75,17 @@ func _process(_delta: float) -> void:
 		_haze = haze
 		for material: ShaderMaterial in _materials: material.set_shader_parameter("haze_color",haze)
 	for entry: Dictionary in _islets:
-		var distance: float = camera.global_position.distance_to(entry.node.global_position)/entry.node.scale.x
+		var distance: float = camera.global_position.distance_to(entry.node.global_position)
 		# Hysteresis prevents tier flicker when orbiting across the boundary.
 		var distant: bool = distance > (45.0 if entry.distant else 52.0)
 		entry.high.visible = not (_low_quality or distant)
 		entry.low.visible = _low_quality or distant
 		entry.distant = distant
+		if entry.has("plants"): entry.plants.set_low_detail(_low_quality or distant)
 
 func set_low_detail_enabled(enabled: bool) -> void:
 	_low_quality = enabled
+	if _lake_plants != null: _lake_plants.set_low_detail(enabled)
 	_process(0.0)
 
 func waterline_sources() -> Array[Node3D]:

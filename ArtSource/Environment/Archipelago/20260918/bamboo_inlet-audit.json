@@ -1,0 +1,57 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\bamboo_inlet-original\\model.glb",
+  "original": {
+    "triangles": 65714,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "materials": 1,
+    "uv_layers": 1
+  },
+  "mesh": {
+    "bamboo_inlet_high": {
+      "triangles": 65714,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        9.411538124084473,
+        3.8555545806884766,
+        10.0
+      ],
+      "textures": [
+        {
+          "name": "Color_ea77cd6a-f440-456b-9a05-1bacc91a7197",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "bamboo_inlet_low": {
+      "triangles": 14000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        9.385409355163574,
+        3.790498733520508,
+        9.948356628417969
+      ],
+      "textures": [
+        {
+          "name": "Color_ea77cd6a-f440-456b-9a05-1bacc91a7197",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

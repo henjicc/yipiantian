@@ -1,0 +1,57 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\cattail-original\\model.glb",
+  "original": {
+    "triangles": 28675,
+    "open_edges": 1,
+    "zero_area_faces": 0,
+    "materials": 1,
+    "uv_layers": 1
+  },
+  "mesh": {
+    "cattail_high": {
+      "triangles": 5499,
+      "open_edges": 1,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        1.1778168678283691,
+        1.05157470703125,
+        0.8205490112304688
+      ],
+      "textures": [
+        {
+          "name": "Color_c907767e-83c3-4c8e-9190-7815b6d30140",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "cattail_low": {
+      "triangles": 1599,
+      "open_edges": 1,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        1.1737805604934692,
+        1.0434973239898682,
+        0.8092998266220093
+      ],
+      "textures": [
+        {
+          "name": "Color_c907767e-83c3-4c8e-9190-7815b6d30140",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

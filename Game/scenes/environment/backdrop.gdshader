@@ -20,7 +20,7 @@ void fragment() {
  if (landscape_layer == 0) {
   vec3 sky = mix(sky_horizon.rgb, sky_top.rgb, smoothstep(58.0, 180.0, stage_point.y));
   vec3 river = mix(lake_horizon.rgb, sky_horizon.rgb, smoothstep(-45.0, 60.0, stage_point.y)*0.48);
-  ALBEDO = mix(river, sky, smoothstep(40.0, 70.0, stage_point.y));
+  ALBEDO = mix(river, sky, smoothstep(90.0, 125.0, stage_point.y));
   ALPHA = 1.0;
  } else if (landscape_layer == 4) {
   float mist = noise(vec2(stage_point.x*0.09-TIME*0.024,stage_point.y*0.22));

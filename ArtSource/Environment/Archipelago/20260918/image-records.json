@@ -1,0 +1,89 @@
+{
+  "date": "2026-09-18",
+  "tool": "builtin image_gen",
+  "model": "not returned",
+  "seed": "not returned",
+  "fee": "not returned",
+  "prompts": [
+    {
+      "id": "rice_hamlet",
+      "prompt": "Create one complete isolated Jiangnan lake island game asset reference, September countryside. Match the two supplied style references: gongbi watercolor painted miniature, softly rounded readable forms, ivory plaster, dark grey tiles, weathered wood, restrained celadon and moss green, muted warm earth, matte painted surfaces. A single coherent LOW natural island with a gently sloping irregular shoreline, shallow earthen foundation (NOT a tall cylindrical diorama pedestal), waterline vegetation rooted along its edges. Houses and plants structurally joined to the land. Entire island visible, three-quarter view modest 22 degree elevation, weak perspective, neutral diffuse lighting, sharp contours, native transparent RGBA background. No lake plane, sky, other islands, labels, UI, people, collage, drop shadow, or depth of field. Leave a clear margin. Design: An elongated curved island with two small asymmetrical whitewashed farmhouses at its back left, one modest dark tiled barn, four patchwork golden-green rice paddies in the foreground separated by thin earthen paths, sparse reeds, one willow at the right end, a tiny timber landing. Emphasize a long low varied silhouette, rural not monumental.",
+      "refs": [
+        "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png",
+        "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png"
+      ],
+      "output_hint": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb as %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-0e119234-a6ae-4a81-8a7e-78c57924df01.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "review": "Complete isolated asset; accepted as 3D reference, native alpha retained."
+    },
+    {
+      "id": "mulberry_court",
+      "prompt": "Create one complete isolated Jiangnan lake island game asset reference, September countryside. Match the two supplied style references: gongbi watercolor painted miniature, softly rounded readable forms, ivory plaster, dark grey tiles, weathered wood, restrained celadon and moss green, muted warm earth, matte painted surfaces. A single coherent LOW natural island with a gently sloping irregular shoreline, shallow earthen foundation (NOT a tall cylindrical diorama pedestal), waterline vegetation rooted along its edges. Houses and plants structurally joined to the land. Entire island visible, three-quarter view modest 22 degree elevation, weak perspective, neutral diffuse lighting, sharp contours, native transparent RGBA background. No lake plane, sky, other islands, labels, UI, people, collage, drop shadow, or depth of field. Leave a clear margin. Design: A kidney-shaped small island with a simple square farmhouse courtyard, white walls and dark grey roof, three rounded mulberry trees on one side, low vegetable rows on the other, one slender old persimmon tree with a few muted orange fruits, two rustic jars and a short stone landing. House small relative to planted land.",
+      "refs": [
+        "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png",
+        "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png"
+      ],
+      "output_hint": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb as %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-98c56cd8-f751-4d30-aa80-9b6298b4e711.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "review": "Complete isolated asset; accepted as 3D reference, native alpha retained."
+    },
+    {
+      "id": "bamboo_inlet",
+      "prompt": "Create one complete isolated Jiangnan lake island game asset reference, September countryside. Match the two supplied style references: gongbi watercolor painted miniature, softly rounded readable forms, ivory plaster, dark grey tiles, weathered wood, restrained celadon and moss green, muted warm earth, matte painted surfaces. A single coherent LOW natural island with a gently sloping irregular shoreline, shallow earthen foundation (NOT a tall cylindrical diorama pedestal), waterline vegetation rooted along its edges. Houses and plants structurally joined to the land. Entire island visible, three-quarter view modest 22 degree elevation, weak perspective, neutral diffuse lighting, sharp contours, native transparent RGBA background. No lake plane, sky, other islands, labels, UI, people, collage, drop shadow, or depth of field. Leave a clear margin. Design: A crescent-shaped island enclosing a shallow EMPTY concave inlet (transparent opening, no water geometry). A simple single-storey fisherman's house with a lean-to straw shed near one tip, slender bamboo grove at the other, compact taro leaves and vegetable plots, low natural rock and reed rim. Asymmetric quiet silhouette, no boat.",
+      "refs": [
+        "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png",
+        "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png"
+      ],
+      "output_hint": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb as %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-84f3a560-9c02-4723-841f-5e84a8bfe9fa.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "review": "Complete isolated asset; accepted as 3D reference, native alpha retained."
+    },
+    {
+      "id": "canal_courts",
+      "prompt": "Create one complete isolated Jiangnan lake island game asset reference, September countryside. Match the two supplied style references: gongbi watercolor painted miniature, softly rounded readable forms, ivory plaster, dark grey tiles, weathered wood, restrained celadon and moss green, muted warm earth, matte painted surfaces. A single coherent LOW natural island with a gently sloping irregular shoreline, shallow earthen foundation (NOT a tall cylindrical diorama pedestal), waterline vegetation rooted along its edges. Houses and plants structurally joined to the land. Entire island visible, three-quarter view modest 22 degree elevation, weak perspective, neutral diffuse lighting, sharp contours, native transparent RGBA background. No lake plane, sky, other islands, labels, UI, people, collage, drop shadow, or depth of field. Leave a clear margin. Design: One broad irregular island supporting three modest attached Jiangnan cottages with DIFFERENT low rooflines around two tiny planted courtyards, narrow stone paths and varied green vegetable plots, a little curved stone wall, trees clustered on only one end. An inhabited hamlet, not a palace. Ground broad and shallow.",
+      "refs": [
+        "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png",
+        "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png"
+      ],
+      "output_hint": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb as %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-fd58cb78-7fb0-45c2-b043-021d7e8808c8.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "review": "Complete isolated asset; accepted as 3D reference, native alpha retained."
+    },
+    {
+      "id": "willow_meadow",
+      "prompt": "Create one complete isolated Jiangnan lake island game asset reference, September countryside. Match the two supplied style references: gongbi watercolor painted miniature, softly rounded readable forms, ivory plaster, dark grey tiles, weathered wood, restrained celadon and moss green, muted warm earth, matte painted surfaces. A single coherent LOW natural island with a gently sloping irregular shoreline, shallow earthen foundation (NOT a tall cylindrical diorama pedestal), waterline vegetation rooted along its edges. Houses and plants structurally joined to the land. Entire island visible, three-quarter view modest 22 degree elevation, weak perspective, neutral diffuse lighting, sharp contours, native transparent RGBA background. No lake plane, sky, other islands, labels, UI, people, collage, drop shadow, or depth of field. Leave a clear margin. Design: A low long natural marsh island, one very small straw-roof farm shelter at left, three willows with different heights arranged asymmetrically, a small cabbage garden near shelter, most land occupied by olive green meadow and muted golden reed beds, gently tapering bare wet-earth tips. Broad low outline, sparse architecture.",
+      "refs": [
+        "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png",
+        "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png"
+      ],
+      "output_hint": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb as %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-9f49f4dc-170b-435f-ac2d-4df3ee3a7d42.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "review": "Complete isolated asset; accepted as 3D reference, native alpha retained."
+    },
+    {
+      "id": "reed",
+      "prompt": "One isolated coherent Jiangnan aquatic plant clump for a painted miniature 3D game, matching the supplied gongbi watercolor references, soft readable rounded shapes, matte olive/celadon green with warm restrained earth accents, natural varied leaves, not photographic and not angular low poly. Full object centered, modest three-quarter view, neutral diffuse light, native transparent background with true alpha. No planter, terrain pedestal, water plane, rocks, extra objects, scene, labels or shadows. Visible short connected root base, no long dangling roots. Design: A loose asymmetric clump of common reeds, 7 slender stalks with a few soft tawny September flower panicles, long gently curved lance-shaped leaves at differing heights. Open gaps between stalks, stalks connect visibly to a small tight crown. Fuller at base, highest plume leaning right.",
+      "refs": [
+        "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+        "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+      ],
+      "output_hint": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb as %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-38a24eb5-0114-4351-a1c9-aa6aaf3e5a1c.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "review": "Complete isolated asset; accepted as 3D reference, native alpha retained."
+    },
+    {
+      "id": "cattail",
+      "prompt": "One isolated coherent Jiangnan aquatic plant clump for a painted miniature 3D game, matching the supplied gongbi watercolor references, soft readable rounded shapes, matte olive/celadon green with warm restrained earth accents, natural varied leaves, not photographic and not angular low poly. Full object centered, modest three-quarter view, neutral diffuse light, native transparent background with true alpha. No planter, terrain pedestal, water plane, rocks, extra objects, scene, labels or shadows. Visible short connected root base, no long dangling roots. Design: A low broad fan-shaped clump of cattails with 3 unmistakable small brown cylindrical seed heads and 12 long gracefully arching blade leaves, uneven heights. Several green/olive leaves and just two straw-coloured aging leaves. A small connected root crown.",
+      "refs": [
+        "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+        "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+      ],
+      "output_hint": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb as %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-c9e0ee0e-ac50-4c65-aba6-f4f4589ce42f.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "review": "Complete isolated asset; accepted as 3D reference, native alpha retained."
+    },
+    {
+      "id": "trapa",
+      "prompt": "One isolated coherent Jiangnan aquatic plant clump for a painted miniature 3D game, matching the supplied gongbi watercolor references, soft readable rounded shapes, matte olive/celadon green with warm restrained earth accents, natural varied leaves, not photographic and not angular low poly. Full object centered, modest three-quarter view, neutral diffuse light, native transparent background with true alpha. No planter, terrain pedestal, water plane, rocks, extra objects, scene, labels or shadows. Visible short connected root base, no long dangling roots. Design: Exactly one small floating water-chestnut rosette, a flat spreading circular crown of 16 overlapping rhombic leaves with toothed outer margins on short radial petioles, olive green with a few muted red-brown leaf edges in September. Low profile, tiny root nub under the center, NOT lotus or water lettuce, no flowers or exposed nuts. View 35 degrees above to read the flat rosette, show some thickness.",
+      "refs": [
+        "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+        "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+      ],
+      "output_hint": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb as %USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-d36dbfea-af94-41b8-b60b-09a0d0cc2728.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "review": "Complete isolated asset; accepted as 3D reference, native alpha retained."
+    }
+  ]
+}

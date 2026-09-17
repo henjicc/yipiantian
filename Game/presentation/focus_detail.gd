@@ -166,7 +166,7 @@ func _process(delta: float) -> void:
 		# Every bed stays sharp even at the legal orbit and zoom limits. Only the
 		# space beyond the farm/house begins the gradual background defocus.
 		_attributes.dof_blur_far_distance = farthest_field + 7.5
-		_attributes.dof_blur_far_transition = 500.0
+		_attributes.dof_blur_far_transition = 40.0
 		_band_initialized = false
 	if active:
 		_attributes.dof_blur_near_transition = 5.0

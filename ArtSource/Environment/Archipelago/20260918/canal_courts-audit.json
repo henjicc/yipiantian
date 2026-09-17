@@ -1,0 +1,57 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\canal_courts-original\\model.glb",
+  "original": {
+    "triangles": 66759,
+    "open_edges": 4,
+    "zero_area_faces": 0,
+    "materials": 1,
+    "uv_layers": 1
+  },
+  "mesh": {
+    "canal_courts_high": {
+      "triangles": 66759,
+      "open_edges": 4,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        10.0,
+        3.818852424621582,
+        8.934316635131836
+      ],
+      "textures": [
+        {
+          "name": "Color_46a877d9-7c31-4f21-a357-67b6d772a506",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "canal_courts_low": {
+      "triangles": 13999,
+      "open_edges": 4,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        9.960482597351074,
+        3.785649299621582,
+        8.937274932861328
+      ],
+      "textures": [
+        {
+          "name": "Color_46a877d9-7c31-4f21-a357-67b6d772a506",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

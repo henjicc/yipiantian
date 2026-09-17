@@ -1,0 +1,57 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\rice_hamlet-original\\model.glb",
+  "original": {
+    "triangles": 66468,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "materials": 1,
+    "uv_layers": 1
+  },
+  "mesh": {
+    "rice_hamlet_high": {
+      "triangles": 66468,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        10.0,
+        2.4257962703704834,
+        5.240160942077637
+      ],
+      "textures": [
+        {
+          "name": "Color_2ba48ab3-aed4-4852-8087-fd165f87e352",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "rice_hamlet_low": {
+      "triangles": 14000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        9.984695434570312,
+        2.419604539871216,
+        5.238819599151611
+      ],
+      "textures": [
+        {
+          "name": "Color_2ba48ab3-aed4-4852-8087-fd165f87e352",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

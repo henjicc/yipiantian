@@ -14,5 +14,5 @@ void fragment() {
 	ALBEDO=mix(pigment,pigment*vec3(.62,.77,.73),wet*.5);
 	ROUGHNESS=.96;
 	SPECULAR=.08;
-	FOG=vec4(haze_color.rgb,smoothstep(28.0,72.0,length(VERTEX))*.55);
+	FOG=vec4(haze_color.rgb,smoothstep(35.0,105.0,length(VERTEX))*.20);
 }

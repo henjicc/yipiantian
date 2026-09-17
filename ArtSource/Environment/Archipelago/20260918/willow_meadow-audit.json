@@ -1,0 +1,57 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\willow_meadow-original\\model.glb",
+  "original": {
+    "triangles": 67908,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "materials": 1,
+    "uv_layers": 1
+  },
+  "mesh": {
+    "willow_meadow_high": {
+      "triangles": 67908,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        10.0,
+        2.698007583618164,
+        4.6197357177734375
+      ],
+      "textures": [
+        {
+          "name": "Color_2e0059e6-d260-4b58-812c-2ca9ffea656b",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "willow_meadow_low": {
+      "triangles": 14000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        9.994394302368164,
+        2.7010035514831543,
+        4.621767044067383
+      ],
+      "textures": [
+        {
+          "name": "Color_2e0059e6-d260-4b58-812c-2ca9ffea656b",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

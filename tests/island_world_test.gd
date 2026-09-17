@@ -3,7 +3,7 @@ extends SceneTree
 ## background composition and paired evidence; isolated from the player's save.
 var scene: Node3D
 var failures: Array[String] = []
-var output := ProjectSettings.globalize_path("res://../.local/verification/island-world-20260918/after")
+var output := ProjectSettings.globalize_path("res://../.local/verification/archipelago-20260918/after")
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -23,7 +23,13 @@ func _run() -> void:
 	await create_timer(1.0).timeout
 	var world: Node3D = scene.get_node("Environment")
 	var neighbors: Node3D = world.get_node("NeighborIslets")
-	expect(neighbors.get_child_count()==5,"Five world-space homesteads")
+	expect(neighbors._islets.size()==10,"Five new unique islands augment the existing five")
+	var planting_count := 0
+	for entry: Dictionary in neighbors._islets:
+		expect(entry.node.scale.is_equal_approx(Vector3.ONE),"Perspective alone determines apparent island size")
+		expect(entry.plants.shoreline_points.size()>20,"Actual shoreline sampled: "+str(entry.node.name))
+		expect(entry.plants.clump_count>10,"Marsh plants frame each island")
+		planting_count+=entry.plants.clump_count
 	var stage: Node3D = world.get_node("DistantLandscape")
 	expect(stage.get_child_count()==5,"Unique silhouettes replace the repeated strips")
 	var east: Node3D
@@ -44,6 +50,13 @@ func _run() -> void:
 				var p: Vector3 = field.global_position+Vector3(x,0,z)
 				expect(absf(support_height(main_bank,p)-.13)<.003,"Cultivation plateau preserved")
 	await shot("01-overview.png")
+	var far_limit: float = scene.camera.attributes.dof_blur_far_distance
+	var far_transition: float = scene.camera.attributes.dof_blur_far_transition
+	var far_depth: float = (-scene.camera.global_basis.z).dot(neighbors.get_node("WillowMeadow").global_position-scene.camera.global_position)
+	expect(far_transition<50.0 and far_depth>far_limit+far_transition,"Far islands actually reach the defocus band")
+	for field: Node3D in scene.farm.fields:
+		var depths: Vector2 = scene.focus_detail.depth_range(scene.camera,field.global_transform,AABB(Vector3(-1.4,-.1,-1.15),Vector3(2.8,.75,2.3)))
+		expect(depths.y<far_limit,"Farming remains inside the clear band")
 	var original_pose: Transform3D = scene.camera.global_transform
 	scene.camera.set_process(false)
 	scene.focus_detail.set_depth_of_field(false)
@@ -54,6 +67,9 @@ func _run() -> void:
 	expect(not neighbors._islets[0].distant,"Approach restores full source geometry")
 	await look("06-bamboo-islet.png",Vector3(-17,4.1,-4),neighbors.get_node("BambooNeighbor").global_position+Vector3.UP)
 	await look("07-cottage-islet.png",Vector3(14,3.8,-7),neighbors.get_node("EasternCottage").global_position+Vector3.UP)
+	for key: String in ["RiceHamlet","MulberryCourt","BambooInlet","CanalCourts","WillowMeadow"]:
+		var island: Node3D = neighbors.get_node(key)
+		await look("07-"+key+".png",island.global_position+Vector3(8,5,13),island.global_position+Vector3.UP)
 	scene.camera.global_transform = original_pose
 	scene.camera.set_process(true)
 	scene.focus_detail.set_depth_of_field(true)
@@ -64,6 +80,11 @@ func _run() -> void:
 	scene.atmosphere.set_preview_hour(11.2)
 	root.size = Vector2i(3840,2160)
 	await shot("09-4k-day.png")
+	scene.focus_detail.set_depth_of_field(false)
+	await create_timer(1.2).timeout
+	await shot("09-4k-dof-off.png")
+	scene.focus_detail.set_depth_of_field(true)
+	await create_timer(1.2).timeout
 	for yaw: float in [17.5,37.5]:
 		scene.camera.view.x=yaw
 		await shot("10-orbit-%s.png"%yaw)
@@ -75,7 +96,25 @@ func _run() -> void:
 	scene.focus_detail.set_quality("standard")
 	await create_timer(.3).timeout
 	expect(neighbors._islets[0].high.visible,"Returning quality recovers near detail")
-	var report := {"failures":failures,"camera":scene.camera.overview_parameters(),"islets":neighbors.get_child_count(),"background_cards":stage.get_child_count()}
+	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(),true)
+	await create_timer(.5).timeout
+	var measurements: Array[Dictionary] = []
+	for enabled: bool in [false,true]:
+		neighbors.get_node("OpenWaterTrapa").visible=enabled
+		for index: int in neighbors._islets.size():
+			neighbors._islets[index].plants.visible=enabled
+			if index>=5: neighbors._islets[index].node.visible=enabled
+		await create_timer(.6).timeout
+		var gpu: Array[float] = []
+		var primitives: Array[float] = []
+		for index: int in 90:
+			await RenderingServer.frame_post_draw
+			gpu.append(RenderingServer.viewport_get_measured_render_time_gpu(root.get_viewport_rid()))
+			primitives.append(RenderingServer.viewport_get_render_info(root.get_viewport_rid(),RenderingServer.VIEWPORT_RENDER_INFO_TYPE_VISIBLE,RenderingServer.VIEWPORT_RENDER_INFO_PRIMITIVES_IN_FRAME))
+		gpu.sort();primitives.sort()
+		measurements.append({"new_geometry_enabled":enabled,"gpu_median_ms":gpu[45],"gpu_p95_ms":gpu[85],"drawn_triangles":primitives[45]})
+	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(),false)
+	var report := {"failures":failures,"camera":scene.camera.overview_parameters(),"islets":neighbors._islets.size(),"plant_clumps":planting_count,"background_cards":stage.get_child_count(),"far_transition":far_transition,"far_limit":far_limit,"measurements":measurements,"device":RenderingServer.get_video_adapter_name(),"foreground":scene.window_activity.is_foreground(),"note":"Short same-instance 4K renderer sample; other applications may contend. Not a foreground gameplay performance certification."}
 	var file := FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)
 	file.store_string(JSON.stringify(report,"\t"));file.close()
 	scene.farm_audio.shutdown()

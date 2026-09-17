@@ -1,0 +1,57 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\mulberry_court-original\\model.glb",
+  "original": {
+    "triangles": 67214,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "materials": 1,
+    "uv_layers": 1
+  },
+  "mesh": {
+    "mulberry_court_high": {
+      "triangles": 67214,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        10.0,
+        3.4366097450256348,
+        9.353643417358398
+      ],
+      "textures": [
+        {
+          "name": "Color_3c057a30-3908-408a-875e-bbf60300d7ce",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "mulberry_court_low": {
+      "triangles": 14000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        9.979844093322754,
+        3.427006483078003,
+        9.341910362243652
+      ],
+      "textures": [
+        {
+          "name": "Color_3c057a30-3908-408a-875e-bbf60300d7ce",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

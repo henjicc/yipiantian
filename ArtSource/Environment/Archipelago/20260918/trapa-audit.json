@@ -1,0 +1,57 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\trapa-original\\model.glb",
+  "original": {
+    "triangles": 28460,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "materials": 1,
+    "uv_layers": 1
+  },
+  "mesh": {
+    "trapa_high": {
+      "triangles": 3500,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        0.5202573537826538,
+        0.11085478961467743,
+        0.5205533504486084
+      ],
+      "textures": [
+        {
+          "name": "Color_f4bfa23c-ed1c-4008-b019-bade2cfc1984",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "trapa_low": {
+      "triangles": 1200,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "uv_layers": 1,
+      "dimensions_godot_xyz": [
+        0.5145719051361084,
+        0.10571923106908798,
+        0.5199147462844849
+      ],
+      "textures": [
+        {
+          "name": "Color_f4bfa23c-ed1c-4008-b019-bade2cfc1984",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  }
+}

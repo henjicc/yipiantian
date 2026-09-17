@@ -38,7 +38,10 @@ void fragment() {
 	// A radial cutout exposed the matte lake earlier at both sides, visually
 	// curling an otherwise flat water plane into a bowl when the camera orbited.
 	float lake_depth = dot(p, normalize(-INV_VIEW_MATRIX[2].xz));
-	if (lake_depth >= 18.0) {
+	// Overview retains its authored horizon. When inspecting a distant island,
+	// advance the fade with the camera so its nearby water remains real water.
+	lake_depth -= max(0.0, dot(CAMERA_POSITION_WORLD.xz, normalize(-INV_VIEW_MATRIX[2].xz)));
+	if (lake_depth >= 72.0) {
 		discard;
 	}
 	// An open hull is not a solid depth occluder. Exclude only its inner volume;
@@ -148,7 +151,7 @@ void fragment() {
 	METALLIC = 0.0;
 	SPECULAR = 0.5;
 	// Match the courtyard water-to-painted-distance transition; no opaque horizon.
-	ALPHA = 1.0 - smoothstep(10.0, 18.0, lake_depth);
+	ALPHA = 1.0 - smoothstep(48.0, 72.0, lake_depth);
 }
 
 void light() {
