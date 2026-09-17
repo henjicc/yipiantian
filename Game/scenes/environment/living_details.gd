@@ -141,7 +141,9 @@ func _tray(parent: Node3D, at: Vector3, radius: float, harvest: bool) -> void:
 			_mesh(parent,shape,at+Vector3(cos(angle)*distance,.06,sin(angle)*distance),dried)
 
 func _build_porch_group() -> void:
-	var group := _group("PorchHarvestTable",Vector3(2.20,.40,-2.68),-4)
+	# Fit the table between the veranda posts at world X=2.15 and 3.80.
+	# Baskets sit forward of the post shoes and outside the splayed table legs.
+	var group := _group("PorchHarvestTable",Vector3(2.95,.41,-2.55))
 	# Five rounded slats and braced tapered legs, a shallow drying tray on top.
 	for z: int in 5:
 		_beam(group,Vector3(-.44,.62,-.24+z*.12),Vector3(.44,.62,-.24+z*.12),.041,_wood)
@@ -151,8 +153,8 @@ func _build_porch_group() -> void:
 		_beam(group,Vector3(x,.25,-.2),Vector3(x,.25,.2),.023,_wood)
 	_beam(group,Vector3(-.33,.25,0),Vector3(.33,.25,0),.025,_wood)
 	_tray(group,Vector3(.03,.67,0),.27,true)
-	_basket(group,Vector3(-.63,0,.04),.24,.37,true)
-	_basket(group,Vector3(.58,0,-.08),.18,.27,false)
+	_basket(group,Vector3(-.66,0,.21),.16,.32,true)
+	_basket(group,Vector3(.66,0,.21),.13,.25,false)
 
 func _build_drying_rack() -> void:
 	var group := _group("SidePorchDryingRack",Vector3(-3.70,.14,-2.66),-9)

@@ -166,7 +166,8 @@ func _build_architecture() -> void:
 	for z in [-4.1,-2.0]:_module("bamboo_fence",Vector3(5.7,.14,z),75)
 	# Low front rail gives the vegetable garden a boundary; corner decoration slots stay open.
 	for x in [-3.0,-.85,1.3]:_module("bamboo_fence",Vector3(x,.14,5.15),0,Vector3(1,.68,1))
-	_build_porch_bench(Vector3(2.45,.14,-2.75),.95)
+	# The right bay contains the harvest table; the old bench occupied its legs
+	# and was partly buried in the raised veranda platform.
 	_build_porch_bench(Vector3(-3.65,.14,-2.9),.65)
 
 func _build_porch_bench(at: Vector3, width: float) -> void:
