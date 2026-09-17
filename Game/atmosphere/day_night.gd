@@ -4,6 +4,7 @@ extends Node
 signal night_weight_changed(weight: float)
 
 const WATER_SHADER = preload("res://atmosphere/quiet_water.gdshader")
+const WATER_PIGMENT = preload("res://art/environment/backdrop/river-distance.png")
 const HOURS: Array[float] = [0.0, 5.0, 6.5, 9.0, 16.0, 18.0, 20.0, 24.0]
 const SUN: Array[float] = [0.15, 0.15, 0.52, 0.80, 0.80, 0.43, 0.15, 0.15]
 const AMBIENT: Array[float] = [0.45, 0.45, 0.44, 0.40, 0.40, 0.43, 0.45, 0.45]
@@ -34,6 +35,7 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	if water != null:
 		_water_material = ShaderMaterial.new()
 		_water_material.shader = WATER_SHADER
+		_water_material.set_shader_parameter("painted_water", WATER_PIGMENT)
 		# The courtyard's initial material_override takes precedence over surfaces.
 		water.material_override = _water_material
 	_apply_clock()

@@ -61,11 +61,17 @@ func _build_ground() -> void:
 	var rim: Array[Vector2]=[Vector2(-7.5,-7.6),Vector2(-4.8,-8.4),Vector2(-1,-8.2),Vector2(2.5,-7.9),Vector2(5.6,-6.5),Vector2(6.5,-3.8),Vector2(6.4,-.8),Vector2(6.8,1.3),Vector2(5.8,4.8),Vector2(3.5,6.1),Vector2(.7,6.7),Vector2(-2.5,6.1),Vector2(-5.5,5.6),Vector2(-7.2,3.2),Vector2(-7.6,.2),Vector2(-7.1,-3.6)]
 	for i in rim.size():
 		var a:Vector2=rim[i];var b:Vector2=rim[(i+1)%rim.size()]
-		var count:int=ceili(a.distance_to(b)/.67)
+		var count:int=ceili(a.distance_to(b)/.88)
 		for j in count:
-			if _rng.randf()<.17:continue
+			if _rng.randf()<.24:continue
 			var p:Vector2=a.lerp(b,float(j)/count)+Vector2(_rng.randf_range(-.14,.14),_rng.randf_range(-.14,.14))
-			_module("stone_%d"%_rng.randi_range(0,4),Vector3(p.x,-.29,p.y),_rng.randf_range(0,360),Vector3(_rng.randf_range(.8,1.55),_rng.randf_range(1.3,2.5),_rng.randf_range(.7,1.3)))
+			var rock := _module("stone_%d"%_rng.randi_range(0,4),Vector3(p.x,-.43,p.y),_rng.randf_range(0,360),Vector3(_rng.randf_range(.85,1.45),_rng.randf_range(2.5,4.3),_rng.randf_range(.8,1.45)))
+			_tint_stone(rock,Color("7d887d")*_rng.randf_range(.88,1.12))
+	# Broken shelves at the visible waterline interrupt the former even bead border.
+	var shelves: Array[Vector3] = [Vector3(-7.1,-.48,2.7),Vector3(-6.2,-.48,4.7),Vector3(-4.0,-.48,6.0),Vector3(-1.1,-.50,6.5),Vector3(2.0,-.46,6.4),Vector3(5.7,-.45,5.55),Vector3(6.5,-.43,2.5)]
+	for i in shelves.size():
+		_tint_stone(_module("stone_%d" % (i%5),shelves[i],17+i*47,Vector3(1.45,4.8 if i%2==0 else 3.5,1.18)),Color("79867e"))
+		_tint_stone(_module("stone_%d" % ((i+2)%5),shelves[i]+Vector3(.35,-.05,.37),-25+i*33,Vector3(.88,2.0,.9)),Color("929784"))
 	# Winding flat stone footpaths, with irregular joints, no checkerboard paving.
 	var routes:Array[Array]=[[Vector3(-6.0,.115,2.9),Vector3(-5.25,.115,-1.7),Vector3(-2,.115,-1.8),Vector3(2.5,.115,-1.7),Vector3(6.2,.115,-.6)],[Vector3(-4.9,.115,4.65),Vector3(-.5,.115,4.65),Vector3(4.8,.115,4.7)],[Vector3(-1.68,.115,-1),Vector3(-1.68,.115,4.1)],[Vector3(1.57,.115,-1),Vector3(1.57,.115,4.1)]]
 	for route in routes:
@@ -78,6 +84,13 @@ func _build_ground() -> void:
 		for col in 3:
 			_module("field_frame",Vector3(-3.3+col*3.25,.17,row*2.8))
 
+func _tint_stone(node: Node, color: Color) -> void:
+	if node is MeshInstance3D:
+		for index in node.mesh.get_surface_count():
+			var material: Material = node.get_active_material(index)
+			if material is ShaderMaterial:material.set_shader_parameter("base_color",color)
+	for child in node.get_children():_tint_stone(child,color)
+
 func _build_architecture() -> void:
 	_asset("house","MainHouse",Vector3(.65,.13,-4.65))
 	_module("veranda",Vector3(.65,.13,-2.40))
@@ -88,24 +101,76 @@ func _build_architecture() -> void:
 	_asset("boat","CoveredBoat",Vector3(8.0,-.60,3.3),-24,.85)
 	# Opposite landing is a small bank, with irregular rock margins, not a floating bridge end.
 	_module("island_bank",Vector3(12.65,-.02,-2.8),0,Vector3(.40,1,.46))
+	for i in 7:
+		var t:float=i/6.0
+		var position_on_bank:=Vector3(11.05+t*4.1,-.40,.2+sin(t*PI)*.40)
+		_tint_stone(_module("stone_%d"%(i%5),position_on_bank,i*39,Vector3(.85,2.8+(i%3)*.7,.8)),Color("829184"))
 	for i in 4:_module("bamboo_fence",Vector3(-4.8+i*2.0,.14,-7.2))
 	for z in [-2.8,-.6,3.6]:_module("bamboo_fence",Vector3(-6.65,.14,z),90)
 	for z in [-4.1,-2.0]:_module("bamboo_fence",Vector3(5.7,.14,z),75)
+	# Low front rail gives the vegetable garden a boundary; corner decoration slots stay open.
+	for x in [-3.0,-.85,1.3]:_module("bamboo_fence",Vector3(x,.14,5.15),0,Vector3(1,.68,1))
+	_build_porch_bench(Vector3(2.45,.14,-2.75),.95)
+	_build_porch_bench(Vector3(-3.65,.14,-2.9),.65)
+
+func _build_porch_bench(at: Vector3, width: float) -> void:
+	var bench := Node3D.new();bench.name="PorchBench";add_child(bench);bench.position=at
+	var material := ShaderMaterial.new();material.shader=PIGMENT
+	material.set_shader_parameter("base_color",Color("87724f"))
+	var parts: Array[Array] = [[Vector3(width,.075,.35),Vector3(0,.39,0)],[Vector3(width*.8,.06,.06),Vector3(0,.18,0)]]
+	for x in [-width*.34,width*.34]:
+		for z in [-.105,.105]:parts.append([Vector3(.075,.37,.075),Vector3(x,.19,z)])
+	for part in parts:
+		var mesh := MeshInstance3D.new();var shape:=BoxMesh.new();shape.size=part[0];mesh.mesh=shape;mesh.position=part[1]
+		mesh.material_override=material;bench.add_child(mesh)
 
 func _build_plants() -> void:
 	_asset("tree","WestTree",Vector3(-5.8,.13,-3.45),32,.87)
 	_asset("tree","RearTree",Vector3(3.75,.13,-6.1),-27,1.07)
 	_asset("tree","EastBankTree",Vector3(12.4,.12,-4.2),-35,.72)
 	_asset("tree","RearSmallTree",Vector3(-2.5,.13,-7.45),80,.67)
-	var bamboo_positions:Array[Vector3]=[Vector3(-7,.13,-5.2),Vector3(-7.1,.13,-.5),Vector3(5.4,.13,-5.7),Vector3(5.8,.13,2.0),Vector3(13.8,.10,-.8)]
+	_asset("tree","RearWestCanopy",Vector3(-5.75,.13,-6.8),-72,.83)
+	_asset("tree","RearEastCanopy",Vector3(5.5,.13,-5.95),57,.83)
+	_asset("tree","FarBankCompanion",Vector3(14.0,.1,-5.2),19,.65)
+	var bamboo_positions:Array[Vector3]=[Vector3(-7,.13,-5.2),Vector3(-7.1,.13,-.5),Vector3(5.4,.13,-5.7),Vector3(5.8,.13,2.0),Vector3(13.8,.10,-.8),Vector3(-6.6,.13,-6.6),Vector3(4.7,.13,-7.0),Vector3(5.9,.13,-3.5)]
 	for i in bamboo_positions.size():_asset("bamboo","Bamboo%d"%i,bamboo_positions[i],_rng.randf_range(0,360),_rng.randf_range(.70,1.05))
-	var flower_centres:Array[Vector3]=[Vector3(-5.5,.13,3.9),Vector3(4.9,.13,3.9),Vector3(-5.5,.13,-2.5),Vector3(5.0,.13,-3.4),Vector3(-3.8,.13,5.6),Vector3(2.4,.13,5.7)]
+	var reeds: Array[Vector3] = [Vector3(-7.15,.05,2.7),Vector3(-6.55,.04,4.35),Vector3(-4.1,.06,5.85),Vector3(-2.15,.06,6.2),Vector3(.7,.06,6.25),Vector3(3.1,.07,5.85),Vector3(6.0,.06,4.3),Vector3(6.1,.08,3.5),Vector3(6.15,.08,-1.6),Vector3(11.0,.03,-.85),Vector3(14.2,.03,-.35)]
+	for i in reeds.size():_asset("bamboo","BankReeds%d"%i,reeds[i],i*53,_rng.randf_range(.30,.43))
+	var flower_centres:Array[Vector3]=[Vector3(-5.8,.13,3.45),Vector3(5.25,.13,3.75),Vector3(-5.7,.13,-2.8),Vector3(5.3,.13,-3.0),Vector3(-3.8,.13,5.6),Vector3(2.4,.13,5.7),Vector3(-6.25,.11,4.9),Vector3(-1.8,.13,5.75),Vector3(.2,.13,5.95),Vector3(4.0,.12,5.6),Vector3(6.0,.13,1.0),Vector3(-6.85,.12,2.25),Vector3(11.35,.1,-.8),Vector3(13.6,.1,-1.5),Vector3(-3.4,.13,-2.05)]
 	for i in flower_centres.size():
+		_grass_patch(flower_centres[i]-Vector3(0,.01,0),i)
 		for j in 3:
-			_asset("flowers","Flowers%d_%d"%[i,j],flower_centres[i]+Vector3(_rng.randf_range(-.38,.38),-.015,_rng.randf_range(-.32,.32)),_rng.randf_range(0,360),_rng.randf_range(.65,1.0))
-	for i in 11:
-		var angle:float=lerpf(-1.0,1.0,float(i)/10)
-		_asset("lotus","Lotus%d"%i,Vector3(6.3+sin(angle)*1.4,-.35,5.7+cos(angle)*.6),_rng.randf_range(0,360),_rng.randf_range(.6,1.0))
+			_asset("flowers","Flowers%d_%d"%[i,j],flower_centres[i]+Vector3(_rng.randf_range(-.26,.26),-.035,_rng.randf_range(-.22,.22)),i*37+j*62,_rng.randf_range(.95,1.40))
+	# Loose lily coves sit around the waterline, not in a repeated necklace in front of the boat.
+	var lily_coves: Array[Vector3] = [Vector3(-5.7,-.40,6.25),Vector3(-.9,-.40,7.25),Vector3(4.7,-.40,6.3),Vector3(10.8,-.40,1.1)]
+	for i in lily_coves.size():
+		for j in 4:
+			var angle:float=j*2.4+i*.7
+			_asset("lotus","Lotus%d_%d"%[i,j],lily_coves[i]+Vector3(cos(angle)*.72,0,sin(angle)*.6),i*41+j*79,_rng.randf_range(.82,1.15))
+
+func _grass_patch(at: Vector3, index: int) -> void:
+	# Small opaque curved blades fill the soil contact below the existing flower assets.
+	# One static mesh per patch; no alpha cards, animation or per-frame work.
+	var surface := SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for blade in 30:
+		var angle: float = _rng.randf_range(0,TAU)
+		var outward:=Vector3(cos(angle),0,sin(angle))
+		var across:=Vector3(-outward.z,0,outward.x)
+		var origin:=outward*_rng.randf_range(0,.40)
+		var height:float=_rng.randf_range(.22,.42)
+		var width:float=_rng.randf_range(.024,.047)
+		for part in 4:
+			var a:float=part/4.0;var b:float=(part+1)/4.0
+			var pa:=origin+Vector3.UP*height*a+outward*height*a*a*.6
+			var pb:=origin+Vector3.UP*height*b+outward*height*b*b*.6
+			var wa:float=width*(1-a);var wb:float=width*(1-b)
+			for point in [pa-across*wa,pa+across*wa,pb+across*wb]:surface.add_vertex(point)
+			if part < 3:
+				for point in [pa-across*wa,pb+across*wb,pb-across*wb]:surface.add_vertex(point)
+	surface.generate_normals()
+	var mesh:=MeshInstance3D.new();mesh.name="BankGrass%d"%index;mesh.mesh=surface.commit();mesh.position=at
+	var material:=ShaderMaterial.new();material.shader=PIGMENT;material.set_shader_parameter("base_color",Color("697f4f"));material.set_shader_parameter("wash_scale",8.0)
+	mesh.material_override=material;add_child(mesh)
 
 func _build_slots() -> void:
 	_slots=Node3D.new();_slots.name="DecorationSlots";add_child(_slots)

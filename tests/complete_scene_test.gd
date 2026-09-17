@@ -52,6 +52,15 @@ func _run() -> void:
 		var point: Vector3 = body.global_position + Vector3(0, 0.3, 0)
 		var ray := PhysicsRayQueryParameters3D.create(scene.camera.global_position, point, 1)
 		_expect(scene.get_world_3d().direct_space_state.intersect_ray(ray).get("collider") == body, "Field collision remains independent of stage mesh")
+	# Compare the same composition at full crop density without changing first-save defaults.
+	var mature: Dictionary = data.duplicate(true)
+	for index in 6:
+		mature.fields[Farm.FIELD_IDS[index]].growth_seconds = 1800.0 if index < 3 else 5400.0
+	_expect(scene.farm_state.restore_snapshot(mature), "Maximum-density visual fixture preserves the farm schema")
+	scene.refresh_farm()
+	await _capture("02b-all-mature.png")
+	_expect(scene.farm_state.restore_snapshot(data), "Restore the six-stage fixture after maximum-density comparison")
+	scene.refresh_farm()
 	for index in [0, 2, 3, 5]:
 		scene._focus_field(index)
 		await create_timer(0.85).timeout
