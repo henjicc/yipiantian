@@ -1,13 +1,22 @@
 # 首个版本界面资源
 
-## 字体
+## 当前字体：汇文明朝体
 
-- 正式文件：`Game/art/ui/fonts/NotoSerifCJKsc-Regular.otf`，原始字体未修改。
+- 用户于 2026-09-17 指定替换所有游戏字体；正式资源为 `Game/art/ui/fonts/汇文明朝体.ttf`，保留中文名与完整原始字节，大小 24,426,256 字节。
+- 具体来源、内部版本与 SHA-256 见 [随包来源记录](../../Game/art/ui/fonts/字体来源.txt)。字体映射包含 14,051 个 Unicode 字符，当前 GDScript 字符串中的非 ASCII 文案均覆盖。
+- 项目全局默认、HUD／设置共享主题和作物样片 Label3D 使用同一内置字体；无需系统安装。中文路径经 Godot 导入与实景检查。
+- 原 Noto 字体与 OFL 移到本目录 `历史字体/` 保留，不进入游戏包；以下记录只描述旧版。
+- 4.7.2 实测：HUD、设置与来源页无缺字／溢出；逐节点确认普通字体及 RichTextLabel 五种字形均解析到 Huiwen-mincho。导出 PCK 后独立加载内置字体成功，字体数据 24,426,256 字节。证据位于 `.local/verification/font-swap/`，截图另存中文制作留档；未重跑玩法、存档或性能回归。
+- 全局字体配置依据 [Godot 4.7 ProjectSettings](https://docs.godotengine.org/en/4.7/classes/class_projectsettings.html#class-projectsettings-property-gui-theme-custom-font)，运行加载与打包结果以上述实测为准。
+
+## 历史字体：Noto
+
+- 正式文件：`ArtSource/UI/历史字体/NotoSerifCJKsc-Regular.otf`，原始字体未修改。
 - 官方文件：https://raw.githubusercontent.com/notofonts/noto-cjk/main/Serif/OTF/SimplifiedChinese/NotoSerifCJKsc-Regular.otf
 - 官方仓库：https://github.com/notofonts/noto-cjk
 - 版本由字体内部 name 表核对：Noto Serif CJK SC Regular，Version 2.003；© 2017–2024 Adobe。
 - 文件大小 24,543,080 字节；SHA-256 `2a2eae2628df83556c54018c41e20fa532c1b862c5256ae8b3f23feb918d12ca`。
-- 字体对应的 SIL Open Font License 1.1 原文保存在 `Game/art/ui/fonts/OFL.txt`，来自官方仓库 `Serif/LICENSE`。包中保留字体和许可。字体不是从 Windows 系统目录复制。
+- 字体对应的 SIL Open Font License 1.1 原文保存在 `ArtSource/UI/历史字体/OFL.txt`，来自官方仓库 `Serif/LICENSE`。包中保留字体和许可。字体不是从 Windows 系统目录复制。
 - 本地 FontTools 读取成功，含 44,777 个 Unicode 映射，当前界面文案字符全部覆盖；4.1 实景及普通 Windows 发行程序已检查中文排版与 960×600 至 4K / 150% DPI 的控件可读性。
 
 ## 游戏图标

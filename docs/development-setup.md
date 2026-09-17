@@ -141,7 +141,7 @@ Godot 命令依据：[CLI 文档](https://docs.godotengine.org/en/4.7/tutorials/
 
 Godot 4.7.2 / Windows 10 19045：偏好保存在 `user://preferences/settings.json`，农场仍独立保存在 `user://farm/`；主场景夹具须同时注入 `store` 与 `settings_store` 到隔离目录，避免运行测试改变玩家音量或显示设置。设置 I/O、菜单和场景接线入口分别为 `tests/settings_store_test.gd`、`tests/game_menu_test.gd`、`tests/ui_settings_scene_test.gd`，按既有 `Run -ExtraArgs @('--headless','--script',绝对脚本路径)` 调用。
 
-实际窗口下限由主窗口 `min_size = Vector2i(960,600)` 设置；本版本尝试写 `display/window/size/min_width` / `min_height` 不会改变运行窗口下限。普通发行程序以原生缩窗实测夹持至 960×600；引擎内逻辑布局通过不能替代这项系统窗口验证。中文字体采用随工程分发的 Noto Serif CJK SC，来源与原文件哈希见 `ArtSource/UI/README.md`，字体 OFL 随包保留。
+实际窗口下限由主窗口 `min_size = Vector2i(960,600)` 设置；本版本尝试写 `display/window/size/min_width` / `min_height` 不会改变运行窗口下限。普通发行程序以原生缩窗实测夹持至 960×600；引擎内逻辑布局通过不能替代这项系统窗口验证。中文字体采用用户指定的内置汇文明朝体，中文路径直接导入，来源与原文件哈希见 `ArtSource/UI/README.md`；来源记录随包保留。全局默认通过 `gui/theme/custom_font` 指定，另覆盖共享主题与样片 Label3D，避免系统字体依赖。
 
 历史原生 OptionButton 弹窗验证表明：弹窗会读取 `Input` 的鼠标按住状态；只向根 Viewport 强发 `push_input` 会出现按下打开、松开误关，不能直接判成游戏缺陷。`farm_interaction_test.gd` 改用带实际 window_id 的 `Input.parse_input_event` 后 44 项通过，普通发行程序另以真实鼠标确认选择白萝卜成功。菜单与存档失败遮罩须为当前可见按钮设置循环焦点，防止 Tab 跳到底层农事控件。
 

@@ -3,8 +3,7 @@
 游戏引擎：Godot Engine 4.7.2，MIT。完整引擎许可与其第三方版权通知分别见 notices/GODOT_LICENSE.txt、notices/GODOT_COPYRIGHT.txt。
 官方入口：https://godotengine.org/license/
 
-中文字体：Noto Serif CJK SC Regular，Version 2.003，© 2017–2024 Adobe，SIL Open Font License 1.1。原始字体未修改；随包完整许可见 notices/NotoSerifCJK-OFL.txt。
-官方源：https://github.com/notofonts/noto-cjk
+中文字体：汇文明朝体（Huiwen-mincho Regular），采用制作方提供的原始 TTF，随游戏资源内置，无需系统安装。字体内部版本为 Version 1.00，版权字段为 Public Domain；完整来源记录见 notices/字体来源.txt。
 
 图像与三维：部分单体输入图、远景和青菜应用图标由 OpenAI imagegen 生成；部分作物、民居、植被、船与装饰由 Tripo 根据单体图生成。采用资产经 Blender 整理网格、尺度与高低版本，再在 Godot 中组合、制作材质与交互。精确院落模块与六枚操作 / 时段 SVG 图标由项目制作。没有将整张界面概念图覆盖成游戏。
 声音：游戏内音乐、环境声与操作声为项目程序合成，未使用外部音乐曲库或人声。工具贡献不代表工具厂商对游戏背书。

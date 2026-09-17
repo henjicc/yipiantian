@@ -129,9 +129,7 @@ func _add_soil(parent: Node3D, size: Vector3) -> void:
 
 func _add_label(parent: Node3D, text: String, position: Vector3) -> void:
 	var label := Label3D.new()
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(["Microsoft YaHei"])
-	label.font = font
+	label.font = preload("res://ui/farm_theme.gd").FONT
 	label.text = text
 	label.position = position
 	label.pixel_size = 0.0007

@@ -81,7 +81,7 @@ New-Item -ItemType Directory -Path (Join-Path $package 'notices') | Out-Null
 foreach ($filename in @('Farm.exe','Farm.pck')) { Copy-Item -LiteralPath (Join-Path $build $filename) -Destination $package }
 foreach ($filename in @('使用说明.txt','来源与通知.txt','版本说明.txt')) { Copy-Item -LiteralPath (Join-Path $source ('发行材料/'+$filename)) -Destination $package }
 foreach ($filename in @('GODOT_LICENSE.txt','GODOT_COPYRIGHT.txt')) { Copy-Item -LiteralPath (Join-Path $source ('Game/legal/'+$filename)) -Destination (Join-Path $package 'notices') }
-Copy-Item -LiteralPath (Join-Path $source 'Game/art/ui/fonts/OFL.txt') -Destination (Join-Path $package 'notices/NotoSerifCJK-OFL.txt')
+Copy-Item -LiteralPath (Join-Path $source 'Game/art/ui/fonts/字体来源.txt') -Destination (Join-Path $package 'notices/字体来源.txt')
 $signature = Get-AuthenticodeSignature -LiteralPath (Join-Path $package 'Farm.exe')
 if ($signature.Status -ne 'NotSigned') { throw "Unexpected signing status: $($signature.Status)" }
 $payload = @(Get-ChildItem -LiteralPath $package -Recurse -File | Sort-Object FullName | ForEach-Object { [ordered]@{path=[IO.Path]::GetRelativePath($package,$_.FullName).Replace('\','/'); bytes=$_.Length; sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()} })

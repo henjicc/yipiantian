@@ -1,7 +1,7 @@
 extends RefCounted
 ## One small theme for this game's HUD and menus, not a component library.
 
-const FONT = preload("res://art/ui/fonts/NotoSerifCJKsc-Regular.otf")
+const FONT = preload("res://art/ui/fonts/汇文明朝体.ttf")
 const INK := Color("4b493d")
 const PAPER := Color("f4ecd9")
 const EDGE := Color("ac9978")

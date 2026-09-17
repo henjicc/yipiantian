@@ -26,6 +26,10 @@ window/size/window_width_override.movie=3840
 window/size/window_height_override.movie=2160
 window/stretch/mode="canvas_items"
 
+[gui]
+
+theme/custom_font="res://art/ui/fonts/汇文明朝体.ttf"
+
 [rendering]
 
 anti_aliasing/quality/msaa_3d=2

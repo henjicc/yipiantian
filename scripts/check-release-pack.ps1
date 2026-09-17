@@ -43,13 +43,13 @@ $missing = [Collections.Generic.List[string]]::new()
 # all_resources is deliberate: the game loads crop, decoration and environment
 # paths dynamically. Verify every adopted runtime asset has its exported mapping.
 $project = (Resolve-Path -LiteralPath $ProjectDirectory).Path
-$resources = Get-ChildItem -LiteralPath (Join-Path $project 'art') -Recurse -File | Where-Object { $_.Extension -in @('.glb','.png','.jpg','.svg','.otf','.wav','.ogg','.gd') }
+$resources = Get-ChildItem -LiteralPath (Join-Path $project 'art') -Recurse -File | Where-Object { $_.Extension -in @('.glb','.png','.jpg','.svg','.otf','.ttf','.wav','.ogg','.gd') }
 foreach ($resource in $resources) {
     $relative = [IO.Path]::GetRelativePath($project,$resource.FullName).Replace('\','/')
     $path = 'res://' + $relative
     if ($path -notin $paths -and ($path+'.import') -notin $paths -and ($path+'.remap') -notin $paths) { $missing.Add($path) }
 }
-foreach ($required in @('res://scenes/main.tscn','res://scenes/environment/courtyard.tscn','res://art/ui/fonts/OFL.txt','res://legal/GODOT_LICENSE.txt','res://legal/GODOT_COPYRIGHT.txt','res://project.binary')) {
+foreach ($required in @('res://scenes/main.tscn','res://scenes/environment/courtyard.tscn','res://art/ui/fonts/字体来源.txt','res://legal/GODOT_LICENSE.txt','res://legal/GODOT_COPYRIGHT.txt','res://project.binary')) {
     if ($required -notin $paths -and ($required+'.remap') -notin $paths) { $missing.Add($required) }
 }
 $report = [ordered]@{format=$format; engine=$engine; entries=$entries; forbidden=$forbidden; missing=$missing; passed=($forbidden.Count -eq 0 -and $missing.Count -eq 0)}
