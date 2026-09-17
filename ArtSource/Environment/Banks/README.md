@@ -21,3 +21,9 @@
 Godot 4.7.2实测：`Geometry2D.triangulate_polygon` 输出二维逆时针索引，将二维Y映射为世界Z后恰好构成朝上的顺时针正面；底盖逆序，坡面法线按引擎朝向计算。官方说明：[Geometry2D](https://docs.godotengine.org/en/stable/classes/class_geometry2d.html#class-geometry2d-method-triangulate-polygon)、[ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)。
 
 扩岸联动检查：`tests/bank_layout_test.gd` 的 --expanded --visual 运行使用向西2.6米、向南3米的完整场景，证据在 .local/verification/layout-banks/expanded/。修复前真实检查发现桂花树已移动而落花发射点仍固定旧坐标；现改为相对树木的冠层采样及动态包围盒，GPU落地高度仍保持世界高度，新增非空发射点断言。默认布局定向检查干净退出；扩展图形检查断言通过，但退出时仍出现此前间歇性的12个ObjectDB／6个资源清理告警，不能当成独立发布包已验收。当前没有新增资产费用和录屏。
+
+可变田块节点：田块定义现有稳定ID、位置／朝向／尺寸、行列、行列到格ID的映射及独立压边石种子。增加行列保留重叠区域原ID；移田和重排不改作物身份；删除占用格整体拒绝，时间和收成不发生部分更新。土面高度／法线、颗粒分布、边石、碰撞、高亮、作物接地、鸡的田块禁入区、聚焦取景和景深保护读取同一尺寸。布局与作物一起进入v5存档；先读布局再建场，备份恢复遇到不同布局则整场重建，避免旧动物路径／水岸缓存残留。当前数据边界为最多12田、每田2–8行／列、总计384格；这只是生成和读盘上限，不是满额性能验收。原默认六田构图仍保留，玩家编辑与空间占用提示尚待完成。
+
+定向证据：`farm_state_test.gd` 371项、`farm_store_test.gd` 55项（384格约187KB，当前读盘上限512KB）、`farm_grid_layout_test.gd` 111项通过；`variable_fields_test.gd --visual` 实际七田、5×3／3×4、旋转、第五列播种、土面接缝、鸡禁入、景深清晰区、重进及破损存档恢复通过，本轮正常退出无清理告警。截图位于 `.local/verification/variable-fields/`，日志 `field-state-v5.log`、`field-store-v5.log`、`field-grid-v5.log`、`variable-fields-visual.log`。不是完整扩建或最终发行验收，无新增资产与录屏。
+
+存档注意：JSON数字恢复后需把布局数组重新解码为引擎向量和整数，保持布局比较与初始化一致。Godot的默认JSON数字输出不承诺所有浮点位精确往返，见[JSON.stringify官方说明](https://docs.godotengine.org/en/stable/classes/class_json.html#class-json-method-stringify)；当前向量由布局解码规范化，不能直接用未经规范化的JSON数组与场景参数判定布局变化。

@@ -4,6 +4,8 @@ shader_type spatial;
 uniform float wetness : hint_range(0.0,1.0) = 0.0;
 uniform bool bank = false;
 instance uniform vec2 cell_center = vec2(0.0);
+instance uniform vec2 cell_half_span = vec2(.30,.22);
+instance uniform vec2 field_half_extent = vec2(1.2,.88);
 instance uniform float planted = 0.0;
 instance uniform float root_size = 1.0;
 instance uniform float field_selected = 0.0;
@@ -47,7 +49,7 @@ void fragment() {
 	vec3 dirt_colour = detail*(.82+.32*patch);
 	float dirt = bank ? smoothstep(.0,.76,COLOR.r+(clods-.5)*.18) : 1.0;
 	float root_zone = bank ? 0.0 : 1.0-smoothstep(.025,.20,length(patch_point*vec2(1.0,1.2)));
-	float moisture = bank ? 0.0 : wetness*(1.0-smoothstep(.55,1.0,length(patch_point/vec2(.32,.24))));
+	float moisture = bank ? 0.0 : wetness*(1.0-smoothstep(.55,1.0,length(patch_point/(cell_half_span+vec2(.02)))));
 	dirt_colour *= 1.0 - .23*moisture - .08*planted*root_zone;
 	ALBEDO = mix(turf_colour(p),dirt_colour,dirt);
 	// Tangent-free world-space detail, shared with the bank at the join.
@@ -60,13 +62,13 @@ void fragment() {
 	AO = mix(1.0,surface.r,dirt)*(1.0-.13*planted*root_zone);
 	if (!bank) {
 		// Opaque ground shading: no floating geometry, transparency sorting or z-fighting.
-		vec2 edge = vec2(1.2,.88)-abs(bed_point);
+		vec2 edge = field_half_extent-abs(bed_point);
 		float border = (1.0-smoothstep(.014,.055,min(edge.x,edge.y)))*smoothstep(0.0,.012,min(edge.x,edge.y));
-		float corners = smoothstep(.72,.90,abs(bed_point.x)/1.2)*smoothstep(.64,.86,abs(bed_point.y)/.88);
+		float corners = smoothstep(.72,.90,abs(bed_point.x)/field_half_extent.x)*smoothstep(.64,.86,abs(bed_point.y)/field_half_extent.y);
 		float field_mark = field_selected*border*corners*(.8+.2*clods);
-		vec2 q = abs(patch_point)-vec2(.245,.165);
+		vec2 q = abs(patch_point)-(cell_half_span-vec2(.055));
 		float distance = length(max(q,vec2(0.0))) + min(max(q.x,q.y),0.0)-.02;
-		float cell_corners = smoothstep(.13,.23,abs(patch_point.x))*smoothstep(.05,.13,abs(patch_point.y));
+		float cell_corners = smoothstep(.433,.767,abs(patch_point.x)/cell_half_span.x)*smoothstep(.227,.591,abs(patch_point.y)/cell_half_span.y);
 		float cell_mark = cell_selected*(1.0-smoothstep(.004,.012,abs(distance)))*cell_corners;
 		vec3 tint = vec3(.55,.43,.22);
 		ALBEDO = mix(ALBEDO,tint,clamp(field_mark*.55+cell_mark*.65,0.0,.7));

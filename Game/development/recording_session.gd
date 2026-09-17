@@ -51,10 +51,10 @@ func _ready() -> void:
 		var fixture: Dictionary = farm_scene.farm_state.snapshot()
 		fixture.harvested.greens = 9
 		fixture.harvested.radish = 6
-		for index in 6:
+		for index in farm_scene.farm.fields.size():
 			var id: String = farm_scene.farm.field_id(index)
-			for cell_id: String in farm_scene.farm_state.CELL_IDS:
-				var cell_index: int = farm_scene.farm_state.CELL_IDS.find(cell_id)
+			for cell_id: String in farm_scene.farm_state.cell_ids(id):
+				var cell_index: int = farm_scene.farm_state.cell_ids(id).find(cell_id)
 				# Both species share a bed; the recording's selected cell remains
 				# mature greens so the original single-harvest assertions still apply.
 				var crop: String = "greens" if (cell_index % 4 < 2) else "radish"

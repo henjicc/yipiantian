@@ -15,7 +15,6 @@ var _target: Node3D
 var _fields: Array = []
 var _environment: Node3D
 var _decorations: Node3D
-var _target_bounds := AABB(Vector3(-1.4, -0.1, -1.15), Vector3(2.8, 0.75, 2.3))
 var _quality: String = "standard"
 var _dof_enabled: bool = true
 var _dof_strength: float = 1.7
@@ -140,7 +139,8 @@ func protected_depth_range() -> Vector2:
 	# Actual foliage bounds plus wind margin protect tall crops as well as soil.
 	if _bounds_dirty:
 		for field: Node3D in _fields:
-			var bounds: AABB = _target_bounds
+			var size: Vector2 = field.get_meta("field_size")+Vector2(.2,.25)
+			var bounds := AABB(Vector3(-size.x*.5,-.1,-size.y*.5),Vector3(size.x,.75,size.y))
 			for mesh: MeshInstance3D in field.get_node("Crops").find_children("*", "MeshInstance3D", true, false):
 				if mesh.mesh != null and mesh.is_visible_in_tree():
 					var local: Transform3D = field.global_transform.affine_inverse() * mesh.global_transform

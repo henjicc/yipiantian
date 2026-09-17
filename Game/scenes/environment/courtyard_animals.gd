@@ -56,7 +56,8 @@ func rebuild_spaces() -> void:
 	if farm != null:
 		for field: Node3D in farm.fields:
 			var polygon := PackedVector2Array()
-			for corner: Vector2 in [Vector2(-1.32,-1.06),Vector2(1.32,-1.06),Vector2(1.32,1.06),Vector2(-1.32,1.06)]:
+			var half: Vector2 = field.get_meta("field_size")*.5+Vector2(.02,.035)
+			for corner: Vector2 in [Vector2(-half.x,-half.y),Vector2(half.x,-half.y),Vector2(half.x,half.y),Vector2(-half.x,half.y)]:
 				var p: Vector3 = field.to_global(Vector3(corner.x, 0, corner.y))
 				polygon.append(Vector2(p.x, p.z))
 			yard.block(polygon)

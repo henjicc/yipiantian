@@ -8,6 +8,7 @@ const SoilShader = preload("res://scenes/environment/soil.gdshader")
 const PigmentShader = preload("res://scenes/environment/pigment.gdshader")
 const TilledSoil = preload("res://presentation/tilled_soil.gd")
 const PlantingSoilBurst = preload("res://presentation/planting_soil_burst.gd")
+const Plan = preload("res://layout/courtyard_plan.gd")
 const FIELD_SIZE := Vector3(2.6, 0.16, 2.05)
 const CELL_SPAN := Vector2(0.60, 0.44)
 const CELL_ORIGIN := Vector2(-1.20, -0.88)
@@ -19,6 +20,7 @@ var _soil_meshes: Dictionary = {}
 var _cell_crops: Dictionary = {}
 var _planting_tweens: Dictionary = {}
 var _planted: Dictionary = {}
+var _definitions: Dictionary = {}
 var _wet_soil: ShaderMaterial
 var _soil: ShaderMaterial
 var _ridge: ShaderMaterial
@@ -57,26 +59,36 @@ static func cell_center(cell_id: String) -> Vector3:
 	assert(index >= 0)
 	return Vector3(-0.90 + (index % 4) * CELL_SPAN.x, FIELD_SIZE.y * 0.5, -0.66 + int(index / 4) * CELL_SPAN.y)
 
+func cell_position(index: int, cell_id: String) -> Vector3:
+	return Plan.cell_position(plan.fields[index],cell_id)
+
+func cell_ids(index: int) -> Array:
+	return plan.fields[index].cells
+
 
 func cell_at(index: int, world_position: Vector3) -> String:
 	var point: Vector3 = fields[index].to_local(world_position)
-	var offset := Vector2(point.x, point.z) - CELL_ORIGIN
+	var definition: Dictionary = plan.fields[index]
+	var inner: Vector2 = definition.size-Vector2(.20,.29)
+	var span: Vector2 = Plan.cell_span(definition)
+	var offset := Vector2(point.x, point.z) + inner*.5
 	# Exact soil coordinates, independent of leaf size, species, LOD and stage.
-	if offset.x < 0.0 or offset.y < 0.0 or offset.x >= CELL_SPAN.x * 4.0 or offset.y >= CELL_SPAN.y * 4.0:
+	if offset.x < 0.0 or offset.y < 0.0 or offset.x >= inner.x or offset.y >= inner.y:
 		return ""
-	var col: int = floori(offset.x / CELL_SPAN.x)
-	var row: int = floori(offset.y / CELL_SPAN.y)
-	return FarmState.CELL_IDS[row * 4 + col]
+	var col: int = floori(offset.x / span.x)
+	var row: int = floori(offset.y / span.y)
+	return definition.cells[row * int(definition.columns) + col]
 
 
 func select_cell(index: int, cell_id: String) -> void:
 	for i: int in fields.size():
-		for id: String in FarmState.CELL_IDS:
+		for id: String in cell_ids(i):
 			_soil_meshes[field_id(i)][id].set_instance_shader_parameter("cell_selected", 1.0 if i == index and id == cell_id else 0.0)
 
 
 func show_field(field: Dictionary) -> void:
-	for cell_id: String in FarmState.CELL_IDS:
+	var definition: Dictionary = _definitions[field.id]
+	for cell_id: String in definition.cells:
 		var cell: Dictionary = field.cells[cell_id]
 		var identity: String = field.id + "/" + cell_id
 		var key: String = "%s/%s/%s" % [cell.crop_id, cell.stage, cell.watered]
@@ -105,9 +117,9 @@ func show_field(field: Dictionary) -> void:
 		crop.set_meta("cell_id", cell_id)
 		crop.set_meta("field_id", field.id)
 		crop.set_meta("stage_key", stage_key)
-		crop.position = cell_center(cell_id) - Vector3.UP * CropVisuals.planting_depth(cell.crop_id, cell.stage)
-		crop.position.y += TilledSoil.height_at(Vector2(crop.position.x, crop.position.z)) - .008
-		crop.rotation.y = float(FarmState.CELL_IDS.find(cell_id)) * 0.23
+		crop.position = Plan.cell_position(definition,cell_id) - Vector3.UP * CropVisuals.planting_depth(cell.crop_id, cell.stage)
+		crop.position.y += TilledSoil.height_at(Vector2(crop.position.x, crop.position.z),(definition.size-Vector2(.20,.29))*.5,Plan.cell_span(definition).y) - .008
+		crop.rotation.y = float(cell_id.trim_prefix("cell_").to_int()-1) * 0.23
 		_crop_roots[field.id].add_child(crop)
 		_cell_crops[field.id][cell_id] = crop
 		_plant_wind.apply(crop, cell.crop_id if cell.crop_id in ["greens", "radish"] else "autumn_crop")
@@ -159,8 +171,11 @@ func _mesh(parent: Node3D, resource: Mesh, point: Vector3, material: Material) -
 
 
 func _make_fields() -> void:
-	var earthen_bank: ArrayMesh = _earthen_bank()
 	for index: int in plan.fields.size():
+		var definition: Dictionary = plan.fields[index]
+		_definitions[definition.id] = definition
+		var inner_half: Vector2 = (definition.size-Vector2(.20,.29))*.5
+		var span: Vector2 = Plan.cell_span(definition)
 		var body := StaticBody3D.new()
 		body.name = "Field%d" % (index + 1)
 		body.transform = plan.field_transform(index)
@@ -168,19 +183,22 @@ func _make_fields() -> void:
 		body.collision_mask = 0
 		body.set_meta("field_index", index)
 		body.set_meta("field_id", plan.fields[index].id)
+		body.set_meta("field_size", definition.size)
 		add_child(body)
 		fields.append(body)
 		# Logical patches share continuous heights/normals, not tile-edge grooves.
-		_mesh(body, earthen_bank, Vector3.ZERO, _ridge)
-		_mesh(body, _coping_kerb(91744 + index * 7919), Vector3.ZERO, _coping)
+		_mesh(body, _earthen_bank(inner_half), Vector3.ZERO, _ridge)
+		_mesh(body, _coping_kerb(definition.seed,definition.size), Vector3.ZERO, _coping)
 		_soil_meshes[field_id(index)] = {}
 		_cell_crops[field_id(index)] = {}
-		for cell_id: String in FarmState.CELL_IDS:
-			var center: Vector3 = cell_center(cell_id)
-			var patch: MeshInstance3D = _mesh(body, TilledSoil.patch(center, CELL_SPAN, index), center, _soil)
+		for cell_id: String in definition.cells:
+			var center: Vector3 = Plan.cell_position(definition,cell_id)
+			var patch: MeshInstance3D = _mesh(body, TilledSoil.patch(center, span, definition.seed,inner_half), center, _soil)
 			patch.name = "Soil_" + cell_id
 			patch.extra_cull_margin = .09
 			patch.set_instance_shader_parameter("cell_center", Vector2(center.x, center.z))
+			patch.set_instance_shader_parameter("cell_half_span", span*.5)
+			patch.set_instance_shader_parameter("field_half_extent", inner_half)
 			_soil_meshes[field_id(index)][cell_id] = patch
 		var crops := Node3D.new()
 		crops.name = "Crops"
@@ -188,12 +206,12 @@ func _make_fields() -> void:
 		_crop_roots[field_id(index)] = crops
 		var collision := CollisionShape3D.new()
 		var shape := BoxShape3D.new()
-		shape.size = FIELD_SIZE
+		shape.size = Vector3(definition.size.x,.16,definition.size.y)
 		collision.shape = shape
 		body.add_child(collision)
 
 
-func _coping_kerb(layout_seed: int) -> ArrayMesh:
+func _coping_kerb(layout_seed: int, size: Vector2 = Vector2(2.6,2.05)) -> ArrayMesh:
 	# Kerb stones laid around each bed. These reuse the five image-guided Tripo rocks
 	# already used on the island rim rather than a generated block: full yaw, mixed
 	# shapes, uneven bedding depth and real gaps are what stop a kerb reading as a
@@ -211,7 +229,7 @@ func _coping_kerb(layout_seed: int) -> ArrayMesh:
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = layout_seed
-	var half := Vector2(1.315, 0.995)
+	var half: Vector2 = size*.5 + Vector2(.015,-.030)
 	var runs: Array[Array] = [
 		[Vector2(-half.x, -half.y), Vector2(half.x, -half.y)], [Vector2(half.x, half.y), Vector2(-half.x, half.y)],
 		[Vector2(half.x, -half.y), Vector2(half.x, half.y)], [Vector2(-half.x, half.y), Vector2(-half.x, -half.y)]]
@@ -247,10 +265,11 @@ func _kerb_stone(surface: SurfaceTool, stones: Array[Mesh], rng: RandomNumberGen
 	surface.append_from(mesh, 0, Transform3D(basis, Vector3(centre.x, bedded, centre.y)))
 
 
-func _earthen_bank() -> ArrayMesh:
+func _earthen_bank(inner_half: Vector2 = Vector2(1.20,.88)) -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rings: Array[Vector3] = [Vector3(1.20,.08,.88),Vector3(1.29,.055,.97),Vector3(1.39,-.027,1.075),Vector3(1.51,-.066,1.20)]
+	for i: int in rings.size(): rings[i] += Vector3(inner_half.x-1.20,0,inner_half.y-.88)
 	for band: int in 3:
 		for segment: int in 80:
 			for corner: Vector2i in [Vector2i(0,0),Vector2i(0,1),Vector2i(1,1),Vector2i(0,0),Vector2i(1,1),Vector2i(1,0)]:

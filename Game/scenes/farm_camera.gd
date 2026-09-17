@@ -15,6 +15,7 @@ var view: Vector3 = DEFAULT_VIEW # yaw, pitch, distance
 var overview_point: Vector3 = DEFAULT_POINT
 var overview_view: Vector3 = DEFAULT_VIEW
 var focused: bool = false
+var _focus_distance: float = FOCUS_DISTANCE
 var transition_seconds: float = 0.75
 var _saved_point: Vector3 = DEFAULT_POINT
 var _saved_view: Vector3 = DEFAULT_VIEW
@@ -186,7 +187,7 @@ func _advance_zoom(delta: float) -> void:
 
 
 func _maximum_distance() -> float:
-	return FOCUS_DISTANCE if focused else maxf(ARRANGEMENT_DISTANCE,overview_view.z+2.4) if _decoration_framing else overview_view.z
+	return _focus_distance if focused else maxf(ARRANGEMENT_DISTANCE,overview_view.z+2.4) if _decoration_framing else overview_view.z
 
 
 func overview_parameters() -> Dictionary:
@@ -214,7 +215,7 @@ func preview_overview(parameters: Dictionary) -> void:
 	motion_finished.emit()
 
 
-func focus_field(point: Vector3) -> void:
+func focus_field(point: Vector3, size: Vector2 = Vector2(2.6,2.05)) -> void:
 	if _decoration_framing:
 		set_decoration_framing(false)
 	if not focused:
@@ -224,8 +225,9 @@ func focus_field(point: Vector3) -> void:
 		_saved_point = _destination_point if returning else focus_point
 		_saved_view = _destination_view if returning else view
 	focused = true
+	_focus_distance = FOCUS_DISTANCE*maxf(size.x/2.6,size.y/2.05)
 	_anchor = point + Vector3(0.0, 0.35, 0.0)
-	_move_to(_anchor, Vector3(view.x, 40.0, FOCUS_DISTANCE))
+	_move_to(_anchor, Vector3(view.x, 40.0, _focus_distance))
 
 
 func return_overview() -> void:

@@ -16,6 +16,7 @@ func _initialize() -> void:
 	_test_clock_rollback_and_jump()
 	_test_invalid_actions_are_atomic()
 	_test_snapshot_validation()
+	_test_variable_fields()
 	for failure: String in failures:
 		push_error(failure)
 	print("FARM_STATE_TEST checks=%d failures=%d" % [checks, failures.size()])
@@ -245,6 +246,49 @@ func _test_snapshot_validation() -> void:
 	var before_harvest: Dictionary = farm.snapshot()
 	_expect(not farm.harvest("field_03", "cell_06", START).ok and farm.snapshot() == before_harvest, "Count overflow cannot lose mature crop")
 
+
+func _test_variable_fields() -> void:
+	var farm := Farm.new(START)
+	farm.sow("field_01","cell_06","spinach",START)
+	farm.water("field_01","cell_06",START)
+	var before: Dictionary = farm.get_cell("field_01","cell_06")
+	var plan := Farm.Plan.new()
+	plan.fields[0] = Farm.Plan.resized_field(plan.fields[0],5,3,Vector2(3.2,1.61))
+	plan.fields[0].yaw = 17.0
+	plan.fields[0].position += Vector3(.1,0,.15)
+	_expect(plan.fields[0].cells[6]=="cell_06", "New column preserves the occupied row/column ID")
+	_expect(farm.apply_layout(plan.snapshot(),START).ok,"Variable rows/columns and moved field accepted")
+	_expect(farm.get_cell("field_01","cell_06")==before,"Resizing preserves crop species, water, growth and identity")
+	_expect(farm.cell_ids("field_01").size()==15 and farm.get_cell("field_01","cell_17").stage=="empty", "New column starts empty")
+	_expect(farm.sow("field_01","cell_17","lettuce",START).ok, "Added IDs are actionable")
+	var occupied: Dictionary = farm.snapshot()
+	var shrink := Farm.Plan.new()
+	_expect(farm.apply_layout(shrink.snapshot(),START+500).reason=="occupied_cell_removed" and farm.snapshot()==occupied,"Shrinking cannot erase a planted new column or advance time")
+	plan.fields.reverse()
+	_expect(farm.apply_layout(plan.snapshot(),START).ok and farm.field_ids()[5]=="field_01" and farm.get_cell("field_01","cell_06")==before,"Reordering uses IDs, never array indices, for crops")
+	var extra: Dictionary = plan.fields[5].duplicate(true)
+	extra.id = "field_07"
+	extra.position = Vector3(-3.3,.2,6.9)
+	plan.fields.append(extra)
+	_expect(farm.apply_layout(plan.snapshot(),START).ok and farm.field_ids().size()==7,"Additional field gets independent planting cells")
+	_expect(farm.get_cell("field_07","cell_06").crop_id.is_empty(),"New field does not copy crops sharing local cell ID")
+	var restored := Farm.new()
+	_expect(restored.restore_snapshot(JSON.parse_string(JSON.stringify(farm.snapshot()))),"Variable layout and state restore through JSON")
+	_expect(restored.snapshot()==farm.snapshot(),"JSON restores the same normalized spatial and crop state")
+	var valid: Dictionary = farm.snapshot()
+	for flaw: String in ["missing_layout","duplicate_field","duplicate_cell","zero_rows","huge_rows","tiny_cells","nonfinite","missing_data","extra_data"]:
+		var bad: Dictionary = valid.duplicate(true)
+		match flaw:
+			"missing_layout": bad.erase("layout")
+			"duplicate_field": bad.layout.fields[1].id = bad.layout.fields[0].id
+			"duplicate_cell": bad.layout.fields[0].cells[1] = bad.layout.fields[0].cells[0]
+			"zero_rows": bad.layout.fields[0].rows = 0
+			"huge_rows": bad.layout.fields[0].rows = 1000000000
+			"tiny_cells": bad.layout.fields[0].size = [.21,.30]
+			"nonfinite": bad.layout.fields[0].yaw = NAN
+			"missing_data": bad.fields.field_07.cells.erase("cell_06")
+			"extra_data": bad.fields.field_07.cells.cell_999 = bad.fields.field_07.cells.cell_06.duplicate()
+		_expect(not restored.restore_snapshot(bad) and restored.snapshot()==valid,"Reject malformed variable layout atomically: "+flaw)
 
 func _expect(condition: bool, message: String) -> void:
 	checks += 1

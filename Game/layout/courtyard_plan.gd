@@ -69,13 +69,16 @@ var haze_region := Vector4(0,-1,10.8,10)
 var camera_point := Vector3(.25,.75,0)
 var camera_distance: float = 28.6
 var site: String = "original"
+var shore_expansion := Vector2.ZERO
 
 func _init() -> void:
 	for i: int in 7:
 		var t: float = i / 6.0
 		east_stones.append(Vector3(11.05+t*4.1,-.40,.2+sin(t*PI)*.40))
 	for index: int in FIELD_IDS.size():
-		fields.append({"id": FIELD_IDS[index], "position": Vector3(-3.3 + index % 3 * 3.25,.2,int(index / 3) * 2.8), "yaw": 0.0, "size": Vector2(2.6,2.05)})
+		var cells: Array[String] = []
+		for i: int in 16: cells.append("cell_%02d" % (i+1))
+		fields.append({"id": FIELD_IDS[index], "position": Vector3(-3.3 + index % 3 * 3.25,.2,int(index / 3) * 2.8), "yaw": 0.0, "size": Vector2(2.6,2.05), "columns":4, "rows":4, "cells":cells, "seed":91744+index*7919})
 	for i: int in 4: fences.append({"position": Vector3(-4.8+i*2,.14,-7.2), "yaw": 0.0, "height": 1.0})
 	for z: float in [-2.8,-.6,3.6]: fences.append({"position": Vector3(-6.65,.14,z), "yaw": 90.0, "height": 1.0})
 	for z: float in [-4.1,-2]: fences.append({"position": Vector3(6.02,.14,z), "yaw": 75.0, "height": 1.0})
@@ -83,6 +86,97 @@ func _init() -> void:
 
 func field_transform(index: int) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, deg_to_rad(fields[index].yaw)), fields[index].position)
+
+func snapshot() -> Dictionary:
+	var encoded: Array[Dictionary] = []
+	for field: Dictionary in fields:
+		encoded.append({"id":field.id,"position":[field.position.x,field.position.y,field.position.z],"yaw":field.yaw,
+			"size":[field.size.x,field.size.y],"columns":field.columns,"rows":field.rows,"cells":field.cells.duplicate(),"seed":field.seed})
+	return {"shore":[shore_expansion.x,shore_expansion.y],"fields":encoded}
+
+static func from_snapshot(data: Dictionary) -> RefCounted:
+	# This is the disk/edit admission boundary. Reject malformed layouts before any
+	# geometry or crop state is rebuilt; JSON must never allocate unbounded meshes.
+	if data.size()!=2 or not _numbers(data.get("shore"),2) or not data.get("fields") is Array: return null
+	if data.shore[0]<0 or data.shore[0]>8 or data.shore[1]<0 or data.shore[1]>8: return null
+	if data.fields.is_empty() or data.fields.size()>12: return null
+	var decoded: Array[Dictionary] = []
+	var identities: Dictionary = {}
+	var total: int = 0
+	for value: Variant in data.fields:
+		if not value is Dictionary or value.size()!=8: return null
+		var field: Dictionary = value
+		if not _identity(field.get("id"),"field_") or identities.has(field.id): return null
+		identities[field.id] = true
+		if not _numbers(field.get("position"),3) or not _numbers(field.get("size"),2): return null
+		if not _number(field.get("yaw")) or absf(field.yaw)>180: return null
+		if not _integer(field.get("columns"),2,8) or not _integer(field.get("rows"),2,8): return null
+		if not _integer(field.get("seed"),0,2147483647): return null
+		if absf(field.position[0])>30 or absf(field.position[2])>30 or absf(field.position[1]-.2)>.001: return null
+		var size := Vector2(field.size[0],field.size[1])
+		var span: Vector2 = (size-Vector2(.20,.29))/Vector2(field.columns,field.rows)
+		if span.x<.5999 or span.y<.4399 or span.x>1.2001 or span.y>1.0001: return null
+		if not field.get("cells") is Array or field.cells.size()!=int(field.columns)*int(field.rows): return null
+		var cells: Array[String] = []
+		for cell: Variant in field.cells:
+			if not _identity(cell,"cell_") or cells.has(cell): return null
+			cells.append(cell)
+		total += cells.size()
+		if total>384: return null
+		decoded.append({"id":field.id,"position":Vector3(field.position[0],field.position[1],field.position[2]),
+			"yaw":float(field.yaw),"size":size,"columns":int(field.columns),"rows":int(field.rows),"cells":cells,"seed":int(field.seed)})
+	var plan: RefCounted = load("res://layout/courtyard_plan.gd").new()
+	if data.shore[0]>0 or data.shore[1]>0: plan.expand_shore(data.shore[0],data.shore[1])
+	plan.fields = decoded
+	return plan
+
+static func _number(value: Variant) -> bool:
+	return (value is int or value is float) and is_finite(float(value))
+
+static func _numbers(value: Variant, count: int) -> bool:
+	if not value is Array or value.size()!=count: return false
+	for item: Variant in value:
+		if not _number(item): return false
+	return true
+
+static func _integer(value: Variant, low: int, high: int) -> bool:
+	return _number(value) and value>=low and value<=high and float(value)==floorf(value)
+
+static func _identity(value: Variant, prefix: String) -> bool:
+	if not value is String or not value.begins_with(prefix): return false
+	var suffix: String = value.trim_prefix(prefix)
+	return suffix.length()>=2 and suffix.length()<=6 and suffix.is_valid_int() and int(suffix)>0 and value==prefix+"%02d"%int(suffix)
+
+static func cell_span(field: Dictionary) -> Vector2:
+	return (field.size-Vector2(.20,.29))/Vector2(field.columns,field.rows)
+
+static func cell_position(field: Dictionary, cell_id: String) -> Vector3:
+	var index: int = field.cells.find(cell_id)
+	assert(index >= 0)
+	var span: Vector2 = cell_span(field)
+	var p: Vector2 = -(field.size-Vector2(.20,.29))*.5 + (Vector2(index % int(field.columns),int(index/int(field.columns)))+Vector2.ONE*.5)*span
+	return Vector3(p.x,.08,p.y)
+
+static func resized_field(field: Dictionary, columns: int, rows: int, size: Vector2) -> Dictionary:
+	# Preserve identities at the same row/column. Removed cells are admitted or
+	# rejected by planting state before this definition can become authoritative.
+	assert(columns>0 and rows>0 and size.x>.20 and size.y>.29)
+	var candidate: Dictionary = field.duplicate(true)
+	var next_id: int = 1
+	for id: String in field.cells: next_id = maxi(next_id,int(id.trim_prefix("cell_"))+1)
+	var cells: Array[String] = []
+	for row: int in rows:
+		for column: int in columns:
+			if row < int(field.rows) and column < int(field.columns):
+				cells.append(field.cells[row*int(field.columns)+column])
+			else:
+				cells.append("cell_%02d" % next_id)
+				next_id += 1
+	candidate.columns = columns
+	candidate.rows = rows
+	candidate.size = size
+	candidate.cells = cells
+	return candidate
 
 func plateau() -> PackedVector2Array:
 	return BankGeometry.ring(BankGeometry.contour(rim), .96, bank_width)
@@ -97,6 +191,7 @@ func expand_shore(west: float, south: float) -> void:
 	# their real size and anchor; perimeter decoration follows the changed shore.
 	assert(site == "original" and west >= 0 and south >= 0)
 	site = "expanded"
+	shore_expansion = Vector2(west,south)
 	var old_rim: PackedVector2Array = rim.duplicate()
 	for i: int in rim.size():
 		rim[i] += Vector2(-west * (1-smoothstep(-7,-2,rim[i].x)), south * smoothstep(1,6,rim[i].y))

@@ -136,10 +136,13 @@ func _run() -> void:
 
 
 func _test_current_boundaries() -> void:
-	var farm := Farm.new(10000.0)
+	var plan := Farm.Plan.new()
+	for i: int in plan.fields.size():
+		plan.fields[i] = Farm.Plan.resized_field(plan.fields[i],8,8,Vector2(5.0,3.81))
+	var farm := Farm.new(10000.0,plan.snapshot())
 	var data: Dictionary = farm.snapshot()
-	for field_id: String in Farm.FIELD_IDS:
-		for cell_id: String in Farm.CELL_IDS:
+	for field_id: String in farm.field_ids():
+		for cell_id: String in farm.cell_ids(field_id):
 			data.fields[field_id].cells[cell_id] = {"crop_id": "radish", "growth_seconds": 4321.123456789, "last_settled_utc_seconds": 1.7976931348623157e308, "watered": true}
 	for crop_id: String in Farm.Crops.crop_ids():
 		data.harvested[crop_id] = Farm.MAX_HARVEST_COUNT
@@ -151,13 +154,13 @@ func _test_current_boundaries() -> void:
 	var payload: Dictionary = {"version": Store.VERSION, "farm": data, "decorations": decorations.snapshot()}
 	var text: String = JSON.stringify(payload, "\t")
 	var bytes: int = text.to_utf8_buffer().size()
-	_expect(bytes < Store.MAX_BYTES, "Full 96-cell state with long numeric values fits current bounded read limit")
-	print("FARM_CURRENT_SIZE full_96_cells_bytes=%d max_bytes=%d" % [bytes, Store.MAX_BYTES])
-	var full_dir: String = test_root.path_join("full-96")
+	_expect(bytes < Store.MAX_BYTES, "Full 384-cell state with layout and long numeric values fits bounded read limit")
+	print("FARM_CURRENT_SIZE full_384_cells_bytes=%d max_bytes=%d" % [bytes, Store.MAX_BYTES])
+	var full_dir: String = test_root.path_join("full-384")
 	var full_store := Store.new(full_dir)
 	full_store.load_state()
-	_expect(full_store.save(data, decorations.snapshot()).ok, "96-cell mixed-compatible schema saves under existing limit")
-	_expect(Store.new(full_dir).load_state().ok, "96-cell bounded payload roundtrips")
+	_expect(full_store.save(data, decorations.snapshot()).ok, "384-cell schema saves under current limit")
+	_expect(Store.new(full_dir).load_state().ok, "384-cell bounded payload roundtrips")
 	for flaw: String in ["missing_cell", "unknown_cell", "invalid_growth", "invalid_decoration"]:
 		var candidate: Dictionary = payload.duplicate(true)
 		match flaw:

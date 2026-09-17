@@ -60,17 +60,22 @@ var _loaded: bool = false
 var _save_failed: bool = false
 var _record_session: String = ""
 var _exiting: bool = false
+var _startup_state: Dictionary = {}
+var _startup_admitted: bool = false
 
 
 func _enter_tree() -> void:
+	_startup_admitted = _prepare_stores()
+	if _startup_admitted:
+		_startup_state = store.load_state()
+		if _startup_state.ok and _startup_state.kind == "loaded":
+			courtyard_plan = CourtyardPlan.from_snapshot(_startup_state.farm.layout)
 	# Children build their geometry in _ready; share one plan before that happens.
 	$Environment.plan = courtyard_plan
 	$Farm.plan = courtyard_plan
 	$Camera3D.configure_layout(courtyard_plan.camera_point, courtyard_plan.camera_distance)
 
-func _ready() -> void:
-	get_tree().auto_accept_quit = false
-	get_window().min_size = Vector2i(960, 600)
+func _prepare_stores() -> bool:
 	# Recording is explicitly isolated before any player-state load. A release package
 	# does not carry the recording implementation and refuses its launch parameter.
 	for argument in OS.get_cmdline_user_args():
@@ -78,17 +83,23 @@ func _ready() -> void:
 			if not OS.has_feature("editor"):
 				push_error("Development recording arguments are unavailable in this build.")
 				get_tree().quit(1)
-				return
+				return false
 			_record_session = argument.trim_prefix("--record-session=").simplify_path()
 			var allowed: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join(".local/recordings")
 			if not _record_session.is_absolute_path() or not _record_session.replace("\\", "/").begins_with(allowed.replace("\\", "/") + "/"):
 				push_error("Recording session must be inside the project's isolated recording directory.")
 				get_tree().quit(1)
-				return
+				return false
 			store = FarmStore.new(_record_session.path_join("farm"))
 			settings_store = SettingsStore.new(_record_session.path_join("preferences"))
 	if store == null:
 		store = FarmStore.new()
+	return true
+
+func _ready() -> void:
+	if not _startup_admitted: return
+	get_tree().auto_accept_quit = false
+	get_window().min_size = Vector2i(960, 600)
 	hud = HUD.new()
 	hud.name = "HUD"
 	add_child(hud)
@@ -119,7 +130,8 @@ func _ready() -> void:
 		camera_tuning.fog_strength_changed.connect(func(strength: float) -> void:
 			focus_detail.set_fog_strength(strength))
 	camera.motion_finished.connect(_refresh_hud)
-	_load_game()
+	_load_game(_startup_state)
+	_startup_state = {}
 	# The courtyard owns all slot transforms and art; no duplicate fallback layout.
 	var courtyard: Node3D = $Environment
 	decoration_layout = DecorationLayout.new()
@@ -180,17 +192,22 @@ func _ready() -> void:
 		add_child(recording)
 
 
-func _load_game() -> void:
-	var result: Dictionary = store.load_state()
+func _load_game(initial: Dictionary = {}) -> void:
+	var result: Dictionary = store.load_state() if initial.is_empty() else initial
 	if not result.ok:
 		_loaded = false
 		farm.visible = false
 		hud.show_storage_issue(result.kind, false)
 		return
 	if result.kind == "missing":
-		farm_state = FarmState.new(clock.call())
+		farm_state = FarmState.new(clock.call(),courtyard_plan.snapshot())
 		decoration_state = DecorationState.new()
 	else:
+		if result.farm.layout != courtyard_plan.snapshot():
+			# Recovery can restore a different island. Recreate all spatial consumers
+			# together rather than retaining obsolete colliders, haze or animal routes.
+			_reload_saved_scene.call_deferred()
+			return
 		farm_state = FarmState.new()
 		farm_state.restore_snapshot(result.farm)
 		decoration_state = DecorationState.new()
@@ -204,6 +221,23 @@ func _load_game() -> void:
 	settle_farm()
 	_save_farm()
 	print("FARM_LOAD stage=%s version=%d migrated=%s saved=%s" % [result.kind, FarmStore.VERSION, result.get("migrated", false), not _save_failed])
+
+func _reload_saved_scene() -> void:
+	_loaded = false
+	process_mode = Node.PROCESS_MODE_DISABLED
+	if is_instance_valid(farm_audio): farm_audio.shutdown()
+	await get_tree().create_timer(.1,true,false,true).timeout
+	var replacement: Node3D = load("res://scenes/main.tscn").instantiate()
+	replacement.store = store
+	replacement.settings_store = settings_store
+	replacement.clock = clock
+	var tree: SceneTree = get_tree()
+	var parent: Node = get_parent()
+	var was_current: bool = tree.current_scene == self
+	parent.remove_child(self)
+	parent.add_child(replacement)
+	if was_current: tree.current_scene = replacement
+	queue_free()
 
 
 func _save_farm() -> bool:
@@ -290,7 +324,7 @@ func settle_farm() -> void:
 
 
 func refresh_farm() -> void:
-	for field_id: String in FarmState.FIELD_IDS:
+	for field_id: String in farm_state.field_ids():
 		farm.show_field(farm_state.get_field(field_id))
 	_refresh_hud()
 
@@ -530,12 +564,12 @@ func _focus_field(index: int) -> void:
 	farm.select_field(index)
 	farm.select_cell(-1, "")
 	focus_detail.set_focus(farm.fields[index])
-	camera.focus_field(farm.fields[index].global_position)
+	camera.focus_field(farm.fields[index].global_position,farm.fields[index].get_meta("field_size"))
 	_refresh_hud()
 
 
 func _select_cell(cell_id: String) -> void:
-	if selected_field < 0 or (not cell_id.is_empty() and not FarmState.CELL_IDS.has(cell_id)):
+	if selected_field < 0 or (not cell_id.is_empty() and not farm.cell_ids(selected_field).has(cell_id)):
 		return
 	_cancel_input()
 	selected_cell = cell_id

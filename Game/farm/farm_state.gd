@@ -2,7 +2,8 @@ extends RefCounted
 ## The sole mutable owner of planting state. No scene, clock reading or disk I/O.
 
 const Crops = preload("res://farm/crop_catalog.gd")
-const FIELD_IDS: Array[String] = preload("res://layout/courtyard_plan.gd").FIELD_IDS
+const Plan = preload("res://layout/courtyard_plan.gd")
+const FIELD_IDS: Array[String] = Plan.FIELD_IDS
 # Row-major: columns run along +X and rows along +Z in the presentation layer.
 const CELL_IDS: Array[String] = ["cell_01", "cell_02", "cell_03", "cell_04", "cell_05", "cell_06", "cell_07", "cell_08", "cell_09", "cell_10", "cell_11", "cell_12", "cell_13", "cell_14", "cell_15", "cell_16"]
 # JSON numbers remain exact only up to this bound.
@@ -11,14 +12,17 @@ const MAX_HARVEST_COUNT: int = 9007199254740991
 var _data: Dictionary
 
 
-func _init(now_utc_seconds: float = 0.0) -> void:
+func _init(now_utc_seconds: float = 0.0, layout: Dictionary = {}) -> void:
 	assert(_valid_time(now_utc_seconds), "Farm initialization requires finite nonnegative UTC seconds")
-	_data = {"fields": {}, "harvested": {}}
+	var plan: RefCounted = Plan.new() if layout.is_empty() else Plan.from_snapshot(layout)
+	assert(plan != null, "Farm initialization requires a valid layout")
+	_data = {"fields": {}, "harvested": {}, "layout":plan.snapshot()}
 	for crop_id: String in Crops.crop_ids():
 		_data.harvested[crop_id] = 0
-	for field_id: String in FIELD_IDS:
+	for definition: Dictionary in plan.fields:
+		var field_id: String = definition.id
 		_data.fields[field_id] = {"cells": {}}
-		for cell_id: String in CELL_IDS:
+		for cell_id: String in definition.cells:
 			_data.fields[field_id].cells[cell_id] = _empty_cell(now_utc_seconds)
 	_set_initial_crop("field_03", "greens", 1.0)
 	_set_initial_crop("field_04", "greens", 0.2)
@@ -29,6 +33,41 @@ func _init(now_utc_seconds: float = 0.0) -> void:
 func snapshot() -> Dictionary:
 	return _data.duplicate(true)
 
+func field_ids() -> Array[String]:
+	var result: Array[String] = []
+	for field: Dictionary in _data.layout.fields: result.append(field.id)
+	return result
+
+func cell_ids(field_id: String) -> Array[String]:
+	var result: Array[String] = []
+	for field: Dictionary in _data.layout.fields:
+		if field.id == field_id: result.assign(field.cells)
+	return result
+
+func apply_layout(layout: Dictionary, now_utc_seconds: float) -> Dictionary:
+	if not _valid_time(now_utc_seconds): return _result(false,"invalid_time")
+	var plan: RefCounted = Plan.from_snapshot(layout)
+	if plan == null: return _result(false,"invalid_layout")
+	var candidate: Dictionary = _data.duplicate(true)
+	var fields: Dictionary = {}
+	for definition: Dictionary in plan.fields:
+		var previous: Dictionary = _data.fields.get(definition.id,{}).get("cells",{})
+		var cells: Dictionary = {}
+		for id: String in definition.cells:
+			cells[id] = previous[id].duplicate(true) if previous.has(id) else _empty_cell(now_utc_seconds)
+		fields[definition.id] = {"cells":cells}
+	# A resize/removal may not erase an occupied cell. No partial change or time
+	# advancement on rejection; the editor can ask the player to harvest first.
+	for field_id: String in _data.fields:
+		for cell_id: String in _data.fields[field_id].cells:
+			if not _data.fields[field_id].cells[cell_id].crop_id.is_empty() and not fields.get(field_id,{}).get("cells",{}).has(cell_id):
+				return _result(false,"occupied_cell_removed")
+	candidate.fields = fields
+	candidate.layout = plan.snapshot()
+	var changed: Array[String] = _settle_data(candidate,now_utc_seconds)
+	_data = candidate
+	return _result(true,"",changed)
+
 
 func restore_snapshot(data: Dictionary) -> bool:
 	# Disk format/version and recovery remain the storage boundary's responsibility.
@@ -36,6 +75,7 @@ func restore_snapshot(data: Dictionary) -> bool:
 	if not _valid_snapshot(data):
 		return false
 	_data = data.duplicate(true)
+	_data.layout = Plan.from_snapshot(data.layout).snapshot()
 	for crop_id: String in Crops.crop_ids():
 		_data.harvested[crop_id] = int(_data.harvested[crop_id])
 	return true
@@ -45,7 +85,7 @@ func get_field(field_id: String) -> Dictionary:
 	if not _data.fields.has(field_id):
 		return {}
 	var field: Dictionary = {"id": field_id, "cells": {}}
-	for cell_id: String in CELL_IDS:
+	for cell_id: String in cell_ids(field_id):
 		field.cells[cell_id] = get_cell(field_id, cell_id)
 	return field
 
@@ -131,8 +171,8 @@ func _act(action: String, field_id: String, cell_id: String, crop_id: String, no
 
 func _settle_data(data: Dictionary, now_utc_seconds: float) -> Array[String]:
 	var changed: Array[String] = []
-	for field_id: String in FIELD_IDS:
-		for cell_id: String in CELL_IDS:
+	for field_id: String in data.fields:
+		for cell_id: String in data.fields[field_id].cells:
 			var cell: Dictionary = data.fields[field_id].cells[cell_id]
 			if now_utc_seconds <= cell.last_settled_utc_seconds:
 				continue
@@ -148,6 +188,7 @@ func _settle_data(data: Dictionary, now_utc_seconds: float) -> Array[String]:
 
 
 func _set_initial_crop(field_id: String, crop_id: String, progress: float) -> void:
+	if not _data.fields.has(field_id) or not _data.fields[field_id].cells.has("cell_06"): return
 	_data.fields[field_id].cells.cell_06.crop_id = crop_id
 	_data.fields[field_id].cells.cell_06.growth_seconds = Crops.definition(crop_id).duration_seconds * progress
 
@@ -169,23 +210,26 @@ static func _is_number(value: Variant) -> bool:
 
 
 static func _valid_snapshot(data: Dictionary) -> bool:
-	if data.size() != 2 or not data.get("fields") is Dictionary or not data.get("harvested") is Dictionary:
+	if data.size() != 3 or not data.get("fields") is Dictionary or not data.get("harvested") is Dictionary or not data.get("layout") is Dictionary:
 		return false
+	var plan: RefCounted = Plan.from_snapshot(data.layout)
+	if plan == null: return false
 	var fields: Dictionary = data.fields
 	var harvested: Dictionary = data.harvested
-	if fields.size() != FIELD_IDS.size() or harvested.size() != Crops.crop_ids().size():
+	if fields.size() != plan.fields.size() or harvested.size() != Crops.crop_ids().size():
 		return false
 	for crop_id: String in Crops.crop_ids():
 		var count: Variant = harvested.get(crop_id)
 		if not _is_number(count) or float(count) < 0.0 or float(count) > MAX_HARVEST_COUNT or float(count) != floorf(float(count)):
 			return false
-	for field_id: String in FIELD_IDS:
+	for definition: Dictionary in plan.fields:
+		var field_id: String = definition.id
 		if not fields.get(field_id) is Dictionary:
 			return false
 		var field: Dictionary = fields[field_id]
-		if field.size() != 1 or not field.get("cells") is Dictionary or field.cells.size() != CELL_IDS.size():
+		if field.size() != 1 or not field.get("cells") is Dictionary or field.cells.size() != definition.cells.size():
 			return false
-		for cell_id: String in CELL_IDS:
+		for cell_id: String in definition.cells:
 			if not field.cells.get(cell_id) is Dictionary or not valid_cell_snapshot(field.cells[cell_id]):
 				return false
 	return true
