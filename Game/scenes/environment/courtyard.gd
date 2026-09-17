@@ -158,10 +158,10 @@ func _build_ground() -> void:
 			var rock := _module("stone_%d"%_rng.randi_range(0,4),Vector3(p.x,-.43,p.y),_rng.randf_range(0,360),Vector3(_rng.randf_range(.85,1.45),_rng.randf_range(2.5,4.3),_rng.randf_range(.8,1.45)))
 			# Open a root bay for the west osmanthus; keep the seeded draws stable.
 			if i == 12 and j == 1:
-				rock.position = Vector3(-6.65,-.43,5.4)
+				rock.position = plan.root_bay
 			_tint_stone(rock,Color("7d887d")*_rng.randf_range(.88,1.12))
 	# Broken shelves at the visible waterline interrupt the former even bead border.
-	var shelves: Array[Vector3] = [Vector3(-7.1,-.48,2.7),Vector3(-6.2,-.48,4.7),Vector3(-4.0,-.48,6.0),Vector3(-1.1,-.50,6.5),Vector3(2.0,-.46,6.4),Vector3(5.7,-.45,5.55),Vector3(6.5,-.43,2.5)]
+	var shelves: Array[Vector3] = plan.shelves
 	for i in shelves.size():
 		_tint_stone(_module("stone_%d" % (i%5),shelves[i],17+i*47,Vector3(1.45,4.8 if i%2==0 else 3.5,1.18)),Color("79867e"))
 		_tint_stone(_module("stone_%d" % ((i+2)%5),shelves[i]+Vector3(.35,-.05,.37),-25+i*33,Vector3(.88,2.0,.9)),Color("929784"))
@@ -202,11 +202,10 @@ func _build_architecture() -> void:
 	# Opposite landing is a small bank, with irregular rock margins, not a floating bridge end.
 	_bank("east", plan.east_rim, plan.anchors.east_bank, plan.angles.east_bank)
 	for index: int in 7:
-		var point := Vector3(10.52,.112,.23).lerp(Vector3(13.35,.112,-1.45),index/6.0)
+		var point: Vector3 = plan.east_path[0].lerp(plan.east_path[1],index/6.0)
 		_tint_stone(_module("stone_1",point,24+index*13,Vector3(.82,.25,.65)),Color("93907e"))
 	for i in 7:
-		var t:float=i/6.0
-		var position_on_bank:=Vector3(11.05+t*4.1,-.40,.2+sin(t*PI)*.40)
+		var position_on_bank: Vector3 = plan.east_stones[i]
 		_tint_stone(_module("stone_%d"%(i%5),position_on_bank,i*39,Vector3(.85,2.8+(i%3)*.7,.8)),Color("829184"))
 	for fence: Dictionary in plan.fences:
 		_module("bamboo_fence",fence.position,fence.yaw,Vector3(1,fence.height,1))
@@ -214,22 +213,19 @@ func _build_architecture() -> void:
 	# and was partly buried in the raised veranda platform.
 
 func _build_plants() -> void:
-	var osmanthus: Node3D = _life_asset("osmanthus","WestTree",Vector3(-6.05,.09,4.3),15,1.0,"osmanthus")
+	for tree: Dictionary in plan.trees:
+		_life_asset(tree.asset,tree.id,tree.at,tree.yaw,tree.size,tree.wind)
+	var osmanthus: Node3D = get_node("WestTree")
 	_contact_sources.append(osmanthus.get_child(0))
 	var falling := FallingLeaves.new()
 	falling.name = "OsmanthusLeaves"
 	add_child(falling)
 	falling.configure(osmanthus)
-	_life_asset("osmanthus","RearTree",Vector3(3.8,.09,-6.25),-27,1.12,"osmanthus")
-	_life_asset("willow","EastBankTree",Vector3(13.15,.09,-4.8),-35,.96,"osmanthus")
-	_life_asset("bamboo","RearSmallTree",Vector3(-2.5,.10,-7.45),80,1.05,"bamboo")
-	_life_asset("willow","RearWestCanopy",Vector3(-5.9,.09,-7.0),-72,.85,"osmanthus")
-	_life_asset("bamboo","RearEastCanopy",Vector3(5.5,.10,-5.95),57,.95,"bamboo")
-	var bamboo_positions:Array[Vector3]=[Vector3(-7,.13,-5.2),Vector3(-7.1,.13,-.5),Vector3(5.4,.13,-5.7),Vector3(6.3,.13,2.0),Vector3(13.8,.10,-.8),Vector3(-6.6,.13,-6.6),Vector3(4.7,.13,-7.0),Vector3(5.9,.13,-3.5)]
+	var bamboo_positions: Array[Vector3] = plan.bamboo_positions
 	for i in bamboo_positions.size():_life_asset("bamboo","Bamboo%d"%i,bamboo_positions[i]-Vector3.UP*.025,_rng.randf_range(0,360),_rng.randf_range(.70,1.05),"bamboo")
-	var reeds: Array[Vector3] = [Vector3(-7.15,.05,2.7),Vector3(-6.55,.04,4.35),Vector3(-4.1,.06,5.85),Vector3(-2.15,.06,6.2),Vector3(.7,.06,6.25),Vector3(3.1,.07,5.85),Vector3(6.0,.06,4.3),Vector3(6.1,.08,3.5),Vector3(6.15,.08,-1.6),Vector3(11.0,.03,-.85),Vector3(14.2,.03,-.35)]
+	var reeds: Array[Vector3] = plan.reeds
 	for i in reeds.size():_life_asset("bamboo","BankReeds%d"%i,reeds[i],i*53,_rng.randf_range(.30,.43),"bamboo")
-	var flower_centres:Array[Vector3]=[Vector3(-5.8,.13,3.45),Vector3(5.25,.13,3.75),Vector3(-5.7,.13,-2.8),Vector3(5.3,.13,-3.0),Vector3(-3.8,.13,5.6),Vector3(2.4,.13,5.7),Vector3(-6.25,.11,4.9),Vector3(-1.8,.13,5.75),Vector3(.2,.13,5.95),Vector3(4.0,.12,5.6),Vector3(6.0,.13,1.0),Vector3(-6.85,.12,2.25),Vector3(11.35,.1,-.8),Vector3(13.6,.1,-1.5),Vector3(-3.4,.13,-2.05)]
+	var flower_centres: Array[Vector3] = plan.flower_centres
 	for i in flower_centres.size():
 		_grass_patch(flower_centres[i]-Vector3(0,.01,0),i)
 		for j in 2:
@@ -238,7 +234,7 @@ func _build_plants() -> void:
 	# The open river is the composition's pale negative space, but an unbroken slab
 	# of it reads as an unfinished surface. Loose outer coves give it something to
 	# interrupt, still clear of the bank, the bridge span and the mooring.
-	var lily_coves: Array[Vector3] = [Vector3(-6.35,-.40,7.25),Vector3(-.9,-.40,8.05),Vector3(5.35,-.40,7.4),Vector3(14.0,-.40,3.4),Vector3(-9.8,-.40,3.6),Vector3(-11.2,-.40,-1.8),Vector3(-7.9,-.40,9.2),Vector3(1.6,-.40,10.8),Vector3(8.9,-.40,7.9)]
+	var lily_coves: Array[Vector3] = plan.lily_coves
 	for i in lily_coves.size():
 		for j in (4 if i < 4 else 5):
 			var angle:float=j*2.4+i*.7

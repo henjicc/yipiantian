@@ -66,6 +66,7 @@ func _enter_tree() -> void:
 	# Children build their geometry in _ready; share one plan before that happens.
 	$Environment.plan = courtyard_plan
 	$Farm.plan = courtyard_plan
+	$Camera3D.configure_layout(courtyard_plan.camera_point, courtyard_plan.camera_distance)
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false

@@ -1,14 +1,25 @@
 extends Node3D
 ## Low clustered grass joins roots, paths and soil. No gameplay or collision ownership.
 const SHADER = preload("res://scenes/environment/meadow.gdshader")
+const Space = preload("res://scenes/environment/animal_space.gd")
 var _rim: PackedVector2Array
+var _exclusions: Array[PackedVector2Array] = []
 var _rng := RandomNumberGenerator.new()
 
 func build(courtyard: Node3D) -> void:
 	_rim = courtyard.plan.plateau()
 	_rng.seed = 943172
-	_build_trellis_bed()
-	_build_foundation_contacts()
+	_build_trellis_bed(courtyard.plan)
+	_build_foundation_contacts(courtyard.plan)
+	for key: String in ["MainHouse","Kitchen","EntranceTrellis"]:
+		_exclusions.append(Space.footprint(courtyard.get_node(key),.0,.70))
+	# The veranda is a module, but it uses the same plan anchor as its apron.
+	var porch := PackedVector2Array()
+	var porch_pose := Transform3D(Basis(Vector3.UP,deg_to_rad(courtyard.plan.angles.veranda)),courtyard.plan.anchors.veranda)
+	for p: Vector2 in [Vector2(-3.5,-.65),Vector2(3.5,-.65),Vector2(3.5,.75),Vector2(-3.5,.75)]:
+		var world: Vector3 = porch_pose * Vector3(p.x,0,p.y)
+		porch.append(Vector2(world.x,world.z))
+	_exclusions.append(porch)
 	var soil_gradient := Gradient.new()
 	soil_gradient.colors = PackedColorArray([Color(.33,.28,.16,.52),Color(.40,.36,.20,0)])
 	var root_soil := GradientTexture2D.new()
@@ -55,13 +66,15 @@ func build(courtyard: Node3D) -> void:
 	grass.extra_cull_margin = .04
 	add_child(grass)
 
-func _build_foundation_contacts() -> void:
-	# Short, irregular weathered aprons around the two fixed building footprints.
+func _build_foundation_contacts(plan: RefCounted) -> void:
+	# Aprons follow building anchors, with dimensions in each building's local space.
 	# Only the island receives these colour decals; occlusion is still real SSAO.
 	var noise := FastNoiseLite.new()
 	noise.seed = 74019
 	noise.frequency = .065
-	for footprint: Rect2 in [Rect2(-2.8,-2.975,6.9,1.15),Rect2(-5.6,-6.25,2.6,2.5)]:
+	for item: Dictionary in [{"anchor":"veranda","rect":Rect2(-3.45,-.575,6.9,1.15)},{"anchor":"kitchen","rect":Rect2(-1.1,-1.25,2.6,2.5)}]:
+		var footprint: Rect2 = item.rect
+		var pose := Transform3D(Basis(Vector3.UP,deg_to_rad(plan.angles[item.anchor])),plan.anchors[item.anchor])
 		var extent: Vector2 = footprint.size + Vector2.ONE*.44
 		var image := Image.create(256,128,false,Image.FORMAT_RGBA8)
 		for y: int in 128:
@@ -75,11 +88,12 @@ func _build_foundation_contacts() -> void:
 		decal.name = "FoundationWeathering"
 		decal.texture_albedo = ImageTexture.create_from_image(image)
 		decal.size = Vector3(extent.x,.18,extent.y)
-		decal.position = Vector3(footprint.get_center().x,.17,footprint.get_center().y)
+		decal.transform = pose
+		decal.position = pose * Vector3(footprint.get_center().x,.17-plan.anchors[item.anchor].y,footprint.get_center().y)
 		decal.cull_mask = 2
 		add_child(decal)
 
-func _build_trellis_bed() -> void:
+func _build_trellis_bed(plan: RefCounted) -> void:
 	# Physical space for the requested future climbing crop area; no fake crop state.
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -89,7 +103,7 @@ func _build_trellis_bed() -> void:
 				var uv := Vector2((col+offset.x)/12.0,(row+offset.y)/48.0)
 				var edge: float = minf(minf(uv.x,1-uv.x)*1.25,minf(uv.y,1-uv.y)*4.65)
 				var dirt: float = smoothstep(0.0,.20,edge)
-				var p := Vector3(-5.80+(uv.x-.5)*1.25,.134+dirt*.045,1.05+(uv.y-.5)*4.65)
+				var p := Vector3((uv.x-.5)*1.25,.004+dirt*.045,(uv.y-.5)*4.65)
 				surface.set_color(Color(dirt,0,0))
 				surface.set_uv(uv)
 				surface.add_vertex(p)
@@ -97,6 +111,8 @@ func _build_trellis_bed() -> void:
 	var bed := MeshInstance3D.new()
 	bed.name = "ClimbingBed"
 	bed.mesh = surface.commit()
+	bed.position = plan.anchors.trellis
+	bed.rotation.y = deg_to_rad(plan.angles.trellis-90.0)
 	var soil := ShaderMaterial.new()
 	soil.shader = preload("res://scenes/environment/soil.gdshader")
 	soil.set_shader_parameter("loam_albedo",preload("res://art/environment/soil/loam_baked_albedo.png"))
@@ -108,10 +124,8 @@ func _build_trellis_bed() -> void:
 
 func _allowed(p: Vector2, courtyard: Node3D) -> bool:
 	if not Geometry2D.is_point_in_polygon(p,_rim): return false
-	# Keep the house, porch, six interactive beds and stepping-stone centres clear.
-	if p.y < -2.85 and p.x > -5.8 and p.x < 4.7: return false
-	if p.y < -1.95 and p.y > -3.2 and p.x > -4.4 and p.x < 4.4: return false
-	if p.x > -6.45 and p.x < -5.05 and p.y > -1.25 and p.y < 3.65: return false
+	for polygon: PackedVector2Array in _exclusions:
+		if Geometry2D.is_point_in_polygon(p,polygon): return false
 	for index: int in courtyard.plan.fields.size():
 		var local: Vector3 = courtyard.plan.field_transform(index).affine_inverse() * Vector3(p.x,0,p.y)
 		var half: Vector2 = courtyard.plan.fields[index].size * .5 + Vector2(.07,.065)

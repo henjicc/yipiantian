@@ -13,6 +13,11 @@ func expect(ok: bool, message: String) -> void:
 func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	var plan := Plan.new()
+	var expanded_scene: bool = "--expanded" in OS.get_cmdline_user_args()
+	if expanded_scene:
+		plan.expand_shore(2.6,3.0)
+		output = output.path_join("expanded")
+		DirAccess.make_dir_recursive_absolute(output)
 	var expanded: PackedVector2Array = plan.rim.duplicate()
 	for i: int in expanded.size():
 		expanded[i] += Vector2(minf(expanded[i].x,0)*.3,maxf(expanded[i].y,0)*.3)
@@ -24,6 +29,7 @@ func _run() -> void:
 	_check_mesh(Bank.build(irregular,.19,1.4), .19)
 	# Real scene checks cover semantic bank discovery, water contacts and farm support.
 	var scene: Node3D = load("res://scenes/main.tscn").instantiate()
+	scene.courtyard_plan = plan
 	var isolated: String = output.path_join("session-%d" % Time.get_ticks_usec())
 	scene.store = load("res://farm/farm_store.gd").new(isolated)
 	scene.settings_store = load("res://settings/settings_store.gd").new(isolated.path_join("preferences"))
@@ -43,8 +49,20 @@ func _run() -> void:
 		var h: float = _height(east,bridge * Vector3(2.47,0,side))
 		expect(h>.07 and h<.17, "Bridge exit remains supported")
 	var animals: Node3D = world.get_node("CourtyardAnimals")
+	var leaves: MultiMeshInstance3D = world.get_node("OsmanthusLeaves")
+	expect(not leaves._anchors.is_empty(),"Leaf emission follows the relocated canopy")
+	expect(leaves.global_position.is_equal_approx(world.get_node("WestTree").global_position),"Leaf emitter remains attached to tree")
 	expect(animals.ready_for_motion and animals.birds.size()==7,"Animals rebuild on procedural terrain")
 	expect(not animals.water.contains(Vector2.ZERO), "Generated island blocks swimming")
+	for tree: Dictionary in plan.trees:
+		var instance: Node3D = world.get_node(tree.id)
+		expect(instance.position.is_equal_approx(tree.at),"Tree follows shared position")
+		expect(instance.scale.is_equal_approx(Vector3.ONE*float(tree.size)),"Tree scale does not stretch with land")
+	expect(scene.camera.overview_point.is_equal_approx(plan.camera_point),"Camera frames selected layout")
+	if expanded_scene:
+		expect(plan.rim[0].x < -9.0 and plan.rim[10].y > 9.0,"Expansion changes land geometry")
+		expect(plan.haze_region.z > 10.8 and plan.haze_region.w > 10,"Clear haze region grows with land")
+		expect(world.get_node("MainHouse").position.is_equal_approx(Vector3(.65,.13,-4.65)),"Expansion preserves house anchor")
 	for p: Vector2 in animals.yard.points:
 		expect(Geometry2D.is_point_in_polygon(p,plan.plateau()),"Walking cannot leave the plateau")
 	if "--visual" in OS.get_cmdline_user_args():
@@ -54,7 +72,7 @@ func _run() -> void:
 		scene.camera.set_process(false)
 		scene.focus_detail.set_depth_of_field(false)
 		for shot: Dictionary in [
-			{"name":"shore-front.png","eye":Vector3(0,1.4,10.6),"at":Vector3(0,-.1,6.3)},
+			{"name":"shore-front.png","eye":Vector3(0,1.4,13.6 if expanded_scene else 10.6),"at":Vector3(0,-.1,9.3 if expanded_scene else 6.3)},
 			{"name":"bridge-front.png","eye":Vector3(12,2.1,5.5),"at":Vector3(10.5,.2,.15)},
 			{"name":"bridge-reverse.png","eye":Vector3(11.8,2.6,-4.5),"at":Vector3(10.5,.2,.15)}]:
 			scene.camera.global_position=shot.eye

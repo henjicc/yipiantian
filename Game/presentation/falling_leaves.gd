@@ -8,6 +8,8 @@ var _rng := RandomNumberGenerator.new()
 
 func configure(tree: Node3D) -> void:
 	_rng.seed = 9174101
+	_anchors.clear()
+	global_position = tree.global_position
 	multimesh = MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	multimesh.use_colors = true
@@ -20,10 +22,13 @@ func configure(tree: Node3D) -> void:
 	for i: int in COUNT:
 		var origin: Vector3 = _anchors[_rng.randi_range(0, _anchors.size()-1)]
 		multimesh.set_instance_transform(i, Transform3D(Basis.IDENTITY, origin))
-		multimesh.set_instance_custom_data(i, Color(float(i)/COUNT, origin.y, _rng.randf(), 1.0))
+		multimesh.set_instance_custom_data(i, Color(float(i)/COUNT, origin.y+global_position.y, _rng.randf(), 1.0))
 		multimesh.set_instance_color(i, Color("efe1aa") if i % 3 != 0 else Color("a9aa61"))
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	custom_aabb = AABB(Vector3(-6.5,0,3.0),Vector3(1.5,5.0,2.4))
+	custom_aabb = AABB(_anchors[0],Vector3.ZERO)
+	for point: Vector3 in _anchors:
+		custom_aabb = custom_aabb.expand(point).expand(Vector3(point.x+.32,.15-global_position.y,point.z+.25))
+	custom_aabb = custom_aabb.grow(.15)
 	set_process(false)
 
 
@@ -37,9 +42,9 @@ func _sample(node: Node) -> void:
 				if colors.size() > i and colors[i].g < 0.6:
 					continue
 				var point: Vector3 = to_local(node.global_transform * vertices[i])
-				# Wind drifts +X/+Z. Keep trajectories inside the grass, away from the
-				# fence at x=-6.65, the trellis, beds and ground_03 decoration slot.
-				if point.x > -6.15 and point.x < -5.55 and point.z > 3.45 and point.z < 4.1 and point.y > 1.8:
+				# Keep the same inward part of the crown relative to the tree. Moving
+				# the shoreline must not leave emission and culling at the old position.
+				if point.x > -.10 and point.x < .50 and point.z > -.85 and point.z < -.20 and point.y > 1.71:
 					_anchors.append(point)
 	for child: Node in node.get_children():
 		_sample(child)

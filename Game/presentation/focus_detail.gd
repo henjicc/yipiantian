@@ -29,6 +29,7 @@ func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations
 	_fields = fields.duplicate()
 	_environment = environment
 	_decorations = decorations
+	RenderingServer.global_shader_parameter_set("courtyard_haze_region", environment.plan.haze_region)
 	_attributes = CameraAttributesPractical.new()
 	_attributes.dof_blur_amount = 0.0
 	_attributes.dof_blur_near_transition = 2.0

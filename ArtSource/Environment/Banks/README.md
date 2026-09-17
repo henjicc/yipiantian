@@ -14,8 +14,10 @@
 
 现役主岛与右岸改由 `Game/layout/courtyard_plan.gd` 的轮廓及 `bank_geometry.gd` 在建场时生成；沿用上面的造型和材质，旧 Blender 源及GLB保持原件。新增模型不经Tripo，不产生费用。主岛4604三角、右岸2588三角，单材质、不额外生成自动LOD。顶底使用轮廓三角化而非固定中心扇，保持凹轮廓边界；索引闭合、共享平滑法线。普通轮廓、扩大、不规则、岸坡宽度及高度变体已进行网格检查。
 
-场景用 `bank_role` 元数据识别主岛与右岸，不再通过GLB文件名推断；水线距离场读取生成网格，鸡的安全区域受真实平地轮廓约束，草地密度和采样边界也跟随平地。当前默认场景的六田角落、右桥出口支承与7只动物初始化通过；全景、前岸和桥头正反近景已检查。此项还不是完整扩建：变化布局的植被／桥路／泊位自动布置、玩家预览与保存仍在第08–13项后续工作内，地面高度参数也尚未联动所有摆件。
+场景用 `bank_role` 元数据识别主岛与右岸，不再通过GLB文件名推断；水线距离场读取生成网格，鸡的安全区域受真实平地轮廓约束，草地密度和采样边界也跟随平地。当前默认场景的六田角落、右桥出口支承与7只动物初始化通过；全景、前岸和桥头正反近景已检查。此项还不是完整扩建：当前受控向西／向南扩岸（新Plan的 `expand_shore`）已同步岸树、竹花、荷花、岸石、船泊位和动物范围；屋、桥、右岸保持实际尺寸与既定支承。全景／布置取景距离及世界雾清晰区随扩岸更新。建筑草地避让使用实际脚印，墙脚贴花和藤架土床跟随锚点。玩家预览／保存、围栏道路重新生成、任意桥头迁移与地面高度联动全部摆件仍在第08–13项后续工作内。
 
 定向入口 `tests/bank_layout_test.gd`（`--visual`输出近景）。证据 `.local/verification/layout-banks/` 与 `layout-banks-visual.log`。无录屏，需要时可从留存版本与当前源码补拍。
 
 Godot 4.7.2实测：`Geometry2D.triangulate_polygon` 输出二维逆时针索引，将二维Y映射为世界Z后恰好构成朝上的顺时针正面；底盖逆序，坡面法线按引擎朝向计算。官方说明：[Geometry2D](https://docs.godotengine.org/en/stable/classes/class_geometry2d.html#class-geometry2d-method-triangulate-polygon)、[ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)。
+
+扩岸联动检查：`tests/bank_layout_test.gd` 的 --expanded --visual 运行使用向西2.6米、向南3米的完整场景，证据在 .local/verification/layout-banks/expanded/。修复前真实检查发现桂花树已移动而落花发射点仍固定旧坐标；现改为相对树木的冠层采样及动态包围盒，GPU落地高度仍保持世界高度，新增非空发射点断言。默认布局定向检查干净退出；扩展图形检查断言通过，但退出时仍出现此前间歇性的12个ObjectDB／6个资源清理告警，不能当成独立发布包已验收。当前没有新增资产费用和录屏。

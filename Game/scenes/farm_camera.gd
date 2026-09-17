@@ -37,6 +37,17 @@ var _zoom_velocity: float = 0.0
 var _free_return_point: Vector3
 var _free_return_view: Vector3
 
+func configure_layout(point: Vector3, distance: float) -> void:
+	overview_point = point
+	overview_view = Vector3(DEFAULT_VIEW.x,DEFAULT_VIEW.y,distance)
+	focus_point = point
+	view = overview_view
+	_saved_point = point
+	_saved_view = view
+	_destination_point = point
+	_destination_view = view
+	_anchor = point
+
 
 func _ready() -> void:
 	fov = 29.0
@@ -175,7 +186,7 @@ func _advance_zoom(delta: float) -> void:
 
 
 func _maximum_distance() -> float:
-	return FOCUS_DISTANCE if focused else ARRANGEMENT_DISTANCE if _decoration_framing else overview_view.z
+	return FOCUS_DISTANCE if focused else maxf(ARRANGEMENT_DISTANCE,overview_view.z+2.4) if _decoration_framing else overview_view.z
 
 
 func overview_parameters() -> Dictionary:
@@ -245,7 +256,7 @@ func set_decoration_framing(active: bool) -> void:
 		_decoration_framing = true
 		# Use a tested operation pose, independent of the player's extreme orbit.
 		# Its higher angle keeps all eight slots visible above the bottom tool shelf.
-		_move_to(DEFAULT_POINT - Vector3.UP * 1.8, Vector3(25.0, 34.0, ARRANGEMENT_DISTANCE))
+		_move_to(overview_point - Vector3.UP * 1.8, Vector3(25.0, 34.0, maxf(ARRANGEMENT_DISTANCE,overview_view.z+2.4)))
 	else:
 		_decoration_framing = false
 		_move_to(_decoration_return_point, _decoration_return_view)
