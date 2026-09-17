@@ -5,7 +5,7 @@ var _rim: PackedVector2Array
 var _rng := RandomNumberGenerator.new()
 
 func build(courtyard: Node3D) -> void:
-	_rim = courtyard.plan.rim
+	_rim = courtyard.plan.plateau()
 	_rng.seed = 943172
 	_build_trellis_bed()
 	_build_foundation_contacts()
@@ -18,12 +18,15 @@ func build(courtyard: Node3D) -> void:
 	root_soil.fill_from = Vector2(.5,.5); root_soil.fill_to = Vector2(.98,.5)
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for attempt: int in 16500:
-		var p := Vector2(_rng.randf_range(-7.4,6.65), _rng.randf_range(-8.1,6.5))
+	var grass_bounds := Rect2(_rim[0], Vector2.ZERO)
+	for p: Vector2 in _rim: grass_bounds = grass_bounds.expand(p)
+	# Density follows actual land area; grass does not float above the sloping shore.
+	for attempt: int in ceili(grass_bounds.get_area() * 80):
+		var p := Vector2(_rng.randf_range(grass_bounds.position.x,grass_bounds.end.x), _rng.randf_range(grass_bounds.position.y,grass_bounds.end.y))
 		if not _allowed(p, courtyard): continue
 		var patch: float = (sin(p.x*2.7+p.y*.6)+sin(p.y*3.2-p.x*.8))*.25+.5
 		if _rng.randf() > lerpf(.12,.7,patch): continue
-		_tuft(surface, Vector3(p.x,.128,p.y), _rng.randf_range(.045,.13), 4)
+		_tuft(surface, Vector3(p.x,courtyard.plan.ground_height-.002,p.y), _rng.randf_range(.045,.13), 4)
 	# Dense short collars hide the generated meshes' abrupt root/ground seam.
 	for child: Node in courtyard.get_children():
 		if not child is Node3D or not (str(child.name).begins_with("Bamboo") or str(child.name).begins_with("Flowers") or str(child.name).ends_with("Tree")): continue
@@ -40,7 +43,7 @@ func build(courtyard: Node3D) -> void:
 			var angle: float = _rng.randf()*TAU
 			var radius: float = sqrt(_rng.randf())*.48
 			var p: Vector3 = centre + Vector3(cos(angle)*radius,0,sin(angle)*radius)
-			p.y = .131
+			p.y = courtyard.plan.ground_height+.001
 			if Geometry2D.is_point_in_polygon(Vector2(p.x,p.z),_rim):
 				_tuft(surface,p,_rng.randf_range(.06,.18),4)
 	var grass := MeshInstance3D.new()

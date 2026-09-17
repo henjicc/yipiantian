@@ -35,8 +35,8 @@ func _run() -> void:
 	var east: Node3D
 	var main_bank: Node3D
 	for node: Node in world.get_children():
-		if node.scene_file_path.ends_with("east_bank_v2.glb"): east=node
-		if node.scene_file_path.ends_with("island_bank_v2.glb"): main_bank=node
+		if node.get_meta("bank_role", "") == "east": east=node
+		if node.get_meta("bank_role", "") == "main": main_bank=node
 	expect(east!=null and main_bank!=null,"New rounded banks used at runtime")
 	# Sample both edges and centre of the actual bridge exit, beyond the deck.
 	var bridge_basis := Basis(Vector3.UP,deg_to_rad(-9.0))

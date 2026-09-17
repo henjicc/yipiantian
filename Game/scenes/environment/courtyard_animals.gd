@@ -33,19 +33,21 @@ func rebuild_spaces() -> void:
 	yard = Space.new()
 	var environment: Node3D = get_parent()
 	water.configure(environment.plan.animal_areas.water, .46)
-	yard.configure(environment.plan.animal_areas.yard, .21)
+	var safe_plateaus: Array[PackedVector2Array] = Geometry2D.offset_polygon(environment.plan.plateau(), -.21)
+	yard.configure(environment.plan.animal_areas.yard, .21, safe_plateaus[0])
 	for child: Node in environment.get_children():
 		if not child is Node3D or child == self: continue
 		var path: String = child.scene_file_path
+		var bank_role: String = child.get_meta("bank_role", "")
 		if child.name == "NeighborIslets":
 			for island: Node3D in child.waterline_sources(): water.block(Space.footprint(island, -.55, .55, false))
-		if path.contains("island_bank") or path.contains("east_bank"):
+		if not bank_role.is_empty():
 			water.block(Space.footprint(child, -.35, .16))
 		elif path.contains("stone_") or child.name == "CoveredBoat" or String(child.name).begins_with("Lotus"):
 			water.block(Space.footprint(child, -.55, .55))
-		if path.contains("island_bank") or path.contains("stone_"): yard.add_floor(child)
+		if bank_role == "main" or path.contains("stone_"): yard.add_floor(child)
 		if child.name in ["WaterSurface", "GroundCover", "DistantLandscape", "NeighborIslets", "ContactShading", "DecorationSlots", "OsmanthusLeaves"]: continue
-		if path.contains("island_bank") or path.contains("east_bank") or String(child.name).begins_with("BankGrass"): continue
+		if not bank_role.is_empty() or String(child.name).begins_with("BankGrass"): continue
 		if child.name == "LivingDetails":
 			for prop: Node in child.get_children():
 				if prop is Node3D: yard.block(Space.footprint(prop, .19, .70))

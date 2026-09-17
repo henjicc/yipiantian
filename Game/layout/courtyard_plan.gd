@@ -1,7 +1,11 @@
 extends RefCounted
 ## Shared spatial data. Scene builders consume this instance; farm state owns crops.
-## The original metric composition is retained while procedural banks are introduced.
+## The original metric composition is retained; banks are generated from these contours.
 const FIELD_IDS: Array[String] = ["field_01", "field_02", "field_03", "field_04", "field_05", "field_06"]
+const BankGeometry = preload("res://layout/bank_geometry.gd")
+var ground_height: float = .13
+var bank_width: float = 1.0
+var east_rim := PackedVector2Array([Vector2(-2.9,-1.1),Vector2(-1.9,-3.5),Vector2(1.3,-3.8),Vector2(3.5,-2.1),Vector2(4.2,.7),Vector2(3.2,3.8),Vector2(.5,4.4),Vector2(-2.8,3.9),Vector2(-3.05,2.5)])
 var fields: Array[Dictionary] = []
 var rim := PackedVector2Array([Vector2(-7.5,-7.6),Vector2(-4.8,-8.4),Vector2(-1,-8.2),Vector2(2.5,-7.9),Vector2(5.6,-6.5),Vector2(6.5,-3.8),Vector2(6.4,-.8),Vector2(6.8,1.3),Vector2(5.8,4.8),Vector2(3.5,6.1),Vector2(.7,6.7),Vector2(-2.5,6.1),Vector2(-5.5,5.6),Vector2(-7.2,3.2),Vector2(-7.6,.2),Vector2(-7.1,-3.6)])
 var paths: Array[PackedVector3Array] = [
@@ -56,3 +60,6 @@ func _init() -> void:
 
 func field_transform(index: int) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, deg_to_rad(fields[index].yaw)), fields[index].position)
+
+func plateau() -> PackedVector2Array:
+	return BankGeometry.ring(BankGeometry.contour(rim), .96, bank_width)

@@ -13,6 +13,7 @@ const WaterContacts = preload("res://presentation/water_contacts.gd")
 const NeighborIslets = preload("res://scenes/environment/neighbor_islets.gd")
 const CourtyardAssets = preload("res://scenes/environment/courtyard_assets.gd")
 const CourtyardAnimals = preload("res://scenes/environment/courtyard_animals.gd")
+const BankGeometry = preload("res://layout/bank_geometry.gd")
 # World heights of the two surfaces props actually stand on in this courtyard.
 const GROUND_LEVEL := 0.132
 const DECK_LEVEL := 0.41
@@ -91,6 +92,21 @@ func _module(id: String, at: Vector3, yaw_degrees: float=0, scale_value: Vector3
 	if id in ["island_bank_v2", "east_bank_v2"] or id.begins_with("stone_"): _shore_sources.append(node)
 	return node
 
+func _bank(role: String, outline: PackedVector2Array, at: Vector3, yaw_degrees: float = 0) -> Node3D:
+	var node := Node3D.new()
+	node.name = "MainBank" if role == "main" else "EastBank"
+	node.set_meta("bank_role", role)
+	node.position = at
+	node.rotation.y = deg_to_rad(yaw_degrees)
+	var surface := MeshInstance3D.new()
+	surface.name = "RoundedShore"
+	surface.mesh = BankGeometry.build(outline, plan.ground_height, plan.bank_width)
+	node.add_child(surface)
+	add_child(node)
+	_apply_pigment(node, "island_bank_v2" if role == "main" else "east_bank_v2")
+	_shore_sources.append(node)
+	return node
+
 func _apply_pigment(node: Node, module_id: String = "") -> void:
 	if node is MeshInstance3D:
 		# Layer 2 is the decal receiver set. The veranda joins the island so the
@@ -126,7 +142,7 @@ func _asset(id: String, key: String, at: Vector3, yaw_degrees: float=0, size: fl
 	return holder
 
 func _build_ground() -> void:
-	_module("island_bank_v2",Vector3.ZERO)
+	_bank("main", plan.rim, Vector3.ZERO)
 	_water=MeshInstance3D.new();_water.name="WaterSurface"
 	var plane:=PlaneMesh.new();plane.size=Vector2(180,180);_water.mesh=plane
 	var water_material:=ShaderMaterial.new();water_material.shader=load("res://atmosphere/quiet_water.gdshader")
@@ -184,7 +200,7 @@ func _build_architecture() -> void:
 	_module("stone_bridge",plan.anchors.bridge,plan.angles.bridge)
 	_boat=_asset("boat","CoveredBoat",plan.anchors.boat,plan.angles.boat,.85)
 	# Opposite landing is a small bank, with irregular rock margins, not a floating bridge end.
-	_module("east_bank_v2",plan.anchors.east_bank,plan.angles.east_bank)
+	_bank("east", plan.east_rim, plan.anchors.east_bank, plan.angles.east_bank)
 	for index: int in 7:
 		var point := Vector3(10.52,.112,.23).lerp(Vector3(13.35,.112,-1.45),index/6.0)
 		_tint_stone(_module("stone_1",point,24+index*13,Vector3(.82,.25,.65)),Color("93907e"))
