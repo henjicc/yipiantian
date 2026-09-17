@@ -41,7 +41,18 @@ $hardware.background_load_scope = 'Existing user-owned project game instances ar
 function Read-EvidenceJson([string]$Path) {
     # Allow the game's atomic status replacement while sampling; the collector
     # must not introduce Windows sharing failures into the instrumented process.
-    $stream = [IO.FileStream]::new($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
+    # Godot's replace can briefly remove the name between Test-Path and Open.
+    # Retry only that gap or a Windows sharing/lock conflict, at most 175 ms.
+    for ($attempt = 0; $attempt -lt 8; $attempt++) {
+        try {
+            $stream = [IO.FileStream]::new($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
+            break
+        } catch [IO.IOException] {
+            $code = $_.Exception.GetBaseException().HResult -band 0xffff
+            if ($code -notin @(2,32,33) -or $attempt -eq 7) { throw }
+            Start-Sleep -Milliseconds 25
+        }
+    }
     $reader = [IO.StreamReader]::new($stream)
     try { $jsonText=$reader.ReadToEnd() } finally { $reader.Dispose() }
     return $jsonText | ConvertFrom-Json

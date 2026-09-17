@@ -3,8 +3,8 @@ extends Camera3D
 
 signal motion_finished
 
-const DEFAULT_POINT := Vector3(0.0, 0.6, 0.0)
-const DEFAULT_VIEW := Vector3(32.0, 34.0, 29.5)
+const DEFAULT_POINT := Vector3(0.0, 0.85, 0.0)
+const DEFAULT_VIEW := Vector3(25.0, 28.0, 28.0)
 
 var focus_point: Vector3 = DEFAULT_POINT
 var view: Vector3 = DEFAULT_VIEW # yaw, pitch, distance
@@ -16,10 +16,13 @@ var _anchor: Vector3 = DEFAULT_POINT
 var _transition: Tween
 var _destination_point: Vector3 = DEFAULT_POINT
 var _destination_view: Vector3 = DEFAULT_VIEW
+var _decoration_framing: bool = false
+var _decoration_return_point: Vector3 = DEFAULT_POINT
+var _decoration_return_view: Vector3 = DEFAULT_VIEW
 
 
 func _ready() -> void:
-	fov = 35.0
+	fov = 29.0
 	near = 0.1
 	far = 150.0
 	_apply_pose()
@@ -30,6 +33,8 @@ func _process(_delta: float) -> void:
 
 
 func focus_field(point: Vector3) -> void:
+	if _decoration_framing:
+		set_decoration_framing(false)
 	if not focused:
 		# Re-entering focus while returning must remember the overview destination,
 		# not a transient position halfway through that return.
@@ -38,7 +43,7 @@ func focus_field(point: Vector3) -> void:
 		_saved_view = _destination_view if returning else view
 	focused = true
 	_anchor = point + Vector3(0.0, 0.35, 0.0)
-	_move_to(_anchor, Vector3(view.x, 36.0, 9.5))
+	_move_to(_anchor, Vector3(view.x, 40.0, 10.4))
 
 
 func return_overview() -> void:
@@ -50,14 +55,34 @@ func return_overview() -> void:
 
 
 func reset_view() -> void:
+	# Reset means the normal default, including when a caller resets during framing.
+	_decoration_framing = false
 	focused = false
 	_anchor = DEFAULT_POINT
 	_move_to(DEFAULT_POINT, DEFAULT_VIEW)
 
 
+func set_decoration_framing(active: bool) -> void:
+	if active == _decoration_framing:
+		return
+	if active:
+		if focused:
+			return_overview()
+		var returning: bool = is_transitioning()
+		_decoration_return_point = _destination_point if returning else focus_point
+		_decoration_return_view = _destination_view if returning else view
+		_decoration_framing = true
+		# Use a tested operation pose, independent of the player's extreme orbit.
+		# Its higher angle keeps all eight slots visible above the bottom tool shelf.
+		_move_to(DEFAULT_POINT - Vector3.UP * 1.8, Vector3(25.0, 34.0, 31.0))
+	else:
+		_decoration_framing = false
+		_move_to(_decoration_return_point, _decoration_return_view)
+
+
 func zoom(amount: float) -> void:
 	_stop_transition()
-	view.z = clampf(view.z + amount, 7.5 if focused else 22.0, 15.0 if focused else 34.0)
+	view.z = clampf(view.z + amount, 8.5 if focused else 27.0, 16.0 if focused else 38.0)
 	_apply_pose()
 	motion_finished.emit()
 
@@ -73,7 +98,7 @@ func drag(relative: Vector2, pan: bool) -> void:
 		focus_point.z = clampf(focus_point.z, _anchor.z - limit, _anchor.z + limit)
 	else:
 		view.x = clampf(view.x - relative.x * 0.18, -12.0, 68.0)
-		view.y = clampf(view.y + relative.y * 0.18, 28.0, 58.0)
+		view.y = clampf(view.y + relative.y * 0.18, 32.0 if focused else 24.0, 54.0 if focused else 40.0)
 	_apply_pose()
 	motion_finished.emit()
 

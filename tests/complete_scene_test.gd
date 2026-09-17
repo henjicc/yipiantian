@@ -39,10 +39,12 @@ func _run() -> void:
 	await _capture("01-initial-day.png")
 	var data: Dictionary = scene.farm_state.snapshot()
 	for index in 6:
-		var id: String = Farm.FIELD_IDS[index]
-		data.fields[id].crop_id = "greens" if index < 3 else "radish"
-		data.fields[id].growth_seconds = [0.0, 0.6, 1.0][index % 3] * (1800.0 if index < 3 else 5400.0)
-		data.fields[id].watered = false
+		for cell_index: int in Farm.CELL_IDS.size():
+			var cell: Dictionary = data.fields[Farm.FIELD_IDS[index]].cells[Farm.CELL_IDS[cell_index]]
+			var visual_index: int = (index + cell_index) % 6
+			cell.crop_id = "greens" if visual_index < 3 else "radish"
+			cell.growth_seconds = [0.0, 0.6, 1.0][visual_index % 3] * (1800.0 if visual_index < 3 else 5400.0)
+			cell.watered = false
 	_expect(scene.farm_state.restore_snapshot(data), "Six-stage fixture obeys production state schema")
 	scene.refresh_farm()
 	await _capture("02-all-six-stages.png")
@@ -51,16 +53,20 @@ func _run() -> void:
 		var field: Dictionary = scene.farm_state.get_field(Farm.FIELD_IDS[index])
 		var plants: Node3D = body.get_node("Crops")
 		_expect(plants.get_child_count() == 16 and body.get_meta("field_id") == field.id, "Stable field identity with sixteen independently grouped plants")
-		var plant: Node3D = plants.get_child(0)
-		_expect(plant.scene_file_path == Crops.scene_path(field.crop_id, field.stage) and plant.scale == Vector3.ONE, "Correct formal stage resource at authored meter scale")
-		_expect(is_equal_approx(plant.position.y, scene.farm.FIELD_SIZE.y / 2.0 - Crops.planting_depth(field.crop_id, field.stage)), "Formal crop uses fixed soil planting depth")
-		var point: Vector3 = body.global_position + Vector3(0, 0.3, 0)
+		for cell_id: String in Farm.CELL_IDS:
+			var cell: Dictionary = field.cells[cell_id]
+			var plant: Node3D = plants.get_node(NodePath(cell_id))
+			_expect(plant.scene_file_path == Crops.scene_path(cell.crop_id, cell.stage) and plant.scale == Vector3.ONE, "Correct mixed-cell formal stage resource at authored meter scale")
+			_expect(is_equal_approx(plant.position.y, scene.farm.FIELD_SIZE.y / 2.0 - Crops.planting_depth(cell.crop_id, cell.stage)), "Formal crop uses fixed soil planting depth")
+		# Stop inside the shallow soil body; the former crop-height collider is gone.
+		var point: Vector3 = body.global_position
 		var ray := PhysicsRayQueryParameters3D.create(scene.camera.global_position, point, 1)
 		_expect(scene.get_world_3d().direct_space_state.intersect_ray(ray).get("collider") == body, "Field collision remains independent of stage mesh")
 	# Compare the same composition at full crop density without changing first-save defaults.
 	var mature: Dictionary = data.duplicate(true)
 	for index in 6:
-		mature.fields[Farm.FIELD_IDS[index]].growth_seconds = 1800.0 if index < 3 else 5400.0
+		for cell: Dictionary in mature.fields[Farm.FIELD_IDS[index]].cells.values():
+			cell.growth_seconds = 1800.0 if cell.crop_id == "greens" else 5400.0
 	_expect(scene.farm_state.restore_snapshot(mature), "Maximum-density visual fixture preserves the farm schema")
 	scene.refresh_farm()
 	await _capture("02b-all-mature.png")

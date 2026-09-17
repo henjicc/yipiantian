@@ -13,9 +13,9 @@
   "stone_0": {
     "triangles": 200,
     "dimensions_godot_xyz": [
-      0.940729022026062,
-      0.21082308888435364,
-      0.7397313117980957
+      0.896253228187561,
+      0.21631993353366852,
+      0.7170976996421814
     ],
     "lod": "single measured module",
     "materials": 1,
@@ -24,9 +24,9 @@
   "stone_1": {
     "triangles": 200,
     "dimensions_godot_xyz": [
-      0.8624054789543152,
-      0.22984817624092102,
-      0.7038712501525879
+      0.8379639387130737,
+      0.23177695274353027,
+      0.682475209236145
     ],
     "lod": "single measured module",
     "materials": 1,
@@ -35,9 +35,9 @@
   "stone_2": {
     "triangles": 216,
     "dimensions_godot_xyz": [
-      0.9256402254104614,
-      0.21921180188655853,
-      0.7327604293823242
+      0.9039579629898071,
+      0.21779856085777283,
+      0.7118450999259949
     ],
     "lod": "single measured module",
     "materials": 1,
@@ -46,31 +46,31 @@
   "stone_3": {
     "triangles": 184,
     "dimensions_godot_xyz": [
-      1.0240449905395508,
-      0.2305281162261963,
-      0.7192822694778442
+      0.9926222562789917,
+      0.29489243030548096,
+      0.6942592859268188
     ],
     "lod": "single measured module",
     "materials": 1,
     "reimport_verified": true
   },
   "stone_4": {
-    "triangles": 200,
+    "triangles": 184,
     "dimensions_godot_xyz": [
-      0.8645843863487244,
-      0.24798895418643951,
-      0.6428540945053101
+      0.823729395866394,
+      0.2535460591316223,
+      0.6177393198013306
     ],
     "lod": "single measured module",
     "materials": 1,
     "reimport_verified": true
   },
   "stone_bridge": {
-    "triangles": 8600,
+    "triangles": 15800,
     "dimensions_godot_xyz": [
-      4.789999961853027,
-      1.977434754371643,
-      1.9300000667572021
+      4.849999904632568,
+      2.365000009536743,
+      2.0
     ],
     "lod": "single measured module",
     "materials": 5,

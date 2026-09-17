@@ -34,13 +34,16 @@ var _settings_dirty: bool = false
 var _settings_issue: String = ""
 var _allow_leave_settings: bool = false
 var selected_field: int = -1
+var selected_cell: String = ""
 var selected_tool: String = ""
 var selected_crop: String = "greens"
 var _dragging: bool = false
 var _press_position := Vector2.INF
 var _press_dragged: bool = false
 var _pressed_field: int = -1
+var _pressed_cell: String = ""
 var _press_context: Dictionary = {}
+var _tool_press: Dictionary = {}
 var _picks: Array[Dictionary] = []
 var _loaded: bool = false
 var _save_failed: bool = false
@@ -72,7 +75,8 @@ func _ready() -> void:
 	hud = HUD.new()
 	hud.name = "HUD"
 	add_child(hud)
-	hud.tool_requested.connect(_select_tool)
+	hud.tool_press_started.connect(_start_tool_press)
+	hud.tool_requested.connect(_finish_tool_press)
 	hud.crop_requested.connect(_select_crop)
 	hud.overview_requested.connect(_return_overview)
 	hud.reset_requested.connect(_reset_view)
@@ -89,7 +93,7 @@ func _ready() -> void:
 	decoration_layout.name = "Decorations"
 	add_child(decoration_layout)
 	decoration_layout.configure(courtyard, camera, decoration_state if _loaded else DecorationState.new())
-	decoration_layout.mode_changed.connect(func(_active: bool) -> void: _refresh_hud())
+	decoration_layout.mode_changed.connect(_on_decoration_mode_changed)
 	decoration_layout.confirmed.connect(_save_farm)
 	farm_audio = FarmAudio.new()
 	farm_audio.name = "FarmAudio"
@@ -252,8 +256,8 @@ func refresh_farm() -> void:
 func _refresh_hud() -> void:
 	if hud == null or not _loaded:
 		return
-	var field: Dictionary = {} if selected_field < 0 else farm_state.get_field(farm.field_id(selected_field))
-	hud.show_state(field, farm_state.snapshot().harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed)
+	var cell: Dictionary = {} if selected_field < 0 or selected_cell.is_empty() else farm_state.get_cell(farm.field_id(selected_field), selected_cell)
+	hud.show_state(cell, farm_state.snapshot().harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed, selected_field)
 	hud.show_decoration_mode(decoration_layout != null and decoration_layout.active)
 
 
@@ -266,6 +270,20 @@ func _begin_decoration() -> void:
 	_return_overview()
 	decoration_layout.begin_mode()
 	farm_audio.play_ui()
+
+
+func _on_decoration_mode_changed(active: bool) -> void:
+	_cancel_input()
+	selected_tool = ""
+	selected_field = -1
+	selected_cell = ""
+	farm.select_field(-1)
+	farm.select_cell(-1, "")
+	if focus_detail != null:
+		focus_detail.set_focus()
+	camera.set_decoration_framing(active)
+	hud.clear_feedback()
+	_refresh_hud()
 
 
 func _refresh_lanterns() -> void:
@@ -307,8 +325,10 @@ func _input(event: InputEvent) -> void:
 			_dragging = false
 		elif event.button_index == MOUSE_BUTTON_LEFT:
 			var hovered := get_viewport().gui_get_hovered_control()
-			if event.canceled or (hovered != null and hovered.mouse_filter != Control.MOUSE_FILTER_IGNORE):
+			if event.canceled:
 				_cancel_input()
+			elif hovered != null and hovered.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+				_cancel_input(false)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -323,10 +343,11 @@ func _unhandled_input(event: InputEvent) -> void:
 				if event.double_click or event.canceled:
 					_cancel_input()
 				elif event.pressed:
+					_tool_press = {}
 					_press_position = event.position
 					_press_dragged = _dragging
 					_picks.append({"down": true, "position": event.position, "dragged": _dragging,
-						"action_allowed": not camera.is_transitioning(), "selection": selected_field, "tool": selected_tool})
+						"action_allowed": not camera.is_transitioning(), "selection": selected_field})
 				elif _press_position != Vector2.INF:
 					_picks.append({"down": false, "position": event.position, "dragged": _press_dragged,
 						"action_allowed": not camera.is_transitioning()})
@@ -351,18 +372,22 @@ func _physics_process(_delta: float) -> void:
 	var picks: Array[Dictionary] = _picks
 	_picks = []
 	for pick: Dictionary in picks:
-		var index: int = _field_at(pick.position)
+		var hit: Dictionary = _farm_hit(pick.position)
+		var index: int = hit.get("field", -1)
+		var cell_id: String = hit.get("cell", "")
 		if pick.down:
 			_pressed_field = index
+			_pressed_cell = cell_id
 			_press_context = pick
 		else:
-			if not pick.dragged and index >= 0 and index == _pressed_field:
+			if not pick.dragged and index >= 0 and index == _pressed_field and cell_id == _pressed_cell:
 				if index != selected_field:
 					_focus_field(index)
 				elif pick.action_allowed and _press_context.get("action_allowed", false) and not camera.is_transitioning():
-					if _press_context.get("selection", -1) == selected_field and _press_context.get("tool", "") == selected_tool:
-						_apply_tool()
+					if _press_context.get("selection", -1) == selected_field:
+						_select_cell(cell_id)
 			_pressed_field = -1
+			_pressed_cell = ""
 			_press_context = {}
 
 
@@ -389,33 +414,79 @@ func _notification(what: int) -> void:
 
 
 func _field_at(screen_point: Vector2) -> int:
+	return int(_farm_hit(screen_point).get("field", -1))
+
+
+func _cell_at(screen_point: Vector2, field_index: int) -> String:
+	var hit: Dictionary = _farm_hit(screen_point)
+	return str(hit.get("cell", "")) if hit.get("field", -1) == field_index else ""
+
+
+func _farm_hit(screen_point: Vector2) -> Dictionary:
 	var origin := camera.project_ray_origin(screen_point)
 	var end := origin + camera.project_ray_normal(screen_point) * 120.0
 	var query := PhysicsRayQueryParameters3D.create(origin, end, 1)
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if hit.is_empty():
-		return -1
-	return int(hit.collider.get_meta("field_index", -1))
+		return {}
+	var index: int = int(hit.collider.get_meta("field_index", -1))
+	if index < 0:
+		return {}
+	# Only the actual top soil plane can select a cell; bed sides still focus its field.
+	var cell_id: String = farm.cell_at(index, hit.position) if hit.normal.y > 0.9 else ""
+	return {"field": index, "cell": cell_id}
 
 
 func _focus_field(index: int) -> void:
 	_cancel_input()
 	selected_tool = ""
 	selected_field = index
+	selected_cell = ""
 	farm.select_field(index)
+	farm.select_cell(-1, "")
 	focus_detail.set_focus(farm.fields[index])
 	camera.focus_field(farm.fields[index].global_position)
 	hud.clear_feedback()
 	_refresh_hud()
 
 
-func _select_tool(tool: String) -> void:
-	_cancel_input()
-	if not _loaded or _save_failed or selected_field < 0 or camera.is_transitioning():
+func _select_cell(cell_id: String) -> void:
+	if selected_field < 0 or (not cell_id.is_empty() and not FarmState.CELL_IDS.has(cell_id)):
 		return
-	selected_tool = "" if selected_tool == tool else tool
-	farm_audio.play_ui()
+	_cancel_input()
+	selected_cell = cell_id
+	farm.select_cell(selected_field, cell_id)
 	hud.clear_feedback()
+	_refresh_hud()
+
+
+func _start_tool_press(tool: String) -> void:
+	var dragging: bool = _dragging
+	_cancel_input()
+	if not dragging and _can_work_cell():
+		_tool_press = {"tool": tool, "field": selected_field, "cell": selected_cell}
+
+
+func _finish_tool_press(tool: String) -> void:
+	var admitted: bool = _tool_press.get("tool", "") == tool and _tool_press.get("field", -1) == selected_field and _tool_press.get("cell", "") == selected_cell
+	_tool_press = {}
+	if admitted:
+		_select_tool(tool)
+
+
+func _can_work_cell() -> bool:
+	return _loaded and not _save_failed and not _exiting and selected_field >= 0 and not selected_cell.is_empty() and not camera.is_transitioning() and not (game_menu != null and game_menu.visible) and not (decoration_layout != null and decoration_layout.active)
+
+
+func _select_tool(tool: String) -> void:
+	# A toolbar intent acts on the explicitly selected cell. World clicks never farm.
+	_cancel_input()
+	if not _can_work_cell() or tool not in ["sow", "water", "harvest"]:
+		return
+	selected_tool = tool
+	hud.clear_feedback()
+	_apply_tool()
+	selected_tool = ""
 	_refresh_hud()
 
 
@@ -427,15 +498,15 @@ func _select_crop(crop_id: String) -> void:
 
 
 func _apply_tool() -> void:
-	if not _loaded or _save_failed or selected_tool.is_empty():
+	if not _can_work_cell() or selected_tool.is_empty():
 		return
 	var field_id: String = farm.field_id(selected_field)
 	var now: float = clock.call()
 	var result: Dictionary
 	match selected_tool:
-		"sow": result = farm_state.sow(field_id, selected_crop, now)
-		"water": result = farm_state.water(field_id, now)
-		"harvest": result = farm_state.harvest(field_id, now)
+		"sow": result = farm_state.sow(field_id, selected_cell, selected_crop, now)
+		"water": result = farm_state.water(field_id, selected_cell, now)
+		"harvest": result = farm_state.harvest(field_id, selected_cell, now)
 		_: return
 	hud.show_result(result, selected_tool, selected_crop)
 	farm_audio.play_action(selected_tool, result)
@@ -450,19 +521,21 @@ func _apply_tool() -> void:
 
 func _cancel_or_return() -> void:
 	_cancel_input()
-	if not selected_tool.is_empty():
-		selected_tool = ""
-		hud.clear_feedback()
-		_refresh_hud()
+	if not selected_cell.is_empty():
+		_select_cell("")
 	else:
 		_return_overview()
 
 
 func _return_overview() -> void:
+	if decoration_layout != null and decoration_layout.active:
+		decoration_layout.finish_mode()
 	_cancel_input()
 	selected_tool = ""
 	selected_field = -1
+	selected_cell = ""
 	farm.select_field(-1)
+	farm.select_cell(-1, "")
 	focus_detail.set_focus()
 	camera.return_overview()
 	hud.clear_feedback()
@@ -475,11 +548,14 @@ func _reset_view() -> void:
 	_refresh_hud()
 
 
-func _cancel_input() -> void:
+func _cancel_input(cancel_tool_press: bool = true) -> void:
+	if cancel_tool_press:
+		_tool_press = {}
 	_dragging = false
 	_press_position = Vector2.INF
 	_press_dragged = true
 	_pressed_field = -1
+	_pressed_cell = ""
 	_press_context = {}
 	_picks.clear()
 

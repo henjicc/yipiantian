@@ -2,6 +2,7 @@ extends CanvasLayer
 ## UI owns presentation and emits intent; it never changes farm state.
 
 signal tool_requested(tool: String)
+signal tool_press_started(tool: String)
 signal crop_requested(crop_id: String)
 signal overview_requested
 signal reset_requested
@@ -124,7 +125,7 @@ func _ready() -> void:
 		button.icon = load("res://art/ui/%s.svg" % item[0])
 		button.expand_icon = true
 		button.add_theme_constant_override("icon_max_width", 32)
-		button.toggle_mode = true
+		button.button_down.connect(func() -> void: tool_press_started.emit(item[0]))
 		button.pressed.connect(func() -> void: tool_requested.emit(item[0]))
 		_buttons[item[0]] = button
 	var bar := HBoxContainer.new()
@@ -247,35 +248,34 @@ func show_decoration_mode(active: bool) -> void:
 	_tool_status.visible = not active and not _tool_status.text.is_empty()
 
 
-func show_state(field: Dictionary, harvested: Dictionary, tool: String, crop_id: String, traveling: bool) -> void:
+func show_state(cell: Dictionary, harvested: Dictionary, _tool: String, crop_id: String, traveling: bool, field_index: int = -1) -> void:
 	_harvested.text = "%d 篮" % (harvested.greens + harvested.radish)
 	_harvest_detail.text = "青菜 %d  ·  白萝卜 %d" % [harvested.greens, harvested.radish]
 	_tools.visible = true
 	_crop.select(Crops.crop_ids().find(crop_id))
-	_crop.visible = not field.is_empty()
-	_crop.disabled = traveling
+	_crop.visible = field_index >= 0
+	_crop.disabled = traveling or cell.is_empty()
 	for tool_id: String in _buttons:
 		var button: Button = _buttons[tool_id]
-		button.disabled = traveling or field.is_empty()
-		button.set_pressed_no_signal(tool == tool_id)
-		button.text = ("✓ " if tool == tool_id else "") + {"sow": "播种", "water": "浇水", "harvest": "收获"}[tool_id]
-	if field.is_empty():
-		_status.text = "全景 · 点击田块靠近"
+		button.disabled = traveling or cell.is_empty()
+	if cell.is_empty():
+		_status.text = "全景" if field_index < 0 else "第 %d 块田 · 未选格" % (field_index + 1)
 		_tool_status.text = ""
 		_fit_tag(_status)
 		_fit_tag(_tool_status)
 		return
-	var title: String = "第 %d 块田" % int(field.id.trim_prefix("field_"))
-	if field.stage == "empty":
-		_status.text = title + " · 空田"
+	var cell_index: int = int(cell.id.trim_prefix("cell_")) - 1
+	var title: String = "第 %d 块田 · %d行%d列" % [int(cell.field_id.trim_prefix("field_")), int(cell_index / 4) + 1, cell_index % 4 + 1]
+	if cell.stage == "empty":
+		_status.text = title + " · 空格"
 	else:
-		var stage_name: String = {"sprout": "幼芽", "young": "幼株", "mature": "可收获"}[field.stage]
-		_status.text = "%s · %s · %s" % [title, Crops.definition(field.crop_id).name, stage_name]
-		if field.stage != "mature":
-			_status.text += " · 约 %d 分钟" % maxi(1, ceili(field.remaining_seconds / 60.0))
-			if field.watered:
+		var stage_name: String = {"sprout": "幼芽", "young": "幼株", "mature": "可收获"}[cell.stage]
+		_status.text = "%s · %s · %s" % [title, Crops.definition(cell.crop_id).name, stage_name]
+		if cell.stage != "mature":
+			_status.text += " · 约 %d 分钟" % maxi(1, ceili(cell.remaining_seconds / 60.0))
+			if cell.watered:
 				_status.text += " · 已浇水"
-	_tool_status.text = "镜头移动中" if traveling else ("" if tool.is_empty() else "已选%s · 点击当前田块" % {"sow": "播种", "water": "浇水", "harvest": "收获"}[tool])
+	_tool_status.text = "镜头移动中" if traveling else ""
 	_fit_tag(_status)
 	_fit_tag(_tool_status)
 
@@ -288,9 +288,9 @@ func show_result(result: Dictionary, tool: String, crop_id: String) -> void:
 			"harvest": _feedback.text = "%s +1 篮" % Crops.definition(result.reward_crop_id).name
 	else:
 		_feedback.text = {
-			"occupied": "田里已有作物", "empty": "这块田还没有作物", "mature": "作物已成熟，可以收获",
+			"occupied": "这一格已有作物", "empty": "这一格还没有作物", "mature": "作物已成熟，可以收获",
 			"already_watered": "这一轮已经浇过水", "not_mature": "作物还在生长", "harvest_limit": "收获记录已满",
-			"invalid_time": "系统时间暂不可用", "invalid_field": "没有选中田块", "invalid_crop": "请选择作物"
+			"invalid_time": "系统时间暂不可用", "invalid_field": "没有选中田块", "invalid_cell": "请选择一格", "invalid_crop": "请选择作物"
 		}.get(result.reason, "操作未完成")
 	_fit_tag(_feedback)
 

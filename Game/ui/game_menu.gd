@@ -114,7 +114,7 @@ func _ready() -> void:
 		_change("dof_enabled", enabled)
 		_refresh_dof())
 	var operations: RichTextLabel = _text_page(content, "操作说明")
-	operations.text = "[b]照料田地[/b]\n点击田块靠近查看，再选播种、浇水或收获，点击当前田块完成。播种前可切换青菜或白萝卜。\n\n[b]观察院落[/b]\n滚轮缩放；按住鼠标中键拖动转动视角；Shift＋中键拖动平移。\n\n[b]返回与布置[/b]\n右键或 Esc 先取消当前操作，再返回全景。布置时选装饰、点空位，再确认；旋转适用于地面装饰。\n\n作物按现实时间生长。离开后再次进入，会继续上次的农场。"
+	operations.text = "[b]照料田地[/b]\n点击大田靠近，再点击其中一格选中。播种旁可选青菜或白萝卜；点击播种、浇水或收获，直接照料选中格。每格独立生长，成熟收获一篮。\n\n[b]观察院落[/b]\n滚轮缩放；按住鼠标中键拖动转动视角；Shift＋中键拖动平移。\n\n[b]返回与布置[/b]\n右键或 Esc 先清除选格，再返回全景。布置时选装饰、点空位，再确认；旋转适用于地面装饰。\n\n作物按现实时间生长。离开后再次进入，会继续上次的农场。"
 	var sources: RichTextLabel = _text_page(content, "制作来源")
 	sources.text = "[b]我有一片田[/b]\n图像：OpenAI 图像生成，依项目定稿参考制作。\n模型草案：Tripo；模型整理与补制：Blender。\n场景、界面与交互：Godot。\n音乐、环境声与操作声：项目内合成制作。\n\n[b]中文字体[/b]\nNoto Serif CJK SC Regular · Version 2.003\n© 2017–2024 Adobe（字体内署名）\nSIL Open Font License 1.1\n官方来源：github.com/notofonts/noto-cjk\n\n完整字体许可随游戏附带。"
 	_status = Label.new()

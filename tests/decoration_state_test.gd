@@ -23,10 +23,10 @@ func _run() -> void:
 	var now: float = 1000.0
 	for crop: String in ["greens", "radish"]:
 		for cycle in (10 if crop == "greens" else 6):
-			farm.sow("field_01", crop, now)
-			farm.water("field_01", now)
+			farm.sow("field_01", "cell_06", crop, now)
+			farm.water("field_01", "cell_06", now)
 			now += 6000.0
-			farm.harvest("field_01", now)
+			farm.harvest("field_01", "cell_06", now)
 			var unlocked: Array[String] = decorations.unlock(farm.snapshot().harvested)
 			if crop == "greens" and cycle == 2:
 				_expect(unlocked == ["pot"], "Exactly three total baskets unlock pot")
@@ -53,9 +53,12 @@ func _run() -> void:
 	invalid = decorations.snapshot()
 	invalid.pot.quarter_turn = 1.5
 	_expect(not restored.restore_snapshot(invalid), "Fractional rotation rejected at load")
-	var folder: String = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/decorations-%d" % Time.get_ticks_usec())
+	var folder: String = ProjectSettings.globalize_path("res://../").simplify_path().path_join(".local/verification/decorations-%d" % Time.get_ticks_usec())
 	DirAccess.make_dir_recursive_absolute(folder)
-	var original: String = JSON.stringify({"version": 1, "farm": farm.snapshot()})
+	var legacy: Dictionary = {"fields": {}, "harvested": farm.snapshot().harvested}
+	for field_id: String in Farm.FIELD_IDS:
+		legacy.fields[field_id] = farm.snapshot().fields[field_id].cells.cell_06.duplicate(true)
+	var original: String = JSON.stringify({"version": 1, "farm": legacy})
 	_write(folder.path_join(Store.MAIN), original)
 	var store := Store.new(folder)
 	var loaded: Dictionary = store.load_state()
@@ -70,7 +73,7 @@ func _run() -> void:
 			copies += 1
 	_expect(copies == 1 and FileAccess.get_file_as_string(folder.path_join(Store.MAIN)) == original, "Migration retries reuse one original copy and preserve v1")
 	FileAccess.set_read_only_attribute(folder.path_join(Store.MAIN), false)
-	_expect(store.save(farm.snapshot(), decorations.snapshot()).ok, "Version two saves full state explicitly")
+	_expect(store.save(farm.snapshot(), decorations.snapshot()).ok, "Version three saves full state explicitly")
 	_expect(FileAccess.get_file_as_string(folder.path_join(Store.BACKUP)) == original, "First migration save retains exact version one backup")
 	var migration_copy: String = ""
 	for name: String in DirAccess.get_files_at(folder):
@@ -78,13 +81,13 @@ func _run() -> void:
 			migration_copy = FileAccess.get_file_as_string(folder.path_join(name))
 	_expect(migration_copy == original, "Original version one remains archived beyond rotating backups")
 	loaded = Store.new(folder).load_state()
-	_expect(loaded.ok and not loaded.migrated and loaded.decorations == decorations.snapshot() and loaded.farm == farm.snapshot(), "Version two reopens farm and decoration placements")
+	_expect(loaded.ok and not loaded.migrated and loaded.decorations == decorations.snapshot() and loaded.farm == farm.snapshot(), "Version three reopens farm and decoration placements")
 	FileAccess.set_read_only_attribute(folder.path_join(Store.MAIN), true)
 	decorations.place("pot", "ground_03", 2)
 	_expect(not store.save(farm.snapshot(), decorations.snapshot()).ok and Store.new(folder).load_state().decorations == loaded.decorations, "Failed placement save preserves last committed position")
 	FileAccess.set_read_only_attribute(folder.path_join(Store.MAIN), false)
 	_expect(store.save(farm.snapshot(), decorations.snapshot()).ok and Store.new(folder).load_state().decorations == decorations.snapshot(), "Retry saves moved item without new unlock or harvest")
-	_write(folder.path_join(Store.MAIN), JSON.stringify({"version": 3, "farm": farm.snapshot(), "decorations": decorations.snapshot()}))
+	_write(folder.path_join(Store.MAIN), JSON.stringify({"version": Store.VERSION + 1, "farm": farm.snapshot(), "decorations": decorations.snapshot()}))
 	_expect(Store.new(folder).load_state().kind == "unsupported", "Newer schema refuses downgrade")
 	for failure: String in failures:
 		push_error(failure)

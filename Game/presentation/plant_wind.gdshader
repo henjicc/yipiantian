@@ -64,6 +64,11 @@ void fragment() {
 	vec3 color = base_color.rgb;
 	if (textured) { color *= texture(color_texture, UV).rgb; }
 	if (pigment) { color *= 0.87 + 0.20 * pigment_wash(world_point * wash_scale) + 0.045 * pigment_wash(world_point * wash_scale * 5.0); }
+	// Separate foliage from ochre timber and earth under the afternoon light.
+	// White radish shoulders, flowers and yellow gourds remain their own colour.
+	float leaf_pigment = smoothstep(0.98, 1.13, color.g / max(color.r, 0.001));
+	leaf_pigment *= smoothstep(1.06, 1.35, color.g / max(color.b, 0.001));
+	color *= mix(vec3(1.0), vec3(0.85, 1.14, 0.94), leaf_pigment);
 	ALBEDO = color;
 	ROUGHNESS = base_roughness;
 	SPECULAR = base_specular;

@@ -55,10 +55,10 @@ func _module(id: String, at: Vector3, yaw_degrees: float=0, scale_value: Vector3
 	var node: Node3D = (load(ROOT+"modules/"+id+".glb") as PackedScene).instantiate()
 	add_child(node)
 	node.position=at; node.rotation.y=deg_to_rad(yaw_degrees); node.scale=scale_value
-	_apply_pigment(node)
+	_apply_pigment(node, id)
 	return node
 
-func _apply_pigment(node: Node) -> void:
+func _apply_pigment(node: Node, module_id: String = "") -> void:
 	if node is MeshInstance3D:
 		for surface in node.mesh.get_surface_count():
 			var original: Material = node.get_active_material(surface)
@@ -67,8 +67,10 @@ func _apply_pigment(node: Node) -> void:
 				painted.shader=PIGMENT
 				painted.set_shader_parameter("base_color",original.albedo_color)
 				painted.set_shader_parameter("wash_scale",3.5)
+				painted.set_shader_parameter("stone_treatment", 1.0 if module_id.begins_with("stone_") else 0.0)
+				painted.set_shader_parameter("ground_treatment", 1.0 if module_id == "island_bank" else 0.0)
 				node.set_surface_override_material(surface,painted)
-	for child in node.get_children(): _apply_pigment(child)
+	for child in node.get_children(): _apply_pigment(child, module_id)
 
 func _asset(id: String, key: String, at: Vector3, yaw_degrees: float=0, size: float=1.0) -> Node3D:
 	var holder := Node3D.new();holder.name=key;add_child(holder)

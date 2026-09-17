@@ -1,6 +1,6 @@
 """3.2 measured courtyard modules: authored geometry, not generated scenery."""
 from pathlib import Path
-import bpy, bmesh, math, random, json
+import bpy, bmesh, math, random, json, argparse, sys
 from mathutils import Vector
 
 repo=Path(__file__).resolve().parents[2]
@@ -8,7 +8,11 @@ folder=repo/'ArtSource/Environment/Modules'; folder.mkdir(exist_ok=True)
 out=repo/'Game/art/environment/modules'; out.mkdir(parents=True,exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 rng=random.Random(32026)
+args=argparse.ArgumentParser()
+args.add_argument('--only', nargs='+', help='Rebuild the source scene but export/audit only these modules.')
+options=args.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
 reports={}
+existing_reports=json.loads((folder/'asset-audit.json').read_text(encoding='utf-8')) if options.only else {}
 
 def mat(name,color):
     m=bpy.data.materials.new(name); m.diffuse_color=(*color,1); m.use_nodes=True
@@ -46,8 +50,9 @@ def save(name,objects):
     bm=bmesh.new(); bm.from_mesh(o.data); bmesh.ops.triangulate(bm,faces=list(bm.faces)); bm.to_mesh(o.data); bm.free()
     o.data.calc_loop_triangles()
     bpy.context.view_layer.update()
-    reports[name]={'triangles':len(o.data.loop_triangles),'dimensions_godot_xyz':[o.dimensions.x,o.dimensions.z,o.dimensions.y],'lod':'single measured module','materials':len(o.data.materials)}
-    bpy.ops.export_scene.gltf(filepath=str(out/(name+'.glb')),export_format='GLB',use_selection=True)
+    if not options.only or name in options.only:
+        reports[name]={'triangles':len(o.data.loop_triangles),'dimensions_godot_xyz':[o.dimensions.x,o.dimensions.z,o.dimensions.y],'lod':'single measured module','materials':len(o.data.materials)}
+        bpy.ops.export_scene.gltf(filepath=str(out/(name+'.glb')),export_format='GLB',use_selection=True)
     o.hide_render=True; o.hide_set(True)
     return o
 
@@ -69,11 +74,13 @@ for k in range(5):
     angles=[i*math.tau/9 for i in range(9)]
     radial=[rng.uniform(.39,.60) for i in angles]
     verts=[(math.cos(a)*r,math.sin(a)*r*.74,0) for a,r in zip(angles,radial)]
-    verts += [(math.cos(a)*r*.91,math.sin(a)*r*.66,rng.uniform(.17,.25)) for a,r in zip(angles,radial)]
+    # Leaning, tapered crowns avoid the stretched cylindrical look at the bank.
+    # No extra RNG calls: later authored placements retain their established seed.
+    verts += [(.06+math.cos(a)*r*(.69+.08*math.sin(a*2+k)),.035+math.sin(a)*r*.57,rng.uniform(.17,.25)) for a,r in zip(angles,radial)]
     faces=[tuple(range(9,18)),tuple(reversed(range(9)))]+[(i,(i+1)%9,(i+1)%9+9,i+9) for i in range(9)]
     o=mesh('Naturally worn river stone',verts,faces,stone[k]); bevel=o.modifiers.new('Rounded weathering','BEVEL');bevel.width=.08;bevel.segments=2
     bpy.context.view_layer.objects.active=o;bpy.ops.object.modifier_apply(modifier=bevel.name)
-    for face in o.data.polygons:face.use_smooth=True
+    for face in o.data.polygons:face.use_smooth=False
     save('stone_'+str(k),[o])
 
 # Segmented stone arch; true open underside, visible masonry joints, no solid block fake.
@@ -81,19 +88,34 @@ bridge=[]; count=22; length=4.6
 for i in range(count):
     x0=-length/2+i*length/count+.007; x1=-length/2+(i+1)*length/count-.007
     z0=.20+1.05*math.sin(math.pi*(x0/length+.5)); z1=.20+1.05*math.sin(math.pi*(x1/length+.5))
-    verts=[(x0,-.85,z0-.25),(x1,-.85,z1-.25),(x1,.85,z1-.25),(x0,.85,z0-.25),(x0,-.85,z0),(x1,-.85,z1),(x1,.85,z1),(x0,.85,z0)]
+    verts=[(x0,-.85,z0-.48),(x1,-.85,z1-.48),(x1,.85,z1-.48),(x0,.85,z0-.48),(x0,-.85,z0),(x1,-.85,z1),(x1,.85,z1),(x0,.85,z0)]
     bridge.append(mesh('Arch voussoir '+str(i),verts,[(0,3,2,1),(4,5,6,7),(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7)],stone[i%5]))
     block=bridge[-1];bpy.context.view_layer.objects.active=block
     bevel=block.modifiers.new('Worn masonry edges','BEVEL');bevel.width=.035;bevel.segments=3
     bpy.ops.object.modifier_apply(modifier=bevel.name)
 for side in [-1,1]:
+    # Staggered masonry under each end grounds the arch in the river banks.
+    for end in [-1,1]:
+        for course in range(3):
+            for column in range(2):
+                x=end*(1.78+column*.32+(course%2)*.08)
+                bridge.append(box('Bridge abutment',(x,side*.69,-.30+course*.22),(.37,.39,.22),stone[(course+column)%5],.025))
     for j in range(9):
         x=-2.3+j*.575; z=.20+1.05*math.sin(math.pi*(x/4.6+.5))
-        bridge.append(box('Carved bridge post',(x,side*.86,z+.30),(.12,.14,.68),stone[(j+1)%5],.025))
-        bridge.append(box('Cap',(x,side*.86,z+.66),(.19,.21,.07),stone[2],.025))
+        bridge.append(box('Carved bridge post',(x,side*.86,z+.30),(.18,.21,.68),stone[(j+1)%5],.025))
+        bridge.append(box('Cap',(x,side*.86,z+.66),(.25,.28,.09),stone[2],.025))
         if j:
             xp=x-.575; zp=.20+1.05*math.sin(math.pi*(xp/4.6+.5))
-            bridge.append(pole('Stone handrail',(xp,side*.86,zp+.57),(x,side*.86,z+.57),.065,stone[1]))
+            # Closed, two-course stone parapets follow the arch, with visible
+            # joints. This gives a silhouette like a small Jiangnan stone bridge.
+            for course in range(2):
+                centre=Vector(((xp+x)/2,side*.86,(zp+z)/2+.15+course*.18))
+                panel=box('Masonry parapet',centre,(math.hypot(x-xp,z-zp)-.10,.16,.17),stone[(j+course)%5],.018)
+                panel.rotation_euler.y=-math.atan2(z-zp,x-xp)
+                bridge.append(panel)
+            rail=box('Stone coping',((xp+x)/2,side*.86,(zp+z)/2+.54),(math.hypot(x-xp,z-zp),.24,.11),stone[1],.025)
+            rail.rotation_euler.y=-math.atan2(z-zp,x-xp)
+            bridge.append(rail)
 save('stone_bridge',bridge)
 
 rail=[]
@@ -160,6 +182,7 @@ save('veranda',porch)
 rimobjects=[box('Long bed frame',(0,y,.03),(2.72,.075,.075),timber,.02) for y in [-1.065,1.065]]
 rimobjects +=[box('Short bed frame',(x,0,.03),(.075,2.12,.075),timber,.02) for x in [-1.34,1.34]]
 save('field_frame',rimobjects)
+assert not options.only or set(options.only)<=reports.keys(), 'Unknown module: '+str(options.only)
 bpy.ops.file.pack_all();bpy.ops.wm.save_as_mainfile(filepath=str(folder/'courtyard_modules.blend'))
 for name,report in reports.items():
     bpy.ops.wm.read_factory_settings(use_empty=True);bpy.ops.import_scene.gltf(filepath=str(out/(name+'.glb')))
@@ -167,5 +190,6 @@ for name,report in reports.items():
     for o in meshes:o.data.calc_loop_triangles()
     assert sum(len(o.data.loop_triangles) for o in meshes)==report['triangles'],name
     report['reimport_verified']=True
-(folder/'asset-audit.json').write_text(json.dumps(reports,indent=2),encoding='utf-8')
+existing_reports.update(reports)
+(folder/'asset-audit.json').write_text(json.dumps(existing_reports,indent=2),encoding='utf-8')
 print('MODULES_READY',json.dumps(reports))

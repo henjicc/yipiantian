@@ -37,9 +37,10 @@ func _run() -> void:
 	var data: Dictionary = Farm.new(now).snapshot()
 	data.harvested = {"greens": 10, "radish": 6}
 	for index: int in 6:
-		var field: Dictionary = data.fields[Farm.FIELD_IDS[index]]
-		field.crop_id = "greens" if index % 2 == 0 else "radish"
-		field.growth_seconds = 1800.0 if index % 2 == 0 else 5400.0
+		for cell_index: int in Farm.CELL_IDS.size():
+			var cell: Dictionary = data.fields[Farm.FIELD_IDS[index]].cells[Farm.CELL_IDS[cell_index]]
+			cell.crop_id = "greens" if (index + cell_index) % 2 == 0 else "radish"
+			cell.growth_seconds = 1800.0 if cell.crop_id == "greens" else 5400.0
 	var decorations = Decoration.new()
 	decorations.unlock(data.harvested)
 	decorations.place("pot", "ground_01", 0)
@@ -141,8 +142,8 @@ func _run() -> void:
 	await _shot("foliage_all_high")
 	root.mesh_lod_threshold = 1.0
 	await _shot("foliage_lod")
-	scene.farm_state.harvest("field_01", now)
-	scene.farm_state.sow("field_01", "greens", now)
+	scene.farm_state.harvest("field_01", "cell_01", now)
+	scene.farm_state.sow("field_01", "cell_01", "greens", now)
 	scene.refresh_farm()
 	_expect(_field_bias(0) > 1.0, "Newly planted stage immediately inherits selected detail")
 	scene._return_overview()

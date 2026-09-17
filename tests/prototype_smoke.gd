@@ -16,7 +16,7 @@ func _run() -> void:
 	# Give offscreen runs the same viewport geometry as the interactive window.
 	root.size = Vector2i(1280, 720)
 	scene = load("res://scenes/main.tscn").instantiate()
-	var isolated: String = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/scene-save-%d" % Time.get_ticks_usec())
+	var isolated: String = ProjectSettings.globalize_path("res://../").simplify_path().path_join(".local/verification/scene-save-%d" % Time.get_ticks_usec())
 	scene.store = load("res://farm/farm_store.gd").new(isolated)
 	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("preferences"))
 	root.add_child(scene)
@@ -85,6 +85,9 @@ func _run() -> void:
 	for failure in failures:
 		push_error(failure)
 	print("PROTOTYPE_SMOKE failures=%d" % failures.size())
+	scene.free()
+	await process_frame
+	await process_frame
 	quit(0 if failures.is_empty() else 1)
 
 

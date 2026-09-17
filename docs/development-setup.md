@@ -1,6 +1,6 @@
 # 开发前准备与环境验证
 
-> 环境首次核验：2026-09-16；正式院落与种植布置闭环：2026-09-17。目标为 Windows 窗口版三维农场；六田、三件装饰、保存回访及昼夜声音已集成，最终界面、焦点细节和成品性能按任务继续验收。
+> 环境首次核验：2026-09-16；当前2026-09-17进入逐格种植与画面重构。目标仍为Windows普通窗口版三维农场：六田各4×4格、同田混种、选格后工具直接操作。核心v3与迁移已完成纯测试；主视觉、完整交互和新候选尚在验收。下文rc.1／rc.2与早期数字只描述对应历史基线。
 
 ## Godot 安装与日常入口
 
@@ -14,11 +14,11 @@
 
 ## 工程基线与验证边界
 
-- `Game/project.godot` 使用 GDScript 标准版，Forward+ / Vulkan，1280×720 可调整普通窗口；已接入六田两作物三阶段、正式江南院落与聚焦镜头。实景与固定参考的对照见 3.3 交接，最终界面仍按 4.1 推进。
+- `Game/project.godot` 使用 GDScript 标准版，Forward+ / Vulkan，1280×720 可调整普通窗口；已接入六田两作物三阶段、江南院落、中文界面与聚焦镜头；本轮改为96格独立状态并重做光影构图，尚未冻结新候选。
 - 模型交接采用显式 GLB；项目关闭 `.blend` 自动导入，编辑源文件保留在 `ArtSource/`。
 - 已核验版本、完成资源导入和 Windows x86_64 release 导出，过程退出码为 0。工程直接运行、导出后的独立程序均以 Forward+ / Vulkan 在 RTX 4090 上启动，并在指定迭代数后正常退出，日志无错误。本地日志为 `.local/logs/godot-run.log`、`godot-player.log`；仅证明空工程启动与导出链路可用，不代表画面、窗口交互、玩法或性能验收。
-- 未配置 CI 或第三方测试框架。纯规则 `tests/farm_state_test.gd` 的78项断言与主场景交互回归已通过；2.3 新增真实文件存储及场景恢复验证，包含只读主档替换失败保留旧字节。正式测试入口与覆盖范围随各任务交接维护，完整院落及后台性能尚待验收。
-- Godot 4.7.2 / RTX 4090 的原型输入路径已验证点田、GUI 返回、拖动不误选、失焦取消、快速换田、恢复微调和紧凑窗口布局。普通 Windows release 随后另做三次真实进程的播种／浇水、关闭、离线成熟、收获和再次重启，隔离主档保留空田与一篮收获，三个进程均退出0；这是存档闭环证据，不代表完整内容或低配性能通过。
+- 未配置CI或第三方测试框架。本轮纯headless `farm_state_test.gd` 237项、`farm_store_test.gd` 289项、`decoration_state_test.gd` 47项均0失败；覆盖逐格隔离、v1/v2迁移、原件留存、坏档和写入失败。实景回归、普通发行包和性能随本轮另验，不复用旧数字。
+- 历史原型 Godot 4.7.2 / RTX 4090 的输入路径已验证点田、GUI 返回、拖动不误选、失焦取消、快速换田、恢复微调和紧凑窗口布局。普通 Windows release 随后另做三次真实进程的播种／浇水、关闭、离线成熟、收获和再次重启，隔离主档保留空田与一篮收获，三个进程均退出0；这是存档闭环证据，不代表完整内容或低配性能通过。
 - 旧 `Game/` Unity 工程、`.local/unity-validation/`、`.local/foundation/` 与根 Unity 日志已按用户要求删除。Unity / Hub 软件保留，当前工程不再依赖它们。
 
 ## 已有工具环境
@@ -35,15 +35,17 @@
 
 ## 可复用的开发经验
 
-农事输入验证：`& ./scripts/godot.ps1 Run -ExtraArgs @('--script', (Join-Path $PWD 'tests/farm_interaction_test.gd'))`；需截图时预先建立隔离目录，再追加 `--` 与 `--screenshots=<绝对目录>`。Godot 4.7.2 正式场景回归通过43项行为／布局断言，覆盖整田种植闭环、工具取消、过渡和拖动防误触、原生弹窗键盘选择。当前操作为先点田聚焦、选作物／工具、再点同田；右键／Esc 先取消工具再返回，弹窗优先关闭；中键转动、Shift＋中键平移、滚轮缩放。动作已自动保存；原交互设计见 [2.2 交接](task/首个可发布版本/handoffs/2.2-handoff.md)，正式资产及布置见 [3.3 交接](task/首个可发布版本/handoffs/3.3-handoff.md)。
+农事输入验证：`& ./scripts/godot.ps1 Run -ExtraArgs @('--script', (Join-Path $PWD 'tests/farm_interaction_test.gd'))`；截图参数在 `--` 后传 `--screenshots=<预先建立的绝对隔离目录>`。当前契约为点大田聚焦→镜头到达→点小格→选作物／点工具按钮，按钮直接操作当前格，不再武装工具后点土执行。Esc／右键先处理弹窗或装饰预览，农田内先清格选择、再回全景；中键转动、Shift＋中键平移、滚轮缩放。工具按下／松开绑定同田同格，拖动、失焦、镜头移动与模态界面不能补发动作。历史43／44项整田检查属于旧版，新夹具须通过实际原生窗口再记录结论。
 
 本机 Godot 4.7.2 弹窗测试：场景输入用 `root.push_input(event)`，原生 PopupMenu 键盘事件须设置 `window_id = popup.get_window_id()` 后经 `Input.parse_input_event(event)` 分发。鼠标打开下拉时焦点可能为 -1，第一下 Down 才到第一项；读取实际焦点后导航，不直接发选择信号冒充用户输入。Esc 关闭弹窗及第二项选择已在实际窗口验证。
 
-纯农场规则验证：`& ./scripts/godot.ps1 Run -ExtraArgs @('--headless', '--script', (Join-Path $PWD 'tests/farm_state_test.gd'))`。规则从调用者接收 UTC 秒，测试不改系统时钟或玩家存档。状态与静态定义返回深拷贝，无效动作在候选副本结算后拒绝，整个权威状态不变；自然时间推进调用独立 `settle()`。界面不要将结算的 `changed_fields` 非空等同于模型阶段变化，空田时间基准也会更新。状态接口与存档接入边界见 [2.1 交接](task/首个可发布版本/handoffs/2.1-handoff.md)。
+纯农场规则验证：`& ./scripts/godot.ps1 Run -ExtraArgs @('--headless', '--script', (Join-Path $PWD 'tests/farm_state_test.gd'))`。规则从调用者接收 UTC 秒，测试不改系统时钟或玩家存档。状态与静态定义返回深拷贝，无效动作在候选副本结算后拒绝，整个权威状态不变；自然时间推进调用独立 `settle()`。界面不要将结算的 `changed_fields` 非空等同于模型阶段变化，空格时间基准也会更新。`get_field(id)`返回包含16个派生格状态的cells字典；`get_cell(field,cell)`返回具体格，动作必须显式传cell_id。状态与迁移边界见[逐格交接](task/格子农田与画面重构/handoffs/种植状态与迁移-handoff.md)。
+
+Godot 4.7.2纯测试经验：`--script ../tests/...` 的 `resource_path` 可为 `res://..`，夹具根应以 `ProjectSettings.globalize_path("res://../").simplify_path()` 定位工程外 `.local/verification`，不能直接把资源URL当磁盘目录。JSON版本数字读取为float，接受已支持版本使用明确数值相等比较；数组membership对int／float的区别可能使有效版本被误判不支持。以上均由v3实际保存重载修复验证。
 
 磁盘和场景恢复分别使用 `tests/farm_store_test.gd`、`tests/farm_storage_scene_test.gd`；所有测试先注入 `.local/verification/` 下独立存储，再把主场景入树。正式存档为 `user://farm/`，Windows默认位于 `%APPDATA%/Godot/app_userdata/我有一片田/farm/`。未知版本、损坏或写入失败不能当首次启动，具体恢复与重试语义见 [2.3交接](task/首个可发布版本/handoffs/2.3-handoff.md)。
 
-3.3 将外壳升级为 v2，统一保存 `farm` 与 `decorations`；两参数必须显式传入。读取 v1 只补已获得的装饰解锁、不自动摆放，首次升级写入前按原文 SHA-256 保留一份不可变原件，失败重试不重复归档。`tests/decoration_state_test.gd` 验证门槛、位置和迁移47项，`decoration_interaction_test.gd` 实窗验证31项，`complete_scene_test.gd` 验证正式六阶段和镜头34项。界面偏好单独保存，不为偏好更改农场格式。
+当前外壳为v3，仍显式保存 `farm` 与 `decorations`。farm恰好六田，每田16格，各格独立作物／生长／浇水／UTC；v1／v2的真实旧田结构只迁到cell_06，其他15格为空并保持旧田时间基准，累计不翻倍。v2装饰原样保留，v1按累计推导解锁但不摆放。第一次写入v3前保留 `farm.v1.<SHA256>.json` 或 `farm.v2.<SHA256>.json` 不可变原件，原件冲突和写入失败不能静默通过。96格长数值实测45,029字节，维持64KiB读取上限。界面偏好仍单独保存。旧v2／整田源码与候选不能作为当前格式的验收。
 
 正式装饰槽的可见性用环境实际网格的 `TriangleMesh` BVH 与 AABB 预筛判断，不穿透屋顶或树叶。启动时构造共享网格缓存，布置／镜头事件只查询，不每帧重建；本机八槽热查询合计904微秒，原约64毫秒的冷构造已移出点击路径。切换 Mesh 实例或资源时需刷新缓存；仅自动 LOD bias 改动不改变引用。
 
@@ -51,7 +53,7 @@
 
 焦点细节入口：`tests/focus_detail_audit.gd` 读取实际导入网格的 LOD 索引，`tests/focus_detail_test.gd -- --output=<隔离证据目录> --uncapped` 做真实4K的三组对照与输入回归。Godot 4.7.2 本机实测表明，所有环境网格强制 `lod_bias=0` 会让低面数程序模块的石路、篱柱和桥栏消失；当前按稳定资源路径保留这些模块原层级，复杂模型与非目标作物用自动低档，目标田在镜头到达前恢复高档。只设置导入开关不能代替实际索引、绘制图元和画面检查。
 
-氛围修订后的全景使用镜头子节点承载边缘植物，只有近景虚化，田园与远景不因此模糊；聚焦和布置时前景退让，低画质在切换MSAA前立即移除该层。`tests/plant_presentation_test.gd -- --output=<仓库.local下绝对目录>` 使用真实窗口检查根部固定、叶片图像变化、前景退让、画质与景深开关；`tests/living_details_test.gd` 可无窗口核对船体幅度、绳/槽位和生活物件合批。程序草与GLB同时使用顶点风动；必须保留GLB贴图、原Mesh/LOD和根深，不能只让整株节点绕根旋转。棚叶用原贴图绿色顶点遮罩，花盆按高度锁定盆体；`tests/mixed_plant_wind_test.gd -- --output=<仓库.local/verification下绝对目录>` 以实际高低模和相隔帧检查叶动、木架／葫芦及盆体固定。当前每田16个视觉锚点，满田96株；本轮证据见[整合交接](task/氛围提升/handoffs/整体验证-handoff.md)，下段54株性能数字仅对应历史版本。
+氛围修订后的全景使用镜头子节点承载边缘植物，只有近景虚化，田园与远景不因此模糊；聚焦和布置时前景退让，低画质在切换MSAA前立即移除该层。`tests/plant_presentation_test.gd -- --output=<仓库.local下绝对目录>` 使用真实窗口检查根部固定、叶片图像变化、前景退让、画质与景深开关；`tests/living_details_test.gd` 可无窗口核对船体幅度、绳/槽位和生活物件合批。程序草与GLB同时使用顶点风动；必须保留GLB贴图、原Mesh/LOD和根深，不能只让整株节点绕根旋转。棚叶用原贴图绿色顶点遮罩，花盆按高度锁定盆体；`tests/mixed_plant_wind_test.gd -- --output=<仓库.local/verification下绝对目录>` 以实际高低模和相隔帧检查叶动、木架／葫芦及盆体固定。rc.2当时每田16个视觉锚点仍共用一个整田状态，相关历史证据见[整合交接](task/氛围提升/handoffs/整体验证-handoff.md)；当前16锚点一一对应真实cell状态，full fixture必须填满96格而不能只改旧田字段。下段54株性能数字亦仅对应历史版本。
 
 3.5 当时的51项检查通过（以下数字属于院落与水面补修前基线）：54株成熟作物和三件装饰的同场景，全景可见图元772486→432307，聚焦548605→342508；360帧短测中聚焦GPU中位全高2.155ms、仅LOD2.069ms、LOD＋景深2.436ms。标准4×MSAA，低画质2×MSAA且暂不使用景深，保留景深偏好。景深清晰带随整田深度范围变化，同深度旁田不会因身份不同而被强行模糊。数字仅属于本机短测，不能替代4.2的60秒条件采样与30分钟持续验收；详见 [3.5交接](task/首个可发布版本/handoffs/3.5-handoff.md)。
 
@@ -87,7 +89,7 @@ Godot 4.7.2 / Windows 10 19045：偏好保存在 `user://preferences/settings.js
 
 实际窗口下限由主窗口 `min_size = Vector2i(960,600)` 设置；本版本尝试写 `display/window/size/min_width` / `min_height` 不会改变运行窗口下限。普通发行程序以原生缩窗实测夹持至 960×600；引擎内逻辑布局通过不能替代这项系统窗口验证。中文字体采用随工程分发的 Noto Serif CJK SC，来源与原文件哈希见 `ArtSource/UI/README.md`，字体 OFL 随包保留。
 
-原生 OptionButton 弹窗会读取 `Input` 的鼠标按住状态；只向根 Viewport 强发 `push_input` 会出现按下打开、松开误关，不能直接判成游戏缺陷。`farm_interaction_test.gd` 改用带实际 window_id 的 `Input.parse_input_event` 后 44 项通过，普通发行程序另以真实鼠标确认选择白萝卜成功。菜单与存档失败遮罩须为当前可见按钮设置循环焦点，防止 Tab 跳到底层农事控件。
+历史原生 OptionButton 弹窗验证表明：弹窗会读取 `Input` 的鼠标按住状态；只向根 Viewport 强发 `push_input` 会出现按下打开、松开误关，不能直接判成游戏缺陷。`farm_interaction_test.gd` 改用带实际 window_id 的 `Input.parse_input_event` 后 44 项通过，普通发行程序另以真实鼠标确认选择白萝卜成功。菜单与存档失败遮罩须为当前可见按钮设置循环焦点，防止 Tab 跳到底层农事控件。
 
 普通发行程序测试使用进程级 APPDATA / LOCALAPPDATA 隔离；`tests/native-game-lifecycle.ps1` 读取对应启动元数据并校验 PID、exe 和进程启动时间，只操作所属窗口。4.1 已验证三次正常退出、设置持久化、全屏／窗口、150% DPI、最小化恢复及短时 UTC 回访，证据入口见 [4.1 交接](task/首个可发布版本/handoffs/4.1-handoff.md)。这不等于其他电脑、系统休眠或 30 分钟性能验收。
 
@@ -152,7 +154,7 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 
 完整院落里程碑用 `-CourtyardDemo -WithAudio -Seconds 40`：六阶段全景、收获解锁、三件装饰确认及夜景。初始累计青9／萝6、作物阶段和12／21点是隔离演示夹具，动作与保存走普通场景接口；不是实际等待或玩家进度。`-WithAudio` 仅支持离线演示，使用 Godot 内部混音转 AAC／48kHz／双声道／192kbps；校验非静音和音视频时长差，不采集麦克风或其他程序。未提供主观听感结论。
 
-最终素材用 `-FinalDemo -WithAudio -Seconds 56`：六阶段全景、成熟田收获、播种浇水、幼株与成熟、再次收获、三装饰确认和昼转夜。录制偏好与农场档都隔离；沿用standard／4×MSAA及正常焦点LOD/DOF，不强制全高。初始累计青9／萝6，片中UTC在18／21秒推进300／1140秒；本地12→21小时及HUD时钟／日夜图标是同一录制视觉夹具，不改系统时间。脚本校验最终青11篮、收获田空、三装饰保存、普通LOD与21:00 HUD。字幕建议作为独立SRT留档，未烧录产品画面。
+历史017素材使用 `-FinalDemo -WithAudio -Seconds 56`：六阶段全景、成熟田收获、播种浇水、幼株与成熟、再次收获、三装饰确认和昼转夜。录制偏好与农场档都隔离；沿用standard／4×MSAA及正常焦点LOD/DOF，不强制全高。初始累计青9／萝6，片中UTC在18／21秒推进300／1140秒；本地12→21小时及HUD时钟／日夜图标是同一录制视觉夹具，不改系统时间。当时脚本校验青11篮、收获田空、三装饰保存、普通LOD与21:00 HUD。本轮录制脚本由根代理迁移到逐格选择和同田混种，未取得新素材前不能将017称为逐格演示。字幕建议作为独立SRT留档，未烧录产品画面。
 
 实时采集只做有界复核可用 `-RealtimeProbe -Seconds 16`（14–20秒、无声、不与离线开关混用），在本次窗口4秒缓推、9–14秒缓转，仍采用WGC真实采集；不是修复或性能测试。2026-09-17最终界面下的014复核仍失败：推进11/45、转动29/120近重复，约24%，仅诊断，不继续改驱动或安装采集依赖。格式通过不能覆盖内容失败。
 - **自动展示 `-Demo`**：采用 Godot Movie Maker，以固定 1/60 秒时间步逐帧输出，再用 NVIDIA NVENC 编码 H.264。镜头停留 4 秒、聚焦 1.8 秒、近景停留、小角度转动约 15°、返回全景与收尾；默认 24 秒。这是当前游戏场景的离线演示渲染，不能作为人工操作或实时性能证明，不提高游戏画质设置。生成可能比视频时长更久。
@@ -185,6 +187,10 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 
 视觉补修经验：圆柱远景的垂直映射需按视线投影到远处竖直平面，单纯拉伸UV会把中景藏到水面下或造成碗状地平线；水面淡出半径须与绘画岸线共同实看。水材质由昼夜模块覆盖，修改需同步该入口。新增岸石／植被后应重新运行八槽真实三角形遮挡与点击检查，本次移开遮挡ground_04的石组，未绕过命中规则。对应证据见[院落补修](task/首个可发布版本/handoffs/3.2-visual-refinement-handoff.md)与[水面远景补修](task/首个可发布版本/handoffs/3.4-visual-refinement-handoff.md)；画面冻结后重新执行持续性能验收。
 
+Godot 4.7.2 的小窗输入验证：`Camera3D.unproject_position` 与 `Control.get_global_rect` 提供逻辑视口坐标，传入 `Viewport.push_input` 时使用 `in_local_coords=true`，否则窗口缩放会再次换算而误点。原生 Windows 点击助手仍使用客户区物理像素，不能直接复用逻辑点。本轮实际窗口960×600、逻辑1280×720，16:9渲染截图为960×540；记录三者而非把请求尺寸当渲染尺寸。八槽与小窗真实输入38项通过，见[逐格整合交接](task/格子农田与画面重构/handoffs/整体验证-handoff.md)。布置临时取景结束必须恢复进入前的全景目的姿态，自动演示也须等待镜头过渡后再选择物件。
+
 普通退出需在保存门槛通过或用户明确放弃后统一收尾：停止并清空FarmAudio播放流，禁用退出等待期输入／新保存，再让混音与主循环完成异步释放后退出。当前100ms等待加一次主循环在本机三条普通程序退出路径和45项回归通过；不能把exit0单独视为干净退出。入口为tests/exit_cleanup_test.gd，证据及音频设备边界见[4.2退出清理交接](task/首个可发布版本/handoffs/4.2-exit-cleanup-handoff.md)。
 
-4.2正式性能入口：tests/run-performance-validation.ps1 的 acceptance／4k／smoke，输出限新建.local/verification子目录；标准Godot运行正式场景采逐帧数据，普通发行程序另用release_startup_probe.ps1验证真实菜单响应。d193129本机1080p真实1849.495秒、201项0失败，4K401.759秒、56项0失败，均正常退出无残留；1080p峰值驻留工作集856MB，不与2.178GB私有提交混淆。旧原型用户窗口保留，整卡遥测包含该背景负载；具体CPU/GPU/图元、帧间隔、内存与未测边界见[4.2交接](task/首个可发布版本/handoffs/4.2-handoff.md)。发行日志可能缓冲，不能用未刷新的日志作为即时就绪依据；就绪仍以实际窗口响应确认。
+状态采集的文件替换边界：Godot 更新 status.json 时，Test-Path 成功后文件名仍可能在 FileStream.Open 前短暂消失。Read-EvidenceJson 保留 ReadWrite|Delete 共享，只在打开阶段对 Win32 文件不存在（2）、共享冲突（32）或锁冲突（33）做最多 8 次、间隔 25ms 的重试；持续缺失仍报错，读取失败和无效 JSON 不被吞掉。隔离反证见 `.local/verification/collector-race-fix/results.json`：原单次打开复现缺口失败，新读取恢复 75ms 重命名缺口及真实短共享锁，坏 JSON 继续报错、永久缺失约 211ms 后失败。此修复只解决采集器竞态，不能将中断的性能样本算成完成验收。
+
+历史4.2及后续性能入口：tests/run-performance-validation.ps1 的 acceptance／4k／smoke，输出限新建.local/verification子目录；标准Godot运行正式场景采逐帧数据，普通发行程序另用release_startup_probe.ps1验证真实菜单响应。以下d193129数字只属于旧整田候选，本轮逐格状态与画面改变后重新采样：本机1080p真实1849.495秒、201项0失败，4K401.759秒、56项0失败，均正常退出无残留；1080p峰值驻留工作集856MB，不与2.178GB私有提交混淆。旧原型用户窗口保留，整卡遥测包含该背景负载；具体CPU/GPU/图元、帧间隔、内存与未测边界见[4.2交接](task/首个可发布版本/handoffs/4.2-handoff.md)。发行日志可能缓冲，不能用未刷新的日志作为即时就绪依据；就绪仍以实际窗口响应确认。

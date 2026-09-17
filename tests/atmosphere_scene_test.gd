@@ -1,5 +1,5 @@
 extends SceneTree
-## Complete main scene, isolated v2 save, real clicks and mixer capture.
+## Complete main scene, isolated v3 cell save, real clicks and mixer capture.
 
 const Store = preload("res://farm/farm_store.gd")
 const Farm = preload("res://farm/farm_state.gd")
@@ -20,7 +20,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var folder: String = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/atmosphere-scene-%d" % Time.get_ticks_usec())
+	var folder: String = ProjectSettings.globalize_path("res://../").simplify_path().path_join(".local/verification/atmosphere-scene-%d" % Time.get_ticks_usec())
 	var store = Store.new(folder)
 	_expect(store.load_state().kind == "missing", "Isolated fixture has no player data")
 	var farm: Dictionary = Farm.new(now).snapshot()
@@ -68,12 +68,16 @@ func _run() -> void:
 	await _click(scene.camera.unproject_position(scene.farm.fields[2].global_position + Vector3(0, 0.4, 0)))
 	await create_timer(0.85).timeout
 	var harvest: Button = scene.get_node("HUD/Layout/FarmControls/Harvest")
-	await _click(harvest.get_global_rect().get_center())
+	await _click(scene.camera.unproject_position(scene.farm.fields[2].to_global(scene.farm.cell_center("cell_06"))))
+	_expect(scene.selected_cell == "cell_06", "Real soil click selects the mature cell")
 	capture.clear_buffer()
-	await _click(scene.camera.unproject_position(scene.farm.fields[2].global_position + Vector3(0, 0.4, 0)))
+	print("ACTION_AUDIO before foreground=%s volumes=%s last_action=%s" % [scene.farm_audio.is_foreground(), scene.farm_audio.get_volumes(), scene.farm_audio.get("_last_action_usec")])
+	await _click(harvest.get_global_rect().get_center())
 	await create_timer(0.25).timeout
 	_expect(scene.farm_state.snapshot().harvested.greens == 11, "Real harvest click succeeds exactly once")
-	_expect(_peak() > 0.001, "Main action emits real audible-range PCM")
+	var action_peak: float = _peak()
+	print("ACTION_AUDIO after foreground=%s peak=%s last_action=%s discarded=%s" % [scene.farm_audio.is_foreground(), action_peak, scene.farm_audio.get("_last_action_usec"), capture.get_discarded_frames()])
+	_expect(action_peak > 0.001, "Main action emits real audible-range PCM")
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("FarmAmbient"), false)
 	scene.farm_audio.set_volumes(0.8, 0.7, 0.8)
 	await _click(scene.camera.unproject_position(scene.farm.fields[5].global_position + Vector3(0, 0.4, 0)))
@@ -82,13 +86,13 @@ func _run() -> void:
 	scene.atmosphere.set_preview_hour(12.0)
 	await create_timer(0.3).timeout
 	await _screenshot("formal_day_focus.png")
-	var growth_before: float = scene.farm_state.get_field("field_04").growth_seconds
+	var growth_before: float = scene.farm_state.get_cell("field_04", "cell_06").growth_seconds
 	var settings: Dictionary = scene.farm_audio.get_volumes()
 	root.mode = Window.MODE_MINIMIZED
 	now += 120.0
 	await create_timer(1.25).timeout
 	_expect(not scene.farm_audio.is_foreground() and Engine.max_fps > 0 and Engine.max_fps <= 15, "Actual main window applies background policy")
-	_expect(scene.farm_state.get_field("field_04").growth_seconds == growth_before + 120.0, "UTC settlement continues under background frame cap")
+	_expect(scene.farm_state.get_cell("field_04", "cell_06").growth_seconds == growth_before + 120.0, "UTC settlement continues under background frame cap")
 	capture.clear_buffer()
 	await create_timer(0.2).timeout
 	_expect(_peak() < 0.000001, "Actual main background mix is silent")

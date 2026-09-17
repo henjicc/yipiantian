@@ -47,7 +47,12 @@ func _ready() -> void:
 		fixture.harvested = {"greens": 9, "radish": 6}
 		for index in 6:
 			var id: String = farm_scene.farm.field_id(index)
-			fixture.fields[id] = {"crop_id": "greens" if index < 3 else "radish", "growth_seconds": [0.0, 0.6, 1.0][index % 3] * (1800.0 if index < 3 else 5400.0), "watered": false, "last_settled_utc_seconds": _farm_now}
+			for cell_id: String in farm_scene.farm_state.CELL_IDS:
+				var cell_index: int = farm_scene.farm_state.CELL_IDS.find(cell_id)
+				# Both species share a bed; the recording's selected cell remains
+				# mature greens so the original single-harvest assertions still apply.
+				var crop: String = "greens" if (cell_index % 4 < 2) else "radish"
+				fixture.fields[id].cells[cell_id] = {"crop_id": crop, "growth_seconds": [0.0, 0.6, 1.0][index % 3] * (1800.0 if crop == "greens" else 5400.0), "watered": false, "last_settled_utc_seconds": _farm_now}
 		if not farm_scene.farm_state.restore_snapshot(fixture):
 			_fail("The isolated courtyard recording fixture is invalid.")
 			return
@@ -149,12 +154,12 @@ func _run_farm_demo(delta: float) -> void:
 		farm_scene._focus_field(0)
 		_stage = 1
 	elif _stage == 1 and _elapsed >= 6.5:
+		farm_scene._select_cell("cell_06")
+		farm_scene._select_crop("greens")
 		farm_scene._select_tool("sow")
-		farm_scene._apply_tool()
 		_stage = 2
 	elif _stage == 2 and _elapsed >= 9.0:
 		farm_scene._select_tool("water")
-		farm_scene._apply_tool()
 		_stage = 3
 	elif _stage == 3:
 		farm_scene.camera.drag(Vector2(-16.7, 0.0) * delta, false)
@@ -165,7 +170,6 @@ func _run_farm_demo(delta: float) -> void:
 			_stage = 4
 	elif _stage == 4 and _elapsed >= 17.0:
 		farm_scene._select_tool("harvest")
-		farm_scene._apply_tool()
 		_write_json("farm-demo-result.json", {
 			"controlled_utc_advance_seconds": 1440,
 			"snapshot": farm_scene.farm_state.snapshot(),
@@ -183,8 +187,8 @@ func _run_courtyard_demo(delta: float) -> void:
 		farm_scene._focus_field(2)
 		_stage = 1
 	elif _stage == 1 and _elapsed >= 6.5:
+		farm_scene._select_cell("cell_06")
 		farm_scene._select_tool("harvest")
-		farm_scene._apply_tool()
 		_stage = 2
 	elif _stage == 2 and _elapsed >= 9.0:
 		_stage = 3
@@ -195,37 +199,39 @@ func _run_courtyard_demo(delta: float) -> void:
 			_stage = 4
 	elif _stage == 4 and _elapsed >= 18.0:
 		farm_scene._begin_decoration()
+		_stage = 5
+	elif _stage == 5 and _elapsed >= 19.0 and not farm_scene.camera.is_transitioning():
 		layout.select_item("pot")
 		layout.preview_at("ground_03")
-		_stage = 5
-	elif _stage == 5 and _elapsed >= 21.0:
-		layout.confirm_preview()
 		_stage = 6
-	elif _stage == 6 and _elapsed >= 23.0:
+	elif _stage == 6 and _elapsed >= 21.0:
+		layout.confirm_preview()
+		_stage = 7
+	elif _stage == 7 and _elapsed >= 23.0:
 		layout.select_item("flowerpot")
 		layout.preview_at("ground_04")
-		_stage = 7
-	elif _stage == 7 and _elapsed >= 26.0:
-		layout.confirm_preview()
 		_stage = 8
-	elif _stage == 8 and _elapsed >= 28.0:
+	elif _stage == 8 and _elapsed >= 26.0:
+		layout.confirm_preview()
+		_stage = 9
+	elif _stage == 9 and _elapsed >= 28.0:
 		layout.select_item("lantern")
 		layout.preview_at("hanging_02")
-		_stage = 9
-	elif _stage == 9 and _elapsed >= 31.0:
-		layout.confirm_preview()
 		_stage = 10
-	elif _stage == 10 and _elapsed >= 34.0:
-		layout.finish_mode()
+	elif _stage == 10 and _elapsed >= 31.0:
+		layout.confirm_preview()
 		_stage = 11
-	elif _stage == 11 and _elapsed >= 36.0:
+	elif _stage == 11 and _elapsed >= 34.0:
+		layout.finish_mode()
+		_stage = 12
+	elif _stage == 12 and _elapsed >= 36.0:
 		_set_demo_hour(21.0)
 		_write_json("courtyard-demo-result.json", {
 			"fixture_harvested": {"greens": 9, "radish": 6},
 			"fixture_hours": [12, 21], "farm": farm_scene.farm_state.snapshot(),
 			"decorations": farm_scene.decoration_state.snapshot(), "saved": not farm_scene._save_failed
 		})
-		_stage = 12
+		_stage = 13
 
 
 func _run_final_demo(delta: float) -> void:
@@ -263,32 +269,34 @@ func _run_final_demo(delta: float) -> void:
 		_stage = 9
 	elif _stage == 9 and _elapsed >= 31.0:
 		farm_scene._begin_decoration()
+		_stage = 10
+	elif _stage == 10 and _elapsed >= 32.0 and not farm_scene.camera.is_transitioning():
 		layout.select_item("pot")
 		layout.preview_at("ground_03")
-		_stage = 10
-	elif _stage == 10 and _elapsed >= 34.0:
-		layout.confirm_preview()
 		_stage = 11
-	elif _stage == 11 and _elapsed >= 35.0:
+	elif _stage == 11 and _elapsed >= 34.0:
+		layout.confirm_preview()
+		_stage = 12
+	elif _stage == 12 and _elapsed >= 35.0:
 		layout.select_item("flowerpot")
 		layout.preview_at("ground_04")
-		_stage = 12
-	elif _stage == 12 and _elapsed >= 38.0:
-		layout.confirm_preview()
 		_stage = 13
-	elif _stage == 13 and _elapsed >= 39.0:
+	elif _stage == 13 and _elapsed >= 38.0:
+		layout.confirm_preview()
+		_stage = 14
+	elif _stage == 14 and _elapsed >= 39.0:
 		layout.select_item("lantern")
 		layout.preview_at("hanging_02")
-		_stage = 14
-	elif _stage == 14 and _elapsed >= 42.0:
-		layout.confirm_preview()
 		_stage = 15
-	elif _stage == 15 and _elapsed >= 44.0:
-		layout.finish_mode()
+	elif _stage == 15 and _elapsed >= 42.0:
+		layout.confirm_preview()
 		_stage = 16
-	elif _stage == 16 and _elapsed >= 46.0:
+	elif _stage == 16 and _elapsed >= 44.0:
+		layout.finish_mode()
 		_stage = 17
-	elif _stage == 17:
+	elif _stage == 17 and _elapsed >= 46.0:
+		_stage = 18
+	elif _stage == 18:
 		_set_demo_hour(lerpf(12.0, 21.0, clampf((_elapsed - 46.0) / 6.0, 0.0, 1.0)))
 		if _elapsed >= 52.0:
 			_write_json("final-demo-result.json", {
@@ -301,12 +309,15 @@ func _run_final_demo(delta: float) -> void:
 				"mesh_lod_threshold": get_viewport().mesh_lod_threshold,
 				"saved": not farm_scene._save_failed
 			})
-			_stage = 18
+			_stage = 19
 
 
 func _demo_action(tool: String) -> void:
+	if farm_scene.selected_cell.is_empty():
+		farm_scene._select_cell("cell_06")
+	if tool == "sow":
+		farm_scene._select_crop("greens")
 	farm_scene._select_tool(tool)
-	farm_scene._apply_tool()
 
 
 func _set_demo_hour(hour: float) -> void:

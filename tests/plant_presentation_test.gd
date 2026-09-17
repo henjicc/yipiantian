@@ -30,9 +30,10 @@ func _run() -> void:
 	var data: Dictionary = Farm.new(now).snapshot()
 	data.harvested = {"greens": 10, "radish": 6}
 	for index: int in 6:
-		var field: Dictionary = data.fields[Farm.FIELD_IDS[index]]
-		field.crop_id = "greens" if index % 2 == 0 else "radish"
-		field.growth_seconds = 1800.0 if index % 2 == 0 else 5400.0
+		for cell_index: int in Farm.CELL_IDS.size():
+			var cell: Dictionary = data.fields[Farm.FIELD_IDS[index]].cells[Farm.CELL_IDS[cell_index]]
+			cell.crop_id = "greens" if (index + cell_index) % 2 == 0 else "radish"
+			cell.growth_seconds = 1800.0 if cell.crop_id == "greens" else 5400.0
 	var decorations = Decoration.new()
 	decorations.unlock(data.harvested)
 	decorations.place("pot", "ground_01", 0)

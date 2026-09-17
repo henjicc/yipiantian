@@ -29,10 +29,10 @@ func _run() -> void:
 	_expect(disk.harvested.greens == 0, "First startup saves initial farm")
 	await _click(scene.camera.unproject_position(scene.farm.fields[2].global_position + Vector3(0, 0.4, 0)))
 	await create_timer(0.85).timeout
+	await _click(scene.camera.unproject_position(scene.farm.fields[2].to_global(scene.farm.cell_center("cell_06"))))
 	var harvest: Button = scene.get_node("HUD/Layout/FarmControls/Harvest")
-	await _click(harvest.get_global_rect().get_center())
 	FileAccess.set_read_only_attribute(path, true)
-	await _click(scene.camera.unproject_position(scene.farm.fields[2].global_position + Vector3(0, 0.4, 0)))
+	await _click(harvest.get_global_rect().get_center())
 	_expect(scene.farm_state.snapshot().harvested.greens == 1, "Farm action succeeds in memory exactly once")
 	_expect(Store.new(folder).load_state().farm.harvested.greens == 0, "Failed replace leaves previous saved reward")
 	_expect(_overlay().visible and scene.get_node("HUD/Layout/SessionStatus").text == "尚未保存", "Save failure is visible and blocks unsafe further actions")
@@ -46,11 +46,11 @@ func _run() -> void:
 	_expect(not _overlay().visible, "Successful retry dismisses failure state")
 	_expect(Store.new(folder).load_state().farm.harvested.greens == 1, "Retry saves current result without a second reward")
 	await _reopen_scene()
-	_expect(scene.farm_state.snapshot().harvested.greens == 1 and scene.farm_state.get_field("field_03").stage == "empty", "Recreated scene loads the already harvested state")
+	_expect(scene.farm_state.snapshot().harvested.greens == 1 and scene.farm_state.get_cell("field_03", "cell_06").stage == "empty", "Recreated scene loads the already harvested cell")
 	# Revisit after a long interval through the same injected UTC entrance.
 	now += 100000.0
 	await _reopen_scene()
-	_expect(scene.farm_state.get_field("field_04").stage == "mature" and scene.farm_state.snapshot().harvested.greens == 1, "Long offline visit matures crops without auto harvesting")
+	_expect(scene.farm_state.get_cell("field_04", "cell_06").stage == "mature" and scene.farm_state.snapshot().harvested.greens == 1, "Long offline visit matures crops without auto harvesting")
 	var before_rollback: Dictionary = scene.farm_state.snapshot()
 	now -= 200000.0
 	scene.notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_IN)
@@ -90,7 +90,10 @@ func _open_scene() -> void:
 
 
 func _close_scene() -> void:
+	scene.farm_audio.shutdown()
+	await create_timer(.1).timeout
 	scene.queue_free()
+	await process_frame
 	await process_frame
 
 

@@ -20,7 +20,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	folder = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/decoration-input-%d" % Time.get_ticks_usec())
+	folder = ProjectSettings.globalize_path("res://../").simplify_path().path_join(".local/verification/decoration-input-%d" % Time.get_ticks_usec())
 	if not captures.is_empty():
 		DirAccess.make_dir_recursive_absolute(captures)
 	var farm := Farm.new(now)
@@ -43,14 +43,15 @@ func _run() -> void:
 	var initial_farm: Dictionary = scene.farm_state.snapshot()
 	await _click(scene.camera.unproject_position(scene.farm.fields[0].global_position))
 	await create_timer(0.85).timeout
-	await _click(scene.get_node("HUD/Layout/FarmControls/Sow").get_global_rect().get_center())
+	await _click(scene.camera.unproject_position(scene.farm.fields[0].to_global(scene.farm.cell_center("cell_06"))))
+	_expect(scene.selected_cell == "cell_06", "A real empty cell is selected before arrangement")
 	await _enter()
 	var visibility_begin: int = Time.get_ticks_usec()
 	var visibility: Dictionary = {}
 	for slot_id: String in Decorations.Catalog.SLOT_TYPES:
 		visibility[slot_id] = scene.decoration_layout._slot_visible(slot_id)
 	print("DECORATION_VISIBILITY warm_usec=%d slots=%s" % [Time.get_ticks_usec() - visibility_begin, visibility])
-	_expect(scene.selected_field == -1 and scene.selected_tool.is_empty(), "Entering arrangement returns overview and cancels tool")
+	_expect(scene.selected_field == -1 and scene.selected_cell.is_empty() and scene.selected_tool.is_empty(), "Entering arrangement returns overview and clears cell and tool")
 	await _click(scene.camera.unproject_position(scene.farm.fields[0].global_position))
 	_expect(scene.farm_state.snapshot() == initial_farm, "Field click in arrangement cannot sow or focus")
 	var initial_decor: Dictionary = scene.decoration_state.snapshot()
@@ -68,6 +69,7 @@ func _run() -> void:
 	_expect(Store.new(folder).load_state().decorations.pot.slot_id == "ground_01", "Confirm saves placement")
 	await _choose("Pot")
 	await _slot("ground_02")
+	_expect(scene.decoration_layout.preview_slot == "ground_02", "Second ground slot creates a real move preview before cancellation")
 	await _key(KEY_ESCAPE)
 	_expect(scene.decoration_state.snapshot().pot.slot_id == "ground_01" and scene.decoration_layout.active, "Escape cancels movement before leaving arrangement")
 	_expect(scene.decoration_layout.get("_instances").pot.visible, "Cancelled move restores original visible object")
@@ -75,11 +77,12 @@ func _run() -> void:
 	_expect(not scene.decoration_layout.get("_rings").ground_01.visible, "Occupied slot is not offered to another item")
 	await _slot("ground_02")
 	await _control("Confirm")
+	_expect(scene.decoration_state.snapshot().flowerpot.slot_id == "ground_02", "Flowerpot reaches and confirms the second ground slot")
 	for target: String in ["ground_03", "ground_04"]:
 		await _choose("Pot")
 		await _slot(target)
 		await _control("Confirm")
-		_expect(scene.decoration_state.snapshot().pot.slot_id == target, "Multiple actual ground slots can be used")
+		_expect(scene.decoration_state.snapshot().pot.slot_id == target, "Actual ground slot %s can be used (actual=%s)" % [target, scene.decoration_state.snapshot().pot.slot_id])
 	for target: String in ["hanging_01", "hanging_02", "hanging_03", "hanging_04"]:
 		await _choose("Lantern")
 		await _slot(target)
@@ -89,6 +92,21 @@ func _run() -> void:
 		await _control("Confirm")
 		_expect(scene.decoration_state.snapshot().lantern.slot_id == target, "Confirmed lantern move keeps stable slot ID")
 	await _capture("02-all-decorated.png")
+	root.size = Vector2i(960, 600)
+	await create_timer(0.3).timeout
+	print("MINIMUM_WINDOW actual=%s logical=%s stretch=%s" % [DisplayServer.window_get_size(), root.get_visible_rect().size, root.get_stretch_transform()])
+	await _choose("Pot")
+	await _slot("ground_03")
+	await _control("Confirm")
+	_expect(scene.decoration_state.snapshot().pot.slot_id == "ground_03", "Minimum window first moves the pot away from ground_04")
+	await _choose("Pot")
+	await _slot("ground_04")
+	_expect(scene.decoration_layout.preview_slot == "ground_04", "Minimum window ground_04 click reaches the world slot, not the toolbar")
+	await _control("Confirm")
+	_expect(scene.decoration_state.snapshot().pot.slot_id == "ground_04", "Minimum window confirms the front ground slot")
+	await _capture("02b-minimum-ground04.png")
+	root.size = Vector2i(1280, 720)
+	await create_timer(0.3).timeout
 	var confirmed: Dictionary = scene.decoration_state.snapshot()
 	await _choose("Pot")
 	await _slot("ground_03")
@@ -148,13 +166,17 @@ func _control(name: String) -> void:
 
 func _slot(id: String) -> void:
 	var marker: Node3D = scene.decoration_layout.get_node(NodePath(id))
-	await _click(scene.camera.unproject_position(marker.global_position))
+	var point: Vector2 = scene.camera.unproject_position(marker.global_position)
+	await _click(point)
+	var hovered: Control = root.gui_get_hovered_control()
+	print("SLOT_INPUT id=%s point=%s hovered=%s preview=%s" % [id, point, str(hovered.get_path()) if is_instance_valid(hovered) else "none", scene.decoration_layout.preview_slot])
 
 
 func _click(point: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.position = point
-	root.push_input(motion)
+	# Positions come from viewport projection / Control rects, already in local coordinates.
+	root.push_input(motion, true)
 	await process_frame
 	for pressed: bool in [true, false]:
 		var event := InputEventMouseButton.new()
@@ -162,7 +184,7 @@ func _click(point: Vector2) -> void:
 		event.global_position = point
 		event.button_index = MOUSE_BUTTON_LEFT
 		event.pressed = pressed
-		root.push_input(event)
+		root.push_input(event, true)
 		await physics_frame
 		await process_frame
 

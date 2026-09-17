@@ -30,6 +30,10 @@ func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations
 	_attributes.dof_blur_near_transition = 2.0
 	_attributes.dof_blur_far_transition = 5.0
 	_camera.attributes = _attributes
+	# Circular, high-sample DOF avoids the coarse polygon pattern on near leaves.
+	# Jitter is disabled: the moving foliage already supplies temporal variation.
+	RenderingServer.camera_attributes_set_dof_blur_bokeh_shape(RenderingServer.DOF_BOKEH_CIRCLE)
+	RenderingServer.camera_attributes_set_dof_blur_quality(RenderingServer.DOF_BLUR_QUALITY_HIGH, false)
 	_foreground = CameraForeground.new()
 	_foreground.name = "CameraForeground"
 	_camera.add_child(_foreground)
@@ -85,6 +89,9 @@ func _apply_quality() -> void:
 	if _quality == "low" and _foreground != null:
 		_foreground.set_overview_visible(false, true)
 	_camera.get_viewport().msaa_3d = Viewport.MSAA_2X if _quality == "low" else Viewport.MSAA_4X
+	var world_environment: Environment = _camera.get_world_3d().environment
+	if world_environment != null:
+		world_environment.ssil_enabled = _quality == "standard"
 
 
 func refresh_field(field: Node3D) -> void:
@@ -149,15 +156,20 @@ func _process(delta: float) -> void:
 	var active: bool = is_instance_valid(_target) and allowed
 	var frame_blur: bool = framing and allowed
 	var approach: float = 1.0 - smoothstep(12.0, 18.0, _camera.global_position.distance_to(_target.global_position)) if active else 0.0
-	var target_amount: float = (0.13 if frame_blur else 0.045 * approach) * _dof_strength
+	var target_amount: float = (0.085 if frame_blur else 0.045 * approach) * _dof_strength
 	_attributes.dof_blur_amount = move_toward(_attributes.dof_blur_amount, target_amount, delta * 0.12)
 	_attributes.dof_blur_near_enabled = (active or frame_blur) and _attributes.dof_blur_amount > 0.0001
 	_attributes.dof_blur_far_enabled = active and _attributes.dof_blur_near_enabled
 	if frame_blur:
-		_attributes.dof_blur_near_distance = 8.5
-		_attributes.dof_blur_near_transition = 2.0
+		var nearest_field: float = INF
+		for field: Node3D in _fields:
+			nearest_field = minf(nearest_field, depth_range(_camera, field.global_transform, _target_bounds).x)
+		_attributes.dof_blur_near_distance = maxf(0.1, nearest_field - 1.0)
+		_attributes.dof_blur_near_transition = 4.5
 		_band_initialized = false
 	if active:
+		_attributes.dof_blur_near_transition = 2.5
+		_attributes.dof_blur_far_transition = 5.5
 		var depths: Vector2 = depth_range(_camera, _target.global_transform, _target_bounds)
 		var near_edge: float = maxf(0.1, depths.x - 0.6)
 		var far_edge: float = depths.y + 0.6

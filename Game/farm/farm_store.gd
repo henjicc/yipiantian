@@ -3,7 +3,7 @@ extends RefCounted
 
 const FarmState = preload("res://farm/farm_state.gd")
 const Decorations = preload("res://farm/decoration_state.gd")
-const VERSION: int = 2
+const VERSION: int = 3
 const MAX_BYTES: int = 65536
 const MAIN: String = "farm.json"
 const BACKUP: String = "farm.backup.json"
@@ -69,9 +69,9 @@ func save(farm: Dictionary, decorations: Dictionary) -> Dictionary:
 	var current: Dictionary = _read(MAIN)
 	if not _matches_expected(current):
 		return _failure("changed_on_disk")
-	if current.kind == "valid" and current.version == 1:
+	if current.kind == "valid" and current.version < VERSION:
 		# Content identity makes retries reuse one immutable pre-upgrade copy.
-		var archive: String = "farm.v1.%s.json" % current.text.sha256_text()
+		var archive: String = "farm.v%d.%s.json" % [current.version, current.text.sha256_text()]
 		if DirAccess.open(directory).is_link(archive):
 			return _failure("preserve_migration")
 		if not FileAccess.file_exists(_path(archive)):
@@ -154,21 +154,40 @@ func _read(filename: String) -> Dictionary:
 	var version: Variant = data.get("version")
 	if not (version is int or version is float) or not is_finite(float(version)) or float(version) != floorf(float(version)):
 		return {"kind": "corrupt"}
-	if version != 1 and version != VERSION:
+	if version != 1 and version != 2 and version != VERSION:
 		return {"kind": "unsupported"}
 	if data.size() != (2 if version == 1 else 3) or not data.get("farm") is Dictionary:
 		return {"kind": "corrupt"}
 	var validator := FarmState.new()
-	if not validator.restore_snapshot(data.farm):
+	var farm_data: Dictionary = data.farm if version == VERSION else _migrate_legacy_farm(data.farm)
+	if not validator.restore_snapshot(farm_data):
 		return {"kind": "corrupt"}
 	var decoration_validator := Decorations.new()
 	if version == 1:
-		# Exact v1 migration: preserve farm and derive earned unlocks, with no placements.
-		# The original v1 bytes remain the backup on the first successful v2 save.
+		# v1 had no decorations: derive earned unlocks without assigning placements.
 		decoration_validator.unlock(validator.snapshot().harvested)
 	elif not data.get("decorations") is Dictionary or not decoration_validator.restore_snapshot(data.decorations):
 		return {"kind": "corrupt"}
 	return {"kind": "valid", "version": int(version), "text": text, "farm": validator.snapshot(), "decorations": decoration_validator.snapshot()}
+
+
+func _migrate_legacy_farm(legacy: Dictionary) -> Dictionary:
+	# Validate the actual old shape; never treat an incomplete v3 as an old farm.
+	if legacy.size() != 2 or not legacy.get("fields") is Dictionary or not legacy.get("harvested") is Dictionary:
+		return {}
+	if legacy.fields.size() != FarmState.FIELD_IDS.size():
+		return {}
+	var migrated: Dictionary = {"fields": {}, "harvested": legacy.harvested.duplicate(true)}
+	for field_id: String in FarmState.FIELD_IDS:
+		if not legacy.fields.get(field_id) is Dictionary or not FarmState.valid_cell_snapshot(legacy.fields[field_id]):
+			return {}
+		var old: Dictionary = legacy.fields[field_id]
+		var cells: Dictionary = {}
+		for cell_id: String in FarmState.CELL_IDS:
+			cells[cell_id] = {"crop_id": "", "growth_seconds": 0.0, "last_settled_utc_seconds": old.last_settled_utc_seconds, "watered": false}
+		cells.cell_06 = old.duplicate(true)
+		migrated.fields[field_id] = {"cells": cells}
+	return migrated
 
 
 func _write_verified(filename: String, text: String) -> Dictionary:

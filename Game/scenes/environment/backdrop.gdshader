@@ -2,7 +2,7 @@ shader_type spatial;
 render_mode unshaded, cull_disabled, fog_disabled;
 uniform sampler2D landscape : source_color, filter_linear_mipmap, repeat_disable;
 uniform vec4 atmosphere_tint : source_color = vec4(1.0);
-uniform float cloud_strength : hint_range(0.0, 1.0) = 0.36;
+uniform float cloud_strength : hint_range(0.0, 1.0) = 0.24;
 varying vec3 backdrop_world;
 
 float cloud_hash(vec2 p) {
@@ -31,6 +31,10 @@ void fragment() {
 	float picture_v = (20.0 - painted_height) / 70.0 * 2.0 - 0.42;
 	vec2 uv = vec2(1.0 - abs(1.0 - mod(UV.x, 2.0)), min(picture_v, 0.985));
 	vec3 picture = texture(landscape, clamp(uv, vec2(0.0), vec2(1.0))).rgb;
+	// Preserve ink-dark ridges against the warm paper instead of whitening the
+	// complete landscape. Atmospheric separation comes from its own mist bands.
+	picture = max(vec3(0.0), (picture - vec3(0.42)) * 1.12 + vec3(0.42));
+	picture *= vec3(0.97, 0.965, 0.92);
 	// Only a separate thin cloud/mist layer moves. The mountain/village sample
 	// above keeps its exact established projection and never scrolls with TIME.
 	vec2 cloud_uv = vec2(uv.x * 18.0 - TIME * 0.025, picture_v * 11.0);

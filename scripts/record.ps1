@@ -147,7 +147,7 @@ try {
         if (Test-Path -LiteralPath $stopPath) { $stopReason = (Read-Json $stopPath).reason }
         if ($FarmDemo -and $stopReason -eq 'duration') {
             $farmResult = Read-Json (Join-Path $sessionDir 'farm-demo-result.json')
-            if (-not $farmResult.saved -or $farmResult.snapshot.harvested.greens -ne 1 -or $farmResult.snapshot.fields.field_01.crop_id -ne '') {
+            if (-not $farmResult.saved -or $farmResult.snapshot.harvested.greens -ne 1 -or $farmResult.snapshot.fields.field_01.cells.cell_06.crop_id -ne '') {
                 throw 'The recorded farming loop did not reach its saved harvest state.'
             }
             $record.farm_demo_result = $farmResult
@@ -163,7 +163,7 @@ try {
         }
         if ($FinalDemo -and $stopReason -eq 'duration') {
             $finalResult = Read-Json (Join-Path $sessionDir 'final-demo-result.json')
-            if (-not $finalResult.saved -or $finalResult.farm.harvested.greens -ne 11 -or $finalResult.farm.fields.field_03.crop_id -ne '' -or
+            if (-not $finalResult.saved -or $finalResult.farm.harvested.greens -ne 11 -or $finalResult.farm.fields.field_03.cells.cell_06.crop_id -ne '' -or
                 -not $finalResult.decorations.pot.slot_id -or -not $finalResult.decorations.flowerpot.slot_id -or -not $finalResult.decorations.lantern.slot_id -or
                 $finalResult.presentation.quality -ne 'standard' -or -not $finalResult.presentation.dof_enabled -or $finalResult.mesh_lod_threshold -le 0 -or -not $finalResult.hud_clock_matches_fixture) {
                 throw 'The final demonstration did not reach saved harvest, placement and normal presentation conditions.'

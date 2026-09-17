@@ -28,11 +28,11 @@ func _run() -> void:
 	await _capture("01-overview.png")
 	await _click(scene.camera.unproject_position(scene.farm.fields[2].global_position + Vector3(0, 0.4, 0)))
 	await create_timer(0.85).timeout
+	await _click(scene.camera.unproject_position(scene.farm.fields[2].to_global(scene.farm.cell_center("cell_06"))))
 	await _capture("01b-focus.png")
-	await _click(scene.get_node("HUD/Layout/FarmControls/Harvest").get_global_rect().get_center())
-	_expect(scene.selected_tool == "harvest", "Harvest tool is selected through the real button")
+	_expect(scene.selected_cell == "cell_06" and not scene.get_node("HUD/Layout/FarmControls/Harvest").disabled, "Mature cell is selected and offers Harvest")
 	await _click(scene.get_node("HUD/Layout/ViewControls/Settings").get_global_rect().get_center())
-	_expect(scene.game_menu.visible and scene.selected_tool.is_empty(), "Settings clears pending farm tool and opens its modal")
+	_expect(scene.game_menu.visible and scene.selected_tool.is_empty(), "Settings opens its modal without executing the selected cell")
 	await _click(scene.camera.unproject_position(scene.farm.fields[0].global_position + Vector3(0, 0.4, 0)))
 	_expect(scene.farm_state.snapshot() == initial, "Clicking through the settings modal cannot harvest")
 	_expect(scene.selected_field == 2, "Clicking an uncovered neighbor behind the modal cannot change selection")
@@ -87,7 +87,7 @@ func _run() -> void:
 	await _click(scene.get_node("HUD/Layout/ViewControls/Settings").get_global_rect().get_center())
 	now += 100000.0
 	scene.settle_farm()
-	_expect(scene.game_menu.visible and scene.farm_state.get_field("field_04").stage == "mature", "Reality-time growth continues while settings are open")
+	_expect(scene.game_menu.visible and scene.farm_state.get_cell("field_04", "cell_06").stage == "mature", "Reality-time growth continues while settings are open")
 	for dimensions: Vector2i in [Vector2i(960, 600), Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(3840, 2160)]:
 		root.size = dimensions
 		await process_frame
@@ -138,10 +138,8 @@ func _open_scene() -> void:
 
 func _close_scene() -> void:
 	# Audio mixing releases stopped playback objects on a later frame in headless runs.
-	for player: Node in scene.farm_audio.get_children():
-		if player is AudioStreamPlayer:
-			player.stop()
-	await create_timer(0.05).timeout
+	scene.farm_audio.shutdown()
+	await create_timer(0.1).timeout
 	scene.queue_free()
 	await process_frame
 	await process_frame

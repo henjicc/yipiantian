@@ -31,7 +31,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	var allowed: String = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification")
+	var allowed: String = ProjectSettings.globalize_path("res://../").simplify_path().path_join(".local/verification")
 	if output_dir.is_empty() or not output_dir.replace("\\", "/").begins_with(allowed.replace("\\", "/") + "/") or suite not in ["acceptance", "4k", "smoke"]:
 		push_error("Use an isolated --output below .local/verification and an explicit supported suite.")
 		quit(1)
@@ -52,8 +52,10 @@ func _run() -> void:
 	var data: Dictionary = Farm.new(now).snapshot()
 	data.harvested = {"greens": 10, "radish": 6}
 	for index: int in 6:
-		data.fields[Farm.FIELD_IDS[index]].crop_id = "greens" if index % 2 == 0 else "radish"
-		data.fields[Farm.FIELD_IDS[index]].growth_seconds = 1800.0 if index % 2 == 0 else 5400.0
+		for cell_index: int in Farm.CELL_IDS.size():
+			var cell: Dictionary = data.fields[Farm.FIELD_IDS[index]].cells[Farm.CELL_IDS[cell_index]]
+			cell.crop_id = "greens" if (index + cell_index) % 2 == 0 else "radish"
+			cell.growth_seconds = 1800.0 if cell.crop_id == "greens" else 5400.0
 	var decorations := Decorations.new()
 	decorations.unlock(data.harvested)
 	decorations.place("pot", "ground_01", 0)
@@ -217,11 +219,10 @@ func _background_probe(seconds: float) -> void:
 	scene.decoration_layout.finish_mode()
 	scene._focus_field(0)
 	await create_timer(0.85).timeout
+	scene._select_cell("cell_01")
 	scene._select_tool("harvest")
-	scene._apply_tool()
 	scene._select_tool("sow")
-	scene._apply_tool()
-	var before: Dictionary = scene.farm_state.get_field("field_01")
+	var before: Dictionary = scene.farm_state.get_cell("field_01", "cell_01")
 	var before_utc: float = Time.get_unix_time_from_system()
 	var capture := AudioEffectCapture.new()
 	capture.buffer_length = 0.2
@@ -250,7 +251,7 @@ func _background_probe(seconds: float) -> void:
 	root.mode = Window.MODE_WINDOWED
 	root.grab_focus()
 	await create_timer(1.0).timeout
-	var after: Dictionary = scene.farm_state.get_field("field_01")
+	var after: Dictionary = scene.farm_state.get_cell("field_01", "cell_01")
 	var utc_delta: float = Time.get_unix_time_from_system() - before_utc
 	_expect(absf((after.growth_seconds - before.growth_seconds) - utc_delta) < 1.2, "Real UTC growth continues through minimization")
 	_expect(scene.window_activity.is_foreground() and scene.farm_audio.is_foreground(), "Focus and sound state recover")
