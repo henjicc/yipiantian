@@ -9,6 +9,7 @@ param(
     [switch]$FarmDemo,
     [switch]$CourtyardDemo,
     [switch]$FinalDemo,
+    [switch]$TreeDemo,
     [switch]$RealtimeProbe,
     [switch]$WithAudio,
     [ValidateRange(-1, 15)][int]$Screen = 0,
@@ -21,8 +22,9 @@ $repo = Split-Path -Parent $PSScriptRoot
 if ($FarmDemo) { $Demo = $true }
 if ($CourtyardDemo) { $Demo = $true }
 if ($FinalDemo) { $Demo = $true }
+if ($TreeDemo) { $Demo = $true }
 if ($RealtimeProbe -and ($Demo -or $WithAudio -or $Seconds -lt 14 -or $Seconds -gt 20)) { throw 'RealtimeProbe is a silent 14-20 second bounded live capture; do not combine it with offline demonstrations.' }
-if ((@($FarmDemo, $CourtyardDemo, $FinalDemo) | Where-Object { $_ }).Count -gt 1) { throw 'Select one demonstration.' }
+if ((@($FarmDemo, $CourtyardDemo, $FinalDemo, $TreeDemo) | Where-Object { $_ }).Count -gt 1) { throw 'Select one demonstration.' }
 if ($FinalDemo -and $Seconds -lt 56) { throw 'The final gameplay and atmosphere demonstration needs at least 56 seconds.' }
 if ($CourtyardDemo -and $Seconds -lt 40) { throw 'The courtyard and arrangement demonstration needs at least 40 seconds.' }
 if ($WithAudio -and -not $Demo) { throw 'WithAudio requires Movie Maker demonstration capture.' }
@@ -78,7 +80,7 @@ $outputDir = Join-Path $archive $name
 New-Item -ItemType Directory -Path $outputDir | Out-Null
 $sessionDir = Join-Path $repo ('.local/recordings/' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $sessionDir -Force | Out-Null
-Save-Json (Join-Path $sessionDir 'config.json') @{ demo=[bool]($Demo -or $RealtimeProbe); farm_demo=[bool]$FarmDemo; courtyard_demo=[bool]$CourtyardDemo; final_demo=[bool]$FinalDemo; capture_audio=[bool]$WithAudio; movie_frame_limit=$(if ($Demo) { $Seconds * 60 } else { 0 }); screen=$Screen }
+Save-Json (Join-Path $sessionDir 'config.json') @{ demo=[bool]($Demo -or $RealtimeProbe); farm_demo=[bool]$FarmDemo; courtyard_demo=[bool]$CourtyardDemo; final_demo=[bool]$FinalDemo; tree_demo=[bool]$TreeDemo; capture_audio=[bool]$WithAudio; movie_frame_limit=$(if ($Demo) { $Seconds * 60 } else { 0 }); screen=$Screen }
 $movieSource = Join-Path $sessionDir 'source.avi'
 $candidate = Join-Path $outputDir '待校验.mp4'
 $video = Join-Path $outputDir ($name + '.mp4')
@@ -93,6 +95,7 @@ $record = [ordered]@{
     farm_demo=[bool]$FarmDemo; controlled_utc_advance_seconds=$(if ($FarmDemo -or $FinalDemo) { 1440 } else { 0 })
     courtyard_demo=[bool]$CourtyardDemo
     final_demo=[bool]$FinalDemo
+    tree_demo=[bool]$TreeDemo
     realtime_probe=[bool]$RealtimeProbe
     capture=$(if ($Demo) { 'Godot Movie Maker / fixed 60 fps / offline demonstration' } else { 'Windows.Graphics.Capture / HWND / realtime' })
     encoder='h264_nvenc'; preset='p5'; cq=18; fps=60; audio=$(if ($WithAudio) { 'Godot game mix / AAC 48 kHz stereo / 192 kbps' } else { 'none' })
@@ -265,7 +268,7 @@ try {
     $record.sha256 = (Get-FileHash -LiteralPath $video).Hash
     Save-Json $metadata $record
     Save-Json (Join-Path $outputDir '视频规格.json') $probe
-    $shots = if ($FinalDemo) { '0–4秒六阶段全景；4秒聚焦成熟青菜，6.5秒收获，9秒播种，12秒浇水；13–18秒缓转，18秒受控推进300秒为幼株，21秒再推进1140秒成熟，24秒收获，27秒返回。31–34秒陶罐，35–38秒花盆，39–42秒灯笼预览确认；44秒收起，46–52秒昼转夜，52–56秒停留。六阶段、初始累计青菜9/萝卜6、UTC推进与HUD12→21时钟均是隔离演示夹具；采用正式设置与普通LOD/DOF，不强制全高，不代表实时性能。' } elseif ($CourtyardDemo) { '0–4秒六个正式阶段全景；4秒聚焦，6.5秒收获触发灯笼解锁；9–14秒缓转；14秒返回。18–21秒陶罐预览确认，23–26秒花盆，28–31秒灯笼；34秒收起布置，36秒切夜景并停留。初始累计青菜9/萝卜6、作物阶段及本地12/21点为隔离录制夹具，农事/布置仍走普通场景动作和保存链。离线固定步长演示，不代表真实等待或实时性能。' } elseif ($FarmDemo) { '约 0–4 秒全景；4–6 秒聚焦；6.5 秒播种；9 秒浇水；9–14 秒小角度转动；14 秒受控推进 UTC 1440 秒，展示成熟；17 秒收获并保存；21 秒返回全景。使用独立演示存档与正常农事动作 / 保存链；时间推进是录制夹具，并非真实等待 30 分钟。Godot 固定步长离线演示，不代表实时性能。' } elseif ($Demo) { '约 0–4 秒全景停留；4–6 秒缓慢聚焦；6–9 秒近景停留；9–14 秒小角度转动；14–17 秒停留；17–19 秒返回；19 秒后全景收尾。Godot 固定时间步逐帧渲染的自动演示，非实时录屏 / 性能证明；按画面切点。完整自动演示另检查推进和转动区间的重复画面；提前结束的片段仍需人工预览。' } elseif ($RealtimeProbe) { '有界实时窗口采集探针：采用本次游戏窗口与现有WGC链路，4秒开始缓推，9–14秒小角度转动。画面按实时呈现采集，不是MovieMaker；需另查相邻帧，未通过前不作流畅素材。' } else { '手动操作素材；剪辑前预览选择片段并检查运动连续性。F9 可提前结束。' }
+    $shots = if ($TreeDemo) { '0–4秒全景；4–5.8秒进入自由视角并靠近左前桂花；5.8–9秒枝叶风动与稀疏落叶；9–14秒缓转15度；14–17秒停留；17–19秒退出自由视角；19–24秒全景。隔离16:30光照及HUD时钟，Godot离线固定步长60fps；不是实时性能证明。' } elseif ($FinalDemo) { '0–4秒六阶段全景；4秒聚焦成熟青菜，6.5秒收获，9秒播种，12秒浇水；13–18秒缓转，18秒受控推进300秒为幼株，21秒再推进1140秒成熟，24秒收获，27秒返回。31–34秒陶罐，35–38秒花盆，39–42秒灯笼预览确认；44秒收起，46–52秒昼转夜，52–56秒停留。六阶段、初始累计青菜9/萝卜6、UTC推进与HUD12→21时钟均是隔离演示夹具；采用正式设置与普通LOD/DOF，不强制全高，不代表实时性能。' } elseif ($CourtyardDemo) { '0–4秒六个正式阶段全景；4秒聚焦，6.5秒收获触发灯笼解锁；9–14秒缓转；14秒返回。18–21秒陶罐预览确认，23–26秒花盆，28–31秒灯笼；34秒收起布置，36秒切夜景并停留。初始累计青菜9/萝卜6、作物阶段及本地12/21点为隔离录制夹具，农事/布置仍走普通场景动作和保存链。离线固定步长演示，不代表真实等待或实时性能。' } elseif ($FarmDemo) { '约 0–4 秒全景；4–6 秒聚焦；6.5 秒播种；9 秒浇水；9–14 秒小角度转动；14 秒受控推进 UTC 1440 秒，展示成熟；17 秒收获并保存；21 秒返回全景。使用独立演示存档与正常农事动作 / 保存链；时间推进是录制夹具，并非真实等待 30 分钟。Godot 固定步长离线演示，不代表实时性能。' } elseif ($Demo) { '约 0–4 秒全景停留；4–6 秒缓慢聚焦；6–9 秒近景停留；9–14 秒小角度转动；14–17 秒停留；17–19 秒返回；19 秒后全景收尾。Godot 固定时间步逐帧渲染的自动演示，非实时录屏 / 性能证明；按画面切点。完整自动演示另检查推进和转动区间的重复画面；提前结束的片段仍需人工预览。' } elseif ($RealtimeProbe) { '有界实时窗口采集探针：采用本次游戏窗口与现有WGC链路，4秒开始缓推，9–14秒小角度转动。画面按实时呈现采集，不是MovieMaker；需另查相邻帧，未通过前不作流畅素材。' } else { '手动操作素材；剪辑前预览选择片段并检查运动连续性。F9 可提前结束。' }
     @("# $name", '', $Description, '', '## 工具贡献', '', $Contribution, '', '## 镜头与剪辑', '', $shots, '', "规格：3840×2160，H.264 High / yuv420p，60 fps 恒定帧率，NVENC p5 / CQ18，实际 $duration 秒。音轨：$($record.audio)。不录麦克风或其他桌面程序；主观听感尚未验收。", '', "代码基线：$commit；录制时工作区有改动：$dirty。", '', "[播放视频]($name.mp4)") | Set-Content -LiteralPath (Join-Path $outputDir '剪辑说明.md') -Encoding utf8
     $index = Join-Path $archive '录屏索引.md'
     if (-not (Test-Path -LiteralPath $index)) { @('# 开发录屏索引', '', '只记录关键变化，最新完成的成片可用于视频开头；过程按编号回溯。失败或中断文件留在各自目录，不加入成片清单。', '') | Set-Content -LiteralPath $index -Encoding utf8 }

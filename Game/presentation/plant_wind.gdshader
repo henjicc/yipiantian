@@ -16,6 +16,7 @@ uniform float wash_scale = 8.0;
 instance uniform vec4 wind_bounds = vec4(0.0, 1.0, 0.0, 0.0); // bottom, height, centre x/z
 instance uniform vec4 wind_motion = vec4(0.018, 0.20, 0.0, 0.005); // metres, root lock, crown profile, flutter
 instance uniform float wind_leaf_texture_mask = 0.0;
+instance uniform float wind_authored = 0.0;
 instance uniform float frame_enabled = 0.0;
 instance uniform vec4 frame_safe_rect = vec4(0.15, 0.14, 0.85, 0.90);
 varying vec3 world_point;
@@ -35,6 +36,7 @@ void vertex() {
 	float radial = length(VERTEX.xz - wind_bounds.zw) / height;
 	float crown = mix(1.0, smoothstep(0.035, 0.24, radial), wind_motion.z);
 	float mask = anchored * crown;
+	if (wind_authored > 0.5) { mask = COLOR.r; }
 	// The mixed trellis atlas contains green leaves, brown timber and yellow gourds.
 	// Explicit mip 0 works in vertex stage without fragment derivatives; only the
 	// green texels may move. Height still anchors the bottom of climbing foliage.
@@ -48,7 +50,12 @@ void vertex() {
 	float breeze = sin(TIME * 0.72 + phase) * 0.68 + sin(TIME * 1.13 + phase * 1.7) * 0.32;
 	float ripple = sin(dot(original_world, vec3(4.1, 2.7, 3.6)) + TIME * 2.2);
 	vec3 offset_world = vec3(0.86, 0.04, 0.51) * breeze * wind_motion.x * mask;
-	offset_world += vec3(0.35, 0.12, -0.75) * ripple * wind_motion.w * mask * mask;
+	offset_world += vec3(0.35, 0.12, -0.75) * ripple * wind_motion.w * (wind_authored > 0.5 ? COLOR.g : mask * mask);
+	if (wind_authored > 0.5) {
+		// One continuous bend through all branch junctions; only leaves flutter.
+		offset_world += vec3(-0.20, 0.10, 0.42) * sin(TIME * 1.05 + COLOR.b * 3.0 + phase) * 0.07 * mask;
+		offset_world += vec3(0.5, 0.25, -0.4) * sin(TIME * 3.1 + COLOR.b * 11.0 + phase) * wind_motion.w * COLOR.g;
+	}
 	// Convert a direction, not a point. Scaling a plant never increases its world wind limit.
 	VERTEX += (inverse(MODEL_MATRIX) * vec4(offset_world, 0.0)).xyz;
 	world_point = original_world;

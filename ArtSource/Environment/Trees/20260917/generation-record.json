@@ -1,8 +1,8 @@
 {
   "date": "2026-09-17",
-  "status": "feasibility_study_complete_runtime_pending",
+  "status": "runtime_adopted_pending_user_visual_acceptance",
   "starting_balance": 8840,
-  "purpose": "江南九月树木更新：先用桂花整树验证语义分割是否能成为枝条/叶簇动画的制作输入；未接入游戏。",
+  "purpose": "江南九月桂花：图片参考、整树生成、语义分件辅助原网格分组、连续权重风动和独立落叶，接入左前岸边。",
   "assets": [
     {
       "name": "osmanthus",
@@ -61,10 +61,39 @@
           "entry": "inspect.py",
           "audit": "osmanthus/segmentation-audit.json",
           "operation": "blender_inspection"
+        },
+        {
+          "operation": "blender_runtime_preparation",
+          "version": "5.2.2 LTS",
+          "entry": "prepare.py",
+          "source": "osmanthus/osmanthus.blend",
+          "audit": "osmanthus/asset-audit.json",
+          "high_triangles": 38798,
+          "low_triangles": 22114,
+          "material_slots": 1,
+          "texture_size": 4096,
+          "animation": "Continuous seam-matched vertex weights; root locked; branch sway and leaf flutter; six locally authored falling-leaf instances, no skeleton.",
+          "credits_consumed": 0
         }
       ],
-      "runtime_adopted": false,
-      "remaining": "改善扁平冠形；制作连续枝条权重/骨骼、叶簇风动和独立落叶；其他树种及场景接入尚未实施"
+      "runtime_adopted": true,
+      "remaining": "其他树种未制作；当前大叶卡通桂花及动态效果待用户主观签收。",
+      "runtime": {
+        "verification": [
+          "tests/osmanthus_debug_scene_test.gd",
+          "tests/osmanthus_clearance_test.gd",
+          "tests/mesh_lod_test.gd"
+        ],
+        "position": [
+          -6.05,
+          0.13,
+          4.3
+        ],
+        "resources": "Game/art/environment/osmanthus",
+        "node": "Environment/WestTree",
+        "yaw_degrees": 15,
+        "extra_auto_lod": false
+      }
     }
   ],
   "ending_balance": 8740,

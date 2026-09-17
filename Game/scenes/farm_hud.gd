@@ -11,6 +11,7 @@ signal recovery_requested
 signal exit_requested
 signal decoration_requested
 signal settings_requested
+signal free_view_requested
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const FarmTheme = preload("res://ui/farm_theme.gd")
@@ -35,6 +36,7 @@ var _retry: Button
 var _recover: Button
 var _exit: Button
 var _view_controls: HBoxContainer
+var _free_view: Button
 
 
 func _ready() -> void:
@@ -147,6 +149,15 @@ func _ready() -> void:
 	_settings = _button(bar, "设置", 100)
 	_settings.name = "Settings"
 	_settings.pressed.connect(func() -> void: settings_requested.emit())
+	if OS.is_debug_build():
+		_free_view = _button(root, "自由视角", 160)
+		_free_view.name = "DebugFreeCamera"
+		_free_view.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		_free_view.offset_left = -178
+		_free_view.offset_right = -18
+		_free_view.offset_top = 140
+		_free_view.offset_bottom = 182
+		_free_view.pressed.connect(func() -> void: free_view_requested.emit())
 	_build_storage_overlay(root)
 	_update_clock()
 	var timer := Timer.new()
@@ -194,6 +205,11 @@ func _build_storage_overlay(root: Control) -> void:
 	_exit.name = "Exit"
 	_exit.pressed.connect(func() -> void: exit_requested.emit())
 	_storage_overlay.hide()
+
+
+func show_free_view(active: bool) -> void:
+	if _free_view != null:
+		_free_view.text = "退出自由视角" if active else "自由视角"
 
 
 func _status_plate(parent: Control) -> Panel:

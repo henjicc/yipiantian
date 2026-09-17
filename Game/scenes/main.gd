@@ -85,6 +85,7 @@ func _ready() -> void:
 	hud.exit_requested.connect(_finish_exit)
 	hud.decoration_requested.connect(_begin_decoration)
 	hud.settings_requested.connect(_open_menu)
+	hud.free_view_requested.connect(_toggle_free_view)
 	camera.motion_finished.connect(_refresh_hud)
 	_load_game()
 	# The courtyard owns all slot transforms and art; no duplicate fallback layout.
@@ -302,6 +303,17 @@ func _input(event: InputEvent) -> void:
 				_request_menu_close()
 			get_viewport().set_input_as_handled()
 		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F8 and OS.is_debug_build():
+		_toggle_free_view()
+		get_viewport().set_input_as_handled()
+		return
+	if camera.free_view:
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+			_return_overview()
+			get_viewport().set_input_as_handled()
+		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and not event.pressed:
+			camera.cancel_free_look()
+		return
 	if decoration_layout != null and decoration_layout.active:
 		decoration_layout.observe_input(event)
 		if (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT):
@@ -334,6 +346,10 @@ func _input(event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not _loaded or _save_failed or (game_menu != null and game_menu.visible):
 		return
+	if camera.free_view:
+		camera.free_input(event)
+		get_viewport().set_input_as_handled()
+		return
 	if decoration_layout != null and decoration_layout.active:
 		decoration_layout.handle_input(event)
 		return
@@ -364,7 +380,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	if game_menu != null and game_menu.visible:
+	if camera.free_view or (game_menu != null and game_menu.visible):
 		_cancel_input()
 		return
 	# Space queries belong to the physics boundary. Each gesture carries its admission
@@ -398,6 +414,8 @@ func _notification(what: int) -> void:
 		_request_exit()
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_WM_MOUSE_EXIT:
 		_cancel_input()
+		if is_instance_valid(camera):
+			camera.cancel_free_look()
 		selected_tool = ""
 		if decoration_layout != null and decoration_layout.active:
 			if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
@@ -528,6 +546,9 @@ func _cancel_or_return() -> void:
 
 
 func _return_overview() -> void:
+	if camera.free_view:
+		camera.set_free_view(false)
+		hud.show_free_view(false)
 	if decoration_layout != null and decoration_layout.active:
 		decoration_layout.finish_mode()
 	_cancel_input()
@@ -546,6 +567,16 @@ func _reset_view() -> void:
 	_return_overview()
 	camera.reset_view()
 	_refresh_hud()
+
+
+func _toggle_free_view() -> void:
+	if not OS.is_debug_build() or not _loaded or _save_failed or (game_menu != null and game_menu.visible):
+		return
+	var enabled: bool = not camera.free_view
+	_return_overview()
+	if enabled:
+		camera.set_free_view(true)
+		hud.show_free_view(true)
 
 
 func _cancel_input(cancel_tool_press: bool = true) -> void:
@@ -600,6 +631,8 @@ func _open_menu() -> void:
 	if game_menu == null or not _loaded or _save_failed:
 		return
 	_cancel_input()
+	camera.free_input_enabled = false
+	camera.cancel_free_look()
 	decoration_layout.cancel_pointer_gesture()
 	selected_tool = ""
 	_allow_leave_settings = false
@@ -643,5 +676,6 @@ func _request_menu_close() -> void:
 			return
 	game_menu.dismiss()
 	_allow_leave_settings = false
+	camera.free_input_enabled = true
 	_refresh_hud()
 	hud.get_node("Layout/ViewControls/Settings").grab_focus()

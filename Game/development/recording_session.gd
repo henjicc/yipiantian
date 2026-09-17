@@ -15,6 +15,8 @@ var _farm_demo: bool = false
 var _farm_now: float = 0.0
 var _courtyard_demo: bool = false
 var _final_demo: bool = false
+var _tree_demo: bool = false
+var _tree_start: Transform3D
 var _movie_frame_limit: int = 0
 
 
@@ -33,6 +35,7 @@ func _ready() -> void:
 	_farm_demo = bool(config.get("farm_demo", false))
 	_courtyard_demo = bool(config.get("courtyard_demo", false))
 	_final_demo = bool(config.get("final_demo", false))
+	_tree_demo = bool(config.get("tree_demo", false))
 	_movie_frame_limit = int(config.get("movie_frame_limit", 0))
 	if OS.has_feature("movie") and bool(config.get("capture_audio", false)):
 		# Only this explicit editor-only isolated recording session may render an
@@ -65,6 +68,10 @@ func _ready() -> void:
 			if child is Timer and child.timeout.is_connected(Callable(farm_scene.hud, "_update_clock")):
 				child.stop()
 		_set_demo_hour(12.0)
+	if _tree_demo:
+		for child: Node in farm_scene.hud.get_children():
+			if child is Timer and child.timeout.is_connected(Callable(farm_scene.hud,"_update_clock")): child.stop()
+		_set_demo_hour(16.5)
 	# Movie Maker advances the simulation by 1/60 s for each saved frame.
 	# It does not wait for the live encoder's handshake.
 	_started = OS.has_feature("movie")
@@ -124,6 +131,9 @@ func _process(delta: float) -> void:
 	if not _started or _stopping or not _demo:
 		return
 	_elapsed += delta
+	if _tree_demo:
+		_run_tree_demo()
+		return
 	if _final_demo:
 		_run_final_demo(delta)
 		return
@@ -145,6 +155,29 @@ func _process(delta: float) -> void:
 	elif _stage == 3 and _elapsed >= 17.0:
 		farm_scene._return_overview()
 		_stage = 4
+
+
+func _run_tree_demo() -> void:
+	var target := Vector3(-6.05,1.8,4.3)
+	var offset := Vector3(5.1,2.1,7.7)
+	if _stage == 0 and _elapsed >= 4.0:
+		farm_scene._toggle_free_view()
+		_tree_start = farm_scene.camera.transform
+		_stage = 1
+	if _stage == 1:
+		var close := Transform3D(Basis.IDENTITY,target+offset).looking_at(target)
+		farm_scene.camera.transform = _tree_start.interpolate_with(close,smoothstep(4.0,5.8,_elapsed))
+		if _elapsed >= 5.8: _stage = 2
+	elif _stage == 2 and _elapsed >= 9.0:
+		_stage = 3
+	elif _stage == 3:
+		var angle: float = deg_to_rad(-15.0)*clampf((_elapsed-9.0)/5.0,0.0,1.0)
+		farm_scene.camera.position = target+offset.rotated(Vector3.UP,angle)
+		farm_scene.camera.look_at(target)
+		if _elapsed >= 14.0: _stage = 4
+	elif _stage == 4 and _elapsed >= 17.0:
+		farm_scene._return_overview()
+		_stage = 5
 
 
 func _run_farm_demo(delta: float) -> void:

@@ -15,7 +15,8 @@ func _initialize() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
-	var allowed: String = get_script().resource_path.get_base_dir().get_base_dir().path_join(".local/verification/").replace("\\", "/")
+	var allowed: String = ProjectSettings.globalize_path("res://../.local/verification").simplify_path() + "/"
+	output_dir = ProjectSettings.globalize_path(output_dir).simplify_path()
 	if not output_dir.begins_with(allowed) or DisplayServer.get_name() == "headless":
 		push_error("Native rendering and an isolated verification output are required")
 		quit(1)

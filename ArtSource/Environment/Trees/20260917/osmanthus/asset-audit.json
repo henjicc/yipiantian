@@ -1,0 +1,47 @@
+{
+  "blender": "5.2.2 LTS",
+  "height": 3.6,
+  "depth_scale": 1.5,
+  "source": "osmanthus/raw/model.glb",
+  "semantic_source": "osmanthus/segmented/model.glb",
+  "wind_channels": {
+    "R": "continuous branch bending, bottom 20% locked",
+    "G": "leaf flutter sampled from original texture",
+    "B": "continuous crown phase",
+    "A": "1"
+  },
+  "meshes": {
+    "osmanthus_high": {
+      "triangles": 38798,
+      "dimensions": [
+        3.9420299530029297,
+        2.123852014541626,
+        3.5999999046325684
+      ],
+      "materials": 1,
+      "textures": [
+        4096,
+        4096
+      ],
+      "boundary_edges_after_audit_weld": 0,
+      "overconnected_edges": 0,
+      "reimport_verified": true
+    },
+    "osmanthus_low": {
+      "triangles": 22114,
+      "dimensions": [
+        3.9311749935150146,
+        2.120175361633301,
+        3.5967416763305664
+      ],
+      "materials": 1,
+      "textures": [
+        4096,
+        4096
+      ],
+      "boundary_edges_after_audit_weld": 0,
+      "overconnected_edges": 0,
+      "reimport_verified": true
+    }
+  }
+}

@@ -1,8 +1,10 @@
 extends Node
 ## Derived presentation only. The caller owns selected field, camera and gameplay.
 
-const FOCUS_BIAS: float = 128.0
-const OVERVIEW_BIAS: float = 0.0
+const FOCUS_BIAS: float = 2.0
+# Zero forces the coarsest generated LOD even at close range. Preserve Godot's
+# screen-space selection everywhere; selected crops get a modest quality margin.
+const OVERVIEW_BIAS: float = 1.0
 const CameraForeground = preload("res://presentation/camera_foreground.gd")
 const PlantWind = preload("res://presentation/plant_wind.gd")
 var _decoration_wind := PlantWind.new()
@@ -109,7 +111,7 @@ func refresh_decorations() -> void:
 func refresh_details() -> void:
 	for field: Node3D in _fields:
 		refresh_field(field)
-	_set_environment_bias(_environment)
+	_set_bias(_environment, OVERVIEW_BIAS)
 	refresh_decorations()
 
 
@@ -118,18 +120,6 @@ func _set_bias(node: Node, value: float) -> void:
 		node.lod_bias = value
 	for child: Node in node.get_children():
 		_set_bias(child, value)
-
-
-func _set_environment_bias(node: Node) -> void:
-	# Authored low-poly modules have destructive lowest auto LODs (thin fence posts,
-	# stone faces and bridge rails disappear). Classify once by the stable source path.
-	if node is Node3D and node.scene_file_path.begins_with("res://art/environment/modules/"):
-		_set_bias(node, FOCUS_BIAS)
-		return
-	if node is GeometryInstance3D:
-		node.lod_bias = OVERVIEW_BIAS
-	for child: Node in node.get_children():
-		_set_environment_bias(child)
 
 
 func _on_crop_added(node: Node, field: Node3D) -> void:
@@ -150,9 +140,10 @@ func _apply_decoration_wind(node: Node) -> void:
 func _process(delta: float) -> void:
 	if _camera == null:
 		return
-	var framing: bool = not is_instance_valid(_target) and not _decorations.active and _quality == "standard"
-	_foreground.set_overview_visible(framing)
-	var allowed: bool = _dof_enabled and _quality == "standard" and _dof_strength > 0.0
+	var inspecting: bool = _camera.get("free_view") == true
+	var framing: bool = not inspecting and not is_instance_valid(_target) and not _decorations.active and _quality == "standard"
+	_foreground.set_overview_visible(framing, inspecting)
+	var allowed: bool = not inspecting and _dof_enabled and _quality == "standard" and _dof_strength > 0.0
 	var active: bool = is_instance_valid(_target) and allowed
 	var frame_blur: bool = framing and allowed
 	var approach: float = 1.0 - smoothstep(12.0, 18.0, _camera.global_position.distance_to(_target.global_position)) if active else 0.0

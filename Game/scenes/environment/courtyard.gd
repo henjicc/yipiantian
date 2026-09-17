@@ -6,6 +6,7 @@ const STONE_ATLAS = preload("res://art/environment/modules/river_stones_color.pn
 const LayeredLandscape = preload("res://scenes/environment/layered_landscape.gd")
 const LivingDetails = preload("res://scenes/environment/living_details.gd")
 const PlantWind = preload("res://presentation/plant_wind.gd")
+const FallingLeaves = preload("res://presentation/falling_leaves.gd")
 const GroundCover = preload("res://scenes/environment/ground_cover.gd")
 const ContactShading = preload("res://presentation/contact_shading.gd")
 const WaterContacts = preload("res://presentation/water_contacts.gd")
@@ -113,7 +114,7 @@ func _asset(id: String, key: String, at: Vector3, yaw_degrees: float=0, size: fl
 	var high: Node3D=(load(ROOT+id+"/"+id+"_high.glb") as PackedScene).instantiate()
 	var low: Node3D=(load(ROOT+id+"/"+id+"_low.glb") as PackedScene).instantiate()
 	holder.add_child(high);holder.add_child(low);low.visible=false
-	if id in ["tree","bamboo","flowers","lotus","trellis"]:
+	if id in ["tree","osmanthus","bamboo","flowers","lotus","trellis"]:
 		_plant_wind.apply(high,id);_plant_wind.apply(low,id)
 	_lod_pairs[key]=[high,low]
 	return holder
@@ -133,6 +134,9 @@ func _build_ground() -> void:
 			if _rng.randf()<.24:continue
 			var p:Vector2=a.lerp(b,float(j)/count)+Vector2(_rng.randf_range(-.14,.14),_rng.randf_range(-.14,.14))
 			var rock := _module("stone_%d"%_rng.randi_range(0,4),Vector3(p.x,-.43,p.y),_rng.randf_range(0,360),Vector3(_rng.randf_range(.85,1.45),_rng.randf_range(2.5,4.3),_rng.randf_range(.8,1.45)))
+			# Open a root bay for the west osmanthus; keep the seeded draws stable.
+			if i == 12 and j == 1:
+				rock.position = Vector3(-6.65,-.43,5.4)
 			_tint_stone(rock,Color("7d887d")*_rng.randf_range(.88,1.12))
 	# Broken shelves at the visible waterline interrupt the former even bead border.
 	var shelves: Array[Vector3] = [Vector3(-7.1,-.48,2.7),Vector3(-6.2,-.48,4.7),Vector3(-4.0,-.48,6.0),Vector3(-1.1,-.50,6.5),Vector3(2.0,-.46,6.4),Vector3(5.7,-.45,5.55),Vector3(6.5,-.43,2.5)]
@@ -198,7 +202,12 @@ func _build_porch_bench(at: Vector3, width: float) -> void:
 	_contact_sources.append(bench)
 
 func _build_plants() -> void:
-	_asset("tree","WestTree",Vector3(-5.8,.13,-3.45),32,.87)
+	var osmanthus: Node3D = _asset("osmanthus","WestTree",Vector3(-6.05,.13,4.3),15,1.0)
+	_contact_sources.append(osmanthus.get_child(0))
+	var falling := FallingLeaves.new()
+	falling.name = "OsmanthusLeaves"
+	add_child(falling)
+	falling.configure(osmanthus)
 	_asset("tree","RearTree",Vector3(3.75,.13,-6.1),-27,1.07)
 	_asset("tree","EastBankTree",Vector3(12.4,.12,-4.2),-35,.72)
 	_asset("tree","RearSmallTree",Vector3(-2.5,.13,-7.45),80,.67)

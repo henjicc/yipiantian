@@ -5,6 +5,7 @@ extends RefCounted
 const WIND_SHADER = preload("res://presentation/plant_wind.gdshader")
 const PROFILES := {
 	"tree": Vector4(0.042, 0.42, 1.0, 0.008),
+	"osmanthus": Vector4(0.14, 0.20, 0.0, 0.025),
 	"bamboo": Vector4(0.026, 0.16, 0.0, 0.007),
 	"flowers": Vector4(0.012, 0.18, 0.0, 0.003),
 	"lotus": Vector4(0.035, 0.15, 0.0, 0.012),
@@ -42,8 +43,9 @@ func _apply_node(node: Node, kind: String) -> void:
 			mesh.material_override = _convert(mesh.material_override)
 		mesh.set_instance_shader_parameter("wind_bounds", Vector4(bounds.position.y, bounds.size.y, centre.x, centre.z))
 		mesh.set_instance_shader_parameter("wind_motion", motion)
+		mesh.set_instance_shader_parameter("wind_authored", 1.0 if kind == "osmanthus" else 0.0)
 		mesh.set_instance_shader_parameter("wind_leaf_texture_mask", 1.0 if kind == "trellis" else 0.0)
-		mesh.extra_cull_margin = maxf(mesh.extra_cull_margin, motion.x + motion.w)
+		mesh.extra_cull_margin = maxf(mesh.extra_cull_margin, 0.22 if kind == "osmanthus" else motion.x + motion.w)
 		mesh.set_meta("plant_wind_kind", kind)
 	for child: Node in node.get_children():
 		_apply_node(child, kind)

@@ -19,6 +19,11 @@ var _destination_view: Vector3 = DEFAULT_VIEW
 var _decoration_framing: bool = false
 var _decoration_return_point: Vector3 = DEFAULT_POINT
 var _decoration_return_view: Vector3 = DEFAULT_VIEW
+var free_view: bool = false
+var free_input_enabled: bool = true
+var _free_looking: bool = false
+var _free_return_point: Vector3
+var _free_return_view: Vector3
 
 
 func _ready() -> void:
@@ -28,8 +33,53 @@ func _ready() -> void:
 	_apply_pose()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if free_view:
+		if free_input_enabled and get_window().has_focus():
+			var direction := Vector3(float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A)), float(Input.is_physical_key_pressed(KEY_E)) - float(Input.is_physical_key_pressed(KEY_Q)), float(Input.is_physical_key_pressed(KEY_S)) - float(Input.is_physical_key_pressed(KEY_W)))
+			var speed: float = 10.0 if Input.is_physical_key_pressed(KEY_SHIFT) else 1.0 if Input.is_physical_key_pressed(KEY_CTRL) else 3.5
+			move_free(direction, delta * speed)
+		return
 	_apply_pose()
+
+
+func set_free_view(enabled: bool) -> void:
+	if enabled == free_view:
+		return
+	_free_looking = false
+	if enabled:
+		_free_return_point = _destination_point if is_transitioning() else focus_point
+		_free_return_view = _destination_view if is_transitioning() else view
+		_stop_transition()
+		free_view = true
+	else:
+		free_view = false
+		_move_to(_free_return_point, _free_return_view)
+
+
+func move_free(direction: Vector3, distance: float) -> void:
+	if not free_view:
+		return
+	var movement: Vector3 = global_basis.x * direction.x + Vector3.UP * direction.y + global_basis.z * direction.z
+	if movement.length_squared() > 0.0:
+		global_position += movement.normalized() * distance
+
+
+func cancel_free_look() -> void:
+	_free_looking = false
+
+
+func free_input(event: InputEvent) -> void:
+	if not free_view or not free_input_enabled:
+		return
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_RIGHT:
+			_free_looking = event.pressed and not event.canceled
+		elif event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+			move_free(Vector3(0, 0, -1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1), 0.6)
+	elif event is InputEventMouseMotion and _free_looking:
+		rotation.y -= event.relative.x * 0.003
+		rotation.x = clampf(rotation.x - event.relative.y * 0.003, deg_to_rad(-89), deg_to_rad(89))
 
 
 func focus_field(point: Vector3) -> void:
