@@ -93,7 +93,9 @@ func _lathe(parent: Node3D, at: Vector3, profile: Array[Vector2], material: Mate
 			var p: Vector2 = profile[j]
 			var q: Vector2 = profile[j + 1]
 			var points: Array[Vector3] = [Vector3(cos(a)*p.x,p.y,sin(a)*p.x),Vector3(cos(b)*q.x,q.y,sin(b)*q.x),Vector3(cos(b)*p.x,p.y,sin(b)*p.x),Vector3(cos(a)*p.x,p.y,sin(a)*p.x),Vector3(cos(a)*q.x,q.y,sin(a)*q.x),Vector3(cos(b)*q.x,q.y,sin(b)*q.x)]
-			for point: Vector3 in points:
+			# Godot front faces use clockwise winding; keep outward normals on the visible shell.
+			for index: int in [0, 2, 1, 3, 5, 4]:
+				var point: Vector3 = points[index]
 				var normal := Vector3(point.x, 0.0, point.z).normalized() * (q.y-p.y) + Vector3.UP * (p.x-q.x)
 				surface.set_normal(normal.normalized())
 				surface.add_vertex(point)
@@ -311,7 +313,7 @@ func _build_firewood() -> void:
 
 
 func _build_stone_mill() -> void:
-	var group := _group("YardStoneMill", Vector3(5.02, .14, -0.72), 25)
+	var group := _group("YardStoneMill", Vector3(5.62, .14, -0.72), 25)
 	var granite := _paint(Color("9ea49a"), 4.0)
 	granite.set_shader_parameter("stone_treatment", 1.0)
 	var pedestal := _paint(Color("8d928a"), 4.0)

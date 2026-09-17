@@ -1,0 +1,104 @@
+{
+  "blender": "5.2.2 LTS",
+  "atlas": [
+    2048,
+    2048
+  ],
+  "meshes": {
+    "stone_0": {
+      "source": "boulder",
+      "raw_triangles": 19562,
+      "runtime_triangles": 1500,
+      "original_texture": [
+        4096,
+        4096
+      ],
+      "uv_layers": 1,
+      "non_manifold_edges": 0,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "dimensions_godot_xyz": [
+        0.9504830837249756,
+        0.2708030641078949,
+        0.8420118093490601
+      ],
+      "reimport_verified": true
+    },
+    "stone_1": {
+      "source": "flat",
+      "raw_triangles": 19100,
+      "runtime_triangles": 800,
+      "original_texture": [
+        4096,
+        4096
+      ],
+      "uv_layers": 1,
+      "non_manifold_edges": 0,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "dimensions_godot_xyz": [
+        0.9501945972442627,
+        0.12061275541782379,
+        0.7953899502754211
+      ],
+      "reimport_verified": true
+    },
+    "stone_2": {
+      "source": "long",
+      "raw_triangles": 19924,
+      "runtime_triangles": 1300,
+      "original_texture": [
+        4096,
+        4096
+      ],
+      "uv_layers": 1,
+      "non_manifold_edges": 0,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "dimensions_godot_xyz": [
+        0.4286530315876007,
+        0.22145257890224457,
+        0.9498380422592163
+      ],
+      "reimport_verified": true
+    },
+    "stone_3": {
+      "source": "round",
+      "raw_triangles": 18858,
+      "runtime_triangles": 1000,
+      "original_texture": [
+        4096,
+        4096
+      ],
+      "uv_layers": 1,
+      "non_manifold_edges": 0,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "dimensions_godot_xyz": [
+        0.6417434811592102,
+        0.2203872799873352,
+        0.9513789415359497
+      ],
+      "reimport_verified": true
+    },
+    "stone_4": {
+      "source": "cleft",
+      "raw_triangles": 19172,
+      "runtime_triangles": 1600,
+      "original_texture": [
+        4096,
+        4096
+      ],
+      "uv_layers": 1,
+      "non_manifold_edges": 0,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "dimensions_godot_xyz": [
+        0.9150508046150208,
+        0.33956053853034973,
+        0.9498826265335083
+      ],
+      "reimport_verified": true
+    }
+  }
+}

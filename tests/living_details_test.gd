@@ -58,6 +58,25 @@ func _run() -> void:
 	for id: String in before:
 		_expect(scene.get_slot_marker(id).transform==before[id],"Ambient movement never changes decoration slots: "+id)
 	var living: Node3D = scene.get_node("LivingDetails")
+	# A double-sided material flips back-face normals. Wrong winding made the
+	# jars appear black from the opposite shore despite outward vertex normals.
+	var reversed_faces: int = 0
+	for instance: Node in living.get_node("YardJarCluster").get_children():
+		if not instance is MeshInstance3D:
+			continue
+		for surface_index: int in instance.mesh.get_surface_count():
+			var arrays: Array = instance.mesh.surface_get_arrays(surface_index)
+			var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+			for face: int in range(0, indices.size() if not indices.is_empty() else vertices.size(), 3):
+				var a: int = indices[face] if not indices.is_empty() else face
+				var b: int = indices[face+1] if not indices.is_empty() else face+1
+				var c: int = indices[face+2] if not indices.is_empty() else face+2
+				var clockwise_normal: Vector3 = (vertices[c]-vertices[a]).cross(vertices[b]-vertices[a])
+				if clockwise_normal.dot(normals[a]+normals[b]+normals[c]) < -0.000001:
+					reversed_faces += 1
+	_expect(reversed_faces == 0, "Jar front faces agree with outward lighting normals")
 	for child: Node in living.get_children():
 		if child.name in ["PorchHarvestTable","SidePorchDryingRack","PorchFarmTools"]:
 			_expect(child.get_child_count()<=8,"Fine prop parts merge by material: "+str(child.name))

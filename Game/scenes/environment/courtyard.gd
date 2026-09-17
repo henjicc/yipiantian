@@ -2,6 +2,7 @@ extends Node3D
 ## Spatial truth and ambient scenery only; no farm state, unlock rules or saving.
 const DECORATIONS = preload("res://farm/decoration_catalog.gd")
 const PIGMENT = preload("res://scenes/environment/pigment.gdshader")
+const STONE_ATLAS = preload("res://art/environment/modules/river_stones_color.png")
 const LayeredLandscape = preload("res://scenes/environment/layered_landscape.gd")
 const LivingDetails = preload("res://scenes/environment/living_details.gd")
 const PlantWind = preload("res://presentation/plant_wind.gd")
@@ -97,6 +98,9 @@ func _apply_pigment(node: Node, module_id: String = "") -> void:
 				painted.shader=PIGMENT
 				painted.set_shader_parameter("base_color",original.albedo_color)
 				painted.set_shader_parameter("wash_scale",3.5)
+				if module_id.begins_with("stone_") and original.albedo_texture != null:
+					painted.set_shader_parameter("painted_rock",true)
+					painted.set_shader_parameter("rock_color",STONE_ATLAS)
 				painted.set_shader_parameter("stone_treatment", 1.0 if module_id.begins_with("stone_") else 0.0)
 				painted.set_shader_parameter("ground_treatment", 1.0 if module_id == "island_bank" else 0.0)
 				painted.set_shader_parameter("foundation_treatment", 1.0 if module_id in ["veranda","side_wing"] else 0.0)
@@ -144,7 +148,10 @@ func _build_ground() -> void:
 				var p:Vector3=a.lerp(b,float(j)/count);p.x+=_rng.randf_range(-.055,.055);p.z+=_rng.randf_range(-.07,.07)
 				# Untinted slabs came out near white and became the brightest thing on
 				# the island, pulling attention off the beds. Warm grey flagstones.
-				_tint_stone(_module("stone_%d"%_rng.randi_range(0,4),p,_rng.randf_range(-18,18),Vector3(.64,.18,.72)),Color("93907e")*_rng.randf_range(.90,1.08))
+				# Only flat slabs and low wedges serve as footpath stones. Consume the
+				# same random draw so the rest of the established scene stays stable.
+				var shape: int = _rng.randi_range(0,4)
+				_tint_stone(_module("stone_%d" % (1 if shape < 3 else 2),p,_rng.randf_range(-18,18),Vector3(.64,.28,.72)),Color("93907e")*_rng.randf_range(.90,1.08))
 
 func _tint_stone(node: Node, color: Color) -> void:
 	if node is MeshInstance3D:
@@ -198,7 +205,7 @@ func _build_plants() -> void:
 	_asset("tree","RearWestCanopy",Vector3(-5.75,.13,-6.8),-72,.83)
 	_asset("tree","RearEastCanopy",Vector3(5.5,.13,-5.95),57,.83)
 	_asset("tree","FarBankCompanion",Vector3(14.0,.1,-5.2),19,.65)
-	var bamboo_positions:Array[Vector3]=[Vector3(-7,.13,-5.2),Vector3(-7.1,.13,-.5),Vector3(5.4,.13,-5.7),Vector3(5.8,.13,2.0),Vector3(13.8,.10,-.8),Vector3(-6.6,.13,-6.6),Vector3(4.7,.13,-7.0),Vector3(5.9,.13,-3.5)]
+	var bamboo_positions:Array[Vector3]=[Vector3(-7,.13,-5.2),Vector3(-7.1,.13,-.5),Vector3(5.4,.13,-5.7),Vector3(6.3,.13,2.0),Vector3(13.8,.10,-.8),Vector3(-6.6,.13,-6.6),Vector3(4.7,.13,-7.0),Vector3(5.9,.13,-3.5)]
 	for i in bamboo_positions.size():_asset("bamboo","Bamboo%d"%i,bamboo_positions[i],_rng.randf_range(0,360),_rng.randf_range(.70,1.05))
 	var reeds: Array[Vector3] = [Vector3(-7.15,.05,2.7),Vector3(-6.55,.04,4.35),Vector3(-4.1,.06,5.85),Vector3(-2.15,.06,6.2),Vector3(.7,.06,6.25),Vector3(3.1,.07,5.85),Vector3(6.0,.06,4.3),Vector3(6.1,.08,3.5),Vector3(6.15,.08,-1.6),Vector3(11.0,.03,-.85),Vector3(14.2,.03,-.35)]
 	for i in reeds.size():_asset("bamboo","BankReeds%d"%i,reeds[i],i*53,_rng.randf_range(.30,.43))

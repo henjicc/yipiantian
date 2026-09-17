@@ -1,0 +1,150 @@
+{
+  "date": "2026-09-17",
+  "starting_balance": 9140,
+  "route_reason": "用户要求所有Tripo生成先由图片生成工具出单体参考；五张独立参考均检查。H3.1 Ultra保留自然体块/裂缝，v3.5 HD保留淡彩材质，游戏网格在Blender同源减面。显式H3.1避免20000面预算被CLI自动切到P1。",
+  "assets": [
+    {
+      "name": "boulder",
+      "source_image": "%USERPROFILE%/.codex/generated_images/01a0ae6e-de63-7993-a518-c7a1957240cb/exec-7dd11f3d-0d17-4437-b3bd-670f51bd9226.png",
+      "prompt": "Create one complete single-object concept for a 3D Jiangnan miniature farm game. Input 1 (bok choy) is only the approved painted material and rounded-form style reference; input 2 (farm) is only the approved world style reference. Do not depict vegetables or the scene. Object: exactly ONE asymmetrical broad river-bank limestone boulder, squat but substantial, a sloping uneven crown and 3 or 4 large interlocking rounded angular planes, a slightly chipped shoulder, one shallow natural diagonal seam, wider at its stable bottom. Broad substantial volume, NOT an egg, cube, sharp crystal, mountain or pile of loose stones. Width to height about 1.6:1, depth about 0.9 of width. Material is subdued cool warm-grey limestone with a slight sage cast, sparse muted moss-green pigment in crevices; finely painted selective contours and layered pale colour washes like the references, matte softly shaded real 3D volume. No photographic noisy microtexture, no glossy plastic, no heavy black outlines, no grass or separate plants. Weak-perspective three-quarter view from slightly above, show top front and side. Entire object and bottom visible, generous margin, plain off-white neutral background, soft neutral diffuse lighting and only faint contact shadow. No strong baked shadows, sunset, ground clump, pedestal, water, surrounding rocks, text, collage, labels, UI. High quality standalone modelling reference, square composition.",
+      "reference_inputs": [
+        "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+        "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+      ],
+      "image_tool": "built-in image_gen",
+      "image_model": null,
+      "seed": 202609170,
+      "model": "v3.1-20260211",
+      "parameters": {
+        "geometry_quality": "detailed",
+        "face_limit": 20000,
+        "texture": true,
+        "pbr": false,
+        "texture_version": "v3.5-20260815",
+        "texture_quality": "detailed",
+        "delight": true,
+        "texture_seed": 202609170
+      },
+      "image_review": "单体完整、无附带地面/植物，五类形状有可辨差异；已检查后才提交图生模型。",
+      "task_id": "373e70f7-9cca-4ba5-87fa-fb8f20e0af23",
+      "credits_consumed": 60,
+      "reference_image": "boulder/concept.png",
+      "original_model": "boulder/raw/model.glb"
+    },
+    {
+      "name": "flat",
+      "source_image": "%USERPROFILE%/.codex/generated_images/01a0ae6e-de63-7993-a518-c7a1957240cb/exec-598c5d3a-12c5-4d06-8dd3-45dc809f2d27.png",
+      "prompt": "Create one complete single-object concept for a 3D Jiangnan miniature farm game. Input 1 (bok choy) is only the approved painted material and rounded-form style reference; input 2 (farm) is only the approved world style reference. Do not depict vegetables or the scene. Object: exactly ONE low flat irregular river limestone slab, broad pentagonal footprint with a shallow dipped top and one broken softened corner, naturally rounded worn perimeter. Width to height 4.5:1, depth about 0.75 of width. Three shallow large planes, no stacked layers, no rectangular paving block. Material is subdued cool warm-grey limestone with a slight sage cast, sparse muted moss-green pigment in crevices; finely painted selective contours and layered pale colour washes like the references, matte softly shaded real 3D volume. No photographic noisy microtexture, no glossy plastic, no heavy black outlines, no grass or separate plants. Weak-perspective three-quarter view from slightly above, show top front and side. Entire object and bottom visible, generous margin, plain off-white neutral background, soft neutral diffuse lighting and only faint contact shadow. No strong baked shadows, sunset, ground clump, pedestal, water, surrounding rocks, text, collage, labels, UI. High quality standalone modelling reference, square composition.",
+      "reference_inputs": [
+        "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+        "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+      ],
+      "image_tool": "built-in image_gen",
+      "image_model": null,
+      "seed": 202609171,
+      "model": "v3.1-20260211",
+      "parameters": {
+        "geometry_quality": "detailed",
+        "face_limit": 20000,
+        "texture": true,
+        "pbr": false,
+        "texture_version": "v3.5-20260815",
+        "texture_quality": "detailed",
+        "delight": true,
+        "texture_seed": 202609171
+      },
+      "image_review": "单体完整、无附带地面/植物，五类形状有可辨差异；已检查后才提交图生模型。",
+      "task_id": "bb928db5-44fd-4538-936a-65c633a5cab3",
+      "credits_consumed": 60,
+      "reference_image": "flat/concept.png",
+      "original_model": "flat/raw/model.glb"
+    },
+    {
+      "name": "long",
+      "source_image": "%USERPROFILE%/.codex/generated_images/01a0ae6e-de63-7993-a518-c7a1957240cb/exec-686d05f5-476b-4351-ae8b-6c6e3808f048.png",
+      "prompt": "Create one complete single-object concept for a 3D Jiangnan miniature farm game. Input 1 (bok choy) is only the approved painted material and rounded-form style reference; input 2 (farm) is only the approved world style reference. Do not depict vegetables or the scene. Object: exactly ONE elongated asymmetrical river limestone rock, a low wedge with one heavy raised shoulder on the left tapering to a blunt low toe on the right. Curving footprint, width to height 3:1, depth about 0.50 of width. A couple of broad diagonal planes, no repetitive layered stack. Material is subdued cool warm-grey limestone with a slight sage cast, sparse muted moss-green pigment in crevices; finely painted selective contours and layered pale colour washes like the references, matte softly shaded real 3D volume. No photographic noisy microtexture, no glossy plastic, no heavy black outlines, no grass or separate plants. Weak-perspective three-quarter view from slightly above, show top front and side. Entire object and bottom visible, generous margin, plain off-white neutral background, soft neutral diffuse lighting and only faint contact shadow. No strong baked shadows, sunset, ground clump, pedestal, water, surrounding rocks, text, collage, labels, UI. High quality standalone modelling reference, square composition.",
+      "reference_inputs": [
+        "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+        "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+      ],
+      "image_tool": "built-in image_gen",
+      "image_model": null,
+      "seed": 202609172,
+      "model": "v3.1-20260211",
+      "parameters": {
+        "geometry_quality": "detailed",
+        "face_limit": 20000,
+        "texture": true,
+        "pbr": false,
+        "texture_version": "v3.5-20260815",
+        "texture_quality": "detailed",
+        "delight": true,
+        "texture_seed": 202609172
+      },
+      "image_review": "单体完整、无附带地面/植物，五类形状有可辨差异；已检查后才提交图生模型。",
+      "task_id": "7093afe8-bc67-4c93-8b16-5f780e043cf5",
+      "credits_consumed": 60,
+      "reference_image": "long/concept.png",
+      "original_model": "long/raw/model.glb"
+    },
+    {
+      "name": "round",
+      "source_image": "%USERPROFILE%/.codex/generated_images/01a0ae6e-de63-7993-a518-c7a1957240cb/exec-37100601-8ad0-4b59-b83c-761fcefa48e8.png",
+      "prompt": "Create one complete single-object concept for a 3D Jiangnan miniature farm game. Input 1 (bok choy) is only the approved painted material and rounded-form style reference; input 2 (farm) is only the approved world style reference. Do not depict vegetables or the scene. Object: exactly ONE water-worn chunky asymmetrical river cobble, a flattened bean-like organic outline with a shallow scooped notch on one side and a broad tilted crown. Width to height 1.8:1, depth 0.80 of width. Smooth large changing planes and one small blunt edge, visibly irregular, not an egg or sphere, no deep cracks. Material is subdued cool warm-grey limestone with a slight sage cast, sparse muted moss-green pigment in crevices; finely painted selective contours and layered pale colour washes like the references, matte softly shaded real 3D volume. No photographic noisy microtexture, no glossy plastic, no heavy black outlines, no grass or separate plants. Weak-perspective three-quarter view from slightly above, show top front and side. Entire object and bottom visible, generous margin, plain off-white neutral background, soft neutral diffuse lighting and only faint contact shadow. No strong baked shadows, sunset, ground clump, pedestal, water, surrounding rocks, text, collage, labels, UI. High quality standalone modelling reference, square composition.",
+      "reference_inputs": [
+        "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+        "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+      ],
+      "image_tool": "built-in image_gen",
+      "image_model": null,
+      "seed": 202609173,
+      "model": "v3.1-20260211",
+      "parameters": {
+        "geometry_quality": "detailed",
+        "face_limit": 20000,
+        "texture": true,
+        "pbr": false,
+        "texture_version": "v3.5-20260815",
+        "texture_quality": "detailed",
+        "delight": true,
+        "texture_seed": 202609173
+      },
+      "image_review": "单体完整、无附带地面/植物，五类形状有可辨差异；已检查后才提交图生模型。",
+      "task_id": "57238f31-66b9-41b1-bf2c-999e831be298",
+      "credits_consumed": 60,
+      "reference_image": "round/concept.png",
+      "original_model": "round/raw/model.glb"
+    },
+    {
+      "name": "cleft",
+      "source_image": "%USERPROFILE%/.codex/generated_images/01a0ae6e-de63-7993-a518-c7a1957240cb/exec-14391188-8ead-428f-a8f3-c4f3e77f4f7b.png",
+      "prompt": "Create one complete single-object concept for a 3D Jiangnan miniature farm game. Input 1 (bok choy) is only the approved painted material and rounded-form style reference; input 2 (farm) is only the approved world style reference. Do not depict vegetables or the scene. Object: exactly ONE upright heavy river-bank limestone rock, an irregular truncated wedge with an offset blunt crown, a broad stable base and one shallow vertical fissure dividing its front into two unequal broad masses which remain connected. Width to height 1.05:1, depth 0.70 of width. Soft weathered angular surfaces, not sharp crystal, not a pillar or tower, no holes through it. Material is subdued cool warm-grey limestone with a slight sage cast, sparse muted moss-green pigment in crevices; finely painted selective contours and layered pale colour washes like the references, matte softly shaded real 3D volume. No photographic noisy microtexture, no glossy plastic, no heavy black outlines, no grass or separate plants. Weak-perspective three-quarter view from slightly above, show top front and side. Entire object and bottom visible, generous margin, plain off-white neutral background, soft neutral diffuse lighting and only faint contact shadow. No strong baked shadows, sunset, ground clump, pedestal, water, surrounding rocks, text, collage, labels, UI. High quality standalone modelling reference, square composition.",
+      "reference_inputs": [
+        "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+        "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+      ],
+      "image_tool": "built-in image_gen",
+      "image_model": null,
+      "seed": 202609174,
+      "model": "v3.1-20260211",
+      "parameters": {
+        "geometry_quality": "detailed",
+        "face_limit": 20000,
+        "texture": true,
+        "pbr": false,
+        "texture_version": "v3.5-20260815",
+        "texture_quality": "detailed",
+        "delight": true,
+        "texture_seed": 202609174
+      },
+      "image_review": "单体完整、无附带地面/植物，五类形状有可辨差异；已检查后才提交图生模型。",
+      "task_id": "11569743-ca76-4283-900f-2d819faf9e9e",
+      "credits_consumed": 60,
+      "reference_image": "cleft/concept.png",
+      "original_model": "cleft/raw/model.glb"
+    }
+  ],
+  "total_credits": 300,
+  "ending_balance": 8840,
+  "frozen_balance": 0
+}

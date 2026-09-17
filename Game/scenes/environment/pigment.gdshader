@@ -6,6 +6,8 @@ uniform float wash_scale = 3.0;
 uniform float stone_treatment : hint_range(0.0,1.0) = 0.0;
 uniform float ground_treatment : hint_range(0.0,1.0) = 0.0;
 uniform float foundation_treatment : hint_range(0.0,1.0) = 0.0;
+uniform bool painted_rock = false;
+uniform sampler2D rock_color : source_color, filter_linear_mipmap, repeat_disable;
 varying vec3 world_point;
 float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
 float wash(vec3 p){vec3 i=floor(p);vec3 f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
@@ -20,6 +22,14 @@ void fragment(){
 	float vein=smoothstep(.43,.51,mineral)*(1.0-smoothstep(.53,.61,mineral));
 	painted=mix(painted,painted*mix(vec3(.74,.81,.84),vec3(1.18,1.11,.94),broad),stone_treatment*.75);
 	painted=mix(painted,painted*1.22,vein*stone_treatment*.28);
+	// Retain the image-guided rock washes; instance tint integrates them with
+	// the shore or path. Procedural stone shading still serves bridge and mill.
+	if (painted_rock) {
+		vec3 pigment=texture(rock_color,UV).rgb;
+		float value=dot(pigment,vec3(.2126,.7152,.0722));
+		vec3 tint=mix(vec3(dot(base_color.rgb,vec3(.2126,.7152,.0722))),base_color.rgb,.45);
+		painted=mix(vec3(value),pigment,.45)*tint*2.6;
+	}
 	float ground_patch=wash(world_point*vec3(.72,.34,.72));
 	painted=mix(painted,painted*mix(vec3(.68,.82,.65),vec3(1.04,.94,.73),ground_patch),ground_treatment*.7);
 	// Match both sides of the grass/soil seam in the same coordinate space.
@@ -34,7 +44,7 @@ void fragment(){
 	float wet=(1.0-smoothstep(-.25,-.12,world_point.y+.025*(broad-.5)))*max(stone_treatment,ground_treatment);
 	float moss=smoothstep(.46,.70,wash(world_point*vec3(3.3,1.7,3.3)))*smoothstep(-.15,.18,world_point.y)*(1.0-smoothstep(.45,.9,world_point.y))*stone_treatment;
 	ALBEDO=mix(painted,painted*vec3(.49,.66,.65),wet*.75);
-	ALBEDO=mix(ALBEDO,ALBEDO*vec3(.78,.94,.62),moss*.42);
+	ALBEDO=mix(ALBEDO,ALBEDO*vec3(.78,.94,.62),moss*(painted_rock ? .14 : .42));
 	ROUGHNESS=mix(.93+.06*fine,.73,wet);
 	SPECULAR=mix(.08,.15,wet);
 }

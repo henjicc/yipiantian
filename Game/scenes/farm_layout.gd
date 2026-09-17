@@ -34,6 +34,8 @@ func _ready() -> void:
 	_coping.set_shader_parameter("base_color", Color("6f6c5b"))
 	_coping.set_shader_parameter("wash_scale", 5.5)
 	_coping.set_shader_parameter("stone_treatment", 1.0)
+	_coping.set_shader_parameter("painted_rock", true)
+	_coping.set_shader_parameter("rock_color", preload("res://art/environment/modules/river_stones_color.png"))
 	_make_fields()
 
 
@@ -199,7 +201,7 @@ func _soil_patch() -> ArrayMesh:
 
 
 func _coping_kerb() -> ArrayMesh:
-	# Kerb stones laid around each bed. These reuse the five authored stone modules
+	# Kerb stones laid around each bed. These reuse the five image-guided Tripo rocks
 	# already used on the island rim rather than a generated block: full yaw, mixed
 	# shapes, uneven bedding depth and real gaps are what stop a kerb reading as a
 	# row of identical loaves. One shared mesh serves all six beds; it is decoration
@@ -241,7 +243,7 @@ func _coping_kerb() -> ArrayMesh:
 
 
 func _kerb_stone(surface: SurfaceTool, stones: Array[Mesh], rng: RandomNumberGenerator, centre: Vector2, across: Vector2, size: float) -> void:
-	# Source stones are roughly 0.95 x 0.27 x 0.74 metres with their base at y = 0.
+	# Stones have a 0.95 m longest horizontal axis and varied low bedding heights.
 	var mesh: Mesh = stones[rng.randi_range(0, stones.size() - 1)]
 	var scale := Vector3(rng.randf_range(0.34, 0.46) * size, rng.randf_range(0.30, 0.43) * size, rng.randf_range(0.21, 0.28) * size)
 	var basis := Basis.IDENTITY.scaled(scale)
