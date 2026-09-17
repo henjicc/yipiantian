@@ -17,7 +17,6 @@ func _run() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(output)
 	root.size = Vector2i(1600,1000)
-	root.content_scale_size = root.size
 	scene = load("res://scenes/main.tscn").instantiate()
 	scene.store = load("res://farm/farm_store.gd").new(output.path_join("save-%d" % Time.get_ticks_usec()))
 	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("settings"))

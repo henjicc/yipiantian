@@ -31,7 +31,6 @@ func _run() -> void:
 	_expect(decorations.place("lantern", "hanging_01", 0).ok, "Fixture has one earned placed lantern")
 	_expect(store.save(farm, decorations.snapshot()).ok, "Fixture saves through versioned owner")
 	root.size = Vector2i(1920, 1080)
-	root.content_scale_size = Vector2i(1920, 1080)
 	scene = load("res://scenes/main.tscn").instantiate()
 	scene.store = Store.new(folder)
 	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("preferences"))
@@ -68,12 +67,15 @@ func _run() -> void:
 	AudioServer.add_bus_effect(0, capture)
 	await _click(scene.camera.unproject_position(scene.farm.fields[2].global_position + Vector3(0, 0.4, 0)))
 	await create_timer(0.85).timeout
-	var harvest: Button = scene.get_node("HUD/Layout/FarmControls/Harvest")
+	scene._open_palette("tools")
+	await create_timer(.3).timeout
+	var harvest: Button = scene.get_node("HUD/Layout/ToolChoices/Harvest")
 	await _click(scene.camera.unproject_position(scene.farm.fields[2].to_global(scene.farm.cell_center("cell_06"))))
 	_expect(scene.selected_cell == "cell_06", "Real soil click selects the mature cell")
 	capture.clear_buffer()
 	print("ACTION_AUDIO before foreground=%s volumes=%s last_action=%s" % [scene.farm_audio.is_foreground(), scene.farm_audio.get_volumes(), scene.farm_audio.get("_last_action_usec")])
 	await _click(harvest.get_global_rect().get_center())
+	await _click(scene.camera.unproject_position(scene.farm.fields[2].to_global(scene.farm.cell_center("cell_06"))))
 	await create_timer(0.25).timeout
 	_expect(scene.farm_state.snapshot().harvested.greens == 11, "Real harvest click succeeds exactly once")
 	var action_peak: float = _peak()
@@ -122,7 +124,7 @@ func _peak() -> float:
 func _click(point: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.position = point
-	root.push_input(motion)
+	root.push_input(motion, true)
 	await process_frame
 	for down in [true, false]:
 		var event := InputEventMouseButton.new()
@@ -130,7 +132,7 @@ func _click(point: Vector2) -> void:
 		event.global_position = point
 		event.button_index = MOUSE_BUTTON_LEFT
 		event.pressed = down
-		root.push_input(event)
+		root.push_input(event, true)
 		await physics_frame
 		await process_frame
 

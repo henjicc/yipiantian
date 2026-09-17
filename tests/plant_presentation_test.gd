@@ -43,7 +43,6 @@ func _run() -> void:
 	decorations.place("lantern", "hanging_01", 0)
 	_expect(store.save(data, decorations.snapshot()).ok, "Isolated populated fixture saved")
 	root.size = Vector2i(1920, 1080)
-	root.content_scale_size = Vector2i(1920, 1080)
 	scene = load("res://scenes/main.tscn").instantiate()
 	scene.store = Store.new(store.directory)
 	scene.settings_store = load("res://settings/settings_store.gd").new(store.directory.path_join("preferences"))

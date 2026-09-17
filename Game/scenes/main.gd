@@ -37,6 +37,7 @@ var _settings_issue: String = ""
 var _allow_leave_settings: bool = false
 var selected_field: int = -1
 var selected_cell: String = ""
+var selected_palette: String = ""
 var selected_tool: String = ""
 var selected_crop: String = "greens"
 var hover_field: int = -1
@@ -85,6 +86,7 @@ func _ready() -> void:
 	hud.tool_requested.connect(_finish_tool_press)
 	hud.crop_requested.connect(_select_crop)
 	hud.cancel_tool_requested.connect(_cancel_tool)
+	hud.palette_requested.connect(_open_palette)
 	tool_cursor = ToolCursor.new()
 	add_child(tool_cursor)
 	hud.overview_requested.connect(_return_overview)
@@ -195,6 +197,7 @@ func _save_farm() -> bool:
 			decoration_layout.finish_mode()
 		_cancel_input()
 		selected_tool = ""
+		selected_palette = ""
 		hud.show_storage_issue(result.kind, true)
 	else:
 		hud.show_saved()
@@ -244,6 +247,7 @@ func _finish_exit() -> void:
 	_exiting = true
 	_cancel_input()
 	selected_tool = ""
+	selected_palette = ""
 	# Admission is final: saving succeeded, or the player explicitly chose to
 	# leave without saving. No UI, timers, focus events or repeated close may write
 	# state or restart audio during the short mixer drain.
@@ -274,7 +278,7 @@ func _refresh_hud() -> void:
 	if hud == null or not _loaded:
 		return
 	var cell: Dictionary = {} if hover_field < 0 or hover_cell.is_empty() else farm_state.get_cell(farm.field_id(hover_field), hover_cell)
-	hud.show_state(cell, farm_state.snapshot().harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed or camera.free_view, selected_field)
+	hud.show_state(cell, farm_state.snapshot().harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed or camera.free_view, selected_field, selected_palette)
 	hud.show_decoration_mode(decoration_layout != null and decoration_layout.active)
 
 
@@ -292,6 +296,7 @@ func _begin_decoration() -> void:
 func _on_decoration_mode_changed(active: bool) -> void:
 	_cancel_input()
 	selected_tool = ""
+	selected_palette = ""
 	selected_field = -1
 	selected_cell = ""
 	farm.select_field(-1)
@@ -299,7 +304,6 @@ func _on_decoration_mode_changed(active: bool) -> void:
 	if focus_detail != null:
 		focus_detail.set_focus()
 	camera.set_decoration_framing(active)
-	hud.clear_feedback()
 	_refresh_hud()
 
 
@@ -450,6 +454,7 @@ func _notification(what: int) -> void:
 			camera.cancel_free_gesture()
 			camera.cancel_zoom()
 		selected_tool = ""
+		selected_palette = ""
 		if decoration_layout != null and decoration_layout.active:
 			if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
 				decoration_layout.finish_mode()
@@ -491,13 +496,13 @@ func _farm_hit(screen_point: Vector2) -> Dictionary:
 func _focus_field(index: int) -> void:
 	_cancel_input()
 	selected_tool = ""
+	selected_palette = ""
 	selected_field = index
 	selected_cell = ""
 	farm.select_field(index)
 	farm.select_cell(-1, "")
 	focus_detail.set_focus(farm.fields[index])
 	camera.focus_field(farm.fields[index].global_position)
-	hud.clear_feedback()
 	_refresh_hud()
 
 
@@ -507,7 +512,6 @@ func _select_cell(cell_id: String) -> void:
 	_cancel_input()
 	selected_cell = cell_id
 	farm.select_cell(selected_field, cell_id)
-	hud.clear_feedback()
 	_refresh_hud()
 
 
@@ -533,12 +537,22 @@ func _can_work_cell() -> bool:
 	return _tools_available() and selected_field >= 0 and not selected_cell.is_empty()
 
 
+func _open_palette(palette: String) -> void:
+	if not _tools_available() or palette not in ["sow", "tools"]:
+		return
+	_cancel_input()
+	selected_tool = ""
+	selected_palette = "" if selected_palette == palette else palette
+	farm_audio.play_ui()
+	_refresh_hud()
+
+
 func _select_tool(tool: String) -> void:
 	_cancel_input()
 	if not _tools_available() or tool not in ["sow", "water", "harvest"]:
 		return
 	selected_tool = "" if selected_tool == tool else tool
-	hud.clear_feedback()
+	selected_palette = "sow" if tool == "sow" else "tools"
 	_refresh_hud()
 
 
@@ -549,6 +563,7 @@ func _select_crop(crop_id: String) -> void:
 	camera.cancel_zoom()
 	selected_crop = crop_id
 	selected_tool = "sow"
+	selected_palette = "sow"
 	farm_audio.play_ui()
 	_refresh_hud()
 
@@ -556,6 +571,7 @@ func _select_crop(crop_id: String) -> void:
 func _cancel_tool() -> void:
 	_cancel_input()
 	selected_tool = ""
+	selected_palette = ""
 	_refresh_hud()
 
 
@@ -586,11 +602,9 @@ func _apply_tool() -> void:
 		"water": result = farm_state.water(field_id, selected_cell, now)
 		"harvest": result = farm_state.harvest(field_id, selected_cell, now)
 		_: return
-	hud.show_result(result, selected_tool, selected_crop)
 	farm_audio.play_action(selected_tool, result)
 	if result.ok:
-		var unlocked: Array[String] = decoration_state.unlock(farm_state.snapshot().harvested)
-		hud.show_unlocks(unlocked)
+		decoration_state.unlock(farm_state.snapshot().harvested)
 		refresh_farm()
 		farm_changed.emit(result)
 		_save_farm()
@@ -598,7 +612,7 @@ func _apply_tool() -> void:
 
 func _cancel_or_return() -> void:
 	_cancel_input()
-	if not selected_tool.is_empty():
+	if not selected_tool.is_empty() or not selected_palette.is_empty():
 		_cancel_tool()
 	elif not selected_cell.is_empty():
 		_select_cell("")
@@ -614,13 +628,13 @@ func _return_overview() -> void:
 		decoration_layout.finish_mode()
 	_cancel_input()
 	selected_tool = ""
+	selected_palette = ""
 	selected_field = -1
 	selected_cell = ""
 	farm.select_field(-1)
 	farm.select_cell(-1, "")
 	focus_detail.set_focus()
 	camera.return_overview()
-	hud.clear_feedback()
 	_refresh_hud()
 
 
@@ -703,6 +717,7 @@ func _open_menu() -> void:
 	camera.cancel_zoom()
 	decoration_layout.cancel_pointer_gesture()
 	selected_tool = ""
+	selected_palette = ""
 	_allow_leave_settings = false
 	_refresh_hud()
 	game_menu.present(settings_values, _settings_issue)

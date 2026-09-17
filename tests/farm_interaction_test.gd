@@ -29,6 +29,13 @@ func _run() -> void:
 	var ids: Array[String] = scene.Crops.crop_ids()
 	_expect(ids.size() == 12, "Twelve available crops")
 	var initial: Dictionary = scene.farm_state.snapshot()
+	_expect(not scene.hud.get_node("Layout/CropChoices").visible and not scene.hud.get_node("Layout/ToolChoices").visible, "Choice rows start collapsed")
+	for absent: String in ["FieldStatus", "ToolStatus", "SessionStatus", "Feedback"]:
+		_expect(not scene.hud.has_node("Layout/"+absent), "No routine hint panel: "+absent)
+	await _click(_control("Sow").get_global_rect().get_center())
+	_expect(scene.selected_tool.is_empty(), "Opening seeds never arms or plants before choosing")
+	await create_timer(.3).timeout
+	await _capture("00-seed-palette.png")
 	await _choose("spinach")
 	_expect(scene.selected_tool == "sow" and scene.selected_field == -1, "Select seeds before selecting any land")
 	await _motion(_point(0,"cell_01"), Vector2.ZERO)
@@ -44,16 +51,20 @@ func _run() -> void:
 	await _click(_point(0,"cell_02"))
 	_expect(_cell(0,"cell_02").crop_id == "lettuce" and actions == 2, "Continuous planting works in next cell")
 	await _click(_point(0,"cell_02"))
-	_expect(actions == 2 and _feedback() == "这一格已有作物", "Occupied target cannot overwrite crop")
+	_expect(actions == 2 and _cell(0,"cell_02").crop_id == "lettuce", "Occupied target cannot overwrite crop")
 	await _tool("Water")
+	_expect(not scene.hud.get_node("Layout/CropChoices").visible and scene.hud.get_node("Layout/ToolChoices").visible, "Tools replace crops without overlap")
+	await _capture("00-tool-palette.png")
 	_expect(not _cell(0,"cell_01").watered, "Selecting water never acts on prior target")
 	await _click(_point(0,"cell_01"))
 	_expect(_cell(0,"cell_01").watered and is_equal_approx(_cell(0,"cell_01").progress,.25), "Water applies species-specific boost to clicked cell")
 	await _click(_point(0,"cell_01"))
-	_expect(actions == 3 and _feedback() == "这一轮已经浇过水", "Repeated water is a no-op")
+	_expect(actions == 3 and is_equal_approx(_cell(0,"cell_01").progress,.25), "Repeated water is a no-op")
 	await _button(_point(0,"cell_01"), true, MOUSE_BUTTON_RIGHT)
 	await _button(_point(0,"cell_01"), false, MOUSE_BUTTON_RIGHT)
-	_expect(scene.selected_tool.is_empty(), "Right click disarms tool first")
+	_expect(scene.selected_tool.is_empty() and scene.selected_palette.is_empty(), "Right click closes palette and disarms")
+	await create_timer(.3).timeout
+	_expect(not scene.hud.get_node("Layout/ToolChoices").visible, "Cancelled toolbar finishes hiding")
 	await _button(_point(0,"cell_01"), true, MOUSE_BUTTON_WHEEL_UP)
 	await create_timer(.45).timeout
 	_expect(scene.camera.view.z < distance, "Disarmed wheel restores damped zoom")
@@ -66,11 +77,11 @@ func _run() -> void:
 	await _motion(_point(0,"cell_03") + Vector2(30,0), Vector2(30,0))
 	await _button(_point(0,"cell_03"), false)
 	_expect(scene.farm_state.snapshot() == before, "Dragged click never plants")
-	await _motion(_control("Water").get_global_rect().get_center(),Vector2.ZERO)
+	await _motion(scene.hud.get_node("Layout/FarmControls/Tools").get_global_rect().get_center(),Vector2.ZERO)
 	_expect(scene.hover_cell.is_empty() and not scene.tool_cursor.badge.visible, "UI clears world preview and carried badge")
 	await _button(_point(0,"cell_03"),true)
-	await _motion(_control("Water").get_global_rect().get_center(),Vector2.ZERO)
-	await _button(_control("Water").get_global_rect().get_center(),false)
+	await _motion(scene.hud.get_node("Layout/FarmControls/Tools").get_global_rect().get_center(),Vector2.ZERO)
+	await _button(scene.hud.get_node("Layout/FarmControls/Tools").get_global_rect().get_center(),false)
 	_expect(scene.farm_state.snapshot() == before, "World-to-UI release cannot farm")
 	await _choose("carrot")
 	scene.notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT)
@@ -142,10 +153,20 @@ func _run() -> void:
 	await create_timer(.9).timeout
 	root.size = Vector2i(960,600)
 	await create_timer(.3).timeout
+	await _choose("spinach")
 	var viewport: Rect2 = root.get_visible_rect()
 	for card: Control in scene.hud.get_node("Layout/CropChoices").get_children():
 		_expect(viewport.encloses(card.get_global_rect()), "Crop card fits compact window: "+card.name)
 	await _capture("04-compact.png")
+	await _click(_control("CancelTool").get_global_rect().get_center())
+	await create_timer(.3).timeout
+	_expect(scene.selected_palette.is_empty() and not scene.hud.get_node("Layout/CropChoices").visible, "Cancel button hides active row")
+	root.size = Vector2i(3840,2160)
+	await create_timer(.3).timeout
+	_expect(root.content_scale_size == Vector2i(1600,900) and scene.tool_cursor._cursor_pixels >= 150, "4K UI and enlarged hardware cursor share scale")
+	await _choose("celery")
+	await _motion(_point(0,"cell_04"),Vector2.ZERO)
+	await _capture("05-4k-palette.png")
 	for failure: String in failures: push_error(failure)
 	scene.farm_audio.shutdown()
 	await create_timer(.1).timeout
@@ -163,6 +184,10 @@ func _camera_settled() -> void:
 
 
 func _choose(id: String) -> void:
+	await _camera_settled()
+	if scene.selected_palette != "sow":
+		await _click(_control("Sow").get_global_rect().get_center())
+		await create_timer(.3).timeout
 	await _click(scene.hud.get_node("Layout/CropChoices/"+id).get_global_rect().get_center())
 
 
@@ -179,12 +204,11 @@ func _control(control_name: String) -> Control:
 	return scene.get_node("HUD/Layout/FarmControls/" + control_name)
 
 
-func _feedback() -> String:
-	return scene.get_node("HUD/Layout/Feedback").text
-
-
 func _tool(control_name: String) -> void:
-	await _click(_control(control_name).get_global_rect().get_center())
+	if scene.selected_palette != "tools":
+		await _click(_control("Tools").get_global_rect().get_center())
+		await create_timer(.3).timeout
+	await _click(scene.hud.get_node("Layout/ToolChoices/" + control_name).get_global_rect().get_center())
 
 
 func _button(point: Vector2, down: bool, button_index: MouseButton = MOUSE_BUTTON_LEFT, double: bool = false) -> void:

@@ -30,7 +30,7 @@ func _run() -> void:
 	await create_timer(0.85).timeout
 	await _click(scene.camera.unproject_position(scene.farm.fields[2].to_global(scene.farm.cell_center("cell_06"))))
 	await _capture("01b-focus.png")
-	_expect(scene.selected_cell == "cell_06" and not scene.get_node("HUD/Layout/FarmControls/Harvest").disabled, "Mature cell is selected and offers Harvest")
+	_expect(scene.selected_cell == "cell_06" and scene.selected_tool.is_empty(), "Mature cell can be inspected without arming a tool")
 	await _click(scene.get_node("HUD/Layout/ViewControls/Settings").get_global_rect().get_center())
 	_expect(scene.game_menu.visible and scene.selected_tool.is_empty(), "Settings opens its modal without executing the selected cell")
 	await _click(scene.camera.unproject_position(scene.farm.fields[0].global_position + Vector3(0, 0.4, 0)))
@@ -153,7 +153,7 @@ func _reopen_scene() -> void:
 func _click(point: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.position = point
-	root.push_input(motion)
+	root.push_input(motion, true)
 	await process_frame
 	for down: bool in [true, false]:
 		var event := InputEventMouseButton.new()
@@ -161,7 +161,7 @@ func _click(point: Vector2) -> void:
 		event.global_position = point
 		event.button_index = MOUSE_BUTTON_LEFT
 		event.pressed = down
-		root.push_input(event)
+		root.push_input(event, true)
 		await physics_frame
 		await process_frame
 
@@ -171,7 +171,7 @@ func _cancel_key() -> void:
 		var event := InputEventKey.new()
 		event.keycode = KEY_ESCAPE
 		event.pressed = down
-		root.push_input(event)
+		root.push_input(event, true)
 		await process_frame
 
 

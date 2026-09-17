@@ -30,12 +30,15 @@ func _run() -> void:
 	await _click(scene.camera.unproject_position(scene.farm.fields[2].global_position + Vector3(0, 0.4, 0)))
 	await create_timer(0.85).timeout
 	await _click(scene.camera.unproject_position(scene.farm.fields[2].to_global(scene.farm.cell_center("cell_06"))))
-	var harvest: Button = scene.get_node("HUD/Layout/FarmControls/Harvest")
+	scene._open_palette("tools")
+	await create_timer(.3).timeout
+	var harvest: Button = scene.get_node("HUD/Layout/ToolChoices/Harvest")
 	FileAccess.set_read_only_attribute(path, true)
 	await _click(harvest.get_global_rect().get_center())
+	await _click(scene.camera.unproject_position(scene.farm.fields[2].to_global(scene.farm.cell_center("cell_06"))))
 	_expect(scene.farm_state.snapshot().harvested.greens == 1, "Farm action succeeds in memory exactly once")
 	_expect(Store.new(folder).load_state().farm.harvested.greens == 0, "Failed replace leaves previous saved reward")
-	_expect(_overlay().visible and scene.get_node("HUD/Layout/SessionStatus").text == "尚未保存", "Save failure is visible and blocks unsafe further actions")
+	_expect(_overlay().visible and scene.hud._storage_message.text.contains("保存未完成"), "Save failure is visible and blocks unsafe further actions")
 	await _capture("01-save-failed.png")
 	scene.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
 	await process_frame
@@ -109,7 +112,7 @@ func _overlay() -> Control:
 func _click(point: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.position = point
-	root.push_input(motion)
+	root.push_input(motion, true)
 	await process_frame
 	for down: bool in [true, false]:
 		var event := InputEventMouseButton.new()
@@ -117,7 +120,7 @@ func _click(point: Vector2) -> void:
 		event.global_position = point
 		event.button_index = MOUSE_BUTTON_LEFT
 		event.pressed = down
-		root.push_input(event)
+		root.push_input(event, true)
 		await physics_frame
 		await process_frame
 

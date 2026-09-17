@@ -15,7 +15,7 @@ func _run() -> void:
 		push_error("Native rendering and a dedicated output directory are required")
 		quit(1); return
 	DirAccess.make_dir_recursive_absolute(output)
-	root.size=Vector2i(1920,1080); root.content_scale_size=root.size
+	root.size=Vector2i(1920,1080)
 	scene=load("res://scenes/main.tscn").instantiate()
 	scene.store=load("res://farm/farm_store.gd").new(output.path_join("save"))
 	scene.settings_store=load("res://settings/settings_store.gd").new(output.path_join("preferences"))

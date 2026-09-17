@@ -20,7 +20,6 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.size = Vector2i(1920, 1080)
-	root.content_scale_size = Vector2i(1920, 1080)
 	if planting_only:
 		scene = Sample.new()
 		root.add_child(scene)

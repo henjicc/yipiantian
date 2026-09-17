@@ -18,8 +18,8 @@ config/icon="res://art/ui/game-icon.png"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=1600
+window/size/viewport_height=900
 window/size/window_width_override=1600
 window/size/window_height_override=900
 window/size/window_width_override.movie=3840

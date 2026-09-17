@@ -1,6 +1,7 @@
 extends CanvasLayer
 ## UI owns presentation and emits intent; it never changes farm state.
 
+signal palette_requested(palette: String)
 signal cancel_tool_requested
 signal tool_requested(tool: String)
 signal tool_press_started(tool: String)
@@ -21,19 +22,20 @@ const FarmTheme = preload("res://ui/farm_theme.gd")
 const INK := FarmTheme.INK
 const SUN = preload("res://art/ui/sun.svg")
 const MOON = preload("res://art/ui/moon.svg")
-var _status: Label
 var _harvested: Label
 var _harvest_detail: Label
 var _clock: Label
 var _day_icon: TextureRect
 var _settings: Button
-var _feedback: Label
-var _tool_status: Label
 var _tools: HBoxContainer
+var _tool_row: HBoxContainer
+var _palette: String = ""
+var _decorating: bool = false
+var _row_tweens: Dictionary = {}
+var _row_open: Dictionary = {}
 var _crop_row: HBoxContainer
 var _crop_buttons: Dictionary = {}
 var _buttons: Dictionary = {}
-var _session: Label
 var _storage_overlay: ColorRect
 var _storage_message: Label
 var _retry: Button
@@ -89,85 +91,12 @@ func _ready() -> void:
 	if OS.is_debug_build():
 		_clock.mouse_filter = Control.MOUSE_FILTER_STOP
 		_clock.gui_input.connect(_clock_input)
-	_status = _label(root, "全景", 19)
-	_status.name = "FieldStatus"
-	_tag(_status, -210, -174)
-	_session = _label(root, "正在读取存档", 14)
-	_session.name = "SessionStatus"
-	_session.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	_session.offset_left = 20
-	_session.offset_right = 130
-	_session.offset_top = -42
-	_session.offset_bottom = -15
-	_session.add_theme_stylebox_override("normal", FarmTheme.paper(FarmTheme.PAPER, 10))
 	_harvested = _label(root, "", 24)
 	_harvested.name = "Harvested"
 	_harvested.position = Vector2(91, 24)
 	_harvest_detail = _label(root, "", 16)
 	_harvest_detail.position = Vector2(91, 58)
-	_feedback = _label(root, "", 19)
-	_feedback.name = "Feedback"
-	_tag(_feedback, -260, -220)
-	_feedback.hide()
-	_tool_status = _label(root, "", 17)
-	_tool_status.name = "ToolStatus"
-	_tag(_tool_status, -300, -270)
-	_tool_status.hide()
-	_tools = HBoxContainer.new()
-	_tools.name = "FarmControls"
-	root.add_child(_tools)
-	_tools.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_tools.offset_left = -320
-	_tools.offset_right = 320
-	_tools.offset_top = -160
-	_tools.offset_bottom = -110
-	_tools.alignment = BoxContainer.ALIGNMENT_CENTER
-	_tools.add_theme_constant_override("separation", 10)
-	_tools.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for item: Array in [["sow", "播种"], ["water", "浇水"], ["harvest", "收获"]]:
-		var button := _button(_tools, item[1], 144)
-		button.name = item[0].capitalize()
-		button.icon = load("res://art/ui/%s.svg" % item[0])
-		button.toggle_mode = true
-		button.expand_icon = true
-		button.add_theme_constant_override("icon_max_width", 32)
-		button.button_down.connect(func() -> void: tool_press_started.emit(item[0]))
-		button.pressed.connect(func() -> void: tool_requested.emit(item[0]))
-		_buttons[item[0]] = button
-	var cancel := _button(_tools, "取消", 88)
-	cancel.name = "CancelTool"
-	cancel.pressed.connect(func() -> void: cancel_tool_requested.emit())
-	_crop_row = HBoxContainer.new()
-	_crop_row.name = "CropChoices"
-	root.add_child(_crop_row)
-	_crop_row.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_crop_row.offset_left = -435
-	_crop_row.offset_right = 435
-	_crop_row.offset_top = -99
-	_crop_row.offset_bottom = -15
-	_crop_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_crop_row.add_theme_constant_override("separation", 6)
-	_crop_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for crop_id: String in Crops.crop_ids():
-		var card := Button.new()
-		card.name = crop_id
-		card.custom_minimum_size = Vector2(66, 84)
-		card.toggle_mode = true
-		card.pressed.connect(func() -> void: crop_requested.emit(crop_id))
-		_crop_row.add_child(card)
-		var picture := TextureRect.new()
-		picture.texture = load(Crops.icon_path(crop_id))
-		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		picture.position = Vector2(7, 3)
-		picture.size = Vector2(52, 54)
-		card.add_child(picture)
-		var caption := _label(card, Crops.definition(crop_id).name, 16)
-		caption.position = Vector2(0, 57)
-		caption.size = Vector2(66, 22)
-		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_crop_buttons[crop_id] = card
+	_build_farm_controls(root)
 	var bar := HBoxContainer.new()
 	_view_controls = bar
 	bar.name = "ViewControls"
@@ -204,6 +133,111 @@ func _ready() -> void:
 	timer.timeout.connect(_update_clock)
 	add_child(timer)
 	timer.start()
+
+
+func _build_farm_controls(root: Control) -> void:
+	_tools = HBoxContainer.new()
+	_tools.name = "FarmControls"
+	root.add_child(_tools)
+	_tools.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_tools.offset_left = -200
+	_tools.offset_right = 200
+	_tools.offset_top = -66
+	_tools.offset_bottom = -18
+	_tools.alignment = BoxContainer.ALIGNMENT_CENTER
+	_tools.add_theme_constant_override("separation", 10)
+	_tools.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for item: Array in [["sow", "播种", "Sow"], ["tools", "工具", "Tools"]]:
+		var entry := _button(_tools, item[1], 120)
+		entry.name = item[2]
+		entry.toggle_mode = true
+		entry.pressed.connect(func() -> void: palette_requested.emit(item[0]))
+	var cancel := _button(_tools, "取消", 88)
+	cancel.name = "CancelTool"
+	cancel.pressed.connect(func() -> void: cancel_tool_requested.emit())
+	cancel.hide()
+	_crop_row = _choice_row(root, "CropChoices", 435)
+	for crop_id: String in Crops.crop_ids():
+		var card := Button.new()
+		card.name = crop_id
+		card.custom_minimum_size = Vector2(66, 84)
+		card.toggle_mode = true
+		card.pressed.connect(func() -> void: crop_requested.emit(crop_id))
+		_crop_row.add_child(card)
+		var picture := TextureRect.new()
+		picture.texture = load(Crops.icon_path(crop_id))
+		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		picture.position = Vector2(7, 3)
+		picture.size = Vector2(52, 54)
+		card.add_child(picture)
+		var caption := _label(card, Crops.definition(crop_id).name, 16)
+		caption.position = Vector2(0, 57)
+		caption.size = Vector2(66, 22)
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_crop_buttons[crop_id] = card
+	_tool_row = _choice_row(root, "ToolChoices", 170)
+	for item: Array in [["water", "浇水"], ["harvest", "收获"]]:
+		var button := _button(_tool_row, item[1], 144)
+		button.name = item[0].capitalize()
+		button.icon = load("res://art/ui/%s.svg" % item[0])
+		button.toggle_mode = true
+		button.expand_icon = true
+		button.add_theme_constant_override("icon_max_width", 32)
+		button.button_down.connect(func() -> void: tool_press_started.emit(item[0]))
+		button.pressed.connect(func() -> void: tool_requested.emit(item[0]))
+		_buttons[item[0]] = button
+
+
+func _choice_row(root: Control, row_name: String, half_width: float) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.name = row_name
+	root.add_child(row)
+	row.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	row.offset_left = -half_width
+	row.offset_right = half_width
+	row.offset_top = -164
+	row.offset_bottom = -80
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 6)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.modulate.a = 0.0
+	row.hide()
+	_row_open[row] = false
+	return row
+
+
+func _animate_row(row: Control, opened: bool) -> void:
+	if _row_open[row] == opened:
+		return
+	_row_open[row] = opened
+	if _row_tweens.has(row):
+		_row_tweens[row].kill()
+	if opened and not row.visible:
+		row.offset_top = -152
+		row.offset_bottom = -68
+	row.show()
+	var tween := create_tween().set_parallel(true)
+	_row_tweens[row] = tween
+	tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(row, "modulate:a", 1.0 if opened else 0.0, .18)
+	tween.tween_property(row, "offset_top", -164.0 if opened else -152.0, .22)
+	tween.tween_property(row, "offset_bottom", -80.0 if opened else -68.0, .22)
+	if not opened:
+		tween.chain().tween_callback(row.hide)
+
+
+func _sync_rows() -> void:
+	_animate_row(_crop_row, not _decorating and _palette == "sow")
+	_animate_row(_tool_row, not _decorating and _palette == "tools")
+
+
+func _exit_tree() -> void:
+	for tween: Tween in _row_tweens.values():
+		tween.kill()
+	_row_tweens.clear()
+	_row_open.clear()
 
 
 func _build_time_preview(root: Control) -> void:
@@ -316,7 +350,6 @@ func _status_plate(parent: Control) -> Panel:
 
 
 func show_storage_issue(kind: String, unsaved: bool) -> void:
-	_session.text = "尚未保存" if unsaved else "存档未能读取"
 	_storage_message.text = "保存未完成，最新进度仍在本次窗口中。请重试保存。" if unsaved else {
 		"recovery_available": "存档未能读取，可恢复上一份备份。最近的改动可能丢失，原文件会保留。",
 		"unsupported": "这份存档来自其他版本。请使用对应版本打开，原文件已保留。",
@@ -344,84 +377,37 @@ func show_storage_issue(kind: String, unsaved: bool) -> void:
 
 
 func show_saved() -> void:
-	_session.text = "已保存"
 	_storage_overlay.hide()
 
 
 func show_decoration_mode(active: bool) -> void:
+	_decorating = active
 	_view_controls.get_child(0).disabled = active
 	_view_controls.get_child(1).disabled = active
 	_view_controls.get_node("Decorate").text = "完成" if active else "布置"
 	_tools.visible = not active
-	_crop_row.visible = not active
-	_status.visible = not active
-	_feedback.visible = not active and not _feedback.text.is_empty()
-	_tool_status.visible = not active and not _tool_status.text.is_empty()
+	_sync_rows()
 
 
-func show_state(cell: Dictionary, harvested: Dictionary, _tool: String, crop_id: String, traveling: bool, field_index: int = -1) -> void:
+func show_state(_cell: Dictionary, harvested: Dictionary, tool: String, crop_id: String, traveling: bool, _field_index: int = -1, palette: String = "") -> void:
+	_palette = palette
 	_harvested.text = "%d 篮" % Crops.total_harvested(harvested)
 	_harvest_detail.text = "%s %d" % [Crops.definition(crop_id).name, harvested.get(crop_id, 0)]
-	_tools.visible = true
-	_crop_row.visible = true
 	for id: String in _crop_buttons:
 		var card: Button = _crop_buttons[id]
-		card.disabled = traveling
-		card.set_pressed_no_signal(_tool == "sow" and id == crop_id)
+		card.disabled = traveling or palette != "sow"
+		card.set_pressed_no_signal(tool == "sow" and id == crop_id)
+		card.get_child(1).add_theme_color_override("font_color", FarmTheme.PAPER if card.button_pressed else INK)
 	for tool_id: String in _buttons:
 		var button: Button = _buttons[tool_id]
+		button.disabled = traveling or palette != "tools"
+		button.set_pressed_no_signal(tool_id == tool)
+	for entry: String in ["Sow", "Tools"]:
+		var button: Button = _tools.get_node(entry)
 		button.disabled = traveling
-		button.set_pressed_no_signal(tool_id == _tool)
-	_tools.get_node("CancelTool").disabled = _tool.is_empty()
-	var chosen: Dictionary = Crops.definition(crop_id)
-	_tool_status.text = "%s · %d 分钟 · 浇水节省 %d%%" % [chosen.name, chosen.duration_seconds / 60, roundi(chosen.water_progress * 100)] if _tool == "sow" else {"water": "浇水", "harvest": "收获"}.get(_tool, "")
-	if cell.is_empty():
-		_status.text = "全景" if field_index < 0 else "第 %d 块田 · 未选格" % (field_index + 1)
-		_fit_tag(_status)
-		_fit_tag(_tool_status)
-		return
-	var cell_index: int = int(cell.id.trim_prefix("cell_")) - 1
-	var title: String = "第 %d 块田 · %d行%d列" % [int(cell.field_id.trim_prefix("field_")), int(cell_index / 4) + 1, cell_index % 4 + 1]
-	if cell.stage == "empty":
-		_status.text = title + " · 空格"
-	else:
-		var stage_name: String = {"sprout": "幼芽", "young": "幼株", "mature": "可收获"}[cell.stage]
-		_status.text = "%s · %s · %s" % [title, Crops.definition(cell.crop_id).name, stage_name]
-		if cell.stage != "mature":
-			_status.text += " · 约 %d 分钟" % maxi(1, ceili(cell.remaining_seconds / 60.0))
-			if cell.watered:
-				_status.text += " · 已浇水"
-	if traveling:
-		_tool_status.text = "镜头移动中"
-	_fit_tag(_status)
-	_fit_tag(_tool_status)
-
-
-func show_result(result: Dictionary, tool: String, crop_id: String) -> void:
-	if result.ok:
-		match tool:
-			"sow": _feedback.text = "已播种%s" % Crops.definition(crop_id).name
-			"water": _feedback.text = "已浇水"
-			"harvest": _feedback.text = "%s +1 篮" % Crops.definition(result.reward_crop_id).name
-	else:
-		_feedback.text = {
-			"occupied": "这一格已有作物", "empty": "这一格还没有作物", "mature": "作物已成熟，可以收获",
-			"already_watered": "这一轮已经浇过水", "not_mature": "作物还在生长", "harvest_limit": "收获记录已满",
-			"invalid_time": "系统时间暂不可用", "invalid_field": "没有选中田块", "invalid_cell": "请选择一格", "invalid_crop": "请选择作物"
-		}.get(result.reason, "操作未完成")
-	_fit_tag(_feedback)
-
-
-func clear_feedback() -> void:
-	_feedback.text = ""
-	_feedback.hide()
-
-
-func show_unlocks(item_ids: Array[String]) -> void:
-	const Decorations = preload("res://farm/decoration_catalog.gd")
-	for item_id: String in item_ids:
-		_feedback.text += " · %s已解锁" % Decorations.ITEMS[item_id].name
-	_fit_tag(_feedback)
+		button.set_pressed_no_signal(palette == ("sow" if entry == "Sow" else "tools"))
+	_tools.get_node("CancelTool").visible = not palette.is_empty()
+	_sync_rows()
 
 
 func _label(parent: Control, text: String, font_size: int) -> Label:
@@ -440,23 +426,6 @@ func _button(parent: Control, text: String, width: float) -> Button:
 	button.custom_minimum_size = Vector2(width, 44)
 	parent.add_child(button)
 	return button
-
-
-func _tag(label: Label, top: float, bottom: float) -> void:
-	label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	label.offset_top = top
-	label.offset_bottom = bottom
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_stylebox_override("normal", FarmTheme.paper(FarmTheme.PAPER, 12))
-	_fit_tag(label)
-
-
-func _fit_tag(label: Label) -> void:
-	var width: float = minf(760, FarmTheme.FONT.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x + 40)
-	label.offset_left = -width * 0.5
-	label.offset_right = width * 0.5
-	label.visible = not label.text.is_empty()
 
 
 func _update_clock() -> void:
