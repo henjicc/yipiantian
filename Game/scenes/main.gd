@@ -15,6 +15,7 @@ const FocusDetail = preload("res://presentation/focus_detail.gd")
 const HUD = preload("res://scenes/farm_hud.gd")
 const SettingsStore = preload("res://settings/settings_store.gd")
 const GameMenu = preload("res://ui/game_menu.gd")
+const CameraTuning = preload("res://ui/camera_tuning.gd")
 
 @onready var farm: FarmLayout = $Farm
 @onready var camera: FarmCamera = $Camera3D
@@ -44,6 +45,7 @@ var hover_field: int = -1
 var hover_cell: String = ""
 var _pointer_position := Vector2(-100, -100)
 var tool_cursor: ToolCursor
+var camera_tuning: CameraTuning
 var _dragging: bool = false
 var _press_position := Vector2.INF
 var _press_dragged: bool = false
@@ -97,6 +99,12 @@ func _ready() -> void:
 	hud.decoration_requested.connect(_begin_decoration)
 	hud.settings_requested.connect(_open_menu)
 	hud.free_view_requested.connect(_toggle_free_view)
+	if OS.is_debug_build():
+		camera_tuning = CameraTuning.new()
+		camera_tuning.camera = camera
+		hud.get_node("Layout").add_child(camera_tuning)
+		hud.camera_tuning_requested.connect(_toggle_camera_tuning)
+		camera_tuning.visibility_changed.connect(_refresh_hud)
 	camera.motion_finished.connect(_refresh_hud)
 	_load_game()
 	# The courtyard owns all slot transforms and art; no duplicate fallback layout.
@@ -278,7 +286,7 @@ func _refresh_hud() -> void:
 	if hud == null or not _loaded:
 		return
 	var cell: Dictionary = {} if hover_field < 0 or hover_cell.is_empty() else farm_state.get_cell(farm.field_id(hover_field), hover_cell)
-	hud.show_state(cell, farm_state.snapshot().harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed or camera.free_view, selected_field, selected_palette)
+	hud.show_state(cell, farm_state.snapshot().harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed or camera.free_view or (camera_tuning != null and camera_tuning.visible), selected_field, selected_palette)
 	hud.show_decoration_mode(decoration_layout != null and decoration_layout.active)
 
 
@@ -316,6 +324,11 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouse:
 		_pointer_position = event.position
 	if not _loaded or _save_failed:
+		return
+	if camera_tuning != null and camera_tuning.visible:
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+			camera_tuning.hide()
+			get_viewport().set_input_as_handled()
 		return
 	if game_menu != null and game_menu.visible:
 		if (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT):
@@ -371,6 +384,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if camera_tuning != null and camera_tuning.visible:
+		return
 	if not _loaded or _save_failed or (game_menu != null and game_menu.visible):
 		return
 	if camera.free_view:
@@ -516,7 +531,7 @@ func _select_cell(cell_id: String) -> void:
 
 
 func _tools_available() -> bool:
-	return _loaded and not _save_failed and not _exiting and not camera.free_view and not camera.is_transitioning() and not (game_menu != null and game_menu.visible) and not (decoration_layout != null and decoration_layout.active)
+	return _loaded and not _save_failed and not _exiting and not (camera_tuning != null and camera_tuning.visible) and not camera.free_view and not camera.is_transitioning() and not (game_menu != null and game_menu.visible) and not (decoration_layout != null and decoration_layout.active)
 
 
 func _start_tool_press(tool: String) -> void:
@@ -621,6 +636,8 @@ func _cancel_or_return() -> void:
 
 
 func _return_overview() -> void:
+	if camera_tuning != null:
+		camera_tuning.hide()
 	if camera.free_view:
 		camera.set_free_view(false)
 		hud.show_free_view(false)
@@ -652,6 +669,17 @@ func _toggle_free_view() -> void:
 	if enabled:
 		camera.set_free_view(true)
 		hud.show_free_view(true)
+
+
+func _toggle_camera_tuning() -> void:
+	if camera_tuning == null or not _loaded or _save_failed or (game_menu != null and game_menu.visible):
+		return
+	if camera_tuning.visible:
+		camera_tuning.hide()
+		return
+	_return_overview()
+	hud.hide_time_preview()
+	camera_tuning.present()
 
 
 func _cancel_input(cancel_tool_press: bool = true) -> void:
@@ -711,6 +739,8 @@ func _open_menu() -> void:
 	if game_menu == null or not _loaded or _save_failed:
 		return
 	_cancel_input()
+	if camera_tuning != null:
+		camera_tuning.hide()
 	hud.hide_time_preview()
 	camera.free_input_enabled = false
 	camera.cancel_free_gesture()

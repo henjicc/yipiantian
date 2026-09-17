@@ -14,6 +14,7 @@ signal exit_requested
 signal decoration_requested
 signal settings_requested
 signal free_view_requested
+signal camera_tuning_requested
 signal preview_hour_requested(hour: float)
 signal time_preview_opened
 
@@ -125,6 +126,14 @@ func _ready() -> void:
 		_free_view.offset_top = 140
 		_free_view.offset_bottom = 182
 		_free_view.pressed.connect(func() -> void: free_view_requested.emit())
+		var tuning := _button(root, "相机调节", 160)
+		tuning.name = "DebugCameraTuning"
+		tuning.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		tuning.offset_left = -346
+		tuning.offset_right = -186
+		tuning.offset_top = 140
+		tuning.offset_bottom = 182
+		tuning.pressed.connect(func() -> void: camera_tuning_requested.emit())
 		_build_time_preview(root)
 	_build_storage_overlay(root)
 	_update_clock()

@@ -4,7 +4,7 @@ extends Camera3D
 signal motion_finished
 
 const DEFAULT_POINT := Vector3(0.0, 0.85, 0.0)
-const DEFAULT_VIEW := Vector3(25.0, 28.0, 28.0)
+const DEFAULT_VIEW := Vector3(25.0, 22.0, 28.0)
 const FOCUS_DISTANCE: float = 10.4
 const ARRANGEMENT_DISTANCE: float = 31.0
 const ZOOM_RESPONSE: float = 16.0
@@ -12,6 +12,8 @@ const SurfacePick = preload("res://scenes/camera_surface_pick.gd")
 
 var focus_point: Vector3 = DEFAULT_POINT
 var view: Vector3 = DEFAULT_VIEW # yaw, pitch, distance
+var overview_point: Vector3 = DEFAULT_POINT
+var overview_view: Vector3 = DEFAULT_VIEW
 var focused: bool = false
 var transition_seconds: float = 0.75
 var _saved_point: Vector3 = DEFAULT_POINT
@@ -173,7 +175,32 @@ func _advance_zoom(delta: float) -> void:
 
 
 func _maximum_distance() -> float:
-	return FOCUS_DISTANCE if focused else ARRANGEMENT_DISTANCE if _decoration_framing else DEFAULT_VIEW.z
+	return FOCUS_DISTANCE if focused else ARRANGEMENT_DISTANCE if _decoration_framing else overview_view.z
+
+
+func overview_parameters() -> Dictionary:
+	return {"yaw": overview_view.x, "pitch": overview_view.y, "distance": overview_view.z,
+		"fov": fov, "target_x": overview_point.x, "target_y": overview_point.y, "target_z": overview_point.z}
+
+
+func preview_overview(parameters: Dictionary) -> void:
+	_stop_transition()
+	cancel_free_gesture()
+	free_view = false
+	focused = false
+	_decoration_framing = false
+	overview_view = Vector3(parameters.yaw, parameters.pitch, parameters.distance)
+	overview_point = Vector3(parameters.target_x, parameters.target_y, parameters.target_z)
+	fov = parameters.fov
+	view = overview_view
+	focus_point = overview_point
+	_anchor = overview_point
+	_destination_view = view
+	_destination_point = focus_point
+	_saved_view = view
+	_saved_point = focus_point
+	_apply_pose()
+	motion_finished.emit()
 
 
 func focus_field(point: Vector3) -> void:
@@ -194,7 +221,7 @@ func return_overview() -> void:
 	if not focused:
 		return
 	focused = false
-	_anchor = DEFAULT_POINT
+	_anchor = overview_point
 	_move_to(_saved_point, _saved_view)
 
 
@@ -202,8 +229,8 @@ func reset_view() -> void:
 	# Reset means the normal default, including when a caller resets during framing.
 	_decoration_framing = false
 	focused = false
-	_anchor = DEFAULT_POINT
-	_move_to(DEFAULT_POINT, DEFAULT_VIEW)
+	_anchor = overview_point
+	_move_to(overview_point, overview_view)
 
 
 func set_decoration_framing(active: bool) -> void:
@@ -246,8 +273,8 @@ func drag(relative: Vector2, pan: bool) -> void:
 		focus_point.x = clampf(focus_point.x, _anchor.x - limit, _anchor.x + limit)
 		focus_point.z = clampf(focus_point.z, _anchor.z - limit, _anchor.z + limit)
 	else:
-		view.x = clampf(view.x - relative.x * 0.18, -12.0, 68.0)
-		view.y = clampf(view.y + relative.y * 0.18, 32.0 if focused else 24.0, 54.0 if focused else 40.0)
+		view.x = clampf(view.x - relative.x * 0.18, minf(-12.0, overview_view.x), maxf(68.0, overview_view.x))
+		view.y = clampf(view.y + relative.y * 0.18, 32.0 if focused else minf(22.0, overview_view.y), 54.0 if focused else maxf(40.0, overview_view.y))
 	_apply_pose()
 	motion_finished.emit()
 

@@ -29,7 +29,10 @@ func _process(_delta: float) -> void:
 	if camera == null:
 		return
 	var yaw: float = atan2(camera.global_basis.z.x, camera.global_basis.z.z)
-	basis = Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, deg_to_rad(-28.0))
+	# Match the authored overview, not temporary focus/free-camera tilts. Otherwise
+	# lowering the overview pushes the entire painted mountain band out of frame.
+	var pitch: float = camera.overview_view.y if camera is FarmCamera else 28.0
+	basis = Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, deg_to_rad(-pitch))
 
 func _card(label: String, layer: int, at: Vector3, size: Vector2) -> void:
 	var card := MeshInstance3D.new()
