@@ -9,9 +9,12 @@ var action: String = "rest"
 var rests: Array[Transform3D] = []
 var legs: Array[Dictionary] = []
 var head: int
-var neck: int
 var root: Node3D
 var ground: Callable
+var neck_chain: Array[int] = []
+var neck_limits: Array[float] = []
+var beak_rest: Vector3
+var beak_bindings: Array[Dictionary] = []
 
 func configure(bird: Node3D, kind: String) -> void:
 	root = bird
@@ -21,7 +24,40 @@ func configure(bird: Node3D, kind: String) -> void:
 	skeleton.reset_bone_poses()
 	for i: int in skeleton.get_bone_count(): rests.append(skeleton.get_bone_global_rest(i))
 	head = skeleton.find_bone("tripo__Head_0")
-	neck = skeleton.find_bone("tripo__Spine_2")
+	for label: String in ["Spine_0", "Spine_1", "Spine_2", "Spine_3", "Head_0", "Head_1", "Head_2"]:
+		var bone: int = skeleton.find_bone("tripo__" + label)
+		if bone >= 0:
+			neck_chain.append(bone)
+			neck_limits.append(.38 if label == "Spine_0" else (.65 if label.begins_with("Spine") else .95))
+	# Skinned vertices include inverse bind transforms: mesh.to_global(vertex)
+	# alone double-applies the normalization retained on the imported skeleton.
+	var threshold: float = root.to_local(skeleton.to_global(rests[head].origin)).y
+	var forward: float = -1.0 if species == "goose" else 1.0
+	var farthest: float = -INF
+	for mesh: MeshInstance3D in bird.find_children("*", "MeshInstance3D", true, false):
+		var skin: Skin = mesh.skin
+		var bindings: Array[int] = []
+		for i: int in skin.get_bind_count(): bindings.append(skeleton.find_bone(skin.get_bind_name(i)))
+		for surface: int in mesh.mesh.get_surface_count():
+			var arrays: Array = mesh.mesh.surface_get_arrays(surface)
+			var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var influences: int = arrays[Mesh.ARRAY_BONES].size() / vertices.size()
+			for vertex_index: int in vertices.size():
+				var point := Vector3.ZERO
+				var vertex_bindings: Array[Dictionary] = []
+				for j: int in influences:
+					var offset: int = vertex_index * influences + j
+					var weight: float = arrays[Mesh.ARRAY_WEIGHTS][offset]
+					if weight <= 0: continue
+					var bind: int = arrays[Mesh.ARRAY_BONES][offset]
+					var local: Vector3 = skin.get_bind_pose(bind) * vertices[vertex_index]
+					point += (rests[bindings[bind]] * local) * weight
+					vertex_bindings.append({"bone": bindings[bind], "local": local, "weight": weight})
+				point = root.to_local(skeleton.to_global(point))
+				if point.y > threshold and point.z * forward > farthest:
+					farthest = point.z * forward
+					beak_rest = point
+					beak_bindings = vertex_bindings
 	for side: String in ["Left", "Right"]:
 		var knee: int = skeleton.find_bone("tripo__0_%s_Limb_0" % side)
 		var foot: int = skeleton.find_bone("tripo__0_%s_Limb_1" % side)
@@ -36,17 +72,20 @@ func update(delta: float, distance: float, speed: float, behavior: String, time:
 	else: action_mix = move_toward(action_mix, 1.0, delta * 2.0)
 	skeleton.reset_bone_poses()
 	var sign_forward: float = -1.0 if species == "goose" else 1.0
-	var dip: float = 0.0
 	var turn: float = sin(time * .7) * .10
 	if action in ["probe", "peck"]:
-		dip = (.5 + .5 * sin(time * (4.8 if species == "hen" else 2.2))) * (1.05 if species == "hen" else 1.35)
+		var amount: float = smoothstep(.08, .82, .5 + .5 * sin(time * (3.6 if species == "hen" else 1.9))) * action_mix
+		var forward: Vector3 = root.global_basis.orthonormalized() * Vector3(0, 0, sign_forward)
+		var contact: Vector3 = root.global_position + forward * (.14 if species == "hen" else .24)
+		contact.y = ground.call(Vector2(contact.x, contact.z)) + .015 if species == "hen" else -.257
+		_neck_reach(skeleton.to_local(root.to_global(beak_rest).lerp(contact, amount)), true)
 	elif action == "preen":
-		dip = .45 + .10 * sin(time * 3.0)
-		turn = 1.35 + .10 * sin(time * 2.0)
-	elif action == "observe": turn = sin(time * 1.6) * .55
-	_rotate(neck, Vector3.RIGHT, dip * .6 * sign_forward * action_mix)
-	_rotate(head, Vector3.RIGHT, dip * .4 * sign_forward * action_mix)
-	_rotate(head, Vector3.UP, turn * action_mix)
+		var size: float = 1.0 if species == "hen" else (1.25 if species == "duck" else 1.9)
+		var shoulder := Vector3(.095 * size, .23 * size + .008 * sin(time * 4.5), -.01 * sign_forward)
+		_neck_reach(skeleton.to_local(root.to_global(beak_rest.lerp(shoulder, action_mix))), false)
+	else:
+		if action == "observe": turn = sin(time * 1.6) * .55
+		_rotate(head, Vector3.UP, turn * action_mix)
 	for i: int in legs.size():
 		var leg: Dictionary = legs[i]
 		if species == "hen":
@@ -63,6 +102,40 @@ func update(delta: float, distance: float, speed: float, behavior: String, time:
 			_solve_leg(leg, skeleton.to_local(target))
 		else:
 			_rotate(leg.knee, Vector3.RIGHT, sin(phase * TAU + i * PI) * .42 * motion * sign_forward)
+
+func beak_world_position() -> Vector3:
+	return skeleton.to_global(_beak_position())
+
+func _beak_position() -> Vector3:
+	var point := Vector3.ZERO
+	for binding: Dictionary in beak_bindings:
+		point += (skeleton.get_bone_global_pose(binding.bone) * binding.local) * binding.weight
+	return point
+
+func _neck_reach(target: Vector3, sagittal: bool) -> void:
+	# CCD is restricted to the authored neck chain; the body and feet stay planted.
+	# Clamp total joint displacement from rest rather than accumulating unbounded turns.
+	var rotations: Array[Quaternion] = []
+	for bone: int in neck_chain: rotations.append(skeleton.get_bone_rest(bone).basis.get_rotation_quaternion())
+	for iteration: int in 7:
+		for index: int in range(neck_chain.size() - 1, -1, -1):
+			var bone: int = neck_chain[index]
+			var joint: Transform3D = skeleton.get_bone_global_pose(bone)
+			var tip: Vector3 = _beak_position()
+			var from: Vector3 = (tip - joint.origin).normalized()
+			var to: Vector3 = (target - joint.origin).normalized()
+			var delta: Quaternion
+			if sagittal:
+				delta = Quaternion(Vector3.RIGHT, atan2(from.y * to.z - from.z * to.y, from.y * to.y + from.z * to.z))
+			else: delta = Quaternion(from, to)
+			var parent: int = skeleton.get_bone_parent(bone)
+			var parent_basis: Basis = skeleton.get_bone_global_pose(parent).basis.orthonormalized()
+			var local: Quaternion = (parent_basis.inverse() * Basis(delta) * joint.basis.orthonormalized()).get_rotation_quaternion()
+			var relative: Quaternion = (rotations[index].inverse() * local).normalized()
+			if relative.w < 0: relative = -relative
+			var angle: float = relative.get_angle()
+			if angle > neck_limits[index]: relative = Quaternion.IDENTITY.slerp(relative, neck_limits[index] / angle)
+			skeleton.set_bone_pose_rotation(bone, (rotations[index] * relative).normalized())
 
 func _rotate(bone: int, axis: Vector3, angle: float) -> void:
 	if bone < 0: return

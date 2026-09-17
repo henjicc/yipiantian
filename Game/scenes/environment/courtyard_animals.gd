@@ -6,7 +6,7 @@ const Pose = preload("res://scenes/environment/bird_pose.gd")
 const PROFILES := {
 	"duck": {"speed": .32, "radius": .30, "draft": .20, "turn": 1.8, "pause": Vector2(2.5, 7.0), "range": 6.0},
 	"goose": {"speed": .27, "radius": .38, "draft": .29, "turn": 1.5, "pause": Vector2(3.0, 8.0), "range": 6.5},
-	"hen": {"speed": .23, "radius": .14, "draft": 0.0, "turn": 2.8, "pause": Vector2(2.0, 5.0), "range": 4.0},
+	"hen": {"speed": .23, "radius": .20, "draft": 0.0, "turn": 2.8, "pause": Vector2(2.0, 5.0), "range": 4.0},
 }
 var water := Space.new()
 var yard := Space.new()
@@ -32,7 +32,7 @@ func rebuild_spaces() -> void:
 	water = Space.new()
 	yard = Space.new()
 	water.configure(Rect2(-14.5, -6.0, 25.0, 19.5), .46)
-	yard.configure(Rect2(-6.25, -6.8, 12.0, 11.75), .15)
+	yard.configure(Rect2(-6.25, -6.8, 12.0, 11.75), .21)
 	var environment: Node3D = get_parent()
 	for child: Node in environment.get_children():
 		if not child is Node3D or child == self: continue
