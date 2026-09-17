@@ -1,7 +1,8 @@
 extends Node3D
-## Two grounded near-bank fragments, with real world depth and camera parallax.
-## Geometry is authored here; no cropped tree crowns or camera-facing leaf cards.
+## Layered, textured near-shore scenery rooted outside the two lower frame edges.
+## Instances stay in world space so orbit and dolly retain real parallax.
 const PlantWind = preload("res://presentation/plant_wind.gd")
+const ROOT := "res://art/environment/"
 var _camera: Camera3D
 var _fields: Array = []
 var _slots: Array[Node3D] = []
@@ -12,25 +13,22 @@ var _amount: float = 0.0
 var _wanted: bool = true
 var _last_camera: Transform3D
 var _last_size := Vector2.ZERO
-var _rng := RandomNumberGenerator.new()
 var _materials: Dictionary = {}
+
 
 func configure(camera: Camera3D, fields: Array, environment: Node3D) -> void:
 	_camera = camera
 	_fields = fields.duplicate()
 	for slot: Dictionary in environment.get_decoration_slots():
 		_slots.append(environment.get_slot_marker(slot.id))
-	# Detach transform inheritance, not scene ownership. The two banks are placed
-	# once in world space: dolly/orbit must produce depth/parallax, not follow HUD.
 	top_level = true
 	global_transform = Transform3D.IDENTITY
-	_rng.seed = 89173
-	# Anchored just inside the lower corners so the fragments actually frame the
-	# overview; the safe-rect retreat below still clears fields, slots and the shelf.
-	_add_bank(Vector2(0.12, 0.98), 0)
-	_add_bank(Vector2(0.88, 0.99), 1)
+	# Bases extend beyond the image, instead of exposing two complete floating pads.
+	_add_bank(Vector2(.055, 1.10), 0)
+	_add_bank(Vector2(.945, 1.11), 1)
 	visible = false
 	_update_frame()
+
 
 func set_overview_visible(value: bool, immediate: bool = false) -> void:
 	_wanted = value
@@ -38,169 +36,101 @@ func set_overview_visible(value: bool, immediate: bool = false) -> void:
 		_amount = 1.0 if value else 0.0
 		visible = value
 
-func _material(color: Color) -> StandardMaterial3D:
-	if _materials.has(color):
-		return _materials[color]
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.roughness = 0.94
-	mat.metallic_specular = 0.12
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_materials[color] = mat
-	return mat
-
-func _mesh(parent: Node3D, mesh: Mesh, material: Material, at: Vector3) -> MeshInstance3D:
-	var instance := MeshInstance3D.new()
-	instance.mesh = mesh
-	instance.material_override = material
-	instance.position = at
-	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	parent.add_child(instance)
-	_meshes.append(instance)
-	return instance
 
 func _add_bank(screen_anchor: Vector2, side: int) -> void:
 	var screen: Vector2 = screen_anchor * _camera.get_viewport().get_visible_rect().size
 	var origin: Vector3 = _camera.project_ray_origin(screen)
 	var ray: Vector3 = _camera.project_ray_normal(screen)
-	var ground: Vector3 = origin + ray * ((-0.18 - origin.y) / ray.y)
+	var ground: Vector3 = origin + ray * ((-.18 - origin.y) / ray.y)
 	var bank := Node3D.new()
 	bank.name = "NearBankLeft" if side == 0 else "NearBankRight"
 	add_child(bank)
 	bank.position = ground
-	bank.rotation.y = deg_to_rad(25.0)
-	# The framing bank is the frame's dark value anchor: at full midground
-	# brightness it read as another midground rock instead of a near silhouette.
-	var stone_color := Color("47513f")
-	for i: int in 3:
-		var packed: PackedScene = load("res://art/environment/modules/stone_%d.glb" % i)
-		var rock: Node3D = packed.instantiate()
-		bank.add_child(rock)
-		rock.position = Vector3((i-1)*1.1, -.20 + i*.04, i*.22)
-		rock.scale = Vector3(2.5, 2.8, 1.9)
-		rock.rotation.y = .45*i
-		for node: Node in rock.find_children("*", "MeshInstance3D", true, false):
-			var geometry: MeshInstance3D = node
-			geometry.material_override = _material(stone_color.lightened(i*.035))
-			geometry.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			geometry.lod_bias = 128.0
-			_meshes.append(geometry)
-	# Sparse connected branches emerge from the bank; varied leaf pitch/curvature
-	# remains readable even with DOF disabled, rather than relying on blur to hide it.
-	var stems := Node3D.new()
-	bank.add_child(stems)
-	for branch_index: int in (4 if side == 0 else 3):
-		var base := Vector3(_rng.randf_range(-.5,.5), .12, _rng.randf_range(-.25,.25))
-		var lean: float = -0.30 if side == 0 else 0.35
-		var tip := base + Vector3(lean + branch_index*.16, (3.0 + branch_index*.35 if side == 0 else 1.7 + branch_index*.36), -.35 + branch_index*.29)
-		var bend := Vector3(lean*1.4, .15, .24)
-		var previous: Vector3 = base
-		for segment: int in 6:
-			var next: Vector3 = _branch_point(base, tip, bend, float(segment+1)/6.0)
-			_add_stem(stems, previous, next, .018*(1.0-float(segment)*.11))
-			previous = next
-		for j: int in 7:
-			var t: float = .24 + j*.105
-			var joint: Vector3 = _branch_point(base,tip,bend,t)
-			var angle: float = j*2.4 + branch_index*.8
-			var direction := Vector3(cos(angle),.25+_rng.randf()*.22,sin(angle)*.7).normalized()
-			var end: Vector3 = joint + direction * _rng.randf_range(.20,.43)
-			_add_stem(stems,joint,end,.007)
-			for leaf_index: int in 2:
-				var leaf := _mesh(stems,_leaf_mesh(_rng.randf_range(.52,.80),_rng.randf_range(.14,.21)),_material(Color("35492a").lightened(float(_rng.randi_range(0,2))*.07)),joint.lerp(end,.6+leaf_index*.4))
-				var leaf_direction: Vector3 = (direction + Vector3(_rng.randf_range(-.3,.3),_rng.randf_range(-.35,.45),_rng.randf_range(-.3,.3))).normalized()
-				leaf.quaternion = Quaternion(Vector3.UP,leaf_direction)
-				leaf.rotate_object_local(Vector3.UP,_rng.randf_range(-.8,.8))
-				leaf.set_meta("foreground_leaf",true)
-	# Distinct lower grass layer sits 0.8m behind the branches.
-	for j: int in 13:
-		var grass := _mesh(bank,_leaf_mesh(_rng.randf_range(.58,1.05),.040),_material(Color("3f4f2c")),Vector3(_rng.randf_range(-1.15,1.15),.16,_rng.randf_range(-.7,-.3)))
-		grass.rotation = Vector3(_rng.randf_range(-.3,.3),_rng.randf_range(-PI,PI),_rng.randf_range(-.5,.5))
-		grass.set_meta("foreground_leaf",true)
-	_merge_bank(bank)
-	_groups.append({"node":bank,"anchor":ground})
+	bank.rotation.y = atan2(_camera.global_basis.z.x, _camera.global_basis.z.z)
+	var inward: float = 1.0 if side == 0 else -1.0
+	# A tall broken stone shoulder and smaller, lower water-edge stones. Preserve
+	# the original atlas and mesh, rather than flattening everything into one paint.
+	for item: Array in [
+		[4, Vector3(-.6, -.40, .6), Vector3(4.8, 5.0, 4.4), 25.0],
+		[0, Vector3(1.0, -.22, -.15), Vector3(3.8, 4.1, 3.2), 112.0],
+		[3, Vector3(2.0, -.23, .9), Vector3(3.0, 2.4, 2.8), 68.0],
+		[2, Vector3(.5, -.24, -1.05), Vector3(2.9, 3.0, 2.9), 140.0],
+	]:
+		var point: Vector3 = item[1]
+		point.x *= inward
+		_instance(bank, "modules/stone_%d.glb" % item[0], point, item[2], item[3] * inward)
+	if side == 0:
+		# The taller left mass enters from the side; the crown is not a leaf-card cutout.
+		_instance(bank, "osmanthus/osmanthus_high.glb", Vector3(-.5,.22,.0), Vector3.ONE*1.30, 45, "osmanthus")
+		_instance(bank, "bamboo/bamboo_high.glb", Vector3(1.0,.30,.2), Vector3.ONE*.78, 20, "bamboo")
+	else:
+		_instance(bank, "bamboo/bamboo_high.glb", Vector3(-.4,.24,.15), Vector3.ONE*1.12, -25, "bamboo")
+		_instance(bank, "osmanthus/osmanthus_high.glb", Vector3(.25,.10,1.0), Vector3.ONE*.70, -40, "osmanthus")
+	# Several small clumps at different depths soften stone/plant joins, with
+	# sparse pale flower heads rather than uniformly packed tall branches.
+	for index: int in 5:
+		var point := Vector3(inward*(.25+index*.36), .36 if index < 3 else .12, -.65+index*.35)
+		_instance(bank, "flowers/flowers_high.glb", point, Vector3.ONE*(1.5+index*.12), 31+index*67, "flowers")
+	for index: int in 3:
+		_instance(bank, "bamboo/bamboo_high.glb", Vector3(inward*(.4+index*.65), .10, .8+index*.3), Vector3.ONE*(.36+index*.07), 80+index*71, "bamboo")
+	_groups.append({"node": bank, "anchor": ground})
 
-func _merge_bank(bank: Node3D) -> void:
-	# Fixed palette and static local transforms: one surface per material per bank.
-	# Leaves keep the shared wind shader with the bank base as the stationary root.
-	var surfaces: Dictionary = {}
-	var moving: Dictionary = {}
-	for node: Node in bank.find_children("*", "MeshInstance3D", true, false):
+
+func _instance(parent: Node3D, path: String, at: Vector3, size: Vector3, yaw: float, plant: String = "") -> void:
+	var model: Node3D = (load(ROOT + path) as PackedScene).instantiate()
+	parent.add_child(model)
+	model.position = at
+	model.scale = size
+	model.rotation.y = deg_to_rad(yaw)
+	for node: Node in model.find_children("*", "MeshInstance3D", true, false):
 		var mesh: MeshInstance3D = node
-		var material: Material = mesh.material_override
-		if not surfaces.has(material):
-			var surface := SurfaceTool.new()
-			surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-			surfaces[material] = surface
-			moving[material] = mesh.has_meta("foreground_leaf")
-		surfaces[material].append_from(mesh.mesh,0,bank.global_transform.affine_inverse()*mesh.global_transform)
-		_meshes.erase(mesh)
-		mesh.get_parent().remove_child(mesh)
-		mesh.free()
-	for material: Material in surfaces:
-		var merged: MeshInstance3D = _mesh(bank,surfaces[material].commit(),material,Vector3.ZERO)
-		merged.lod_bias = 128.0
-		if moving[material]:
-			_wind.apply(merged,"grass")
-			merged.set_instance_shader_parameter("wind_motion",Vector4(.006,.08,0.0,.002))
+		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mesh.lod_bias = 1.0
+		for surface: int in mesh.mesh.get_surface_count():
+			var source: StandardMaterial3D = mesh.get_active_material(surface)
+			var key: int = source.get_instance_id()
+			if not _materials.has(key):
+				var material: StandardMaterial3D = source.duplicate()
+				material.albedo_color *= Color(.72,.76,.68) if not plant.is_empty() else Color(.70,.73,.68)
+				material.roughness = .96
+				material.metallic_specular = .10
+				_materials[key] = material
+			mesh.set_surface_override_material(surface,_materials[key])
+		_meshes.append(mesh)
+	if not plant.is_empty():
+		_wind.apply(model,plant)
 
-func _branch_point(base: Vector3, tip: Vector3, bend: Vector3, t: float) -> Vector3:
-	return base.lerp(tip,t) + bend*sin(t*PI)
-
-func _add_stem(parent: Node3D, a: Vector3, b: Vector3, radius: float) -> void:
-	var cylinder := CylinderMesh.new()
-	cylinder.top_radius = radius*.5
-	cylinder.bottom_radius = radius
-	cylinder.height = a.distance_to(b)
-	cylinder.radial_segments = 7
-	var stem: MeshInstance3D = _mesh(parent,cylinder,_material(Color("3d3c2d")),(a+b)*.5)
-	stem.quaternion = Quaternion(Vector3.UP,(b-a).normalized())
-
-func _leaf_mesh(length: float, width: float) -> ArrayMesh:
-	var surface := SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for segment: int in 10:
-		var a: float = float(segment)/10.0
-		var b: float = float(segment+1)/10.0
-		for side: float in [-1.0,1.0]:
-			var points: Array[Vector3] = [_leaf_point(a,0.0,length,width),_leaf_point(a,side,length,width),_leaf_point(b,side,length,width),_leaf_point(b,0.0,length,width)]
-			for corner: int in [0,1,2,0,2,3]:
-				surface.add_vertex(points[corner])
-	surface.generate_normals()
-	return surface.commit()
-
-func _leaf_point(t: float, side: float, length: float, width: float) -> Vector3:
-	var edge: float = pow(maxf(0.0,sin(t*PI)),.85) * width
-	return Vector3(side*edge, t*length, sin(t*PI)*length*.16 - absf(side)*edge*.22)
 
 func _process(delta: float) -> void:
-	if _camera == null:return
+	if _camera == null: return
 	_amount = move_toward(_amount,1.0 if _wanted else 0.0,delta*3.5)
 	visible = _amount > .001
-	for mesh: MeshInstance3D in _meshes:mesh.transparency = 1.0 - _amount
-	if visible:_update_frame()
+	for mesh: MeshInstance3D in _meshes:
+		mesh.transparency = 1.0 - _amount
+	if visible: _update_frame()
+
 
 func _update_frame() -> void:
 	var size: Vector2 = _camera.get_viewport().get_visible_rect().size
-	if size == _last_size and _camera.global_transform.is_equal_approx(_last_camera):return
+	if size == _last_size and _camera.global_transform.is_equal_approx(_last_camera): return
 	_last_camera = _camera.global_transform
 	_last_size = size
-	var safe := Rect2(Vector2(.27,.20),Vector2(.46,.54))
+	var safe := Rect2(Vector2(.28,.20),Vector2(.44,.56))
 	for field: Node3D in _fields:
 		for x: float in [-1.45,1.45]:
 			for z: float in [-1.2,1.2]:
 				var point: Vector3 = field.global_transform*Vector3(x,.55,z)
-				if not _camera.is_position_behind(point):safe=safe.expand(_camera.unproject_position(point)/size)
+				if not _camera.is_position_behind(point): safe=safe.expand(_camera.unproject_position(point)/size)
 	for marker: Node3D in _slots:
-		if not _camera.is_position_behind(marker.global_position):safe=safe.expand(_camera.unproject_position(marker.global_position)/size)
-	# Whole fragments retreat if an extreme pan/orbit carries their branch tips
-	# across an operation area. No shader rectangle cuts natural leaf silhouettes.
+		if not _camera.is_position_behind(marker.global_position): safe=safe.expand(_camera.unproject_position(marker.global_position)/size)
+	# Retreat whole objects at extreme orbits instead of slicing leaves with a
+	# screen rectangle. The default pose keeps the centre open by construction.
 	for group: Dictionary in _groups:
 		var bank: Node3D = group.node
 		var blocked: bool = false
-		for h: float in [.0,1.2,2.1,3.2,4.3]:
-			var point: Vector3 = bank.global_position + Vector3.UP*h
+		for height: float in [.0,1.2,2.1,3.2,4.8]:
+			var point: Vector3 = bank.global_position + Vector3.UP*height
 			if not _camera.is_position_behind(point):
 				var uv: Vector2 = _camera.unproject_position(point)/size
-				blocked = blocked or safe.grow(.04).has_point(uv)
+				blocked = blocked or safe.grow(.02).has_point(uv)
 		bank.visible = not blocked

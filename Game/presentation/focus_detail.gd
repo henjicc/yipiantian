@@ -147,7 +147,7 @@ func _process(delta: float) -> void:
 	var active: bool = is_instance_valid(_target) and allowed
 	var frame_blur: bool = framing and allowed
 	var approach: float = 1.0 - smoothstep(12.0, 18.0, _camera.global_position.distance_to(_target.global_position)) if active else 0.0
-	var target_amount: float = (0.055 if frame_blur else 0.032 * approach) * _dof_strength
+	var target_amount: float = (0.115 if frame_blur else 0.032 * approach) * _dof_strength
 	_attributes.dof_blur_amount = move_toward(_attributes.dof_blur_amount, target_amount, delta * 0.12)
 	_attributes.dof_blur_near_enabled = (active or frame_blur) and _attributes.dof_blur_amount > 0.0001
 	_attributes.dof_blur_far_enabled = (active or frame_blur) and _attributes.dof_blur_near_enabled
@@ -158,12 +158,14 @@ func _process(delta: float) -> void:
 			var depths: Vector2 = depth_range(_camera, field.global_transform, _target_bounds)
 			nearest_field = minf(nearest_field, depths.x)
 			farthest_field = maxf(farthest_field, depths.y)
-		_attributes.dof_blur_near_distance = maxf(0.1, nearest_field - 1.0)
-		_attributes.dof_blur_near_transition = 5.0
+		# Keep the boat and mid-water lotus clear; only the much closer frame plants
+		# enter the stronger blur band introduced for the low overview angle.
+		_attributes.dof_blur_near_distance = maxf(0.1, nearest_field - 4.0)
+		_attributes.dof_blur_near_transition = 3.5
 		# Every bed stays sharp even at the legal orbit and zoom limits. Only the
 		# space beyond the farm/house begins the gradual background defocus.
 		_attributes.dof_blur_far_distance = farthest_field + 7.5
-		_attributes.dof_blur_far_transition = 28.0
+		_attributes.dof_blur_far_transition = 500.0
 		_band_initialized = false
 	if active:
 		_attributes.dof_blur_near_transition = 5.0
