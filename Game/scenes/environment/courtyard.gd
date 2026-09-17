@@ -185,9 +185,12 @@ func _build_plants() -> void:
 		for j in 3:
 			_asset("flowers","Flowers%d_%d"%[i,j],flower_centres[i]+Vector3(_rng.randf_range(-.26,.26),-.035,_rng.randf_range(-.22,.22)),i*37+j*62,_rng.randf_range(.95,1.40))
 	# Loose lily coves sit around the waterline, not in a repeated necklace in front of the boat.
-	var lily_coves: Array[Vector3] = [Vector3(-5.7,-.40,6.25),Vector3(-.9,-.40,7.25),Vector3(4.7,-.40,6.3),Vector3(10.8,-.40,1.1)]
+	# The open river is the composition's pale negative space, but an unbroken slab
+	# of it reads as an unfinished surface. Loose outer coves give it something to
+	# interrupt, still clear of the bank, the bridge span and the mooring.
+	var lily_coves: Array[Vector3] = [Vector3(-5.7,-.40,6.25),Vector3(-.9,-.40,7.25),Vector3(4.7,-.40,6.3),Vector3(10.8,-.40,1.1),Vector3(-9.8,-.40,3.6),Vector3(-11.2,-.40,-1.8),Vector3(-7.9,-.40,9.2),Vector3(1.6,-.40,10.8),Vector3(8.9,-.40,7.9)]
 	for i in lily_coves.size():
-		for j in 4:
+		for j in (4 if i < 4 else 5):
 			var angle:float=j*2.4+i*.7
 			var lotus: Node3D=_asset("lotus","Lotus%d_%d"%[i,j],lily_coves[i]+Vector3(cos(angle)*.72,0,sin(angle)*.6),i*41+j*79,_rng.randf_range(.82,1.15))
 			_floaters.append(lotus);_floater_origins.append(lotus.position)

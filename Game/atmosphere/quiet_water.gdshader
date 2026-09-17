@@ -1,14 +1,16 @@
 shader_type spatial;
 render_mode blend_mix, cull_disabled;
 
-uniform vec4 water_color : source_color = vec4(0.45, 0.65, 0.59, 1.0);
+// The river is the composition's pale negative space, not a saturated slab;
+// the clock supplies the actual value so it can warm and darken with the light.
+uniform vec4 water_color : source_color = vec4(0.59, 0.67, 0.63, 1.0);
 uniform sampler2D painted_water : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D scene_depth : hint_depth_texture, filter_nearest, repeat_disable;
 uniform sampler2D scene_colour : hint_screen_texture, filter_linear_mipmap, repeat_disable;
 uniform vec2 ripple_center = vec2(0.0);
 uniform float ripple_age = 10.0;
 uniform float wave_strength : hint_range(0.0, 1.5) = 1.0;
-uniform float shore_reflection_strength : hint_range(0.0, 0.6) = 0.16;
+uniform float shore_reflection_strength : hint_range(0.0, 0.6) = 0.32;
 uniform vec4 reflection_tint : source_color = vec4(1.0);
 uniform bool boat_mask_enabled = false;
 uniform mat4 world_to_boat;
@@ -88,7 +90,7 @@ void fragment() {
 	vec3 opaque_position = opaque_world.xyz / opaque_world.w;
 	float water_depth = max(0.0, world_position.y - opaque_position.y);
 	float contact = (1.0 - smoothstep(0.02, 0.38, water_depth)) * step(0.00001, depth);
-	colour = mix(colour, vec3(0.33, 0.47, 0.43), contact * 0.38);
+	colour = mix(colour, water_color.rgb * vec3(0.74, 0.80, 0.78), contact * 0.38);
 	// A narrow, discontinuous wet edge follows actual depth at rocks and hulls.
 	float wet_edge = exp(-water_depth * 15.0) * step(0.00001, depth);
 	colour += vec3(0.035, 0.044, 0.038) * wet_edge * (0.45 + 0.55 * glint);
@@ -100,7 +102,7 @@ void fragment() {
 	float sky_u = atan(reflected_world.z, reflected_world.x) / 6.283185 + 0.5;
 	vec2 sky_uv = vec2(sky_u, clamp(0.29 - reflected_world.y * 0.23, 0.015, 0.29));
 	vec3 sky = texture(painted_water, sky_uv).rgb;
-	vec3 reflection = mix(vec3(0.25, 0.44, 0.40), sky, 0.30);
+	vec3 reflection = mix(water_color.rgb * 0.88, sky, 0.30);
 	float reflection_weight = 0.08 + fresnel * 0.35;
 	// Bounded local screen reflection catches actual opaque rocks and boat hulls.
 	// It cannot see off-screen surfaces; those fall back to the soft sky pigment.
@@ -158,7 +160,7 @@ void light() {
 	// Water retains cool depth under the warmer, brighter land key light.
 	float luminance = dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722));
 	vec3 diffuse_colour = mix(vec3(luminance), LIGHT_COLOR, 0.18);
-	DIFFUSE_LIGHT += ALBEDO * diffuse_colour * ATTENUATION * max(dot(NORMAL, LIGHT), 0.0) * (0.40 / 3.141593);
+	DIFFUSE_LIGHT += ALBEDO * diffuse_colour * ATTENUATION * max(dot(NORMAL, LIGHT), 0.0) * (0.78 / 3.141593);
 	vec3 halfway = normalize(LIGHT + VIEW);
 	float highlight = pow(max(dot(NORMAL, halfway), 0.0), 100.0);
 	float broken_reflection = pow(max(dot(NORMAL, halfway), 0.0), 14.0) * crest_light;

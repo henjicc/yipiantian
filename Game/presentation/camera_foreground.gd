@@ -25,8 +25,10 @@ func configure(camera: Camera3D, fields: Array, environment: Node3D) -> void:
 	top_level = true
 	global_transform = Transform3D.IDENTITY
 	_rng.seed = 89173
-	_add_bank(Vector2(0.08, 1.02), 0)
-	_add_bank(Vector2(0.92, 1.03), 1)
+	# Anchored just inside the lower corners so the fragments actually frame the
+	# overview; the safe-rect retreat below still clears fields, slots and the shelf.
+	_add_bank(Vector2(0.12, 0.98), 0)
+	_add_bank(Vector2(0.88, 0.99), 1)
 	visible = false
 	_update_frame()
 
@@ -67,7 +69,9 @@ func _add_bank(screen_anchor: Vector2, side: int) -> void:
 	add_child(bank)
 	bank.position = ground
 	bank.rotation.y = deg_to_rad(25.0)
-	var stone_color := Color("6e7969")
+	# The framing bank is the frame's dark value anchor: at full midground
+	# brightness it read as another midground rock instead of a near silhouette.
+	var stone_color := Color("47513f")
 	for i: int in 3:
 		var packed: PackedScene = load("res://art/environment/modules/stone_%d.glb" % i)
 		var rock: Node3D = packed.instantiate()
@@ -103,14 +107,14 @@ func _add_bank(screen_anchor: Vector2, side: int) -> void:
 			var end: Vector3 = joint + direction * _rng.randf_range(.20,.43)
 			_add_stem(stems,joint,end,.007)
 			for leaf_index: int in 2:
-				var leaf := _mesh(stems,_leaf_mesh(_rng.randf_range(.38,.60),_rng.randf_range(.10,.16)),_material(Color("5d7848").lightened(float(_rng.randi_range(0,2))*.08)),joint.lerp(end,.6+leaf_index*.4))
+				var leaf := _mesh(stems,_leaf_mesh(_rng.randf_range(.52,.80),_rng.randf_range(.14,.21)),_material(Color("35492a").lightened(float(_rng.randi_range(0,2))*.07)),joint.lerp(end,.6+leaf_index*.4))
 				var leaf_direction: Vector3 = (direction + Vector3(_rng.randf_range(-.3,.3),_rng.randf_range(-.35,.45),_rng.randf_range(-.3,.3))).normalized()
 				leaf.quaternion = Quaternion(Vector3.UP,leaf_direction)
 				leaf.rotate_object_local(Vector3.UP,_rng.randf_range(-.8,.8))
 				leaf.set_meta("foreground_leaf",true)
 	# Distinct lower grass layer sits 0.8m behind the branches.
 	for j: int in 13:
-		var grass := _mesh(bank,_leaf_mesh(_rng.randf_range(.45,.85),.032),_material(Color("72844f")),Vector3(_rng.randf_range(-1.15,1.15),.16,_rng.randf_range(-.7,-.3)))
+		var grass := _mesh(bank,_leaf_mesh(_rng.randf_range(.58,1.05),.040),_material(Color("3f4f2c")),Vector3(_rng.randf_range(-1.15,1.15),.16,_rng.randf_range(-.7,-.3)))
 		grass.rotation = Vector3(_rng.randf_range(-.3,.3),_rng.randf_range(-PI,PI),_rng.randf_range(-.5,.5))
 		grass.set_meta("foreground_leaf",true)
 	_merge_bank(bank)
@@ -149,7 +153,7 @@ func _add_stem(parent: Node3D, a: Vector3, b: Vector3, radius: float) -> void:
 	cylinder.bottom_radius = radius
 	cylinder.height = a.distance_to(b)
 	cylinder.radial_segments = 7
-	var stem: MeshInstance3D = _mesh(parent,cylinder,_material(Color("6a6950")),(a+b)*.5)
+	var stem: MeshInstance3D = _mesh(parent,cylinder,_material(Color("3d3c2d")),(a+b)*.5)
 	stem.quaternion = Quaternion(Vector3.UP,(b-a).normalized())
 
 func _leaf_mesh(length: float, width: float) -> ArrayMesh:
