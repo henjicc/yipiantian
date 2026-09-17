@@ -1,6 +1,7 @@
 extends PanelContainer
 ## Development-only overview composition controls; camera owns the session pose.
 signal depth_of_field_changed(enabled: bool, strength: float)
+signal fog_strength_changed(strength: float)
 
 const FarmTheme = preload("res://ui/farm_theme.gd")
 const FIELDS: Array = [
@@ -19,6 +20,8 @@ var _copy: Button
 var _dof_toggle: CheckBox
 var _dof_slider: HSlider
 var _dof_value: Label
+var _fog_slider: HSlider
+var _fog_value: Label
 
 
 func _ready() -> void:
@@ -73,13 +76,34 @@ func _ready() -> void:
 	dof_row.add_child(_dof_value)
 	_dof_slider = HSlider.new()
 	_dof_slider.name = "DepthOfFieldStrength"
-	_dof_slider.max_value = 100
+	_dof_slider.max_value = 300
 	_dof_slider.step = 1
 	_dof_slider.custom_minimum_size = Vector2(284, 20)
 	_dof_slider.mouse_force_pass_scroll_events = false
 	column.add_child(_dof_slider)
 	_dof_toggle.toggled.connect(func(_enabled: bool) -> void: _apply_dof())
 	_dof_slider.value_changed.connect(func(_value: float) -> void: _apply_dof())
+	var fog_row := HBoxContainer.new()
+	column.add_child(fog_row)
+	var fog_label := Label.new()
+	fog_label.text = "远景雾气"
+	fog_label.add_theme_font_size_override("font_size", 18)
+	fog_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	fog_row.add_child(fog_label)
+	_fog_value = Label.new()
+	_fog_value.add_theme_font_size_override("font_size", 18)
+	fog_row.add_child(_fog_value)
+	_fog_slider = HSlider.new()
+	_fog_slider.name = "FogStrength"
+	_fog_slider.max_value = 100
+	_fog_slider.step = 1
+	_fog_slider.custom_minimum_size = Vector2(284, 20)
+	_fog_slider.mouse_force_pass_scroll_events = false
+	column.add_child(_fog_slider)
+	_fog_slider.value_changed.connect(func(value: float) -> void:
+		_fog_value.text = "%d%%" % roundi(value)
+		fog_strength_changed.emit(value / 100.0)
+		_copy.text = "复制参数")
 	var presets := HBoxContainer.new()
 	column.add_child(presets)
 	_button(presets, "原角度").pressed.connect(func() -> void: _preset(28.0))
@@ -89,6 +113,7 @@ func _ready() -> void:
 		var parameters: Dictionary = camera.overview_parameters()
 		parameters.dof_enabled = _dof_toggle.button_pressed
 		parameters.dof_strength = _dof_slider.value / 100.0
+		parameters.fog_strength = _fog_slider.value / 100.0
 		DisplayServer.clipboard_set(JSON.stringify(parameters, "\t"))
 		_copy.text = "已复制")
 	hide()
@@ -98,6 +123,8 @@ func present(settings: Dictionary) -> void:
 	camera.preview_overview(camera.overview_parameters())
 	_dof_toggle.set_pressed_no_signal(settings.dof_enabled)
 	_dof_slider.set_value_no_signal(settings.dof_strength * 100.0)
+	_fog_slider.set_value_no_signal(settings.fog_strength * 100.0)
+	_fog_value.text = "%d%%" % roundi(_fog_slider.value)
 	_dof_toggle.disabled = settings.quality == "low"
 	_dof_toggle.text = "景深模糊（低画质停用）" if _dof_toggle.disabled else "景深模糊"
 	_sync_dof()

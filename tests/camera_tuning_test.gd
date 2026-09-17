@@ -31,6 +31,29 @@ func _run() -> void:
 	scene._select_crop("spinach")
 	await click(scene.hud.get_node("Layout/DebugCameraTuning").get_global_rect().get_center())
 	expect(panel.visible and scene.selected_tool.is_empty(), "Opening panel cancels armed farming")
+	if OS.get_cmdline_user_args().has("--quick-atmosphere"):
+		panel._dof_slider.value = 300
+		panel._fog_slider.value = 100
+		await create_timer(1.2).timeout
+		expect(camera.attributes.dof_blur_amount > .3, "Extended slider reaches three times previous blur ceiling")
+		var environment: Environment = camera.get_world_3d().environment
+		expect(is_equal_approx(environment.fog_density,.85), "Fog slider reaches renderer")
+		expect(environment.fog_depth_begin > scene.focus_detail.protected_depth_range().y, "Fog begins beyond all fields")
+		check_clear_fields("extended blur")
+		panel._fog_slider.value = 0
+		await process_frame
+		await process_frame
+		expect(not environment.fog_enabled, "Zero disables depth haze")
+		panel._fog_slider.value = 55
+		panel._dof_slider.value = 150
+		await create_timer(.6).timeout
+		await shot("06-stronger-blur-fog-panel.png")
+		expect(root.get_visible_rect().encloses(panel.get_global_rect()), "Expanded panel fits viewport")
+		scene.free()
+		await process_frame
+		print("ATMOSPHERE_TUNING_PASS" if failures.is_empty() else str(failures))
+		quit(0 if failures.is_empty() else 1)
+		return
 	var original_pose: Transform3D = camera.transform
 	panel._dof_slider.value = 0
 	await create_timer(.7).timeout
@@ -77,7 +100,8 @@ func _run() -> void:
 	# Observe the user's paste-time result, not a read in the same input frame.
 	await create_timer(.4).timeout
 	var copied: Variant = JSON.parse_string(DisplayServer.clipboard_get())
-	var matches: bool = copied is Dictionary and copied.size() == tuned.size() + 2
+	var matches: bool = copied is Dictionary and copied.size() == tuned.size() + 3
+	matches = matches and is_equal_approx(float(copied.get("fog_strength",-1)), .55)
 	matches = matches and copied.get("dof_enabled") == true and is_equal_approx(float(copied.get("dof_strength",-1)),.65)
 	for key: String in tuned:
 		matches = matches and copied is Dictionary and copied.has(key) and is_equal_approx(float(copied[key]), float(tuned[key]))

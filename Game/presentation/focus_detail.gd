@@ -18,7 +18,8 @@ var _decorations: Node3D
 var _target_bounds := AABB(Vector3(-1.4, -0.1, -1.15), Vector3(2.8, 0.75, 2.3))
 var _quality: String = "standard"
 var _dof_enabled: bool = true
-var _dof_strength: float = 0.65
+var _dof_strength: float = 1.5
+var _fog_strength: float = 0.55
 var _band_initialized: bool = false
 var _field_bounds: Dictionary = {}
 var _bounds_dirty: bool = true
@@ -80,12 +81,17 @@ func set_depth_of_field(enabled: bool, strength: float = 1.0) -> bool:
 	if not is_finite(strength):
 		return false
 	_dof_enabled = enabled
-	_dof_strength = clampf(strength, 0.0, 1.0)
+	_dof_strength = clampf(strength, 0.0, 3.0)
 	return true
 
 
+func set_fog_strength(strength: float) -> void:
+	if is_finite(strength):
+		_fog_strength = clampf(strength, 0.0, 1.0)
+
+
 func get_settings() -> Dictionary:
-	return {"quality": _quality, "dof_enabled": _dof_enabled, "dof_strength": _dof_strength}
+	return {"quality": _quality, "dof_enabled": _dof_enabled, "dof_strength": _dof_strength, "fog_strength": _fog_strength}
 
 
 func _apply_quality() -> void:
@@ -169,6 +175,14 @@ func _apply_decoration_wind(node: Node) -> void:
 func _process(delta: float) -> void:
 	if _camera == null:
 		return
+	# Depth haze begins beyond all beds and the house; clock still owns its colour.
+	var environment: Environment = _camera.get_world_3d().environment
+	var clear_depths: Vector2 = protected_depth_range()
+	environment.fog_enabled = _fog_strength > 0.0
+	environment.fog_density = _fog_strength * 0.85
+	environment.fog_depth_begin = maxf(1.0, clear_depths.y + 10.0)
+	environment.fog_depth_end = environment.fog_depth_begin + 70.0
+	environment.fog_depth_curve = 1.25
 	var inspecting: bool = _camera.get("free_view") == true
 	var framing: bool = not inspecting and not is_instance_valid(_target) and not _decorations.active and _quality == "standard"
 	_foreground.set_overview_visible(framing, inspecting)
@@ -177,7 +191,7 @@ func _process(delta: float) -> void:
 	var frame_blur: bool = framing and allowed
 	var approach: float = 1.0 - smoothstep(12.0, 18.0, _camera.global_position.distance_to(_target.global_position)) if active else 0.0
 	var target_amount: float = (0.115 if frame_blur else 0.032 * approach) * _dof_strength
-	_attributes.dof_blur_amount = move_toward(_attributes.dof_blur_amount, target_amount, delta * 0.12)
+	_attributes.dof_blur_amount = move_toward(_attributes.dof_blur_amount, target_amount, delta * 0.35)
 	_attributes.dof_blur_near_enabled = (active or frame_blur) and _attributes.dof_blur_amount > 0.0001
 	_attributes.dof_blur_far_enabled = (active or frame_blur) and _attributes.dof_blur_near_enabled
 	if frame_blur:

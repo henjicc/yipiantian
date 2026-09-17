@@ -108,6 +108,8 @@ func _ready() -> void:
 		camera_tuning.depth_of_field_changed.connect(func(enabled: bool, strength: float) -> void:
 			settings_values.dof_enabled = enabled
 			focus_detail.set_depth_of_field(enabled, strength))
+		camera_tuning.fog_strength_changed.connect(func(strength: float) -> void:
+			focus_detail.set_fog_strength(strength))
 	camera.motion_finished.connect(_refresh_hud)
 	_load_game()
 	# The courtyard owns all slot transforms and art; no duplicate fallback layout.
