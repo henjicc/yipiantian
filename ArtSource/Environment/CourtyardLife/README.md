@@ -48,7 +48,7 @@
 
 禽类使用Tripo真实骨架与权重，Blender源中保留首版4秒 `Paddle`／`Forage` 循环；鸭绑定输出的辅助 `Icosphere` 排除在游戏资产之外。导出头部顶点核验鸭与鸡朝+Z、鹅朝-Z。当前运行已由下节的行为与骨骼控制替代固定循环；原件和历史动作仍保留。三维生成、语义分件及骨架由Tripo完成，本地动作与水面运动由Blender/Godot完成，不能混称Tripo自动生成了整套动画。
 
-### 动物行为节点：20260918-animal-roaming（进行中）
+### 动物行为节点：20260918-animal-roaming
 
 改造前独立包为 `.local/snapshots/20260918-4abc256/`，本轮复用同一批模型与骨架，无新增生成费用。新增运行入口是 `Game/scenes/environment/courtyard_animals.gd`、`animal_space.gd` 和 `bird_pose.gd`。7只动物固定数量，未增加饲养经济或离线惩罚。
 
@@ -57,7 +57,7 @@
 - 使用现有骨架的髋／膝／踝链做双段求解，步相由实际路程推进，两脚错半周期；支撑段向后移动匹配身体位移，摆腿段抬脚，地面高度来自实际低矮石板三角形。停步淡出，水禽划脚与尾波强度随速度变化。没有改写Tripo骨架原件或重减面。
 - 啄食／探水与理羽使用有限转角的颈部链求解，目标来自实际地面／水位／肩羽；鸡导航余量21厘米覆盖身体与转身。导入禽类保留骨架父级归一化变换，**不能直接用 `mesh.to_global(vertex)` 测量嘴尖**：必须先按Skin逆绑定矩阵、权重和骨骼姿态计算实际蒙皮点，再换到世界坐标。否则数值接触通过而画面仍悬空。此问题已用实际近景反证并修正，原始骨架和网格不改写。
 - 定向检查入口 `tests/animal_behavior_test.gd`：真实主场景、隔离存档，模拟360秒，检查7只活动边界、相互间距、单步位移、活动跨度、状态出现和反复卡住；`-- --visual`附近景连续相位截图，`-- --poses-only --visual`只检查啄食／探水／理羽与昼夜近景。当前宽身体余量检查中鸭鹅累计54–78米、两鸡58/50米，路径恢复0–10次，鸡最大跨度约10.3×7米。模拟每步约0.48ms，含检查开销，不是整机帧耗时或GPU结论。
-- 证据 `.local/animal-behavior/{check,visual,contact-visual,contact-lifecycle}.log` 和 `.local/verification/animal-behavior/`。步行近景已观察到两脚交替；啄食最低嘴尖约0.149米（当地地面约0.13米），鸭鹅最低约-0.257米（水面-0.25米）。白天和夜晚三种禽类近景已检查。阶段独立包尚待留存，第07项目标未完成。图形测试退出曾偶发12实例／6资源残留，最新verbose图形退出与headless退出均无残留；不把一次无警告当成引擎清理问题已根治，独立程序退出继续检查。
+- 证据 `.local/animal-behavior/{check,visual,contact-visual,contact-lifecycle}.log` 和 `.local/verification/animal-behavior/`。步行近景已观察到两脚交替；啄食最低嘴尖约0.149米（当地地面约0.13米），鸭鹅最低约-0.257米（水面-0.25米）。白天和夜晚三种禽类近景已检查。源码 `a6cd9ff` 动物阶段独立包已留存于 `.local/snapshots/20260918-a6cd9ff/我有一片田_动物行为版_20260918/`：672资源审计无禁入／缺失，第二屏实际运行、正常关闭exit=0与隔离保存通过，标准输出／错误输出没有资源残留。独立证据在 `.local/verification/animal-release/`，这是本机缓存导出，不是干净克隆发布认证。第02–07项已完成，后续布局与玩法未完成。图形测试退出曾偶发12实例／6资源残留，最新verbose图形退出与headless退出均无残留；不把一次无警告当成引擎清理问题已根治，独立程序退出继续检查。
 - 无新增录像。参考图、原模、骨架仍在上述20260918源目录，当前行为和动作可按源码重现，需要视频时补拍；连续截图是验证资料，不冒充实时录屏。
 
 方案参考：[Reynolds行动选择、转向和运动分层](https://www.red3d.com/cwr/steer/gdc99/)、[Godot 4.7 AStarGrid2D](https://docs.godotengine.org/en/4.7/classes/class_astargrid2d.html)、[Skeleton3D局部姿态接口](https://docs.godotengine.org/en/4.7/classes/class_skeleton3d.html)。本项目直接使用内置寻路与现有骨架，没有引入第三方AI框架。
