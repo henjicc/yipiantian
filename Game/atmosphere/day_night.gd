@@ -54,10 +54,13 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	_world.environment.ambient_light_sky_contribution = 0.72
 	_world.environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	_world.environment.ssao_enabled = true
-	_world.environment.ssao_radius = 0.65
-	_world.environment.ssao_intensity = 1.25
-	_world.environment.ssao_power = 1.15
-	_world.environment.ssao_light_affect = 0.12
+	_world.environment.ssao_radius = 0.42
+	_world.environment.ssao_intensity = 1.8
+	_world.environment.ssao_power = 1.4
+	# Restrained artistic contact darkening in sunlit areas, not a replacement for
+	# cast shadows. In 4.7.2 Forward+, the AO-channel mix also gates this influence.
+	_world.environment.ssao_light_affect = 0.65
+	_world.environment.ssao_ao_channel_affect = 1.0
 	_world.environment.ssao_detail = 0.7
 	_world.environment.ssil_enabled = true
 	_world.environment.ssil_radius = 1.8
@@ -74,7 +77,7 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	_sun.light_angular_distance = 0.0
 	_sun.shadow_blur = 2.0
 	_sun.shadow_bias = 0.06
-	_sun.shadow_normal_bias = 0.85
+	_sun.shadow_normal_bias = 0.35
 	_sun.directional_shadow_blend_splits = true
 	_sun.directional_shadow_max_distance = 48.0
 	if water != null:

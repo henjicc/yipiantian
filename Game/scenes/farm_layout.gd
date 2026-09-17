@@ -24,7 +24,7 @@ var _plant_wind := PlantWind.new()
 func _ready() -> void:
 	_soil = _soil_material("80684d", 0.0)
 	_wet_soil = _soil_material("62533e", 1.0)
-	_ridge = _soil_material("766046", 0.0)
+	_ridge = _soil_material("80684d", 0.0)
 	_make_fields()
 
 
@@ -180,7 +180,7 @@ func _soil_patch() -> ArrayMesh:
 			for offset: Vector2i in [Vector2i(0,0),Vector2i(1,0),Vector2i(1,1),Vector2i(0,0),Vector2i(1,1),Vector2i(0,1)]:
 				var uv := Vector2((col+offset.x)/10.0,(row+offset.y)/8.0)
 				var edge: float = minf(minf(uv.x,1.0-uv.x),minf(uv.y,1.0-uv.y))
-				var height: float = -.016*(1.0-smoothstep(0.0,.11,edge))
+				var height: float = -.004*(1.0-smoothstep(0.0,.08,edge))
 				surface.set_uv(uv)
 				surface.add_vertex(Vector3((uv.x-.5)*CELL_SPAN.x,height,(uv.y-.5)*CELL_SPAN.y))
 	surface.generate_normals()
@@ -190,7 +190,7 @@ func _soil_patch() -> ArrayMesh:
 func _earthen_bank() -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rings: Array[Vector3] = [Vector3(1.20,.064,.88),Vector3(1.29,.045,.97),Vector3(1.39,-.027,1.075),Vector3(1.51,-.066,1.20)]
+	var rings: Array[Vector3] = [Vector3(1.20,.076,.88),Vector3(1.29,.055,.97),Vector3(1.39,-.027,1.075),Vector3(1.51,-.066,1.20)]
 	for band: int in 3:
 		for segment: int in 80:
 			for corner: Vector2i in [Vector2i(0,0),Vector2i(0,1),Vector2i(1,1),Vector2i(0,0),Vector2i(1,1),Vector2i(1,0)]:

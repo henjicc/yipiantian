@@ -80,6 +80,7 @@ func _apply_pigment(node: Node, module_id: String = "") -> void:
 				painted.set_shader_parameter("wash_scale",3.5)
 				painted.set_shader_parameter("stone_treatment", 1.0 if module_id.begins_with("stone_") else 0.0)
 				painted.set_shader_parameter("ground_treatment", 1.0 if module_id == "island_bank" else 0.0)
+				painted.set_shader_parameter("foundation_treatment", 1.0 if module_id in ["veranda","side_wing"] else 0.0)
 				node.set_surface_override_material(surface,painted)
 	for child in node.get_children(): _apply_pigment(child, module_id)
 

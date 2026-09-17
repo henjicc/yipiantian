@@ -7,6 +7,7 @@ var _rng := RandomNumberGenerator.new()
 func build(courtyard: Node3D) -> void:
 	_rng.seed = 943172
 	_build_trellis_bed()
+	_build_foundation_contacts()
 	var soil_gradient := Gradient.new()
 	soil_gradient.colors = PackedColorArray([Color(.33,.28,.16,.52),Color(.40,.36,.20,0)])
 	var root_soil := GradientTexture2D.new()
@@ -49,6 +50,30 @@ func build(courtyard: Node3D) -> void:
 	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	grass.extra_cull_margin = .04
 	add_child(grass)
+
+func _build_foundation_contacts() -> void:
+	# Short, irregular weathered aprons around the two fixed building footprints.
+	# Only the island receives these colour decals; occlusion is still real SSAO.
+	var noise := FastNoiseLite.new()
+	noise.seed = 74019
+	noise.frequency = .065
+	for footprint: Rect2 in [Rect2(-2.8,-2.975,6.9,1.15),Rect2(-5.6,-6.25,2.6,2.5)]:
+		var extent: Vector2 = footprint.size + Vector2.ONE*.44
+		var image := Image.create(256,128,false,Image.FORMAT_RGBA8)
+		for y: int in 128:
+			for x: int in 256:
+				var p := (Vector2((x+.5)/256.0,(y+.5)/128.0)-Vector2.ONE*.5)*extent
+				var q: Vector2 = p.abs()-footprint.size*.5
+				var distance: float = q.max(Vector2.ZERO).length()+minf(maxf(q.x,q.y),0.0)
+				var amount: float = 1.0-smoothstep(.0,.13+noise.get_noise_2d(x,y)*.05,distance)
+				image.set_pixel(x,y,Color(.32,.29,.20,amount*.38))
+		var decal := Decal.new()
+		decal.name = "FoundationWeathering"
+		decal.texture_albedo = ImageTexture.create_from_image(image)
+		decal.size = Vector3(extent.x,.18,extent.y)
+		decal.position = Vector3(footprint.get_center().x,.17,footprint.get_center().y)
+		decal.cull_mask = 2
+		add_child(decal)
 
 func _build_trellis_bed() -> void:
 	# Physical space for the requested future climbing crop area; no fake crop state.

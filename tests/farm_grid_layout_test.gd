@@ -19,6 +19,20 @@ func _run() -> void:
 			var point: Vector3 = layout.fields[field_index].to_global(Layout.cell_center(cell_id))
 			_expect(layout.cell_at(field_index, point) == cell_id, "Stable cell centre maps to itself")
 	var first: Node3D = layout.fields[0]
+	# The outer planting surface must meet the bank without an exposed green slit.
+	var bank: MeshInstance3D = first.get_child(0)
+	var bank_arrays: Array = bank.mesh.surface_get_arrays(0)
+	var bank_height: float = -INF
+	for i: int in bank_arrays[Mesh.ARRAY_VERTEX].size():
+		if bank_arrays[Mesh.ARRAY_COLOR][i].r > .999:
+			bank_height = bank_arrays[Mesh.ARRAY_VERTEX][i].y
+			break
+	var pad: MeshInstance3D = layout._soil_meshes.field_01.cell_01
+	var edge_gap: float = 0.0
+	for vertex: Vector3 in pad.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]:
+		if is_equal_approx(vertex.x, -Layout.CELL_SPAN.x*.5) or is_equal_approx(vertex.z, -Layout.CELL_SPAN.y*.5):
+			edge_gap = maxf(edge_gap, absf(vertex.y+pad.position.y-bank_height))
+	_expect(is_finite(bank_height) and edge_gap<.0001,"Outer soil pad and bank meet at the same height")
 	_expect(layout.cell_at(0, first.to_global(Vector3(-.601, .08, -.66))) == "cell_01", "Left of vertical furrow stays in first column")
 	_expect(layout.cell_at(0, first.to_global(Vector3(-.599, .08, -.66))) == "cell_02", "Right of vertical furrow enters second column")
 	_expect(layout.cell_at(0, first.to_global(Vector3(-.9, .08, -.441))) == "cell_01", "Before horizontal furrow stays in first row")

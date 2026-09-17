@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{7,40}$')][string]$Commit,
-    [ValidatePattern('^\d+\.\d+\.\d+-rc\.\d+$')][string]$Version = '0.1.0-rc.4',
+    [ValidatePattern('^\d+\.\d+\.\d+-rc\.\d+$')][string]$Version = '0.1.0-rc.5',
     [string]$GodotPath = $env:GODOT_EXE
 )
 $ErrorActionPreference = 'Stop'

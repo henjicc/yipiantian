@@ -57,7 +57,15 @@ Godot 4.7.2纯测试经验：`--script ../tests/...` 的 `resource_path` 可为 
 
 草土融合采用渐低土畦、顶点颜色混合、根部贴花和短草几何四层配合；普通田格的身份与碰撞不依赖视觉网格。短草合并绘制、局部风动，根部贴花只投到岛顶层，保留路径／田格／装饰空间。思路参考[《对马岛之魂》团队的程序草与统一阵风说明](https://blog.playstation.com/2021/01/12/how-stunning-visual-effects-bring-ghost-of-tsushima-to-life/)，未复制其资源或宣称实现相同渲染系统。
 
-此次独立验证证据放 `.local/verification/surface-review/`：格子布局107项、田格输入62项、植物呈现132项、焦点细节51项、完整场景219项、装饰输入38项、船与表面整合18项、生活细节22项通过。新架子最初遮挡hanging_03，实际点击回归检出2项失败；移到院内挂臂后八槽可见且38项全部通过，未放松遮挡检测。影像覆盖荷叶近景、船多个运动相位、草土接触、满田和昼夜；初期PCSS、倒影、过大船舱遮罩和土畦内缘缝隙的失败画面也保留。
+接缝与接触暗部复核（2026-09-17，rc.5）：用户指出rc.4土面仍有马赛克，不能把上面的草土方案视为美术签收。同镜头关闭旧土材质NORMAL_MAP后块状高光消失；原程序网格未生成切线却使用切线空间法线，且凹凸噪声偏强。根据[SurfaceTool文档](https://docs.godotengine.org/en/4.7/classes/class_surfacetool.html)，此路径须生成切线；当前改用世界坐标高度梯度直接构造法线，地面与畦边共享 `terrain_surface.gdshaderinc` 的颜色与法线。格沟深度缩至4毫米，土面外缘与畦边齐平；布局测试直接检查接缝高度，防止露出下层草地；隔离夹具恢复旧0.064高度时该断言失败，正式0.076高度通过。
+
+用户描述的“物体靠近产生暗部”主要对应环境光遮蔽，和光源投影、接触阴影不是同一机制。[Godot Environment](https://docs.godotengine.org/en/4.7/classes/class_environment.html)提供SSAO与SSIL；[UE RVT](https://dev.epicgames.com/documentation/unreal-engine/runtime-virtual-texturing-quick-start-in-unreal-engine)是地形／材质数据混合的一种实现，也需要材质及体积配置，不是任意相交模型自动融合开关。当前采用共享世界坐标材质、窄幅基脚风化贴花与SSAO；不引入新的地形插件或完整GI系统。
+
+当前SSAO使用高质量、全分辨率，半径0.42米，强度1.8、power1.4；阳光区0.65影响属于美术增强，不是物理接触阴影。4.7.2 [Forward+实际着色器](https://github.com/godotengine/godot/blob/4.7.2-stable/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl)还用AO-channel mix插值直接光影响，因此同时设channel affect为1，并用实际成片核验。灰度SSAO检查确认篮底、柱脚、台阶有遮挡；开关对比及固定近景像素断言验证最终图确有适量暗化。SSAO仍受屏幕外信息、深度和视角限制，不能代替正确落地、法线、模型连接或烘焙遮蔽；保留建筑硬质轮廓，不能用全局模糊掩盖接缝。
+
+当前独立证据放 `.local/verification/contact-review/`：baseline保留旧NORMAL_MAP开关对照，surface保留荷叶、船、昼夜与接触AO开关图。田格输入62项、格子布局108项、表面整合22项、完整场景219项通过，存档规则未修改。4K前台焦点细节51项通过，RTX4090／3840×2160／96株及三件装饰、每组360帧非录屏短测：正常LOD全景GPU中位5.40ms、聚焦5.82ms，带景深分别5.57／6.00ms，低画质4.22ms。该短测不是30分钟稳定性或低配验收，不能沿用下列rc.4数字。首轮4K测试通过console包装启动后未取得前台，触发15fps后台限帧，foreground断言失败；该轮保留在focus目录且不作性能验收。复跑使用ProcessStartInfo直接调用同版本GUI执行文件、CreateNoWindow=true与独立目录，验证前台归属后采样；不能关闭前台断言来掩盖失败。
+
+rc.4历史验证证据放 `.local/verification/surface-review/`：格子布局107项、田格输入62项、植物呈现132项、焦点细节51项、完整场景219项、装饰输入38项、船与表面整合18项、生活细节22项通过。新架子最初遮挡hanging_03，实际点击回归检出2项失败；移到院内挂臂后八槽可见且38项全部通过，未放松遮挡检测。影像覆盖荷叶近景、船多个运动相位、草土接触、满田和昼夜；初期PCSS、倒影、过大船舱遮罩和土畦内缘缝隙的失败画面也保留。
 
 同场景RTX4090原生1080p性能烟测164项通过，103.8秒运行、峰值工作集946946048字节；4K六组各60秒实测56项通过，411.7秒运行、峰值工作集1043873792字节。各组约60帧；精确CPU/GPU、帧时间及前后台记录见 `performance-smoke/` 与 `performance-4k/`。使用当前Godot正式场景和隔离存档，非打包程序、非录屏计时；保留的玩家rc.3窗口在后台，未将这一轮短测描述成30分钟或其他硬件验收。测试时源码SHA-256清单在 `tested-source.json`。
 

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="我有一片田"
-config/version="0.1.0-rc.4"
+config/version="0.1.0-rc.5"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://art/ui/game-icon.png"
@@ -29,6 +29,8 @@ window/stretch/mode="canvas_items"
 [rendering]
 
 anti_aliasing/quality/msaa_3d=2
+environment/ssao/quality=3
+environment/ssao/half_size=false
 lights_and_shadows/directional_shadow/size=8192
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=5
 

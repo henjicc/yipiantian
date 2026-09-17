@@ -68,6 +68,25 @@ func _run() -> void:
 	scene.atmosphere.set_preview_hour(12); await shot("05-noon")
 	scene.atmosphere.set_preview_hour(6.5); await shot("06-dawn")
 	scene.atmosphere.set_preview_hour(22); await shot("07-night")
+	# Compare actual rendered contacts, not merely an enabled Environment flag.
+	scene.atmosphere.set_preview_hour(13)
+	scene.camera.fov=34
+	scene.camera.position=Vector3(4.4,2.6,1.8);scene.camera.look_at(Vector3(2,.45,-2.35))
+	var environment: Environment=scene.get_node("WorldEnvironment").environment
+	environment.ssao_enabled=false
+	await shot("08-contact-off")
+	var without_ao: Image=root.get_texture().get_image()
+	environment.ssao_enabled=true
+	await shot("09-contact-on")
+	var with_ao: Image=root.get_texture().get_image()
+	# Fixed camera: these regions contain the basket foot and left pillar base.
+	for region: Rect2i in [Rect2i(820,503,110,18),Rect2i(389,339,40,26)]:
+		var darkening: float=0.0
+		for y: int in range(region.position.y,region.end.y):
+			for x: int in range(region.position.x,region.end.x):
+				darkening+=without_ao.get_pixel(x,y).get_luminance()-with_ao.get_pixel(x,y).get_luminance()
+		darkening/=region.get_area()
+		_expect(darkening>.012 and darkening<.20,"Contact darkening is visible but does not crush the surface: %.4f" % darkening)
 	_expect(scene.farm_state.snapshot()==baseline,"Visual updates and movement leave all 96 crop cells untouched")
 	FileAccess.open(output.path_join("results.json"),FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"failures":failures,"motion_seconds":60,"rock_envelopes":rock_hulls.size(),"boat_rock_overlaps":collisions},"\t"))
 	scene.farm_audio.shutdown();scene.free();await process_frame
