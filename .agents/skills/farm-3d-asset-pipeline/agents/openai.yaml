@@ -1,0 +1,6 @@
+interface:
+  display_name: "田园三维资产生产与留档"
+  short_description: "规范参考图、Tripo 生成、拆件动画、LOD 验收和视频素材追溯"
+  default_prompt: "使用 $farm-3d-asset-pipeline 完成本项目三维资产制作或修复，并保存可追溯的过程素材。"
+policy:
+  allow_implicit_invocation: true

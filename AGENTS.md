@@ -46,7 +46,7 @@
 | 决定验证范围、验证改动或交付运行结果 | [`testing.md`](rules/testing.md) |
 | 项目事实失效、稳定约束变化、发现可复用开发经验、规则冲突或维护规则 | [`rule-maintenance.md`](rules/rule-maintenance.md) |
 
-项目内技能位于 `.agents/skills/`；Godot 开发和 Blender 资产制作时按需使用对应技能。技能示例与社区资料不能替代官方版本核验，不覆盖当前项目规则或扩大任务范围；采用情况与限制见 [Godot 资料及工具](docs/godot-resources.md)。
+项目内技能位于 `.agents/skills/`。生成／替换三维资产、拆件动画、减面／LOD 破面排查，或检索／补拍这些资产的制作对比素材时，使用项目级 [farm-3d-asset-pipeline](.agents/skills/farm-3d-asset-pipeline/SKILL.md)；它路由到现有资产规范和素材记录。Godot 开发和 Blender 资产制作时按需使用对应技能。技能示例与社区资料不能替代官方版本核验，不覆盖当前项目规则或扩大任务范围；采用情况与限制见 [Godot 资料及工具](docs/godot-resources.md)。
 
 链接是阅读入口，不要求递归读取所有被引用文件；实际触发对应领域时再读取。初始化整体裁剪时需检查全部规则的适用性。
 

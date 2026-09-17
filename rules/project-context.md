@@ -8,6 +8,8 @@ template_state: ready
 
 ## 当前事实
 
+- 三维资产生产、拆件动画、LOD 修复与相关视频素材检索已有项目级技能 [farm-3d-asset-pipeline](../.agents/skills/farm-3d-asset-pipeline/SKILL.md)，支持隐式调用并由 AGENTS.md 路由。2026-09-17 桂花与 LOD 重大调整的视频节点、四阶段来源链和待补拍镜头见 [树木素材入口](../ArtSource/Environment/Trees/README.md#视频节点20260917-osmanthus-lod)；查找素材先读该入口，不凭聊天记忆重做生成。
+
 - 2026-09-17修复全局LOD根因：原普通对象 `lod_bias=0` 强制最简档，现普通1、聚焦作物2，视口阈值仍1像素；保留已验收资源的单件禁用，不全局关闭LOD。47正式GLB已做近／远／回近真实绘制和基础／最低拓扑对照；流程、Godot／Blender／Tripo选型及破面诊断统一见[资产流程](../docs/asset-workflow.md#lod-与破面验收)。旧强制最低档的性能数据仅作历史记录，不作为当前效果或性能依据。
 - 2026-09-17桂花动态小样已接入左前岸边 `Environment/WestTree (-6.05,0.13,4.3)`：图片参考→H3.1 Ultra→语义分件辅助分组，原高模38798三角及4K纹理保留，连续权重风动／六片独立落叶；Tripo rig-check不支持该树，未付费绑定。源与重建见[树木资产](../ArtSource/Environment/Trees/README.md)。Debug版右上自由视角／F8支持WASD、QE、右键转向、滚轮，Esc退出；暂不存偏好。其余树种尚未生成，当前效果待用户主观签收。
 
