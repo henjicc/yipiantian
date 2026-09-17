@@ -21,6 +21,7 @@ func _run() -> void:
 	assert(output.begins_with(ProjectSettings.globalize_path("res://../.local/").simplify_path()))
 	DirAccess.make_dir_recursive_absolute(output)
 	root.size = Vector2i(1920,1080)
+	await _damping_checks()
 	await _geometry_checks()
 	scene = load("res://scenes/main.tscn").instantiate()
 	scene.store = load("res://farm/farm_store.gd").new(output.path_join("farm"))
@@ -35,29 +36,24 @@ func _run() -> void:
 	var start: float = camera.view.z
 	camera.zoom(-4.0)
 	expect(is_equal_approx(camera.view.z,start), "Zoom does not teleport on wheel admission")
-	camera._transition.custom_step(.065)
-	var early: float = start - camera.view.z
-	camera._transition.custom_step(.065)
-	var middle: float = start - camera.view.z - early
-	camera._transition.custom_step(.065)
-	var before_end: float = camera.view.z
-	camera._transition.custom_step(.065)
-	expect(early > 0 and middle > early and before_end - camera.view.z < middle, "Zoom eases in and out")
-	expect(is_equal_approx(camera.view.z,start-4), "Zoom settles at exact target")
+	camera.set_process(false)
+	for frame: int in 90: camera._process(1.0/60.0)
+	expect(is_equal_approx(camera.view.z,start-4), "Damped zoom settles at exact target")
 	camera.zoom(-1); camera.zoom(-1); camera.zoom(-1)
-	await create_timer(.35).timeout
+	for frame: int in 90: camera._process(1.0/60.0)
 	expect(is_equal_approx(camera.view.z,start-7), "Rapid wheel ticks accumulate instead of losing distance")
+	camera.set_process(true)
 	await shot("02-overview-zoomed.png")
 	camera.zoom(100)
-	await create_timer(.35).timeout
+	await create_timer(1.05).timeout
 	expect(is_equal_approx(camera.view.z,start), "Overview cannot retreat beyond its initial pose")
 	scene._focus_field(0)
 	await create_timer(.85).timeout
 	camera.zoom(100)
-	await create_timer(.35).timeout
+	await create_timer(1.05).timeout
 	expect(is_equal_approx(camera.view.z,10.4), "Focused mode cannot retreat past its entry distance")
 	camera.zoom(-100)
-	await create_timer(.35).timeout
+	await create_timer(1.05).timeout
 	expect(is_equal_approx(camera.view.z,8.5), "Forward zoom retains near safety bound")
 	scene._return_overview()
 	await create_timer(.85).timeout
@@ -67,10 +63,10 @@ func _run() -> void:
 	await create_timer(.85).timeout
 	var point := root.get_visible_rect().size * .5
 	await button(point, true, MOUSE_BUTTON_WHEEL_UP)
-	await create_timer(.35).timeout
+	await create_timer(1.05).timeout
 	expect(camera.view.z < 31.0, "Arrangement mode admits wheel zoom")
 	camera.zoom(100)
-	await create_timer(.35).timeout
+	await create_timer(1.05).timeout
 	expect(is_equal_approx(camera.view.z,31.0), "Arrangement wheel cannot retreat past its framing pose")
 	scene._return_overview()
 	await create_timer(.85).timeout
@@ -113,11 +109,11 @@ func _run() -> void:
 	scene._open_menu()
 	old_pose = camera.global_transform
 	await button(point,true,MOUSE_BUTTON_WHEEL_UP)
-	await create_timer(.35).timeout
+	await create_timer(1.05).timeout
 	expect(camera.global_transform.is_equal_approx(old_pose), "Settings intercept scrolling without moving camera")
 	scene._request_menu_close()
 	await button(point,true,MOUSE_BUTTON_WHEEL_UP)
-	await create_timer(.35).timeout
+	await create_timer(1.05).timeout
 	expect(not camera.global_position.is_equal_approx(old_pose.origin), "Free view wheel moves smoothly forward")
 	scene._return_overview()
 	await create_timer(.85).timeout
@@ -130,6 +126,55 @@ func _run() -> void:
 	for failure: String in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
 
+
+
+func _damping_checks() -> void:
+	# Match physical time and input across frame rates; compare visible movement,
+	# not tween implementation. The old restart-on-every-tick curve fails here.
+	for free: bool in [false, true]:
+		var distances: Array[float] = []
+		for fps: int in [30, 60, 144]:
+			var camera := FarmCamera.new()
+			root.add_child(camera)
+			camera.set_process(false)
+			camera.set_free_view(free)
+			var origin := camera.position
+			var forward := camera.basis.z
+			wheel(camera, free, -.6)
+			var before: float = zoom_distance(camera, free, origin, forward)
+			camera._process(.1)
+			var position: float = zoom_distance(camera, free, origin, forward)
+			camera._process(.001)
+			var speed_before: float = absf(zoom_distance(camera, free, origin, forward)-position)/.001
+			wheel(camera, free, -.6)
+			position = zoom_distance(camera, free, origin, forward)
+			camera._process(.001)
+			var speed_after: float = absf(zoom_distance(camera, free, origin, forward)-position)/.001
+			expect(speed_before>0 and speed_after>speed_before*.95, "New wheel tick preserves ongoing speed: free=%s fps=%d" % [free,fps])
+			for frame: int in fps: camera._process(1.0/fps)
+			var finish: float = zoom_distance(camera, free, origin, forward)
+			expect(absf((before-finish)-1.2)<.001, "Wheel settles without lost input or overshoot")
+			wheel(camera, free, .6)
+			for frame: int in fps: camera._process(1.0/fps)
+			expect(absf(zoom_distance(camera,free,origin,forward)-finish-.6)<.001, "Reverse input settles in opposite direction")
+			wheel(camera,free,-.6)
+			for frame: int in int(fps*.5): camera._process(1.0/fps)
+			distances.append(zoom_distance(camera,free,origin,forward))
+			camera.cancel_zoom()
+			var canceled := camera.transform
+			camera._process(.5)
+			expect(camera.transform.is_equal_approx(canceled), "Canceled zoom leaves no residual drift")
+			camera.free()
+		for distance: float in distances:
+			expect(absf(distance-distances[0])<.0001, "Damping agrees at 30/60/144 Hz")
+	await process_frame
+
+func wheel(camera: FarmCamera, free: bool, amount: float) -> void:
+	if free: camera._zoom_free(amount)
+	else: camera.zoom(amount)
+
+func zoom_distance(camera: FarmCamera, free: bool, origin: Vector3, forward: Vector3) -> float:
+	return (camera.position-origin).dot(forward) if free else camera.view.z
 
 func _geometry_checks() -> void:
 	var world := Node3D.new(); root.add_child(world)

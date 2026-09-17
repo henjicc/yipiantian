@@ -7,7 +7,7 @@ const DEFAULT_POINT := Vector3(0.0, 0.85, 0.0)
 const DEFAULT_VIEW := Vector3(25.0, 28.0, 28.0)
 const FOCUS_DISTANCE: float = 10.4
 const ARRANGEMENT_DISTANCE: float = 31.0
-const ZOOM_SECONDS: float = 0.26
+const ZOOM_RESPONSE: float = 16.0
 const SurfacePick = preload("res://scenes/camera_surface_pick.gd")
 
 var focus_point: Vector3 = DEFAULT_POINT
@@ -18,6 +18,7 @@ var _saved_point: Vector3 = DEFAULT_POINT
 var _saved_view: Vector3 = DEFAULT_VIEW
 var _anchor: Vector3 = DEFAULT_POINT
 var _transition: Tween
+var _distance_transition: Tween
 var _destination_point: Vector3 = DEFAULT_POINT
 var _destination_view: Vector3 = DEFAULT_VIEW
 var _decoration_framing: bool = false
@@ -28,8 +29,9 @@ var free_input_enabled: bool = true
 var _free_drag_button: MouseButton = MOUSE_BUTTON_NONE
 var _free_pivot: Vector3
 var _surface_pick := SurfacePick.new()
-var _free_zoom: Tween
-var _free_zoom_target: Vector3
+var _zoom_active: bool = false
+var _zoom_target: float = 0.0 # Distance in normal view; remaining travel in free view.
+var _zoom_velocity: float = 0.0
 var _free_return_point: Vector3
 var _free_return_view: Vector3
 
@@ -42,6 +44,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_advance_zoom(delta)
 	if free_view:
 		if free_input_enabled and get_window().has_focus():
 			var direction := Vector3(float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A)), float(Input.is_physical_key_pressed(KEY_E)) - float(Input.is_physical_key_pressed(KEY_Q)), float(Input.is_physical_key_pressed(KEY_S)) - float(Input.is_physical_key_pressed(KEY_W)))
@@ -122,16 +125,55 @@ func _orbit_free(relative: Vector2) -> void:
 
 func _zoom_free(amount: float) -> void:
 	_free_drag_button = MOUSE_BUTTON_NONE
-	var target := _free_zoom_target if _free_zoom != null and _free_zoom.is_running() else global_position
-	_stop_free_zoom()
-	_free_zoom_target = target + global_basis.z * amount
-	_free_zoom = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
-	_free_zoom.tween_property(self, "global_position", _free_zoom_target, ZOOM_SECONDS)
+	_zoom_target = (_zoom_target if _zoom_active else 0.0) + amount
+	_zoom_active = true
 
 
 func _stop_free_zoom() -> void:
-	if _free_zoom != null and _free_zoom.is_valid():
-		_free_zoom.kill()
+	if free_view:
+		cancel_zoom()
+
+
+func cancel_zoom() -> void:
+	var was_active := _zoom_active
+	_zoom_active = false
+	_zoom_velocity = 0.0
+	if not free_view and was_active:
+		_destination_view.z = view.z
+		_notify_motion_finished()
+
+
+func _advance_zoom(delta: float) -> void:
+	if not _zoom_active:
+		return
+	# Exact critically damped spring: retain velocity across wheel ticks and use
+	# elapsed seconds, so repeated input never restarts an easing curve.
+	var current: float = 0.0 if free_view else view.z
+	var error: float = current - _zoom_target
+	var decay: float = exp(-ZOOM_RESPONSE * delta)
+	var spring: float = _zoom_velocity + ZOOM_RESPONSE * error
+	var next: float = _zoom_target + (error + spring * delta) * decay
+	_zoom_velocity = (_zoom_velocity - ZOOM_RESPONSE * spring * delta) * decay
+	var settled: bool = absf(next - _zoom_target) < 0.0001 and absf(_zoom_velocity) < 0.001
+	if settled:
+		next = _zoom_target
+	if free_view:
+		global_position += global_basis.z * next
+		_zoom_target -= next
+	else:
+		# A focus transition may still be approaching from outside its final limit.
+		var bounded := clampf(next, 8.5, maxf(current, _maximum_distance()))
+		if not is_equal_approx(next, bounded):
+			_zoom_velocity = 0.0
+		view.z = bounded
+	if settled:
+		_zoom_active = false
+		_zoom_velocity = 0.0
+		_notify_motion_finished()
+
+
+func _maximum_distance() -> float:
+	return FOCUS_DISTANCE if focused else ARRANGEMENT_DISTANCE if _decoration_framing else DEFAULT_VIEW.z
 
 
 func focus_field(point: Vector3) -> void:
@@ -140,7 +182,7 @@ func focus_field(point: Vector3) -> void:
 	if not focused:
 		# Re-entering focus while returning must remember the overview destination,
 		# not a transient position halfway through that return.
-		var returning: bool = _transition != null and _transition.is_running()
+		var returning: bool = is_transitioning()
 		_saved_point = _destination_point if returning else focus_point
 		_saved_view = _destination_view if returning else view
 	focused = true
@@ -183,12 +225,15 @@ func set_decoration_framing(active: bool) -> void:
 
 
 func zoom(amount: float) -> void:
-	var point := _destination_point if is_transitioning() else focus_point
-	var target := _destination_view if is_transitioning() else view
-	var maximum: float = FOCUS_DISTANCE if focused else ARRANGEMENT_DISTANCE if _decoration_framing else DEFAULT_VIEW.z
-	target.z = clampf(target.z + amount, 8.5, maximum)
-	# Accumulate wheel ticks against the destination, not a half-finished tween.
-	_move_to(point, target, ZOOM_SECONDS)
+	var target: float = _destination_view.z if is_transitioning() else view.z
+	if not is_transitioning():
+		_destination_point = focus_point
+		_destination_view = view
+	if _distance_transition != null and _distance_transition.is_valid():
+		_distance_transition.kill()
+	_zoom_target = clampf(target + amount, 8.5, _maximum_distance())
+	_destination_view.z = _zoom_target
+	_zoom_active = true
 
 
 func drag(relative: Vector2, pan: bool) -> void:
@@ -208,24 +253,37 @@ func drag(relative: Vector2, pan: bool) -> void:
 
 
 func is_transitioning() -> bool:
-	return _transition != null and _transition.is_running()
+	return (_transition != null and _transition.is_running()) or (_distance_transition != null and _distance_transition.is_running()) or (not free_view and _zoom_active)
 
 
-func _move_to(point: Vector3, target_view: Vector3, duration: float = -1.0) -> void:
+func _move_to(point: Vector3, target_view: Vector3) -> void:
 	_stop_transition()
 	_destination_point = point
 	_destination_view = target_view
 	_transition = create_tween().set_parallel(true)
 	_transition.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
-	var seconds: float = transition_seconds if duration < 0.0 else duration
-	_transition.tween_property(self, "focus_point", point, seconds)
-	_transition.tween_property(self, "view", target_view, seconds)
-	_transition.finished.connect(func() -> void: motion_finished.emit())
+	_transition.tween_property(self, "focus_point", point, transition_seconds)
+	_transition.tween_property(self, "view:x", target_view.x, transition_seconds)
+	_transition.tween_property(self, "view:y", target_view.y, transition_seconds)
+	# Wheel input can take over distance without restarting focus/pan transitions.
+	_distance_transition = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	_distance_transition.tween_property(self, "view:z", target_view.z, transition_seconds)
+	_transition.finished.connect(_notify_motion_finished)
+	_distance_transition.finished.connect(_notify_motion_finished)
+
+
+func _notify_motion_finished() -> void:
+	if not is_transitioning():
+		motion_finished.emit()
 
 
 func _stop_transition() -> void:
 	if _transition and _transition.is_valid():
 		_transition.kill()
+	if _distance_transition and _distance_transition.is_valid():
+		_distance_transition.kill()
+	_zoom_active = false
+	_zoom_velocity = 0.0
 
 
 func _apply_pose() -> void:

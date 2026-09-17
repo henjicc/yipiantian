@@ -426,6 +426,7 @@ func _notification(what: int) -> void:
 		_cancel_input()
 		if is_instance_valid(camera):
 			camera.cancel_free_gesture()
+			camera.cancel_zoom()
 		selected_tool = ""
 		if decoration_layout != null and decoration_layout.active:
 			if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
@@ -649,6 +650,7 @@ func _open_menu() -> void:
 	hud.hide_time_preview()
 	camera.free_input_enabled = false
 	camera.cancel_free_gesture()
+	camera.cancel_zoom()
 	decoration_layout.cancel_pointer_gesture()
 	selected_tool = ""
 	_allow_leave_settings = false
