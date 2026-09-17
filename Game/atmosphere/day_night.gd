@@ -8,7 +8,7 @@ const WATER_SHADER = preload("res://atmosphere/quiet_water.gdshader")
 const WATER_PIGMENT = preload("res://art/environment/backdrop/river-distance.png")
 const HOURS: Array[float] = [0.0, 5.0, 6.5, 9.0, 12.0, 16.5, 18.5, 20.0, 24.0]
 const SUN: Array[float] = [0.24, 0.24, 0.88, 1.18, 1.25, 1.28, 0.66, 0.24, 0.24]
-const AMBIENT: Array[float] = [0.32, 0.32, 0.28, 0.27, 0.28, 0.25, 0.29, 0.32, 0.32]
+const AMBIENT: Array[float] = [0.32, 0.32, 0.24, 0.20, 0.21, 0.18, 0.25, 0.32, 0.32]
 const NIGHT: Array[float] = [1.0, 1.0, 0.12, 0.0, 0.0, 0.0, 0.50, 1.0, 1.0]
 const SUN_COLORS: Array[Color] = [Color("a8c5ed"), Color("a8c5ed"), Color("ffe4c5"), Color("fff5e7"), Color("fff8ed"), Color("fff0d6"), Color("ffca9e"), Color("a8c5ed"), Color("a8c5ed")]
 const AMBIENT_COLORS: Array[Color] = [Color("8da8cf"), Color("8da8cf"), Color("aebdcc"), Color("c1d2d7"), Color("c8d9df"), Color("b6c9d3"), Color("a7afc9"), Color("8da8cf"), Color("8da8cf")]
@@ -35,6 +35,9 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	_world.environment = world.environment.duplicate() as Environment
 	_world.environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	_world.environment.tonemap_exposure = 1.0
+	_world.environment.adjustment_enabled = true
+	_world.environment.adjustment_contrast = 1.06
+	_world.environment.adjustment_saturation = 1.02
 	# A cool sky above and dark ground below keep the undersides of leaves and
 	# eaves distinct. Uniform ambient colour previously flattened every face.
 	var sky_material := ProceduralSkyMaterial.new()
@@ -52,8 +55,8 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	_world.environment.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	_world.environment.ssao_enabled = true
 	_world.environment.ssao_radius = 0.65
-	_world.environment.ssao_intensity = 1.65
-	_world.environment.ssao_power = 1.35
+	_world.environment.ssao_intensity = 1.25
+	_world.environment.ssao_power = 1.15
 	_world.environment.ssao_light_affect = 0.12
 	_world.environment.ssao_detail = 0.7
 	_world.environment.ssil_enabled = true
@@ -66,9 +69,14 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	_world.environment.glow_hdr_threshold = 1.35
 	_world.environment.fog_enabled = true
 	_world.environment.fog_density = 0.0012
-	_sun.light_angular_distance = 1.2
-	_sun.shadow_bias = 0.025
-	_sun.shadow_normal_bias = 0.35
+	# PCSS produces stippled self-shadowing on the curved thin leaves in 4.7.2.
+	# Filtered PCF keeps real shadows, with a restrained constant soft edge.
+	_sun.light_angular_distance = 0.0
+	_sun.shadow_blur = 2.0
+	_sun.shadow_bias = 0.06
+	_sun.shadow_normal_bias = 0.85
+	_sun.directional_shadow_blend_splits = true
+	_sun.directional_shadow_max_distance = 48.0
 	if water != null:
 		_water_material = ShaderMaterial.new()
 		_water_material.shader = WATER_SHADER

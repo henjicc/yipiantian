@@ -70,6 +70,7 @@ void fragment() {
 	leaf_pigment *= smoothstep(1.06, 1.35, color.g / max(color.b, 0.001));
 	color *= mix(vec3(1.0), vec3(0.85, 1.14, 0.94), leaf_pigment);
 	ALBEDO = color;
+	BACKLIGHT = color * leaf_pigment * .16;
 	ROUGHNESS = base_roughness;
 	SPECULAR = base_specular;
 	METALLIC = base_metallic;

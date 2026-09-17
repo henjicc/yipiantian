@@ -22,7 +22,10 @@
 - `get_water_surface()` 返回 `WaterSurface`，180×180m XZ水平平面、法线上+Y、y=-.25；静态水shader径向22..35m淡出。3.4必须接管 `material_override`，不能被起始材质盖住。
 - `get_backdrop_material()` 返回 ShaderMaterial，`atmosphere_tint` 默认白，3.4用它改变夜间远景；不使用全时白天的固定未着色背景。
 - `get_asset_keys()` / `set_asset_detail(key,low_detail)` / `set_low_detail_enabled(bool)` 可独立控制复杂对象，高低来自同一网格与颜色贴图。简单测量模块共用单档，保留Godot导入自动LOD。
-- 六田仍为两排三列、中心 `(-3.3+col*3.25,.2,row*2.8)`、soil2.6×2.05m；本环境只放田框，农田交互和作物由3.3实例化。
+- 六田仍为两排三列、中心 `(-3.3+col*3.25,.2,row*2.8)`；96格土面、渐低土畦及交互由 `farm_layout.gd` 管理，环境不再叠加木田框。`ground_cover.gd` 生成一张合并的短草网格及仅投射到岛顶的根部土色贴花，不持有作物状态。
+- 西侧旧入口棚与葫芦架不再实例化；`climbing_trellis.glb` 为4.64米四段竹架，局部长轴X旋转90°后沿西侧栏杆布置。连续土床仅预留后续攀爬作物；`hanging_03` 保留稳定ID，坐标由场景统一移到朝院内的挂臂。
+
+2026-09-17质感修订：五种河石采用四层不规则环、三段倒角和平滑／加权法线，492／592／510／564／526三角；竹架4140三角、两材质。修改由 `build_modules.py --only stone_0 stone_1 stone_2 stone_3 stone_4 climbing_trellis` 重建，GLB均经重新导入核验。另做焊接导出法线接缝后的拓扑检查，六件资源均无边界边、非流形边、孤点和退化面；记录在本地 `.local/verification/surface-review/topology.json`。原始Tripo植物仍保留，当前未再生成或付费。
 
 ## 验证与边界
 

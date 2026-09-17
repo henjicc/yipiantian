@@ -36,7 +36,7 @@ func _run() -> void:
 	await _open_scene()
 	_expect(scene.decoration_layout != null, "Production courtyard and arrangement controller are present")
 	var asset_keys: Array = scene.get_node("Environment").get_asset_keys()
-	_expect(asset_keys.has("MainHouse") and asset_keys.has("EntranceTrellis") and asset_keys.has("CoveredBoat"), "Formal courtyard architecture reaches all required landmarks")
+	_expect(asset_keys.has("MainHouse") and scene.has_node("Environment/EntranceTrellis") and asset_keys.has("CoveredBoat"), "Formal courtyard architecture reaches all required landmarks")
 	if scene.decoration_layout == null:
 		_finish()
 		return

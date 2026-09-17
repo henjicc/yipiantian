@@ -122,6 +122,8 @@ func _box(parent: Node3D, point: Vector3, dimensions: Vector3, material: Materia
 
 
 func _make_fields() -> void:
+	var soil_patch: ArrayMesh = _soil_patch()
+	var earthen_bank: ArrayMesh = _earthen_bank()
 	var selected := _material("4d806c")
 	selected.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_cell_frame = Node3D.new()
@@ -145,12 +147,12 @@ func _make_fields() -> void:
 			fields.append(body)
 			# A shallow shared bed under sixteen soil pads makes narrow natural furrows,
 			# without raised UI dividers or a separate collision body per plant.
-			_box(body, Vector3(0, -.014, 0), FIELD_SIZE, _ridge)
+			_mesh(body, earthen_bank, Vector3.ZERO, _ridge)
 			_soil_meshes[field_id(index)] = {}
 			_cell_crops[field_id(index)] = {}
 			for cell_id: String in FarmState.CELL_IDS:
 				var center: Vector3 = cell_center(cell_id)
-				_soil_meshes[field_id(index)][cell_id] = _box(body, center - Vector3.UP * .021, Vector3(.577, .042, .417), _soil)
+				_soil_meshes[field_id(index)][cell_id] = _mesh(body, soil_patch, center, _soil)
 			var crops := Node3D.new()
 			crops.name = "Crops"
 			body.add_child(crops)
@@ -167,3 +169,42 @@ func _make_fields() -> void:
 				_box(frame, Vector3(side * 1.39, 0.16, 0), Vector3(0.045, 0.04, 2.3), selected)
 				_box(frame, Vector3(0, 0.16, side * 1.13), Vector3(2.8, 0.04, 0.045), selected)
 			frame.visible = false
+
+
+func _soil_patch() -> ArrayMesh:
+	# Contiguous soft furrows retain exact grid coordinates without sixteen raised tiles.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for row: int in 8:
+		for col: int in 10:
+			for offset: Vector2i in [Vector2i(0,0),Vector2i(1,0),Vector2i(1,1),Vector2i(0,0),Vector2i(1,1),Vector2i(0,1)]:
+				var uv := Vector2((col+offset.x)/10.0,(row+offset.y)/8.0)
+				var edge: float = minf(minf(uv.x,1.0-uv.x),minf(uv.y,1.0-uv.y))
+				var height: float = -.016*(1.0-smoothstep(0.0,.11,edge))
+				surface.set_uv(uv)
+				surface.add_vertex(Vector3((uv.x-.5)*CELL_SPAN.x,height,(uv.y-.5)*CELL_SPAN.y))
+	surface.generate_normals()
+	return surface.commit()
+
+
+func _earthen_bank() -> ArrayMesh:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rings: Array[Vector3] = [Vector3(1.20,.064,.88),Vector3(1.29,.045,.97),Vector3(1.39,-.027,1.075),Vector3(1.51,-.066,1.20)]
+	for band: int in 3:
+		for segment: int in 80:
+			for corner: Vector2i in [Vector2i(0,0),Vector2i(0,1),Vector2i(1,1),Vector2i(0,0),Vector2i(1,1),Vector2i(1,0)]:
+				var angle: float = (segment+corner.x)*TAU/80.0
+				var ring: Vector3 = rings[band+corner.y]
+				var c: float = cos(angle)
+				var s: float = sin(angle)
+				var noise: float = (sin(angle*13.0)*.012+sin(angle*23.0)*.006) * (band+corner.y)/3.0
+				var p := Vector3(signf(c)*pow(absf(c),.18)*(ring.x+noise),ring.y,signf(s)*pow(absf(s),.18)*(ring.z+noise))
+				if band+corner.y == 0:
+					p.x = c/maxf(absf(c),absf(s))*ring.x
+					p.z = s/maxf(absf(c),absf(s))*ring.z
+				surface.set_color(Color(1.0-(band+corner.y)/3.0,0,0,1))
+				surface.add_vertex(p)
+	surface.generate_normals()
+	_ridge.set_shader_parameter("bank",true)
+	return surface.commit()

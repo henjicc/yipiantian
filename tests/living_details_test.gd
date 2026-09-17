@@ -40,7 +40,7 @@ func _run() -> void:
 	_expect(boat.position.distance_to(base.origin) < .06,"Boat remains moored near authored position")
 	_expect(absf(boat.rotation.z)<.013 and absf(boat.rotation.x)<.006,"Boat tilt stays subtle around the waterline")
 	_expect(boat.scale.is_equal_approx(Vector3.ONE*.85),"Animation preserves authored model scale and LOD pair")
-	_expect(scene.get_asset_keys().size()==90,"Asset instances retain independent existing detail contract")
+	_expect(scene.get_asset_keys().size()==89,"Generated asset instances retain independent detail after replacing the old mixed trellis")
 	for id: String in before:
 		_expect(scene.get_slot_marker(id).transform==before[id],"Ambient movement never changes decoration slots: "+id)
 	var living: Node3D = scene.get_node("LivingDetails")

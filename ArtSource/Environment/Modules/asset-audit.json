@@ -11,55 +11,55 @@
     "reimport_verified": true
   },
   "stone_0": {
-    "triangles": 200,
+    "triangles": 492,
     "dimensions_godot_xyz": [
-      0.896253228187561,
-      0.21631993353366852,
-      0.7170976996421814
+      0.9209764003753662,
+      0.25999999046325684,
+      0.6900566816329956
     ],
     "lod": "single measured module",
     "materials": 1,
     "reimport_verified": true
   },
   "stone_1": {
-    "triangles": 200,
+    "triangles": 592,
     "dimensions_godot_xyz": [
-      0.8379639387130737,
-      0.23177695274353027,
-      0.682475209236145
+      0.9100807905197144,
+      0.25844570994377136,
+      0.7472901344299316
     ],
     "lod": "single measured module",
     "materials": 1,
     "reimport_verified": true
   },
   "stone_2": {
-    "triangles": 216,
+    "triangles": 510,
     "dimensions_godot_xyz": [
-      0.9039579629898071,
-      0.21779856085777283,
-      0.7118450999259949
+      0.9326488375663757,
+      0.27563461661338806,
+      0.7753437757492065
     ],
     "lod": "single measured module",
     "materials": 1,
     "reimport_verified": true
   },
   "stone_3": {
-    "triangles": 184,
+    "triangles": 564,
     "dimensions_godot_xyz": [
-      0.9926222562789917,
-      0.29489243030548096,
-      0.6942592859268188
+      1.048387050628662,
+      0.28540658950805664,
+      0.7765950560569763
     ],
     "lod": "single measured module",
     "materials": 1,
     "reimport_verified": true
   },
   "stone_4": {
-    "triangles": 184,
+    "triangles": 526,
     "dimensions_godot_xyz": [
-      0.823729395866394,
-      0.2535460591316223,
-      0.6177393198013306
+      0.9738560914993286,
+      0.28176459670066833,
+      0.7636348009109497
     ],
     "lod": "single measured module",
     "materials": 1,
@@ -129,6 +129,17 @@
     ],
     "lod": "single measured module",
     "materials": 1,
+    "reimport_verified": true
+  },
+  "climbing_trellis": {
+    "triangles": 4140,
+    "dimensions_godot_xyz": [
+      4.640000343322754,
+      2.080526828765869,
+      1.2400002479553223
+    ],
+    "lod": "single measured module",
+    "materials": 2,
     "reimport_verified": true
   }
 }

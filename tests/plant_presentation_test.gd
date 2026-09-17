@@ -53,7 +53,7 @@ func _run() -> void:
 	var snapshot: Dictionary = scene.farm_state.snapshot()
 	var decoration_snapshot: Dictionary = scene.decoration_state.snapshot()
 	_expect(_first_mesh(scene.decoration_layout._instances.flowerpot).get_meta("plant_wind_kind", "") == "flowerpot", "Loaded flowerpot has anchored foliage wind")
-	_expect(_first_mesh(scene.get_node("Environment/EntranceTrellis")).get_meta("plant_wind_kind", "") == "trellis", "Courtyard mixed trellis uses foliage-only wind")
+	_expect(not _first_mesh(scene.get_node("Environment/EntranceTrellis")).has_meta("plant_wind_kind"), "New structural bamboo frame stays fixed; future climbing crops own their motion")
 	var frame: Node3D = scene.camera.get_node("CameraForeground")
 	_expect(frame.visible and scene.camera.attributes.dof_blur_near_enabled and not scene.camera.attributes.dof_blur_far_enabled, "Overview has near-only framing depth of field")
 	var transforms: Array[Transform3D] = []

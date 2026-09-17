@@ -5,12 +5,14 @@ const PIGMENT = preload("res://scenes/environment/pigment.gdshader")
 const BACKDROP = preload("res://scenes/environment/backdrop.gdshader")
 const LivingDetails = preload("res://scenes/environment/living_details.gd")
 const PlantWind = preload("res://presentation/plant_wind.gd")
+const GroundCover = preload("res://scenes/environment/ground_cover.gd")
+const BOAT_ORIGIN := Vector3(9.0,-.50,4.3)
 const ROOT := "res://art/environment/"
 const SLOT_POSITIONS := {
 	"ground_01": Vector3(-5.35,0.16,-1.85), "ground_02": Vector3(4.70,0.16,-1.8),
 	"ground_03": Vector3(-5.0,0.16,4.7), "ground_04": Vector3(4.75,0.16,4.8),
 	"hanging_01": Vector3(-2.5,2.27,-2.05), "hanging_02": Vector3(3.8,2.27,-2.05),
-	"hanging_03": Vector3(-6.1,1.82,1.4), "hanging_04": Vector3(-4.85,1.98,-2.95),
+	"hanging_03": Vector3(-5.08,1.82,2.13), "hanging_04": Vector3(-4.85,1.98,-2.95),
 }
 var _lod_pairs: Dictionary = {}
 var _slots: Node3D
@@ -28,6 +30,10 @@ func _ready() -> void:
 	_build_ground()
 	_build_architecture()
 	_build_plants()
+	var cover := GroundCover.new()
+	cover.name = "GroundCover"
+	add_child(cover)
+	cover.build(self)
 	_build_slots()
 	_build_distance()
 	_living=LivingDetails.new();_living.name="LivingDetails";add_child(_living)
@@ -41,7 +47,11 @@ func _process(delta: float) -> void:
 	var pitch: float = sin(_motion_time*.55+.4)*.005
 	_boat.rotation=Vector3(pitch,deg_to_rad(-24),roll)
 	var pivot:=Vector3(0,.35/.85,0)
-	_boat.position=Vector3(8.0,-.60,3.3)+Vector3.UP*(.021*sin(_motion_time*.81)) + Vector3.UP*.35 - _boat.basis*pivot
+	_boat.position=BOAT_ORIGIN+Vector3.UP*(.021*sin(_motion_time*.81)) + Vector3.UP*.35 - _boat.basis*pivot
+	var water_material: ShaderMaterial = _water.material_override
+	if water_material.shader.resource_path == "res://atmosphere/quiet_water.gdshader":
+		water_material.set_shader_parameter("boat_mask_enabled",true)
+		water_material.set_shader_parameter("world_to_boat",_boat.global_transform.affine_inverse())
 	for i: int in _floaters.size():
 		var phase: float = _motion_time*.64+i*1.7
 		_floaters[i].position=_floater_origins[i]+Vector3.UP*sin(phase)*.009
@@ -60,6 +70,7 @@ func _module(id: String, at: Vector3, yaw_degrees: float=0, scale_value: Vector3
 
 func _apply_pigment(node: Node, module_id: String = "") -> void:
 	if node is MeshInstance3D:
+		if module_id == "island_bank": node.set_layer_mask_value(2,true)
 		for surface in node.mesh.get_surface_count():
 			var original: Material = node.get_active_material(surface)
 			if original is StandardMaterial3D:
@@ -112,9 +123,6 @@ func _build_ground() -> void:
 			for j in count:
 				var p:Vector3=a.lerp(b,float(j)/count);p.x+=_rng.randf_range(-.055,.055);p.z+=_rng.randf_range(-.07,.07)
 				_module("stone_%d"%_rng.randi_range(0,4),p,_rng.randf_range(-18,18),Vector3(.64,.18,.72))
-	for row in 2:
-		for col in 3:
-			_module("field_frame",Vector3(-3.3+col*3.25,.17,row*2.8))
 
 func _tint_stone(node: Node, color: Color) -> void:
 	if node is MeshInstance3D:
@@ -129,10 +137,10 @@ func _build_architecture() -> void:
 	_asset("house","MainHouse",Vector3(.65,.13,-4.65))
 	_module("veranda",Vector3(.65,.13,-2.40))
 	_module("side_wing",Vector3(-4.3,.13,-5.0))
-	_asset("trellis","EntranceTrellis",Vector3(-6.2,.13,1.1),14,1.10)
-	_module("entrance_canopy",Vector3(-6.10,.13,3.68),-8)
+	var trellis: Node3D = _module("climbing_trellis",Vector3(-5.80,.13,1.05),90)
+	trellis.name = "EntranceTrellis"
 	_module("stone_bridge",Vector3(8.1,-.04,-.15),-9)
-	_boat=_asset("boat","CoveredBoat",Vector3(8.0,-.60,3.3),-24,.85)
+	_boat=_asset("boat","CoveredBoat",BOAT_ORIGIN,-24,.85)
 	# Opposite landing is a small bank, with irregular rock margins, not a floating bridge end.
 	_module("island_bank",Vector3(12.65,-.02,-2.8),0,Vector3(.40,1,.46))
 	for i in 7:
@@ -219,8 +227,8 @@ func _build_slots() -> void:
 		var p:Vector3=SLOT_POSITIONS[id]
 		_support_line(Vector3(p.x,2.50,-2.72),Vector3(p.x,2.50,p.z),.037,Color("62543a"))
 		_support_line(Vector3(p.x,2.50,p.z),p,.012,Color("89794c"))
-	_support_line(Vector3(-6.1,2.14,1.15),Vector3(-6.1,2.14,1.4),.025,Color("89794c"))
-	_support_line(Vector3(-6.1,2.14,1.4),SLOT_POSITIONS.hanging_03,.012,Color("89794c"))
+	_support_line(Vector3(-5.4,2.09,2.13),Vector3(-5.08,2.09,2.13),.025,Color("89794c"))
+	_support_line(Vector3(-5.08,2.09,2.13),SLOT_POSITIONS.hanging_03,.012,Color("89794c"))
 	_support_line(Vector3(-4.85,2.55,-3.77),Vector3(-4.85,2.55,-2.95),.035,Color("62543a"))
 	_support_line(Vector3(-4.85,2.10,-3.77),Vector3(-4.85,2.55,-3.0),.025,Color("62543a"))
 	_support_line(Vector3(-4.85,2.55,-2.95),SLOT_POSITIONS.hanging_04,.012,Color("89794c"))

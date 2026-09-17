@@ -1,6 +1,7 @@
 shader_type spatial;
 uniform vec4 soil_color : source_color = vec4(0.40, 0.30, 0.19, 1.0);
 uniform float wetness : hint_range(0.0, 1.0) = 0.0;
+uniform bool bank = false;
 varying vec3 soil_point;
 
 float soil_hash(vec2 p) {
@@ -22,6 +23,15 @@ void fragment() {
 	float pigment = soil_noise(p * 3.1);
 	float grain = soil_noise(p * 72.0);
 	ALBEDO = soil_color.rgb * (0.77 + 0.22 * pigment + 0.18 * clods + 0.055 * grain);
+	if (bank) {
+		// The skirt meets the same sage soil as the meadow, with a mottled edge.
+		vec3 grass_soil = vec3(.185,.238,.086) * (.85 + .22*soil_noise(p*.72));
+		float dirt = smoothstep(.03,.65,COLOR.r + (clods-.5)*.26);
+		ALBEDO = mix(grass_soil,ALBEDO,dirt);
+	} else {
+		float furrow = min(min(UV.x,1.0-UV.x),min(UV.y,1.0-UV.y));
+		ALBEDO *= .89+.11*smoothstep(0.0,.10,furrow);
+	}
 	ROUGHNESS = mix(0.98, 0.86, wetness);
 	SPECULAR = mix(0.06, 0.16, wetness);
 	// Tiny uneven clods, with no repeating board-like grooves or displaced roots.

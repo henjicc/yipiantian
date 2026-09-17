@@ -156,7 +156,7 @@ func _process(delta: float) -> void:
 	var active: bool = is_instance_valid(_target) and allowed
 	var frame_blur: bool = framing and allowed
 	var approach: float = 1.0 - smoothstep(12.0, 18.0, _camera.global_position.distance_to(_target.global_position)) if active else 0.0
-	var target_amount: float = (0.085 if frame_blur else 0.045 * approach) * _dof_strength
+	var target_amount: float = (0.018 if frame_blur else 0.008 * approach) * _dof_strength
 	_attributes.dof_blur_amount = move_toward(_attributes.dof_blur_amount, target_amount, delta * 0.12)
 	_attributes.dof_blur_near_enabled = (active or frame_blur) and _attributes.dof_blur_amount > 0.0001
 	_attributes.dof_blur_far_enabled = active and _attributes.dof_blur_near_enabled
@@ -165,11 +165,11 @@ func _process(delta: float) -> void:
 		for field: Node3D in _fields:
 			nearest_field = minf(nearest_field, depth_range(_camera, field.global_transform, _target_bounds).x)
 		_attributes.dof_blur_near_distance = maxf(0.1, nearest_field - 1.0)
-		_attributes.dof_blur_near_transition = 4.5
+		_attributes.dof_blur_near_transition = 8.0
 		_band_initialized = false
 	if active:
-		_attributes.dof_blur_near_transition = 2.5
-		_attributes.dof_blur_far_transition = 5.5
+		_attributes.dof_blur_near_transition = 5.0
+		_attributes.dof_blur_far_transition = 12.0
 		var depths: Vector2 = depth_range(_camera, _target.global_transform, _target_bounds)
 		var near_edge: float = maxf(0.1, depths.x - 0.6)
 		var far_edge: float = depths.y + 0.6

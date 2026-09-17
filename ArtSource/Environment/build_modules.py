@@ -71,16 +71,25 @@ for f in land.data.polygons[n:]:f.material_index=1
 save('island_bank',[land])
 
 for k in range(5):
-    angles=[i*math.tau/9 for i in range(9)]
-    radial=[rng.uniform(.39,.60) for i in angles]
-    verts=[(math.cos(a)*r,math.sin(a)*r*.74,0) for a,r in zip(angles,radial)]
-    # Leaning, tapered crowns avoid the stretched cylindrical look at the bank.
-    # No extra RNG calls: later authored placements retain their established seed.
-    verts += [(.06+math.cos(a)*r*(.69+.08*math.sin(a*2+k)),.035+math.sin(a)*r*.57,rng.uniform(.17,.25)) for a,r in zip(angles,radial)]
-    faces=[tuple(range(9,18)),tuple(reversed(range(9)))]+[(i,(i+1)%9,(i+1)%9+9,i+9) for i in range(9)]
-    o=mesh('Naturally worn river stone',verts,faces,stone[k]); bevel=o.modifiers.new('Rounded weathering','BEVEL');bevel.width=.08;bevel.segments=2
+    # Consume the old stone generator's 18 draws so later modules keep their seed.
+    for _ in range(9): rng.uniform(.39,.60)
+    for _ in range(9): rng.uniform(.17,.25)
+    # Sculpt a full, asymmetric worn stone with enough samples to shade smoothly.
+    rock_rng=random.Random(4811+k)
+    radii=[rock_rng.uniform(.40,.57) for _ in range(12)]
+    verts=[]
+    for level,(radius_scale,z) in enumerate([(.85,0),(1.0,.075),(.83,.18),(.50,.25)]):
+        for i in range(12):
+            a=i*math.tau/12
+            r=radii[i]*radius_scale
+            verts.append((math.cos(a)*r+.05*level/3,math.sin(a)*r*.78-.03*level/3,z+(.01*math.sin(a*3+k) if level else 0)))
+    faces=[tuple(reversed(range(12))),tuple(range(36,48))]
+    faces += [(level*12+i,level*12+(i+1)%12,(level+1)*12+(i+1)%12,(level+1)*12+i) for level in range(3) for i in range(12)]
+    o=mesh('Naturally worn river stone',verts,faces,stone[k]); bevel=o.modifiers.new('Rounded weathering','BEVEL');bevel.width=.045;bevel.segments=3
     bpy.context.view_layer.objects.active=o;bpy.ops.object.modifier_apply(modifier=bevel.name)
-    for face in o.data.polygons:face.use_smooth=False
+    for face in o.data.polygons:face.use_smooth=True
+    weighted=o.modifiers.new('Broad mineral planes','WEIGHTED_NORMAL'); weighted.weight=25
+    bpy.ops.object.modifier_apply(modifier=weighted.name)
     save('stone_'+str(k),[o])
 
 # Segmented stone arch; true open underside, visible masonry joints, no solid block fake.
@@ -182,6 +191,26 @@ save('veranda',porch)
 rimobjects=[box('Long bed frame',(0,y,.03),(2.72,.075,.075),timber,.02) for y in [-1.065,1.065]]
 rimobjects +=[box('Short bed frame',(x,0,.03),(.075,2.12,.075),timber,.02) for x in [-1.34,1.34]]
 save('field_frame',rimobjects)
+
+# Long open climbing frame. Local X is the growing row; Godot rotates it along
+# the west fence. Four bays remain physically separate for future climbing crops.
+trellis=[]
+rope=mat('Hemp garden twine',(.40,.34,.22))
+for x in [-2.16,-1.08,0,1.08,2.16]:
+    for y in [-.47,.47]:
+        trellis.append(pole('Rooted bamboo upright',(x,y,-.08),(x*.99,y*.86,1.96),.045,bamboo))
+        for z in [.15,.49,.83,1.17,1.51,1.85]:
+            trellis.append(pole('Bamboo joint',(x,y*(1-z*.07),z-.016),(x,y*(1-z*.07),z+.016),.055,bamboo))
+    trellis.append(pole('Cross tie',(x,-.62,1.96),(x,.62,1.96),.039,bamboo))
+for y in [-.46,.46]:
+    trellis.append(pole('Long top rail',(-2.32,y,1.94),(2.32,y,1.94),.048,bamboo))
+    trellis.append(pole('Low vine rail',(-2.20,y,.44),(2.20,y,.44),.029,bamboo))
+    for i in range(17):
+        x=-2.16+i*.27
+        trellis.append(pole('Climbing twine',(x,y,.46),(x,y*.87,1.93),.009,rope))
+for x in [-1.9,1.9]:
+    trellis.append(pole('Stability brace',(x,-.47,1.55),(x+(-.26 if x>0 else .26),.47,1.93),.027,bamboo))
+save('climbing_trellis',trellis)
 assert not options.only or set(options.only)<=reports.keys(), 'Unknown module: '+str(options.only)
 bpy.ops.file.pack_all();bpy.ops.wm.save_as_mainfile(filepath=str(folder/'courtyard_modules.blend'))
 for name,report in reports.items():

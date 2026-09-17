@@ -51,6 +51,16 @@ Godot 4.7.2纯测试经验：`--script ../tests/...` 的 `resource_path` 可为 
 
 昼夜／声音验证入口为 `tests/atmosphere_test.gd` 和 `tests/atmosphere_scene_test.gd`，后者同时检查主场景窗灯的昼夜连接。前后台观察不暂停农场计时；后台音频暂停、帧率最多15，回来恢复用户设置。`day_night.gd` 接管水面的 `material_override` 并同步远景及水反射的昼夜色，不能只替换被 override 遮住的表面材质。音轨来源、响度与循环证据见 [3.4交接](task/首个可发布版本/handoffs/3.4-handoff.md)；主观听感未由模型验收。
 
+质感修订（2026-09-17）：本机4.7.2的荷叶黑点经同镜头逐项排查，关闭灯光角直径后消失；提高模型LOD、增大bias、改双面投影均未解决。采用角直径0的PCF、滤波质量5和blur2保留真实柔边阴影，避免继续用大bias掩盖问题。[Godot光影文档](https://docs.godotengine.org/en/4.7/tutorials/3d/lights_and_shadows.html)与[薄表面PCSS问题记录](https://github.com/godotengine/godot/issues/113976)作为排查参考；本机截图证据在 `.local/verification/surface-review/shadow-tests/`，不外推为所有设备的引擎结论。
+
+水面修订：屏幕倒影命中只能混合反射颜色，不能按命中与否增加Fresnel权重，否则深度轮廓变成水上的剪纸状色块。局部射线限制穿透厚度、衰减距离并用模糊颜色；缺失屏幕外信息时保留天空底色，不宣称完整物理反射。开放船舱不遮挡水平水面，必须让保守舱内遮罩跟随实际船变换；同时核对船、岸石的完整晃动包围，不能仅抬高船。`tests/surface_integration_test.gd -- --output=<隔离目录>` 用60秒采样的真实网格投影检查岸石相交，并输出船的多个相位及昼夜截图；像素穿透和遮罩边缘仍需目检。
+
+草土融合采用渐低土畦、顶点颜色混合、根部贴花和短草几何四层配合；普通田格的身份与碰撞不依赖视觉网格。短草合并绘制、局部风动，根部贴花只投到岛顶层，保留路径／田格／装饰空间。思路参考[《对马岛之魂》团队的程序草与统一阵风说明](https://blog.playstation.com/2021/01/12/how-stunning-visual-effects-bring-ghost-of-tsushima-to-life/)，未复制其资源或宣称实现相同渲染系统。
+
+此次独立验证证据放 `.local/verification/surface-review/`：格子布局107项、田格输入62项、植物呈现132项、焦点细节51项、完整场景219项、装饰输入38项、船与表面整合18项、生活细节22项通过。新架子最初遮挡hanging_03，实际点击回归检出2项失败；移到院内挂臂后八槽可见且38项全部通过，未放松遮挡检测。影像覆盖荷叶近景、船多个运动相位、草土接触、满田和昼夜；初期PCSS、倒影、过大船舱遮罩和土畦内缘缝隙的失败画面也保留。
+
+同场景RTX4090原生1080p性能烟测164项通过，103.8秒运行、峰值工作集946946048字节；4K六组各60秒实测56项通过，411.7秒运行、峰值工作集1043873792字节。各组约60帧；精确CPU/GPU、帧时间及前后台记录见 `performance-smoke/` 与 `performance-4k/`。使用当前Godot正式场景和隔离存档，非打包程序、非录屏计时；保留的玩家rc.3窗口在后台，未将这一轮短测描述成30分钟或其他硬件验收。测试时源码SHA-256清单在 `tested-source.json`。
+
 焦点细节入口：`tests/focus_detail_audit.gd` 读取实际导入网格的 LOD 索引，`tests/focus_detail_test.gd -- --output=<隔离证据目录> --uncapped` 做真实4K的三组对照与输入回归。Godot 4.7.2 本机实测表明，所有环境网格强制 `lod_bias=0` 会让低面数程序模块的石路、篱柱和桥栏消失；当前按稳定资源路径保留这些模块原层级，复杂模型与非目标作物用自动低档，目标田在镜头到达前恢复高档。只设置导入开关不能代替实际索引、绘制图元和画面检查。
 
 氛围修订后的全景使用镜头子节点承载边缘植物，只有近景虚化，田园与远景不因此模糊；聚焦和布置时前景退让，低画质在切换MSAA前立即移除该层。`tests/plant_presentation_test.gd -- --output=<仓库.local下绝对目录>` 使用真实窗口检查根部固定、叶片图像变化、前景退让、画质与景深开关；`tests/living_details_test.gd` 可无窗口核对船体幅度、绳/槽位和生活物件合批。程序草与GLB同时使用顶点风动；必须保留GLB贴图、原Mesh/LOD和根深，不能只让整株节点绕根旋转。棚叶用原贴图绿色顶点遮罩，花盆按高度锁定盆体；`tests/mixed_plant_wind_test.gd -- --output=<仓库.local/verification下绝对目录>` 以实际高低模和相隔帧检查叶动、木架／葫芦及盆体固定。rc.2当时每田16个视觉锚点仍共用一个整田状态，相关历史证据见[整合交接](task/氛围提升/handoffs/整体验证-handoff.md)；当前16锚点一一对应真实cell状态，full fixture必须填满96格而不能只改旧田字段。下段54株性能数字亦仅对应历史版本。

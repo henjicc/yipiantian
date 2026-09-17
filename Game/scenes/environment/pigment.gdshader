@@ -20,6 +20,16 @@ void fragment(){
 	painted=mix(painted,painted*1.22,vein*stone_treatment*.28);
 	float ground_patch=wash(world_point*vec3(.72,.34,.72));
 	painted=mix(painted,painted*mix(vec3(.68,.82,.65),vec3(1.04,.94,.73),ground_patch),ground_treatment*.7);
+	float turf=wash(world_point*vec3(35.0,1.0,35.0));
+	painted*=1.0+(turf-.5)*.14*ground_treatment;
+	// Centimetre-scale turf relief catches grazing light without moving gameplay.
+	if (ground_treatment>.5) {
+		float dx=wash((world_point+vec3(.008,0,0))*vec3(35,1,35))-turf;
+		float dz=wash((world_point+vec3(0,0,.008))*vec3(35,1,35))-turf;
+		vec3 turf_normal=normalize((VIEW_MATRIX*vec4(-dx*.32,1.0,-dz*.32,0.0)).xyz);
+		vec3 world_normal=(INV_VIEW_MATRIX*vec4(NORMAL,0.0)).xyz;
+		NORMAL=normalize(mix(NORMAL,turf_normal,smoothstep(.6,.95,world_normal.y)));
+	}
 	float wet=(1.0-smoothstep(-.23,.06,world_point.y+.06*(broad-.5)))*stone_treatment;
 	float moss=smoothstep(.46,.70,wash(world_point*vec3(3.3,1.7,3.3)))*smoothstep(-.15,.18,world_point.y)*(1.0-smoothstep(.45,.9,world_point.y))*stone_treatment;
 	ALBEDO=mix(painted,painted*vec3(.70,.78,.75),wet*.48);

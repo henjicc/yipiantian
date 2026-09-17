@@ -10,6 +10,8 @@ uniform float ripple_age = 10.0;
 uniform float wave_strength : hint_range(0.0, 1.5) = 1.0;
 uniform float shore_reflection_strength : hint_range(0.0, 0.6) = 0.16;
 uniform vec4 reflection_tint : source_color = vec4(1.0);
+uniform bool boat_mask_enabled = false;
+uniform mat4 world_to_boat;
 varying vec3 world_position;
 varying float crest_light;
 
@@ -33,6 +35,11 @@ void fragment() {
 	if (water_radius >= 23.0) {
 		discard;
 	}
+	// An open hull is not a solid depth occluder. Exclude only its inner volume;
+	// the transform follows the actual moored boat through pitch, roll and heave.
+	vec3 boat_local = (world_to_boat*vec4(world_position,1.0)).xyz;
+	float bow_taper = 1.0-.35*pow(clamp(abs(boat_local.x)/1.72,0.0,1.0),4.0);
+	if (boat_mask_enabled && abs(boat_local.x)<1.72 && abs(boat_local.z)<.30*bow_taper && boat_local.y<.65) { discard; }
 	// Fixed pigment follows world space. Only the restrained surface light moves.
 	vec2 flow = vec2(dot(p, vec2(0.848, -0.530)), dot(p, vec2(0.530, 0.848)));
 	vec2 mirrored = 1.0 - abs(1.0 - mod(flow * vec2(0.11, 0.14) + vec2(0.35, 0.6), 2.0));
@@ -106,9 +113,9 @@ void fragment() {
 	if (shore_reflection_strength > 0.0 && reflection_region > 0.01) {
 		vec3 ray_direction = reflect(normalize(VERTEX), NORMAL);
 		vec3 origin = VERTEX + NORMAL * 0.035;
-		float travelled = 0.12;
+		float travelled = 0.08;
 		float previous_travel = 0.0;
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 24; i++) {
 			vec3 ray_position = origin + ray_direction * travelled;
 			vec4 clip = PROJECTION_MATRIX * vec4(ray_position, 1.0);
 			vec2 hit_uv = clip.xy / clip.w * 0.5 + 0.5;
@@ -118,21 +125,22 @@ void fragment() {
 			float hit_depth = textureLod(scene_depth, hit_uv, 0.0).r;
 			vec4 surface = INV_PROJECTION_MATRIX * vec4(hit_uv * 2.0 - 1.0, hit_depth, 1.0);
 			float separation = -ray_position.z + surface.z / surface.w;
-			if (hit_depth > 0.00001 && separation > 0.0 && separation < 0.65) {
+			if (hit_depth > 0.00001 && separation > 0.0 && separation < 0.12) {
 				vec2 edge = min(hit_uv, vec2(1.0) - hit_uv);
 				float confidence = smoothstep(0.0, 0.07, min(edge.x, edge.y));
-				confidence *= 1.0 - smoothstep(0.1, 0.65, separation);
-				confidence *= (1.0 - smoothstep(2.0, 10.0, travelled)) * reflection_region;
-				vec3 local_reflection = textureLod(scene_colour, hit_uv, 3.5).rgb;
+				confidence *= 1.0 - smoothstep(0.025, 0.12, separation);
+				confidence *= (1.0 - smoothstep(.4, 3.5, travelled)) * reflection_region;
+				vec3 local_reflection = textureLod(scene_colour, hit_uv, 5.0).rgb;
 				// Broad reflected silhouettes stay submerged in water colour instead
 				// of reading as a second solid bank or pale stones beside the hull.
 				local_reflection = mix(colour, local_reflection, 0.38);
-				reflection = mix(reflection, local_reflection, confidence * 0.65);
-				reflection_weight += confidence * shore_reflection_strength;
+				// A hit changes reflected colour, never the surface's Fresnel weight.
+				// Adding weight only on hits silhouettes the depth buffer in the lake.
+				reflection = mix(reflection, local_reflection, confidence * shore_reflection_strength);
 				break;
 			}
 			previous_travel = travelled;
-			travelled = previous_travel * 1.43 + 0.11;
+			travelled = previous_travel + 0.14;
 		}
 	}
 	reflection_weight *= 1.0 - smoothstep(15.0, 23.0, water_radius);
