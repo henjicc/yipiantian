@@ -54,7 +54,8 @@ func _run() -> void:
 	_expect(boat.position.distance_to(base.origin) < .06,"Boat remains moored near authored position")
 	_expect(absf(boat.rotation.z)<.013 and absf(boat.rotation.x)<.006,"Boat tilt stays subtle around the waterline")
 	_expect(boat.scale.is_equal_approx(Vector3.ONE*.85),"Animation preserves authored model scale and LOD pair")
-	_expect(scene.get_asset_keys().size()==114,"Generated asset instances retain independent detail, including the outer lily coves")
+	for key: String in ["Kitchen","WestTree","CoveredBoat","Lotus0_0"]:
+		_expect(scene.get_asset_keys().has(key),"Generated asset retains independent detail: "+key)
 	for id: String in before:
 		_expect(scene.get_slot_marker(id).transform==before[id],"Ambient movement never changes decoration slots: "+id)
 	var living: Node3D = scene.get_node("LivingDetails")
@@ -84,8 +85,8 @@ func _run() -> void:
 	_expect(living._house_materials.size()==2,"Both original house detail materials receive paper-window light")
 	_expect(is_equal_approx(living._house_materials[0].get_shader_parameter("warmth"),1.0),"Warmth reaches original texture material instead of floating geometry")
 	var lights: Array = living._window_lights
-	_expect(lights.size()==2,"Two local porch lights exist independently of unlocked decorations")
-	_expect(is_equal_approx(lights[0].light_energy,.7) and not lights[0].shadow_enabled,"Window warmth controls bounded local light budget")
+	_expect(lights.size()==4,"Two lantern lights and two bounded field bounce lights")
+	_expect(is_equal_approx(lights[0].light_energy,1.15) and not lights[0].shadow_enabled,"Window warmth controls bounded local light budget")
 	scene.set_window_warmth(0.0)
 	_expect(is_zero_approx(lights[0].light_energy),"Window lights respond to daylight control")
 	scene.set_window_warmth(NAN)

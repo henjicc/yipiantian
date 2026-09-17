@@ -75,6 +75,12 @@ func _convert(source: Material) -> ShaderMaterial:
 		material.set_shader_parameter("base_metallic", source.metallic)
 		material.set_shader_parameter("uv_scale", source.uv1_scale)
 		material.set_shader_parameter("uv_offset", source.uv1_offset)
+	elif source is ShaderMaterial and source.shader.resource_path == "res://scenes/environment/courtyard_surface.gdshader":
+		material.set_shader_parameter("base_color",source.get_shader_parameter("tint"))
+		material.set_shader_parameter("color_texture",source.get_shader_parameter("painted_color"))
+		material.set_shader_parameter("textured",true)
+		material.set_shader_parameter("base_roughness",.95)
+		material.set_shader_parameter("base_specular",.08)
 	elif source is ShaderMaterial and source.shader.resource_path == "res://scenes/environment/pigment.gdshader":
 		material.set_shader_parameter("base_color", source.get_shader_parameter("base_color"))
 		material.set_shader_parameter("wash_scale", source.get_shader_parameter("wash_scale"))

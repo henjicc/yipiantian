@@ -146,6 +146,7 @@ func _add_reed_shore(uv: Vector2, side: int) -> void:
 		shore.add_child(mesh)
 		_meshes.append(mesh)
 		_wind.apply(mesh,"grass")
+		mesh.set_instance_shader_parameter("haze_exempt",1.0)
 		mesh.set_instance_shader_parameter("wind_motion",Vector4(.035,.10,0,.007))
 	_groups.append({"node": shore, "anchor": shore.position, "height": 1.95})
 
@@ -184,6 +185,9 @@ func _instance(parent: Node3D, path: String, at: Vector3, size: Vector3, yaw: fl
 		_meshes.append(mesh)
 	if not plant.is_empty():
 		_wind.apply(model,plant)
+		# Framing plants are near the lens, not distant islands in the lake mist.
+		for mesh: Node in model.find_children("*", "MeshInstance3D", true, false):
+			mesh.set_instance_shader_parameter("haze_exempt",1.0)
 
 
 func _process(delta: float) -> void:

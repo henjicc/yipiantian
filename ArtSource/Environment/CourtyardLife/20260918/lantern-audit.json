@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\lantern-original\\model.glb",
+  "original": {
+    "triangles": 29116,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": null,
+  "meshes": {
+    "lantern_high": {
+      "triangles": 29116,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_4ec516a9-eb27-41e9-9872-b26b85e79cdf",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.34995514154434204,
+        0.5699999928474426,
+        0.3535522222518921
+      ]
+    },
+    "lantern_low": {
+      "triangles": 9000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_4ec516a9-eb27-41e9-9872-b26b85e79cdf",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.34974026679992676,
+        0.5697474628395867,
+        0.35366857051849365
+      ]
+    }
+  }
+}

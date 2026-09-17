@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\chrysanthemum-original\\model.glb",
+  "original": {
+    "triangles": 44732,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": null,
+  "meshes": {
+    "chrysanthemum_high": {
+      "triangles": 44732,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_297cb2c1-39ea-4396-a053-80122871aa75",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.5737752318382263,
+        0.5300000309944153,
+        0.3742631673812866
+      ]
+    },
+    "chrysanthemum_low": {
+      "triangles": 11000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_297cb2c1-39ea-4396-a053-80122871aa75",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.5743957459926605,
+        0.5304985514194414,
+        0.37495915591716766
+      ]
+    }
+  }
+}

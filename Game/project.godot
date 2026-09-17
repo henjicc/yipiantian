@@ -41,3 +41,14 @@ lights_and_shadows/directional_shadow/soft_shadow_filter_quality=5
 [filesystem]
 
 import/blender/enabled=false
+
+[shader_globals]
+
+courtyard_haze_strength={
+"type": "float",
+"value": 0.28
+}
+courtyard_haze_color={
+"type": "color",
+"value": Color(0.72, 0.72, 0.65, 1)
+}

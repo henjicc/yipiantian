@@ -159,7 +159,6 @@ func _mesh(parent: Node3D, resource: Mesh, point: Vector3, material: Material) -
 
 func _make_fields() -> void:
 	var earthen_bank: ArrayMesh = _earthen_bank()
-	var coping: ArrayMesh = _coping_kerb()
 	for row in 2:
 		for col in 3:
 			var index: int = fields.size()
@@ -174,7 +173,7 @@ func _make_fields() -> void:
 			fields.append(body)
 			# Logical patches share continuous heights/normals, not tile-edge grooves.
 			_mesh(body, earthen_bank, Vector3.ZERO, _ridge)
-			_mesh(body, coping, Vector3.ZERO, _coping)
+			_mesh(body, _coping_kerb(91744 + index * 7919), Vector3.ZERO, _coping)
 			_soil_meshes[field_id(index)] = {}
 			_cell_crops[field_id(index)] = {}
 			for cell_id: String in FarmState.CELL_IDS:
@@ -195,11 +194,11 @@ func _make_fields() -> void:
 			body.add_child(collision)
 
 
-func _coping_kerb() -> ArrayMesh:
+func _coping_kerb(layout_seed: int) -> ArrayMesh:
 	# Kerb stones laid around each bed. These reuse the five image-guided Tripo rocks
 	# already used on the island rim rather than a generated block: full yaw, mixed
 	# shapes, uneven bedding depth and real gaps are what stop a kerb reading as a
-	# row of identical loaves. One shared mesh serves all six beds; it is decoration
+	# row of identical loaves. Each bed has a stable independent seed; it is decoration
 	# only and never takes part in collision or cell hit-testing.
 	var stones: Array[Mesh] = []
 	for index: int in 5:
@@ -212,7 +211,7 @@ func _coping_kerb() -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 91744
+	rng.seed = layout_seed
 	var half := Vector2(1.315, 0.995)
 	var runs: Array[Array] = [
 		[Vector2(-half.x, -half.y), Vector2(half.x, -half.y)], [Vector2(half.x, half.y), Vector2(-half.x, half.y)],

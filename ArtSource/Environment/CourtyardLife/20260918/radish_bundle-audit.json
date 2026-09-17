@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\radish_bundle-original\\model.glb",
+  "original": {
+    "triangles": 23857,
+    "open_edges": 2,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": null,
+  "meshes": {
+    "radish_bundle_high": {
+      "triangles": 23857,
+      "open_edges": 2,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_b46a021c-b125-49bb-844f-fa06256dc161",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.2984945476055145,
+        0.429999977350235,
+        0.17057080566883087
+      ]
+    },
+    "radish_bundle_low": {
+      "triangles": 8499,
+      "open_edges": 2,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_b46a021c-b125-49bb-844f-fa06256dc161",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.29841727018356323,
+        0.42892423493321985,
+        0.17070409655570984
+      ]
+    }
+  }
+}

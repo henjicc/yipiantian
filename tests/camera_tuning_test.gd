@@ -68,7 +68,8 @@ func _run() -> void:
 		camera.zoom(-3.0)
 		await create_timer(.8).timeout
 		await shot("fog-fixed-zoom.png")
-		expect(camera.get_world_3d().environment.fog_depth_begin > scene.focus_detail.protected_depth_range().y, "Farm remains outside fog when zooming")
+		check_clear_fields("fog and zoom")
+		expect(is_zero_approx(camera.get_world_3d().environment.fog_density), "Camera depth fog does not override world-anchored haze")
 		scene.farm_audio.shutdown()
 		await create_timer(.3).timeout
 		scene.queue_free()
@@ -83,13 +84,13 @@ func _run() -> void:
 		await create_timer(1.2).timeout
 		expect(camera.attributes.dof_blur_amount > .3, "Extended slider reaches three times previous blur ceiling")
 		var environment: Environment = camera.get_world_3d().environment
-		expect(is_equal_approx(environment.fog_density,.98), "Fog slider reaches renderer")
-		expect(environment.fog_depth_begin > scene.focus_detail.protected_depth_range().y, "Fog begins beyond all fields")
+		expect(is_equal_approx(float(RenderingServer.global_shader_parameter_get("courtyard_haze_strength")),1.0), "Fog slider reaches shared world-space renderer")
+		expect(is_zero_approx(environment.fog_density), "No camera-relative fog on protected fields")
 		check_clear_fields("extended blur")
 		panel._fog_slider.value = 0
 		await process_frame
 		await process_frame
-		expect(not environment.fog_enabled, "Zero disables depth haze")
+		expect(is_zero_approx(float(RenderingServer.global_shader_parameter_get("courtyard_haze_strength"))), "Zero disables shared world haze")
 		panel._fog_slider.value = 55
 		panel._dof_slider.value = 150
 		await create_timer(.6).timeout
@@ -147,7 +148,7 @@ func _run() -> void:
 	await create_timer(.4).timeout
 	var copied: Variant = JSON.parse_string(DisplayServer.clipboard_get())
 	var matches: bool = copied is Dictionary and copied.size() == tuned.size() + 3
-	matches = matches and is_equal_approx(float(copied.get("fog_strength",-1)), .55)
+	matches = matches and is_equal_approx(float(copied.get("fog_strength",-1)), .28)
 	matches = matches and copied.get("dof_enabled") == true and is_equal_approx(float(copied.get("dof_strength",-1)),.65)
 	for key: String in tuned:
 		matches = matches and copied is Dictionary and copied.has(key) and is_equal_approx(float(copied[key]), float(tuned[key]))

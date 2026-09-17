@@ -2,7 +2,9 @@ extends Node3D
 ## Authored static porch props; positions deliberately stay outside farm and decoration slots.
 const PIGMENT := preload("res://scenes/environment/pigment.gdshader")
 const WINDOW_SHADER := preload("res://scenes/environment/house_warmth.gdshader")
+const Assets = preload("res://scenes/environment/courtyard_assets.gd")
 var _house_materials: Array[ShaderMaterial] = []
+var _lantern_meshes: Array[MeshInstance3D] = []
 var _window_lights: Array[OmniLight3D] = []
 var _rope_segments: Array[MeshInstance3D] = []
 var _rope_origin := Vector3(6.32, 0.38, 3.85)
@@ -134,13 +136,7 @@ func _tray(parent: Node3D, at: Vector3, radius: float, harvest: bool) -> void:
 		_beam(parent,at+Vector3(offset,.026,-half),at+Vector3(offset,.026,half),.004,_rope)
 		_beam(parent,at+Vector3(-half,.027,offset),at+Vector3(half,.027,offset),.004,_rope)
 	if harvest:
-		var dried := _paint(Color("bc8c47"),12.0)
-		for i: int in 13:
-			var angle: float = i*2.399
-			var distance: float = radius*.69*sqrt(float(i)/13.0)
-			var shape := SphereMesh.new()
-			shape.radius=.043;shape.height=.03;shape.radial_segments=8;shape.rings=4
-			_mesh(parent,shape,at+Vector3(cos(angle)*distance,.06,sin(angle)*distance),dried)
+		Assets.place(parent,"slices",at+Vector3(0,.033,0),radius*211.0,radius*1.65/.40)
 
 func _build_porch_group() -> void:
 	# Fit the table between the veranda posts at world X=2.15 and 3.80.
@@ -159,7 +155,7 @@ func _build_porch_group() -> void:
 	_basket(group,Vector3(.66,0,.21),.13,.25,false)
 
 func _build_drying_rack() -> void:
-	var group := _group("SidePorchDryingRack",Vector3(-3.70,.14,-2.66),-9)
+	var group := _group("SidePorchDryingRack",Vector3(-3.70,.14,-2.72),-9)
 	for x: float in [-.48,.48]:
 		_beam(group,Vector3(x,0,.28),Vector3(x,1.45,-.25),.034,_bamboo)
 		_beam(group,Vector3(x,0,-.32),Vector3(x,1.45,-.25),.031,_bamboo)
@@ -210,15 +206,29 @@ func update_mooring() -> void:
 func _build_windows() -> void:
 	var group := _group("WindowWarmth",Vector3.ZERO)
 	for x: float in [-1.30,2.60]:
+		var lantern: Node3D = Assets.place(group,"lantern",Vector3(x,1.91,-2.40))
+		for mesh: MeshInstance3D in lantern.find_children("*","MeshInstance3D",true,false):
+			_lantern_meshes.append(mesh)
+		_beam(group,Vector3(x,2.48,-2.40),Vector3(x,2.62,-2.40),.009,_rope)
 		var light:=OmniLight3D.new()
 		light.name="PorchWarmLight"
-		light.position=Vector3(x,1.62,-2.68)
+		light.position=Vector3(x,2.16,-2.34)
 		light.light_color=Color("ffd195")
-		light.omni_range=2.45
-		light.omni_attenuation=1.65
+		light.omni_range=4.2
+		light.omni_attenuation=1.45
 		light.shadow_enabled=false
 		group.add_child(light)
 		_window_lights.append(light)
+		var spill := OmniLight3D.new()
+		spill.name = "LanternGardenBounce"
+		spill.position = Vector3(x,1.05,-.95)
+		spill.light_color = Color("ebba7d")
+		spill.omni_range = 3.4
+		spill.omni_attenuation = 1.6
+		spill.shadow_enabled = false
+		spill.set_meta("energy_scale",.24)
+		group.add_child(spill)
+		_window_lights.append(spill)
 	set_window_warmth(.16)
 
 func configure_house(node: Node) -> void:
@@ -240,7 +250,9 @@ func set_window_warmth(amount: float) -> void:
 		for material: ShaderMaterial in _house_materials:
 			material.set_shader_parameter("warmth",strength)
 		for light: OmniLight3D in _window_lights:
-			light.light_energy=strength*.70
+			light.light_energy=strength*float(light.get_meta("energy_scale",1.15))
+		for mesh: MeshInstance3D in _lantern_meshes:
+			mesh.set_instance_shader_parameter("lantern_warmth",strength)
 
 
 ## Yard set dressing. Everything here is decoration only: no collision, no farm
@@ -313,7 +325,7 @@ func _build_firewood() -> void:
 
 
 func _build_stone_mill() -> void:
-	var group := _group("YardStoneMill", Vector3(5.62, .14, -0.72), 25)
+	var group := _group("YardStoneMill", Vector3(5.07, .14, -2.92), -95)
 	var granite := _paint(Color("9ea49a"), 4.0)
 	granite.set_shader_parameter("stone_treatment", 1.0)
 	var pedestal := _paint(Color("8d928a"), 4.0)
@@ -340,17 +352,7 @@ func _build_ground_trays() -> void:
 	_tray(group, Vector3.ZERO, .30, true)
 	_tray(group, Vector3(.58, .004, .26), .26, false)
 	# The only saturated note on this side of the yard: drying chillies.
-	var chilli := _paint(Color("a8422b"), 14.0)
-	for i: int in 22:
-		var angle: float = i * 2.399
-		var distance: float = .19 * sqrt(float(i) / 22.0)
-		var pod := CapsuleMesh.new()
-		pod.radius = .017
-		pod.height = .105
-		pod.radial_segments = 6
-		pod.rings = 2
-		var node: MeshInstance3D = _mesh(group, pod, Vector3(.58 + cos(angle) * distance, .045, .26 + sin(angle) * distance), chilli)
-		node.quaternion = Quaternion(Vector3.UP, Vector3(cos(angle * 1.7), .22, sin(angle * 1.7)).normalized())
+	Assets.place(group,"pepper",Vector3(.58,.031,.26),25,1.12)
 	_tray(group, Vector3(.24, .008, -.44), .23, true)
 	_basket(group, Vector3(-.52, 0, -.34), .20, .30, true)
 
@@ -380,22 +382,16 @@ func _build_drying_line() -> void:
 	# A low A-frame in the front garden. Tall posts beside the veranda read as part
 	# of its railing and hide the porch, so the herbs hang below eye level instead.
 	var group := _group("YardDryingLine", Vector3(1.45, .14, 5.62), 20)
-	var herb := _paint(Color("9d7a34"), 13.0)
 	for x: float in [-.74, .74]:
 		_beam(group, Vector3(x, 0, -.26), Vector3(x, .70, 0), .027, _bamboo)
 		_beam(group, Vector3(x, 0, .26), Vector3(x, .70, 0), .027, _bamboo)
 		_beam(group, Vector3(x, .26, -.17), Vector3(x, .26, .17), .016, _bamboo)
 	_beam(group, Vector3(-.80, .70, 0), Vector3(.80, .70, 0), .024, _bamboo)
-	for i: int in 6:
-		var x: float = -.60 + i * .24
-		var length: float = .30 + sin(i * 2.1) * .07
-		var bundle := CapsuleMesh.new()
-		bundle.radius = .048 + sin(i * 1.3) * .009
-		bundle.height = length
-		bundle.radial_segments = 7
-		bundle.rings = 3
-		_mesh(group, bundle, Vector3(x, .655 - length * .5, sin(i * 1.9) * .045), herb)
-		_ring(group, Vector3(x, .662, sin(i * 1.9) * .045), .050, .009, _rope)
+	for i: int in 4:
+		var x: float = -.55 + i * .36
+		var size: float = .86+float(i%2)*.10
+		Assets.place(group,"radish_bundle",Vector3(x,.69-.43*size,0),i*37.0,size)
+		_beam(group,Vector3(x,.69,0),Vector3(x,.72,0),.007,_rope)
 	_basket(group, Vector3(-1.02, 0, .18), .20, .28, true)
 
 
@@ -404,24 +400,13 @@ func _build_melon_pile() -> void:
 	var straw_mat := BoxMesh.new()
 	straw_mat.size = Vector3(.92, .030, .62)
 	_mesh(group, straw_mat, Vector3(0, .015, 0), _straw)
-	var rind := _paint(Color("b9b055"), 11.0)
-	var ripe := _paint(Color("c49a3e"), 11.0)
-	for i: int in 6:
-		var angle: float = i * 2.399
-		var distance: float = .26 * sqrt(float(i) / 6.0)
-		var melon := SphereMesh.new()
-		melon.radius = .115 + sin(i * 1.9) * .020
-		melon.height = melon.radius * 1.72
-		melon.radial_segments = 12
-		melon.rings = 7
-		var node: MeshInstance3D = _mesh(group, melon, Vector3(cos(angle) * distance, .03 + melon.height * .5, sin(angle) * distance * .8), ripe if i % 3 == 0 else rind)
-		node.rotation = Vector3(.32, angle, .18)
+	for i: int in 4:
+		Assets.place(group,"pomelo",Vector3(-.19+(i%2)*.35,.03,-.14+int(i/2)*.27),i*103.0,.83+float(i%2)*.12)
 
 
 func _build_seed_frames() -> void:
 	var group := _group("YardSeedFrames", Vector3(-2.62, .14, 4.20), -25)
 	var earth := _paint(Color("6b573c"), 16.0)
-	var sprout := _paint(Color("6e8a4a"), 18.0)
 	for frame_index: int in 2:
 		var origin := Vector3(frame_index * .70, 0, frame_index * .16)
 		var soil := BoxMesh.new()
@@ -434,12 +419,6 @@ func _build_seed_frames() -> void:
 			var short_rail := BoxMesh.new()
 			short_rail.size = Vector3(.032, .115, .38)
 			_mesh(group, short_rail, origin + Vector3(side * .288, .0575, 0), _wood)
-		for i: int in 24:
-			var leaf := CapsuleMesh.new()
-			leaf.radius = .019
-			leaf.height = .125
-			leaf.radial_segments = 5
-			leaf.rings = 2
-			var p := origin + Vector3(-.225 + (i % 6) * .09, .115, -.115 + int(i / 6) * .077)
-			var node: MeshInstance3D = _mesh(group, leaf, p, sprout)
-			node.rotation = Vector3(sin(i * 1.7) * .38, i * .9, cos(i * 2.3) * .34)
+		for i: int in 12:
+			var p := origin + Vector3(-.21+(i%4)*.14,.080,-.12+int(i/4)*.12)
+			Assets.place(group,"seedling",p,i*137.5,.86+sin(i*1.8)*.10)

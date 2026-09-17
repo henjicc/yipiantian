@@ -1,4 +1,5 @@
 shader_type spatial;
+#include "res://atmosphere/courtyard_haze.gdshaderinc"
 render_mode cull_disabled;
 
 uniform vec4 base_color : source_color = vec4(1.0);
@@ -20,6 +21,7 @@ instance uniform float wind_authored = 0.0;
 instance uniform float leaf_paint_strength = 1.0;
 instance uniform vec2 root_soil = vec2(-1000.0,0.0); // world soil height / contact band; crops only
 instance uniform float frame_enabled = 0.0;
+instance uniform float haze_exempt = 0.0;
 instance uniform vec4 frame_safe_rect = vec4(0.15, 0.14, 0.85, 0.90);
 varying vec3 world_point;
 
@@ -65,6 +67,7 @@ void vertex() {
 }
 
 void fragment() {
+	FOG = vec4(courtyard_haze_color.rgb, haze_exempt > 0.5 ? 0.0 : courtyard_haze(world_point));
 	if (frame_enabled > 0.5) {
 		bool centre = SCREEN_UV.x > 0.16 && SCREEN_UV.x < 0.84 && SCREEN_UV.y > 0.12 && SCREEN_UV.y < 0.91;
 		bool operation = SCREEN_UV.x > frame_safe_rect.x && SCREEN_UV.x < frame_safe_rect.z && SCREEN_UV.y > frame_safe_rect.y && SCREEN_UV.y < frame_safe_rect.w;

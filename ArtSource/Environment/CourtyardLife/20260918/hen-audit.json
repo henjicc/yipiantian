@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\hen-rig\\model.glb",
+  "original": {
+    "triangles": 28962,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": "Armature",
+  "meshes": {
+    "hen_high": {
+      "triangles": 28962,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_5e4b88b1-b954-4ac0-8c56-2e6e34c6f66e",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.25742000341415405,
+        0.4300001859664917,
+        0.38403114676475525
+      ]
+    },
+    "hen_low": {
+      "triangles": 7000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_5e4b88b1-b954-4ac0-8c56-2e6e34c6f66e",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.25761446356773376,
+        0.4305315166711807,
+        0.3846241235733032
+      ]
+    }
+  }
+}

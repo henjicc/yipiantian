@@ -1,0 +1,454 @@
+{
+  "date": "2026-09-18",
+  "baseline": "fc3a27e",
+  "status": "integrated; awaiting user visual acceptance",
+  "credits_before": 7480,
+  "credits_after": 6525,
+  "total_credits": 955,
+  "tasks": [
+    {
+      "source": "bamboo-original/task.json",
+      "task_id": "ccdf9a67-667b-49cb-be43-f4da31c7d16a",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/ccdf9a67-667b-49cb-be43-f4da31c7d16a/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 60000,
+        "model_seed": 91832,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "chrysanthemum-original/task.json",
+      "task_id": "297cb2c1-39ea-4396-a053-80122871aa75",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/297cb2c1-39ea-4396-a053-80122871aa75/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 45000,
+        "model_seed": 91844,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "duck-original/task.json",
+      "task_id": "49346377-8599-4cdc-88c0-a6d0fc3224cf",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/49346377-8599-4cdc-88c0-a6d0fc3224cf/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 30000,
+        "model_seed": 91831,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "duck-rig/task.json",
+      "task_id": "eb3019a3-c6c0-4f89-a970-0f849728840f",
+      "type": "animate_rig",
+      "status": "success",
+      "input": {
+        "spec": "tripo",
+        "topology": "avian",
+        "out_format": "glb",
+        "original_model_id": "49346377-8599-4cdc-88c0-a6d0fc3224cf"
+      },
+      "credits": 25
+    },
+    {
+      "source": "goose-original/task.json",
+      "task_id": "a2d58964-c84f-49ec-bfd5-187b62cc2d5d",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/a2d58964-c84f-49ec-bfd5-187b62cc2d5d/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 30000,
+        "model_seed": 91840,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "goose-rig/task.json",
+      "task_id": "f21c1b79-1153-4afd-94ff-212f063ccbcc",
+      "type": "animate_rig",
+      "status": "success",
+      "input": {
+        "spec": "tripo",
+        "topology": "avian",
+        "out_format": "glb",
+        "original_model_id": "a2d58964-c84f-49ec-bfd5-187b62cc2d5d"
+      },
+      "credits": 25
+    },
+    {
+      "source": "hen-original/task.json",
+      "task_id": "5e4b88b1-b954-4ac0-8c56-2e6e34c6f66e",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/5e4b88b1-b954-4ac0-8c56-2e6e34c6f66e/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 30000,
+        "model_seed": 91841,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "hen-rig/task.json",
+      "task_id": "11dfb35c-2752-4db1-b751-0c97ef6795a5",
+      "type": "animate_rig",
+      "status": "success",
+      "input": {
+        "spec": "tripo",
+        "topology": "avian",
+        "out_format": "glb",
+        "original_model_id": "5e4b88b1-b954-4ac0-8c56-2e6e34c6f66e"
+      },
+      "credits": 25
+    },
+    {
+      "source": "kitchen-original/task.json",
+      "task_id": "b12b2b9d-4ab7-4836-9f2d-b9fcb2e9928f",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/b12b2b9d-4ab7-4836-9f2d-b9fcb2e9928f/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 70000,
+        "model_seed": 91834,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "lantern-original/task.json",
+      "task_id": "4ec516a9-eb27-41e9-9872-b26b85e79cdf",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/4ec516a9-eb27-41e9-9872-b26b85e79cdf/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 30000,
+        "model_seed": 91833,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "osmanthus-original/task.json",
+      "task_id": "129a351c-a34f-486f-bcfd-82d1855bd632",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/129a351c-a34f-486f-bcfd-82d1855bd632/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 80000,
+        "model_seed": 91835,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "osmanthus-parts/task.json",
+      "task_id": "a58ab2d3-d1f6-44ac-bab3-22101fdb022b",
+      "type": "mesh_segmentation",
+      "status": "success",
+      "input": {
+        "model_version": "v2.0-20260430",
+        "original_model_id": "129a351c-a34f-486f-bcfd-82d1855bd632",
+        "split_by_connectivity": true,
+        "segmentation_granularity": "balanced"
+      },
+      "credits": 40
+    },
+    {
+      "source": "pepper-original/task.json",
+      "task_id": "a6411184-e490-46f6-baa9-9c0c79db7eec",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/a6411184-e490-46f6-baa9-9c0c79db7eec/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 20000,
+        "model_seed": 91837,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "pomelo-original/task.json",
+      "task_id": "6a30e94d-8750-4f0c-97df-283f2d75478f",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/6a30e94d-8750-4f0c-97df-283f2d75478f/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 20000,
+        "model_seed": 91838,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "radish_bundle-original/task.json",
+      "task_id": "b46a021c-b125-49bb-844f-fa06256dc161",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/b46a021c-b125-49bb-844f-fa06256dc161/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 25000,
+        "model_seed": 91839,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "seedling-original/task.json",
+      "task_id": "23b78a6a-08e1-4343-9379-fcf5a86bcb58",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/23b78a6a-08e1-4343-9379-fcf5a86bcb58/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 20000,
+        "model_seed": 91842,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "slices-original/task.json",
+      "task_id": "c9da82a2-3c67-45f0-9bcc-96ea79489001",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/c9da82a2-3c67-45f0-9bcc-96ea79489001/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 20000,
+        "model_seed": 91843,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    },
+    {
+      "source": "willow-original/task.json",
+      "task_id": "17db60d7-1442-45ae-87a2-6ad0a8996276",
+      "type": "image_to_model",
+      "status": "success",
+      "input": {
+        "pbr": false,
+        "file": {
+          "type": "jpeg",
+          "object": {
+            "key": "tcli_5f6a8f2cf1064a78a29bf7cec55deabe/20260917/17db60d7-1442-45ae-87a2-6ad0a8996276/image.jpeg",
+            "bucket": "tripo-data"
+          }
+        },
+        "delight": true,
+        "texture": true,
+        "export_uv": true,
+        "face_limit": 80000,
+        "model_seed": 91836,
+        "model_version": "v3.1-20260211",
+        "smart_low_poly": false,
+        "texture_quality": "detailed",
+        "texture_version": "v3.5-20260815",
+        "geometry_quality": "detailed",
+        "enable_image_autofix": false
+      },
+      "credits": 60
+    }
+  ]
+}

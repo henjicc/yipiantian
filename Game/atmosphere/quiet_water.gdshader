@@ -1,4 +1,5 @@
 shader_type spatial;
+#include "res://atmosphere/courtyard_haze.gdshaderinc"
 render_mode blend_mix, cull_disabled, depth_draw_always;
 // Post-processing must see the lake surface, not the distant matte behind it.
 // Missing transparent-water depth left dotted DOF/MSAA rims around near leaves.
@@ -36,6 +37,7 @@ void vertex() {
 }
 
 void fragment() {
+	FOG = vec4(courtyard_haze_color.rgb, courtyard_haze(world_position));
 	vec2 p = world_position.xz;
 	// Fade along the view's horizontal depth, not a circle around the island.
 	// A radial cutout exposed the matte lake earlier at both sides, visually

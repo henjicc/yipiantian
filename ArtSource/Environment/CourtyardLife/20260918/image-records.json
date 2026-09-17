@@ -1,0 +1,128 @@
+[
+  {
+    "name": "duck",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one adult Chinese domestic duck, warm ivory body, subtle buff wing feathers, soft orange bill and two orange webbed feet clearly separate under the belly, folded wings, natural compact duck proportions, relaxed neutral standing pose suitable for rigging. Complete body not cut at waterline, no water.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-f08f27e6-25a7-406f-a655-49a61ae21347.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "bamboo",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one graceful living clump of Jiangnan bamboo: five slender green segmented culms at different heights, fine arching branches with many narrow lanceolate leaves, airy gaps and lush balanced leaf sprays. No giant broad leaves, no pot, minimal natural root base, dense enough to create a small bamboo grove, one connected clump.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-bea40a6c-f73c-42b6-b50a-d10a3eb7cacb.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "lantern",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one modest late Ming rural household hanging lantern: vertical oval cream rice-paper body with closely spaced curved bamboo ribs, dark aged wooden top and bottom rings, small hanging loop and short cord above, restrained warm vermilion rim, no text, no extravagant tassels. Paper unlit for neutral texture, physically coherent craftsmanship.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-8de1d661-86f7-41b5-b78e-2adeb09bffab.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "kitchen",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one small Jiangnan rural kitchen annex building, 1-storey narrow white limewashed walls, charcoal grey clay-tile gabled roof with gently curved eaves, worn warm-brown wooden double doors on front, small wooden lattice side window, modest short chimney at back. Grounded Ming vernacular simplicity, no attached main house, no furniture, no trees, no terrain base. Whole building isolated, usable finished front and side.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-6a722efd-5069-4412-b0af-777e9396f90d.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "osmanthus",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one mature Osmanthus fragrans sweet osmanthus tree in mid September bloom, many SMALL oval leathery leaves in dense airy layered clusters, tiny cream-gold flowers in leaf axils (NOT large white blossoms), branching weathered tea-brown trunk and flared roots, broad natural full THREE-DIMENSIONAL crown. Leaf-to-tree size realistic, no oversized banana leaves. No terrain pedestal.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-397fc99d-71c0-4e0f-87b9-052d1a1fa257.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "willow",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one small graceful Salix babylonica weeping willow, slender curving trunk, several arching main limbs and hundreds of fine drooping branchlets with narrow lanceolate green leaves, late summer early September not autumn gold. Strong dimensional crown with airy hanging strands, compact asymmetrical garden tree, natural root flare, no ground pedestal.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-a7deaf6d-a2f9-4f02-9d02-2d31a8afacc2.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "pepper",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one compact shallow heap of about fourteen freshly harvested elongated curved red chilli peppers with thin green stems, each pepper separate and naturally overlapping, dark muted vermilion skin matte with gentle highlights, realistic botanical shape, rich curved silhouette. Only peppers, no tray or plate, no whole plants. Nearly horizontal pile meant to sit in a drying basket.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-f76fb166-d636-4ff9-9728-e549a768a597.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "pomelo",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one harvested golden-green pomelo fruit, pear-rounded voluminous shape with a small stem and two little leaves still attached, softly mottled thick rind painted with sparse stippling, not a plain yellow sphere. No basket, no bowl, no other fruits.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-385e81c8-f18d-4c4b-9dbd-59120b6f51a5.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "radish_bundle",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one hanging bundle of five long ivory dried radishes, tied tightly at the green-brown stem ends with a visible hemp string loop, curved tapered wrinkled roots hanging down to unequal lengths, modest naturally dried texture, recognisable vegetable roots not sausages. No pole, no rack, no surrounding props.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-bd58542e-1903-4872-b6f6-b9360305e750.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "goose",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one adult Chinese white domestic goose, long gently S-curved neck, small orange basal bill knob, cream white plumage with pale grey feather divisions, folded wings, two orange webbed feet clearly visible and separate under body. Full animal neutral standing pose with recognisable anatomy suitable for later animation. No water, no base.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-0ffd303d-26e4-4d3a-88bb-804d766aa43b.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "hen",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one small russet-brown Chinese domestic hen, modest red comb and wattles, layered ochre chestnut feathers, folded wings, short dark tail and two clearly separate sturdy legs with three front toes. Relaxed standing neutral pose, full anatomically coherent body, no eggs, no base.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-80a9f904-372c-44bf-a40f-98060b4392e8.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "seedling",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one tiny young leafy brassica seedling, four softly curved tender sage-green leaves with slender pale stems emerging from one connected tiny dark root plug. Complete plant, no pot, no ground pedestal, no tray. Real seedling proportions, delicate but clearly modelable dimensional leaves, no large adult cabbage head.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-9b863c2b-154f-454e-98fe-f547bb3afe3c.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "slices",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one low round heap of about twenty thin dried pumpkin slices, ochre golden orange crescents with dark green rind edges and irregular curled shapes, slight overlap, each recognisable cut vegetable slice, subtle matte texture. No tray, no bowl, no background props. Heap suitable as contents of a shallow household drying basket.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-63d56a16-7b71-4e7c-9c56-bffab487abc9.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  },
+  {
+    "name": "chrysanthemum",
+    "prompt": "Use case: stylized-concept. Create one complete single-object reference for a 3D Jiangnan miniature farm game. Input 1 approved crop style: rounded dimensional forms, selective tea-brown or moss brush contours, pale colour washes, matte painterly volume. Input 2 approved world style: warm restrained Chinese rural courtyard, coherent natural materials. Transfer style ONLY, not the scene, UI, plants or lighting. Recognizable grounded proportions, finely resolved silhouette without photographic noise, no plastic, no heavy black outline. Complete single object, centered three-quarter weak perspective slightly above, every essential part visible with margin. Plain neutral light grey background, soft neutral diffuse light, minimal shadow. No ground plane, landscape, pedestal, text, watermark, frame, collage or depth of field. Exactly one small clump of early autumn Jiangnan wild chrysanthemum, branching leafy stems, narrow lobed sage foliage, many small cream and pale yellow daisy flowers at several heights and unopened buds. Natural asymmetrical rounded clump, dimensional soft petals, modest flowers much smaller than leaves of a tree. No pot, soil base or scenery.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-22705858-c527-4c5d-b5a6-b8162818e2fc.png",
+    "references": [
+      "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ]
+  }
+]

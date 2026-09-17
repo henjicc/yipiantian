@@ -1,0 +1,9 @@
+{
+  "task_id": "152481be-9ade-4174-845f-5a52702d0e27",
+  "type": "animate_prerigcheck",
+  "status": "success",
+  "output": {
+    "riggable": true,
+    "rig_type": "avian"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\duck-rig\\model.glb",
+  "original": {
+    "triangles": 28928,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": "Armature",
+  "meshes": {
+    "duck_high": {
+      "triangles": 28928,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_49346377-8599-4cdc-88c0-a6d0fc3224cf",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.2969330996274948,
+        0.5199998915195465,
+        0.49239757657051086
+      ]
+    },
+    "duck_low": {
+      "triangles": 9000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_49346377-8599-4cdc-88c0-a6d0fc3224cf",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.2975192964076996,
+        0.5203593075275421,
+        0.49270662665367126
+      ]
+    }
+  }
+}

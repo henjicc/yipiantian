@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\pomelo-original\\model.glb",
+  "original": {
+    "triangles": 19708,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": null,
+  "meshes": {
+    "pomelo_high": {
+      "triangles": 19708,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_6a30e94d-8750-4f0c-97df-283f2d75478f",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.23886223137378693,
+        0.28999999165534973,
+        0.2284241020679474
+      ]
+    },
+    "pomelo_low": {
+      "triangles": 6500,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_6a30e94d-8750-4f0c-97df-283f2d75478f",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.2389875203371048,
+        0.2900170379825795,
+        0.22843842953443527
+      ]
+    }
+  }
+}

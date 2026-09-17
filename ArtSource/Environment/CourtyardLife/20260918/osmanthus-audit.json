@@ -1,0 +1,105 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\osmanthus-original\\model.glb",
+  "original": {
+    "triangles": 76320,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [
+    "tripo_part_14",
+    "tripo_part_3",
+    "tripo_part_6",
+    "tripo_part_2",
+    "tripo_part_1",
+    "tripo_part_0",
+    "tripo_part_23",
+    "tripo_part_28",
+    "tripo_part_4",
+    "tripo_part_16",
+    "tripo_part_17",
+    "tripo_part_44",
+    "tripo_part_8",
+    "tripo_part_33",
+    "tripo_part_31",
+    "tripo_part_41",
+    "tripo_part_9",
+    "tripo_part_40",
+    "tripo_part_24",
+    "tripo_part_29",
+    "tripo_part_21",
+    "tripo_part_25",
+    "tripo_part_18",
+    "tripo_part_30",
+    "tripo_part_12",
+    "tripo_part_5",
+    "tripo_part_13",
+    "tripo_part_39",
+    "tripo_part_34",
+    "tripo_part_20",
+    "tripo_part_15",
+    "tripo_part_46",
+    "tripo_part_27",
+    "tripo_part_11",
+    "tripo_part_38",
+    "tripo_part_32",
+    "tripo_part_26",
+    "tripo_part_22",
+    "tripo_part_10",
+    "tripo_part_37",
+    "tripo_part_36",
+    "tripo_part_7",
+    "tripo_part_35",
+    "tripo_part_43",
+    "tripo_part_19",
+    "tripo_part_47",
+    "tripo_part_42",
+    "tripo_part_45"
+  ],
+  "rig": null,
+  "meshes": {
+    "osmanthus_high": {
+      "triangles": 76320,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_129a351c-a34f-486f-bcfd-82d1855bd632",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        4.279963493347168,
+        3.6999998092651367,
+        2.1244380474090576
+      ]
+    },
+    "osmanthus_low": {
+      "triangles": 35000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_129a351c-a34f-486f-bcfd-82d1855bd632",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        4.2735514640808105,
+        3.6989240488037467,
+        2.1227266788482666
+      ]
+    }
+  }
+}

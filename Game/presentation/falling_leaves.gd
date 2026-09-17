@@ -1,13 +1,8 @@
 extends MultiMeshInstance3D
-## Six bounded mesh instances: sparse September leaf fall, no physics bodies.
+## Fourteen bounded GPU instances: sparse September petals/leaves, no physics bodies.
 ## Emission samples the actual authored crown; only the clear west garden bay is used.
-const COUNT: int = 6
-const PERIOD: float = 13.0
-const FLOOR: float = 0.148
-var _time: float = 0.0
+const COUNT: int = 14
 var _anchors: Array[Vector3] = []
-var _origins: Array[Vector3] = []
-var _cycles: Array[int] = []
 var _rng := RandomNumberGenerator.new()
 
 
@@ -16,17 +11,20 @@ func configure(tree: Node3D) -> void:
 	multimesh = MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	multimesh.use_colors = true
+	multimesh.use_custom_data = true
 	multimesh.mesh = _leaf_mesh()
 	multimesh.instance_count = COUNT
 	# The high mesh is first; do not sample the hidden LOD as a second crown.
 	_sample(tree.get_child(0))
 	assert(not _anchors.is_empty(), "Osmanthus crown has no leaf emission points in the clear garden bay")
 	for i: int in COUNT:
-		_origins.append(_anchors[_rng.randi_range(0, _anchors.size()-1)])
-		_cycles.append(0)
-		multimesh.set_instance_color(i, Color("a9aa61").lerp(Color("7d9252"), float(i)/COUNT))
+		var origin: Vector3 = _anchors[_rng.randi_range(0, _anchors.size()-1)]
+		multimesh.set_instance_transform(i, Transform3D(Basis.IDENTITY, origin))
+		multimesh.set_instance_custom_data(i, Color(float(i)/COUNT, origin.y, _rng.randf(), 1.0))
+		multimesh.set_instance_color(i, Color("efe1aa") if i % 3 != 0 else Color("a9aa61"))
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_update(0.0)
+	custom_aabb = AABB(Vector3(-6.5,0,3.0),Vector3(1.5,5.0,2.4))
+	set_process(false)
 
 
 func _sample(node: Node) -> void:
@@ -36,41 +34,15 @@ func _sample(node: Node) -> void:
 			var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 			var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
 			for i: int in range(0, vertices.size(), 13):
-				if colors[i].g < 0.6:
+				if colors.size() > i and colors[i].g < 0.6:
 					continue
 				var point: Vector3 = to_local(node.global_transform * vertices[i])
 				# Wind drifts +X/+Z. Keep trajectories inside the grass, away from the
 				# fence at x=-6.65, the trellis, beds and ground_03 decoration slot.
-				if point.x > -5.85 and point.x < -5.6 and point.z > 3.5 and point.z < 3.9 and point.y > 2.1:
+				if point.x > -6.15 and point.x < -5.55 and point.z > 3.45 and point.z < 4.1 and point.y > 1.8:
 					_anchors.append(point)
 	for child: Node in node.get_children():
 		_sample(child)
-
-
-func _process(delta: float) -> void:
-	if multimesh != null and not _anchors.is_empty():
-		_update(delta)
-
-
-func _update(delta: float) -> void:
-	_time += delta
-	for i: int in COUNT:
-		var clock: float = _time + float(i)*PERIOD/COUNT
-		var cycle: int = floori(clock/PERIOD)
-		if cycle != _cycles[i]:
-			_cycles[i] = cycle
-			_origins[i] = _anchors[_rng.randi_range(0, _anchors.size()-1)]
-		var age: float = fmod(clock, PERIOD)
-		var fall: float = clampf(age/8.0, 0.0, 1.0)
-		var p: Vector3 = _origins[i] + Vector3(0.38, 0, 0.22)*fall
-		p.y = lerpf(_origins[i].y, FLOOR, pow(fall, 1.12))
-		p.x += sin(age*1.6+i)*0.09*sin(PI*fall)
-		p.z += cos(age*1.1+i)*0.08*sin(PI*fall)
-		var airborne: float = 1.0-smoothstep(0.88, 1.0, fall)
-		var scale_value: float = smoothstep(0.0, 0.3, age)*(1.0-smoothstep(11.0, PERIOD, age))
-		var rotation_value := Vector3(sin(age*2.5+i)*0.8*airborne, i*1.9+age*0.5, cos(age*1.7+i)*0.7*airborne)
-		var pose := Transform3D(Basis.from_euler(rotation_value).scaled(Vector3.ONE*maxf(0.001,scale_value)), p)
-		multimesh.set_instance_transform(i, pose)
 
 
 func _leaf_mesh() -> ArrayMesh:
@@ -84,10 +56,7 @@ func _leaf_mesh() -> ArrayMesh:
 		st.add_vertex(points[(i+1)%points.size()])
 		st.add_vertex(points[i])
 	st.generate_normals()
-	var material := StandardMaterial3D.new()
-	material.vertex_color_use_as_albedo = true
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.roughness = 0.96
-	material.metallic_specular = 0.08
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://presentation/falling_petals.gdshader")
 	st.set_material(material)
 	return st.commit()

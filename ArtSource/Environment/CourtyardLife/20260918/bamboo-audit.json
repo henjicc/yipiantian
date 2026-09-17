@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\bamboo-original\\model.glb",
+  "original": {
+    "triangles": 58264,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": null,
+  "meshes": {
+    "bamboo_high": {
+      "triangles": 58264,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_ccdf9a67-667b-49cb-be43-f4da31c7d16a",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        2.4184908866882324,
+        2.6499998569488525,
+        1.1402084827423096
+      ]
+    },
+    "bamboo_low": {
+      "triangles": 22000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_ccdf9a67-667b-49cb-be43-f4da31c7d16a",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        2.418285369873047,
+        2.6459935774328187,
+        1.1412025094032288
+      ]
+    }
+  }
+}

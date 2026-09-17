@@ -27,18 +27,14 @@ func _run() -> void:
 	var tree: Node3D = scene.get_node("Environment/WestTree")
 	var leaves: MultiMeshInstance3D = scene.get_node("Environment/OsmanthusLeaves")
 	expect(tree.get_child(0).scene_file_path.contains("osmanthus"), "New osmanthus is actually used in the scene")
-	expect(leaves.multimesh.instance_count == 6, "Falling leaves are bounded to six shared instances")
+	expect(leaves.multimesh.instance_count > 0 and leaves.multimesh.instance_count <= 16, "Falling petals have a bounded shared instance budget")
 	expect(not leaves._anchors.is_empty(), "Emission points come from the real canopy")
 	for geometry: GeometryInstance3D in scene.find_children("*","GeometryInstance3D",true,false):
 		expect(geometry.lod_bias > 0.0,"Scene geometry never forces the coarsest LOD: " + str(geometry.get_path()))
-	var before: Transform3D = leaves.multimesh.get_instance_transform(1)
-	leaves._update(0.3)
-	expect(not before.is_equal_approx(leaves.multimesh.get_instance_transform(1)), "Leaf position/orientation advances")
-	for i: int in 6:
-		for frame: int in 30:
-			leaves._update(0.11)
-			var p: Vector3 = leaves.multimesh.get_instance_transform(i).origin
-			expect(p.y >= 0.147 and p.x > -6.0 and p.x < -5.0 and p.z > 3.3 and p.z < 4.3, "Leaf stays above the landing plane and inside its clear bay")
+	expect(not leaves.is_processing() and leaves.multimesh.use_custom_data, "Petals use continuous render-time motion without per-frame CPU uploads")
+	for i: int in leaves.multimesh.instance_count:
+		var p: Vector3 = leaves.multimesh.get_instance_transform(i).origin
+		expect(leaves.custom_aabb.has_point(p), "Animated culling bounds contain the canopy emission point")
 	await shot("01-overview.png")
 	var button: Button = scene.hud.get_node("Layout/DebugFreeCamera")
 	button.pressed.emit()

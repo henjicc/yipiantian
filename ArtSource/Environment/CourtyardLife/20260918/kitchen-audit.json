@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\kitchen-original\\model.glb",
+  "original": {
+    "triangles": 65407,
+    "open_edges": 6,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": null,
+  "meshes": {
+    "kitchen_high": {
+      "triangles": 65407,
+      "open_edges": 6,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_b12b2b9d-4ab7-4836-9f2d-b9fcb2e9928f",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        2.8500001430511475,
+        2.4791460037231445,
+        2.323530435562134
+      ]
+    },
+    "kitchen_low": {
+      "triangles": 25999,
+      "open_edges": 6,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_b12b2b9d-4ab7-4836-9f2d-b9fcb2e9928f",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        2.848909020423889,
+        2.4813671587726276,
+        2.3227189779281616
+      ]
+    }
+  }
+}

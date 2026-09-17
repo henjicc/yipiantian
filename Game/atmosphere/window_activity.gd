@@ -51,4 +51,12 @@ func _refresh() -> void:
 
 
 func _apply_frame_limit() -> void:
-	Engine.max_fps = _foreground_cap if _active else mini(_foreground_cap, 15) if _foreground_cap > 0 else 15
+	# The user observes the second-screen development preview while working on
+	# the first screen. Losing keyboard focus must not turn its animation into 15 Hz.
+	var visible_preview: bool = OS.has_feature("editor") and OS.get_cmdline_user_args().has("--dev-preview") and get_window().visible and get_window().mode != Window.MODE_MINIMIZED
+	if _active:
+		Engine.max_fps = _foreground_cap
+	elif visible_preview:
+		Engine.max_fps = mini(_foreground_cap,60) if _foreground_cap > 0 else 60
+	else:
+		Engine.max_fps = mini(_foreground_cap,15) if _foreground_cap > 0 else 15

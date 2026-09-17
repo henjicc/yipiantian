@@ -11,6 +11,8 @@ const GroundCover = preload("res://scenes/environment/ground_cover.gd")
 const ContactShading = preload("res://presentation/contact_shading.gd")
 const WaterContacts = preload("res://presentation/water_contacts.gd")
 const NeighborIslets = preload("res://scenes/environment/neighbor_islets.gd")
+const CourtyardAssets = preload("res://scenes/environment/courtyard_assets.gd")
+const CourtyardAnimals = preload("res://scenes/environment/courtyard_animals.gd")
 # World heights of the two surfaces props actually stand on in this courtyard.
 const GROUND_LEVEL := 0.132
 const DECK_LEVEL := 0.41
@@ -59,6 +61,9 @@ func _ready() -> void:
 	_living.configure_house(get_node("MainHouse"))
 	_living.attach_boat(_boat)
 	_build_contact_shading()
+	var animals := CourtyardAnimals.new()
+	animals.name = "CourtyardAnimals"
+	add_child(animals)
 
 func _process(delta: float) -> void:
 	_motion_time += delta
@@ -176,7 +181,10 @@ func _tint_stone(node: Node, color: Color) -> void:
 func _build_architecture() -> void:
 	_asset("house","MainHouse",Vector3(.65,.13,-4.65))
 	_module("veranda",Vector3(.65,.13,-2.40))
-	_module("side_wing",Vector3(-4.3,.13,-5.0))
+	var kitchen: Node3D = _life_asset("kitchen","Kitchen",Vector3(-4.5,.115,-5.0))
+	_contact_sources.append(kitchen.get_child(0))
+	for mesh: MeshInstance3D in kitchen.find_children("*","MeshInstance3D",true,false):
+		mesh.set_instance_shader_parameter("ground_contact",Vector2(.13,.14))
 	var trellis: Node3D = _module("climbing_trellis",Vector3(-5.80,.13,1.05),90)
 	trellis.name = "EntranceTrellis"
 	_module("stone_bridge",Vector3(8.1,-.04,-.15),-9)
@@ -192,47 +200,33 @@ func _build_architecture() -> void:
 		_tint_stone(_module("stone_%d"%(i%5),position_on_bank,i*39,Vector3(.85,2.8+(i%3)*.7,.8)),Color("829184"))
 	for i in 4:_module("bamboo_fence",Vector3(-4.8+i*2.0,.14,-7.2))
 	for z in [-2.8,-.6,3.6]:_module("bamboo_fence",Vector3(-6.65,.14,z),90)
-	for z in [-4.1,-2.0]:_module("bamboo_fence",Vector3(5.7,.14,z),75)
+	for z in [-4.1,-2.0]:_module("bamboo_fence",Vector3(6.02,.14,z),75)
 	# Low front rail gives the vegetable garden a boundary; corner decoration slots stay open.
 	for x in [-3.0,-.85,1.3]:_module("bamboo_fence",Vector3(x,.14,5.15),0,Vector3(1,.68,1))
 	# The right bay contains the harvest table; the old bench occupied its legs
 	# and was partly buried in the raised veranda platform.
-	_build_porch_bench(Vector3(-3.65,.14,-2.9),.65)
-
-func _build_porch_bench(at: Vector3, width: float) -> void:
-	var bench := Node3D.new();bench.name="PorchBench";add_child(bench);bench.position=at
-	var material := ShaderMaterial.new();material.shader=PIGMENT
-	material.set_shader_parameter("base_color",Color("87724f"))
-	var parts: Array[Array] = [[Vector3(width,.075,.35),Vector3(0,.39,0)],[Vector3(width*.8,.06,.06),Vector3(0,.18,0)]]
-	for x in [-width*.34,width*.34]:
-		for z in [-.105,.105]:parts.append([Vector3(.075,.37,.075),Vector3(x,.19,z)])
-	for part in parts:
-		var mesh := MeshInstance3D.new();var shape:=BoxMesh.new();shape.size=part[0];mesh.mesh=shape;mesh.position=part[1]
-		mesh.material_override=material;bench.add_child(mesh)
-	_contact_sources.append(bench)
 
 func _build_plants() -> void:
-	var osmanthus: Node3D = _asset("osmanthus","WestTree",Vector3(-6.05,.13,4.3),15,1.0)
+	var osmanthus: Node3D = _life_asset("osmanthus","WestTree",Vector3(-6.05,.09,4.3),15,1.0,"osmanthus")
 	_contact_sources.append(osmanthus.get_child(0))
 	var falling := FallingLeaves.new()
 	falling.name = "OsmanthusLeaves"
 	add_child(falling)
 	falling.configure(osmanthus)
-	_asset("tree","RearTree",Vector3(3.75,.13,-6.1),-27,1.07)
-	_asset("tree","EastBankTree",Vector3(12.4,.12,-4.2),-35,.72)
-	_asset("tree","RearSmallTree",Vector3(-2.5,.13,-7.45),80,.67)
-	_asset("tree","RearWestCanopy",Vector3(-5.75,.13,-6.8),-72,.83)
-	_asset("tree","RearEastCanopy",Vector3(5.5,.13,-5.95),57,.83)
-	_asset("tree","FarBankCompanion",Vector3(14.0,.1,-5.2),19,.65)
+	_life_asset("osmanthus","RearTree",Vector3(3.8,.09,-6.25),-27,1.12,"osmanthus")
+	_life_asset("willow","EastBankTree",Vector3(13.15,.09,-4.8),-35,.96,"osmanthus")
+	_life_asset("bamboo","RearSmallTree",Vector3(-2.5,.10,-7.45),80,1.05,"bamboo")
+	_life_asset("willow","RearWestCanopy",Vector3(-5.9,.09,-7.0),-72,.85,"osmanthus")
+	_life_asset("bamboo","RearEastCanopy",Vector3(5.5,.10,-5.95),57,.95,"bamboo")
 	var bamboo_positions:Array[Vector3]=[Vector3(-7,.13,-5.2),Vector3(-7.1,.13,-.5),Vector3(5.4,.13,-5.7),Vector3(6.3,.13,2.0),Vector3(13.8,.10,-.8),Vector3(-6.6,.13,-6.6),Vector3(4.7,.13,-7.0),Vector3(5.9,.13,-3.5)]
-	for i in bamboo_positions.size():_asset("bamboo","Bamboo%d"%i,bamboo_positions[i],_rng.randf_range(0,360),_rng.randf_range(.70,1.05))
+	for i in bamboo_positions.size():_life_asset("bamboo","Bamboo%d"%i,bamboo_positions[i]-Vector3.UP*.025,_rng.randf_range(0,360),_rng.randf_range(.70,1.05),"bamboo")
 	var reeds: Array[Vector3] = [Vector3(-7.15,.05,2.7),Vector3(-6.55,.04,4.35),Vector3(-4.1,.06,5.85),Vector3(-2.15,.06,6.2),Vector3(.7,.06,6.25),Vector3(3.1,.07,5.85),Vector3(6.0,.06,4.3),Vector3(6.1,.08,3.5),Vector3(6.15,.08,-1.6),Vector3(11.0,.03,-.85),Vector3(14.2,.03,-.35)]
-	for i in reeds.size():_asset("bamboo","BankReeds%d"%i,reeds[i],i*53,_rng.randf_range(.30,.43))
+	for i in reeds.size():_life_asset("bamboo","BankReeds%d"%i,reeds[i],i*53,_rng.randf_range(.30,.43),"bamboo")
 	var flower_centres:Array[Vector3]=[Vector3(-5.8,.13,3.45),Vector3(5.25,.13,3.75),Vector3(-5.7,.13,-2.8),Vector3(5.3,.13,-3.0),Vector3(-3.8,.13,5.6),Vector3(2.4,.13,5.7),Vector3(-6.25,.11,4.9),Vector3(-1.8,.13,5.75),Vector3(.2,.13,5.95),Vector3(4.0,.12,5.6),Vector3(6.0,.13,1.0),Vector3(-6.85,.12,2.25),Vector3(11.35,.1,-.8),Vector3(13.6,.1,-1.5),Vector3(-3.4,.13,-2.05)]
 	for i in flower_centres.size():
 		_grass_patch(flower_centres[i]-Vector3(0,.01,0),i)
-		for j in 3:
-			_asset("flowers","Flowers%d_%d"%[i,j],flower_centres[i]+Vector3(_rng.randf_range(-.26,.26),-.035,_rng.randf_range(-.22,.22)),i*37+j*62,_rng.randf_range(.95,1.40))
+		for j in 2:
+			_life_asset("chrysanthemum","Flowers%d_%d"%[i,j],flower_centres[i]+Vector3(_rng.randf_range(-.22,.22),-.025,_rng.randf_range(-.20,.20)),i*37+j*62,_rng.randf_range(.80,1.1),"flowers")
 	# Loose lily coves sit around the waterline, not in a repeated necklace in front of the boat.
 	# The open river is the composition's pale negative space, but an unbroken slab
 	# of it reads as an unfinished surface. Loose outer coves give it something to
@@ -308,6 +302,26 @@ func _build_contact_shading() -> void:
 	shading.collect(get_node("MainHouse"), [GROUND_LEVEL])
 	shading.collect(_living, [GROUND_LEVEL, DECK_LEVEL])
 	shading.bake()
+
+
+func _life_asset(id: String, key: String, at: Vector3, yaw: float = 0.0, size: float = 1.0, wind: String = "") -> Node3D:
+	var holder := Node3D.new()
+	holder.name = key
+	holder.position = at
+	holder.rotation.y = deg_to_rad(yaw)
+	holder.scale = Vector3.ONE * size
+	add_child(holder)
+	var high: Node3D = CourtyardAssets.instantiate_asset(id)
+	var low: Node3D = CourtyardAssets.instantiate_asset(id,"low")
+	holder.add_child(high)
+	holder.add_child(low)
+	low.hide()
+	_lod_pairs[key] = [high,low]
+	if not wind.is_empty():
+		_plant_wind.apply(holder,wind)
+		for mesh: MeshInstance3D in holder.find_children("*","MeshInstance3D",true,false):
+			mesh.set_instance_shader_parameter("leaf_paint_strength",.28)
+	return holder
 
 
 func get_water_surface() -> MeshInstance3D:

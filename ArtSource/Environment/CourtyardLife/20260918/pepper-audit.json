@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\pepper-original\\model.glb",
+  "original": {
+    "triangles": 19196,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": null,
+  "meshes": {
+    "pepper_high": {
+      "triangles": 19196,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_a6411184-e490-46f6-baa9-9c0c79db7eec",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.36000001430511475,
+        0.142507404088974,
+        0.2507207989692688
+      ]
+    },
+    "pepper_low": {
+      "triangles": 7000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_a6411184-e490-46f6-baa9-9c0c79db7eec",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.3601136803627014,
+        0.14243307943252148,
+        0.25106701254844666
+      ]
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\willow-original\\model.glb",
+  "original": {
+    "triangles": 75888,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": null,
+  "meshes": {
+    "willow_high": {
+      "triangles": 75888,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_17db60d7-1442-45ae-87a2-6ad0a8996276",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        4.6579060554504395,
+        4.5,
+        1.9453351497650146
+      ]
+    },
+    "willow_low": {
+      "triangles": 35000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_17db60d7-1442-45ae-87a2-6ad0a8996276",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        4.655925989151001,
+        4.50331647018902,
+        1.9459705352783203
+      ]
+    }
+  }
+}

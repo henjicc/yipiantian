@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\goose-rig\\model.glb",
+  "original": {
+    "triangles": 29954,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": "Armature",
+  "meshes": {
+    "goose_high": {
+      "triangles": 29954,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_a2d58964-c84f-49ec-bfd5-187b62cc2d5d",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.368916317820549,
+        0.7799999713897705,
+        0.6556127071380615
+      ]
+    },
+    "goose_low": {
+      "triangles": 10000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_a2d58964-c84f-49ec-bfd5-187b62cc2d5d",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.36864137649536133,
+        0.7802464962005615,
+        0.6555519700050354
+      ]
+    }
+  }
+}

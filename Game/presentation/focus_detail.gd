@@ -18,18 +18,16 @@ var _decorations: Node3D
 var _target_bounds := AABB(Vector3(-1.4, -0.1, -1.15), Vector3(2.8, 0.75, 2.3))
 var _quality: String = "standard"
 var _dof_enabled: bool = true
-var _dof_strength: float = 1.5
-var _fog_strength: float = 0.55
+var _dof_strength: float = 1.7
+var _fog_strength: float = 0.28
 var _field_bounds: Dictionary = {}
 var _bounds_dirty: bool = true
-var _backdrop_material: ShaderMaterial
 
 
 func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations: Node3D) -> void:
 	_camera = camera
 	_fields = fields.duplicate()
 	_environment = environment
-	_backdrop_material = environment.get_backdrop_material()
 	_decorations = decorations
 	_attributes = CameraAttributesPractical.new()
 	_attributes.dof_blur_amount = 0.0
@@ -170,21 +168,13 @@ func _apply_decoration_wind(node: Node) -> void:
 func _process(delta: float) -> void:
 	if _camera == null:
 		return
-	# Built-in depth fog uses radial distance, unlike DOF's camera-axis depth.
-	# Protect the same field bounds using the correct metric for each effect.
+	# Artistic haze belongs to the world, not the camera's moving depth range.
 	var environment: Environment = _camera.get_world_3d().environment
-	protected_depth_range()
-	var clear_radius: float = 0.0
-	for field: Node3D in _fields:
-		var bounds: AABB = _field_bounds[field]
-		for corner: int in 8:
-			clear_radius = maxf(clear_radius, _camera.global_position.distance_to(field.global_transform * bounds.get_endpoint(corner)))
-	environment.fog_enabled = _fog_strength > 0.0
-	environment.fog_density = _fog_strength * 0.98
-	environment.fog_depth_begin = clear_radius + 4.0
-	environment.fog_depth_end = environment.fog_depth_begin + lerpf(70.0, 26.0, _fog_strength)
-	environment.fog_depth_curve = 0.85
-	_backdrop_material.set_shader_parameter("distance_fog", Vector3(environment.fog_depth_begin, environment.fog_depth_end, environment.fog_density))
+	environment.fog_enabled = true
+	environment.fog_density = 0.0
+	RenderingServer.global_shader_parameter_set("courtyard_haze_strength", _fog_strength)
+	# Global buffer colors are consumed directly by spatial shaders in linear space.
+	RenderingServer.global_shader_parameter_set("courtyard_haze_color", environment.fog_light_color.srgb_to_linear())
 	var inspecting: bool = _camera.get("free_view") == true
 	var framing: bool = not inspecting and not is_instance_valid(_target) and not _decorations.active and _quality == "standard"
 	_foreground.set_overview_visible(framing, inspecting)

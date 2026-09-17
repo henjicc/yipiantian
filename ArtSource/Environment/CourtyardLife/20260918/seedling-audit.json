@@ -1,0 +1,56 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\seedling-original\\model.glb",
+  "original": {
+    "triangles": 19230,
+    "open_edges": 0,
+    "zero_area_faces": 0,
+    "uv_layers": 1
+  },
+  "semantic_regions": [],
+  "rig": null,
+  "meshes": {
+    "seedling_high": {
+      "triangles": 9000,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_23b78a6a-08e1-4343-9379-fcf5a86bcb58",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.12176689505577087,
+        0.11995302140712738,
+        0.10321297496557236
+      ]
+    },
+    "seedling_low": {
+      "triangles": 3500,
+      "open_edges": 0,
+      "zero_area_faces": 0,
+      "uv_layers": 1,
+      "reimport_verified": true,
+      "textures": [
+        {
+          "name": "Color_23b78a6a-08e1-4343-9379-fcf5a86bcb58",
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "dimensions_godot_xyz": [
+        0.121963020414114,
+        0.11978320998605341,
+        0.10315156355500221
+      ]
+    }
+  }
+}
