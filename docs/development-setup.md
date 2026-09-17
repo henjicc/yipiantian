@@ -1,6 +1,6 @@
 # 开发前准备与环境验证
 
-> 环境首次核验：2026-09-16；当前2026-09-17进入逐格种植与画面重构。目标仍为Windows普通窗口版三维农场：六田各4×4格、同田混种、选格后工具直接操作。核心v3与迁移已完成纯测试；主视觉、完整交互和新候选尚在验收。下文rc.1／rc.2与早期数字只描述对应历史基线。
+> 环境首次核验：2026-09-16；当前2026-09-17已完成逐格种植与接缝／接触暗部修订，最新本地候选rc.5。目标仍为Windows普通窗口版三维农场：六田各4×4格、同田混种、选格后工具直接操作；技术验证与玩家美术签收分别记录。下文rc.1／rc.2与早期数字只描述对应历史基线。
 
 ## Godot 安装与日常入口
 
@@ -61,7 +61,7 @@ Godot 4.7.2纯测试经验：`--script ../tests/...` 的 `resource_path` 可为 
 
 用户描述的“物体靠近产生暗部”主要对应环境光遮蔽，和光源投影、接触阴影不是同一机制。[Godot Environment](https://docs.godotengine.org/en/4.7/classes/class_environment.html)提供SSAO与SSIL；[UE RVT](https://dev.epicgames.com/documentation/unreal-engine/runtime-virtual-texturing-quick-start-in-unreal-engine)是地形／材质数据混合的一种实现，也需要材质及体积配置，不是任意相交模型自动融合开关。当前采用共享世界坐标材质、窄幅基脚风化贴花与SSAO；不引入新的地形插件或完整GI系统。
 
-当前SSAO使用高质量、全分辨率，半径0.42米，强度1.8、power1.4；阳光区0.65影响属于美术增强，不是物理接触阴影。4.7.2 [Forward+实际着色器](https://github.com/godotengine/godot/blob/4.7.2-stable/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl)还用AO-channel mix插值直接光影响，因此同时设channel affect为1，并用实际成片核验。灰度SSAO检查确认篮底、柱脚、台阶有遮挡；开关对比及固定近景像素断言验证最终图确有适量暗化。SSAO仍受屏幕外信息、深度和视角限制，不能代替正确落地、法线、模型连接或烘焙遮蔽；保留建筑硬质轮廓，不能用全局模糊掩盖接缝。
+当前SSAO使用高质量、全分辨率，半径0.42米，强度1.8、power1.4；阳光区0.65影响属于美术增强，不是物理接触阴影。4.7.2 [Forward+实际着色器](https://github.com/godotengine/godot/blob/4.7.2-stable/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl)还用AO-channel mix插值直接光影响，因此同时设channel affect为1，并用实际成片核验。灰度SSAO检查确认篮底、柱脚、台阶有遮挡；开关对比及固定近景像素断言验证最终图确有适量暗化（篮底平均亮度降低0.0756、柱脚0.0348，以0–1表示）。SSAO仍受屏幕外信息、深度和视角限制，不能代替正确落地、法线、模型连接或烘焙遮蔽；保留建筑硬质轮廓，不能用全局模糊掩盖接缝。
 
 当前独立证据放 `.local/verification/contact-review/`：baseline保留旧NORMAL_MAP开关对照，surface保留荷叶、船、昼夜与接触AO开关图。田格输入62项、格子布局108项、表面整合22项、完整场景219项通过，存档规则未修改。4K前台焦点细节51项通过，RTX4090／3840×2160／96株及三件装饰、每组360帧非录屏短测：正常LOD全景GPU中位5.40ms、聚焦5.82ms，带景深分别5.57／6.00ms，低画质4.22ms。该短测不是30分钟稳定性或低配验收，不能沿用下列rc.4数字。首轮4K测试通过console包装启动后未取得前台，触发15fps后台限帧，foreground断言失败；该轮保留在focus目录且不作性能验收。复跑使用ProcessStartInfo直接调用同版本GUI执行文件、CreateNoWindow=true与独立目录，验证前台归属后采样；不能关闭前台断言来掩盖失败。
 
@@ -214,3 +214,5 @@ Godot 4.7.2 的小窗输入验证：`Camera3D.unproject_position` 与 `Control.g
 2026-09-17逐格与画面修订源码8f93348：本机96格成熟混种和三装饰，1080p烟测164项／4K六组56项均0失败；4K正式场景402.902秒，约60fps，p95最高17.264ms，峰值驻留工作集1042214912字节。此轮没有重复30分钟持续验收；硬件、采样定义、首轮失焦和文件替换竞态证据见[逐格整合交接](task/格子农田与画面重构/handoffs/整体验证-handoff.md)。018号56秒4K有声制作演示为3360帧、运动区间0近重复，使用隔离混种示例与固定步长，不替代实时性能。
 
 历史4.2及后续性能入口：tests/run-performance-validation.ps1 的 acceptance／4k／smoke，输出限新建.local/verification子目录；标准Godot运行正式场景采逐帧数据，普通发行程序另用release_startup_probe.ps1验证真实菜单响应。以下d193129数字只属于旧整田候选，本轮逐格状态与画面改变后重新采样：本机1080p真实1849.495秒、201项0失败，4K401.759秒、56项0失败，均正常退出无残留；1080p峰值驻留工作集856MB，不与2.178GB私有提交混淆。旧原型用户窗口保留，整卡遥测包含该背景负载；具体CPU/GPU/图元、帧间隔、内存与未测边界见[4.2交接](task/首个可发布版本/handoffs/4.2-handoff.md)。发行日志可能缓冲，不能用未刷新的日志作为即时就绪依据；就绪仍以实际窗口响应确认。
+
+rc.5交付：源码8f39fd66干净独立克隆、导入和发行导出通过，PCK审计254项无缺失／禁用资源。仓库外中文空格路径普通程序真实点击第3田第4行第2格，播种、浇水、湿土反馈、保存重开继续生长通过；两次正常退出0，隔离profile证据在 `contact-review/release-native/`。020号24秒4K60有声离线演示1440帧、音画时长一致、运动检查通过，已预览近景；录屏与前台性能采样分别进行。包和证据路径见README，未改变玩家存档。
