@@ -26,7 +26,7 @@ const AZIMUTH: Array[float] = [-35.0, -35.0, 30.0, 5.0, -25.0, -55.0, -68.0, -35
 # Interior and lantern warmth never drops to nothing: the courtyard reads as lived in
 # at midday too, and the warm accents are the only high-chroma notes in the frame.
 const WINDOW_WARMTH: Array[float] = [1.0, 1.0, 0.62, 0.30, 0.26, 0.45, 0.9, 1.0, 1.0]
-const WATER_COLORS: Array[Color] = [Color("263845"), Color("263845"), Color("8c9e9c"), Color("93a89e"), Color("96aa9f"), Color("a8a795"), Color("6e7b80"), Color("263845"), Color("263845")]
+const WATER_COLORS: Array[Color] = [Color("254653"), Color("254653"), Color("79a9ad"), Color("69a3a4"), Color("68a4a3"), Color("83aaa2"), Color("618c9a"), Color("254653"), Color("254653")]
 
 var _sun: DirectionalLight3D
 var _world: WorldEnvironment
@@ -111,8 +111,12 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	_sun.directional_shadow_blend_splits = true
 	_sun.directional_shadow_max_distance = 48.0
 	if water != null:
+		var previous: ShaderMaterial = water.material_override as ShaderMaterial
 		_water_material = ShaderMaterial.new()
 		_water_material.shader = WATER_SHADER
+		if previous != null and previous.shader == WATER_SHADER:
+			_water_material.set_shader_parameter("shore_distance", previous.get_shader_parameter("shore_distance"))
+			_water_material.set_shader_parameter("shore_contacts_enabled", previous.get_shader_parameter("shore_contacts_enabled"))
 		_water_material.set_shader_parameter("painted_water", WATER_PIGMENT)
 		# The courtyard's initial material_override takes precedence over surfaces.
 		water.material_override = _water_material

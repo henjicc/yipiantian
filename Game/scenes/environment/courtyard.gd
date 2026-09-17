@@ -7,6 +7,7 @@ const LivingDetails = preload("res://scenes/environment/living_details.gd")
 const PlantWind = preload("res://presentation/plant_wind.gd")
 const GroundCover = preload("res://scenes/environment/ground_cover.gd")
 const ContactShading = preload("res://presentation/contact_shading.gd")
+const WaterContacts = preload("res://presentation/water_contacts.gd")
 # World heights of the two surfaces props actually stand on in this courtyard.
 const GROUND_LEVEL := 0.132
 const DECK_LEVEL := 0.41
@@ -31,11 +32,15 @@ var _floaters: Array[Node3D] = []
 var _floater_origins: Array[Vector3] = []
 var _motion_time: float = 0.0
 var _contact_sources: Array[Node3D] = []
+var _shore_sources: Array[Node3D] = []
 
 func _ready() -> void:
 	_rng.seed = 32026
 	_build_ground()
 	_build_architecture()
+	var water_material: ShaderMaterial = _water.material_override
+	water_material.set_shader_parameter("shore_distance", WaterContacts.build(_shore_sources, _water.position.y))
+	water_material.set_shader_parameter("shore_contacts_enabled", true)
 	_build_plants()
 	var cover := GroundCover.new()
 	cover.name = "GroundCover"
@@ -75,6 +80,7 @@ func _module(id: String, at: Vector3, yaw_degrees: float=0, scale_value: Vector3
 	node.position=at; node.rotation.y=deg_to_rad(yaw_degrees); node.scale=scale_value
 	_apply_pigment(node, id)
 	if id in CONTACT_MODULES: _contact_sources.append(node)
+	if id == "island_bank" or id.begins_with("stone_"): _shore_sources.append(node)
 	return node
 
 func _apply_pigment(node: Node, module_id: String = "") -> void:
@@ -110,7 +116,7 @@ func _build_ground() -> void:
 	_module("island_bank",Vector3.ZERO)
 	_water=MeshInstance3D.new();_water.name="WaterSurface"
 	var plane:=PlaneMesh.new();plane.size=Vector2(180,180);_water.mesh=plane
-	var water_material:=ShaderMaterial.new();water_material.shader=load("res://scenes/environment/water_start.gdshader")
+	var water_material:=ShaderMaterial.new();water_material.shader=load("res://atmosphere/quiet_water.gdshader")
 	_water.material_override=water_material;_water.position.y=-0.25;add_child(_water)
 	# Nonuniform stone groups follow the bank, leaving visible grassy lobes and gaps.
 	var rim: Array[Vector2]=[Vector2(-7.5,-7.6),Vector2(-4.8,-8.4),Vector2(-1,-8.2),Vector2(2.5,-7.9),Vector2(5.6,-6.5),Vector2(6.5,-3.8),Vector2(6.4,-.8),Vector2(6.8,1.3),Vector2(5.8,4.8),Vector2(3.5,6.1),Vector2(.7,6.7),Vector2(-2.5,6.1),Vector2(-5.5,5.6),Vector2(-7.2,3.2),Vector2(-7.6,.2),Vector2(-7.1,-3.6)]

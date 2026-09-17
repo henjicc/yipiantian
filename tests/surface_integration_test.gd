@@ -26,6 +26,9 @@ func _run() -> void:
 	var courtyard: Node3D=scene.get_node("Environment")
 	var boat: Node3D=courtyard.get_node("CoveredBoat")
 	var water: ShaderMaterial=courtyard.get_water_surface().material_override
+	_expect(water.get_shader_parameter("shore_contacts_enabled") == true, "Clock material preserves the courtyard's actual shoreline")
+	var shoreline: Texture2D = water.get_shader_parameter("shore_distance")
+	_expect(shoreline != null and shoreline.get_image().get_format() == Image.FORMAT_RF, "Main water receives a metric contact field")
 	var baseline: Dictionary=scene.farm_state.snapshot()
 	await shot("01-overview")
 	var trellis: Node3D=courtyard.get_node("EntranceTrellis")
@@ -79,8 +82,9 @@ func _run() -> void:
 	environment.ssao_enabled=true
 	await shot("09-contact-on")
 	var with_ao: Image=root.get_texture().get_image()
-	# Fixed camera: these regions contain the basket foot and left pillar base.
-	for region: Rect2i in [Rect2i(820,503,110,18),Rect2i(389,339,40,26)]:
+	# Fixed camera: basket foot after the porch-table clearance fix, and left post.
+	# The former basket region (820,503) now contains bare decking.
+	for region: Rect2i in [Rect2i(1005,570,100,26),Rect2i(389,339,40,26)]:
 		var darkening: float=0.0
 		for y: int in range(region.position.y,region.end.y):
 			for x: int in range(region.position.x,region.end.x):

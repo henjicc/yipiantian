@@ -1,16 +1,17 @@
 shader_type spatial;
 render_mode blend_mix, cull_disabled;
 
-// The river is the composition's pale negative space, not a saturated slab;
-// the clock supplies the actual value so it can warm and darken with the light.
+// Celadon lake: broad colour, broken moving highlights and actual shore contacts.
+// Distance texture stores squared metres over world XZ [-24,24].
 uniform vec4 water_color : source_color = vec4(0.59, 0.67, 0.63, 1.0);
+uniform sampler2D shore_distance : filter_linear, repeat_disable;
+uniform bool shore_contacts_enabled = false;
 uniform sampler2D painted_water : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D scene_depth : hint_depth_texture, filter_nearest, repeat_disable;
 uniform sampler2D scene_colour : hint_screen_texture, filter_linear_mipmap, repeat_disable;
 uniform vec2 ripple_center = vec2(0.0);
 uniform float ripple_age = 10.0;
 uniform float wave_strength : hint_range(0.0, 1.5) = 1.0;
-uniform float shore_reflection_strength : hint_range(0.0, 0.6) = 0.32;
 uniform vec4 reflection_tint : source_color = vec4(1.0);
 uniform bool boat_mask_enabled = false;
 uniform mat4 world_to_boat;
@@ -60,28 +61,42 @@ void fragment() {
 	// Suppress unresolved fine waves rather than letting distant highlights crawl.
 	float fine3 = 1.0 - smoothstep(0.45, 1.7, fwidth(phase3));
 	float fine4 = 1.0 - smoothstep(0.45, 1.7, fwidth(phase4));
-	vec2 slope = d1 * cos(phase1) * 0.050 + d2 * cos(phase2) * 0.029;
+	vec2 slope = d1 * cos(phase1) * 0.085 + d2 * cos(phase2) * 0.046;
 	slope += d3 * cos(phase3) * 0.017 * fine3 + d4 * cos(phase4) * 0.008 * fine4;
 	float radius = length(p - ripple_center);
 	float ring = sin(radius * 15.0 - ripple_age * 5.0);
 	float envelope = exp(-pow((radius - ripple_age * 0.55) * 3.0, 2.0)) * max(0.0, 1.0 - ripple_age / 4.0);
 	slope += (p - ripple_center) / max(radius, 0.001) * ring * envelope * 0.075;
+	float shore = shore_contacts_enabled ? sqrt(max(texture(shore_distance, (p + 24.0) / 48.0).r, 0.0)) : 2.4;
+	// Hull-local capsule follows the same transform as the open-cabin mask.
+	vec2 hull_point = boat_local.xz;
+	hull_point.x -= clamp(hull_point.x, -1.24, 1.24);
+	float hull_distance = max(0.0, length(hull_point) - 0.42) * 0.85;
+	if (!boat_mask_enabled) { hull_distance = 10.0; }
+	float contact_distance = min(shore, hull_distance);
+	float shore_phase = contact_distance * 13.0 - TIME * 1.15;
+	// The hull gives off quiet expanding rings; wave strength also controls them.
+	if (boat_mask_enabled) {
+		vec2 hull_outward = normalize(hull_point + vec2(0.0001));
+		vec3 hull_world_outward = normalize(transpose(mat3(world_to_boat)) * vec3(hull_outward.x, 0.0, hull_outward.y));
+		slope += hull_world_outward.xz * sin(hull_distance * 16.0 - TIME * 1.5) * exp(-hull_distance * 2.4) * 0.025;
+	}
 	vec3 wave_normal = normalize(vec3(-slope.x * wave_strength, 1.0, -slope.y * wave_strength));
 	NORMAL = normalize((VIEW_MATRIX * vec4(wave_normal, 0.0)).xyz);
-	float broad = sin(flow.y * 1.7 + sin(flow.x * 0.31) * 1.6);
+	float broad = sin(flow.y * 1.7 - TIME * 0.22 + sin(flow.x * 0.31) * 1.6);
 	// Independent cross-wave patches break crests into short, irregular strokes;
 	// another parallel sine would produce the previous long striped bands.
-	float breakup = water_noise(vec2(flow.x * 1.7, flow.y * 0.82 - TIME * 0.10));
+	float breakup = water_noise(vec2(flow.x * 3.0, flow.y * 0.82 - TIME * 0.10));
 	float glint_phase = phase1 * 2.4 + water_noise(p * 0.62) * 2.2;
 	float crest_distance = abs(fract(glint_phase / 6.283185 + 0.5) - 0.5) * 6.283185;
 	// A Gaussian crest has no flat bright plateau: thin tapered strokes instead
 	// of the earlier thresholded sine's broad parallelogram patches. Derivative
 	// coverage keeps subpixel crests soft and proportionally dim in the distance.
-	float crest_width = max(0.11, fwidth(glint_phase) * 0.65);
-	float crest = exp(-pow(crest_distance / crest_width, 2.0)) * 0.11 / crest_width;
-	float glint = crest * pow(smoothstep(0.25, 0.85, breakup), 2.0);
+	float crest_width = max(0.21, fwidth(glint_phase) * 0.65);
+	float crest = exp(-pow(crest_distance / crest_width, 2.0)) * 0.21 / crest_width;
+	float glint = crest * pow(smoothstep(0.38, 0.82, breakup), 2.0);
 	vec3 colour = mix(water_color.rgb, pigment, 0.07);
-	colour += (broad * 0.015 + (glint - 0.16) * 0.042 * wave_strength) * distance_fade;
+	colour += (broad * 0.018 + glint * 0.18 * wave_strength) * distance_fade;
 	crest_light = glint * distance_fade * wave_strength;
 	// Reversed-Z Vulkan depth is reconstructed, never treated as linear distance.
 	// Contact is the actual opaque bank/boat below this fragment, not a guessed ring.
@@ -89,11 +104,20 @@ void fragment() {
 	vec4 opaque_world = INV_VIEW_MATRIX * INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth, 1.0);
 	vec3 opaque_position = opaque_world.xyz / opaque_world.w;
 	float water_depth = max(0.0, world_position.y - opaque_position.y);
-	float contact = (1.0 - smoothstep(0.02, 0.38, water_depth)) * step(0.00001, depth);
-	colour = mix(colour, water_color.rgb * vec3(0.74, 0.80, 0.78), contact * 0.38);
-	// A narrow, discontinuous wet edge follows actual depth at rocks and hulls.
-	float wet_edge = exp(-water_depth * 15.0) * step(0.00001, depth);
-	colour += vec3(0.035, 0.044, 0.038) * wet_edge * (0.45 + 0.55 * glint);
+	float depth_contact = (1.0 - smoothstep(0.02, 0.22, water_depth)) * step(0.00001, depth);
+	float shallow = 1.0 - smoothstep(0.12, 1.8, contact_distance);
+	float contact = max(exp(-contact_distance * 8.0), depth_contact * 0.6);
+	// Broad transparent-looking shallows, a submerged dark seam, then thin arcs.
+	colour = mix(colour, water_color.rgb * vec3(0.77, 1.19, 1.13), shallow * 0.58);
+	colour *= 1.0 - contact * 0.32;
+	float arc_phase = shore_phase + water_noise(p * 2.1) * 1.5;
+	float arc_distance = abs(fract(arc_phase / 6.283185 + 0.5) - 0.5) * 6.283185;
+	float arc_width = max(0.25, fwidth(arc_phase) * 0.7);
+	float arcs = exp(-pow(arc_distance / arc_width, 2.0)) * 0.25 / arc_width;
+	arcs *= smoothstep(0.07, 0.18, contact_distance) * (1.0 - smoothstep(0.35, 1.35, contact_distance));
+	arcs *= smoothstep(0.25, 0.70, water_noise(p * 2.7 + vec2(TIME * 0.06, 0.0)));
+	float ripple_light = (0.5 + 0.5 * ring) * envelope;
+	colour = mix(colour, water_color.rgb * 0.6 + vec3(0.33, 0.43, 0.40), clamp((arcs * 0.62 + ripple_light * 0.35) * wave_strength, 0.0, 1.0));
 	vec3 to_camera = normalize(CAMERA_POSITION_WORLD - world_position);
 	vec3 reflected_world = reflect(-to_camera, wave_normal);
 	float fresnel = 0.02 + 0.98 * pow(1.0 - max(dot(to_camera, wave_normal), 0.0), 5.0);
@@ -102,54 +126,21 @@ void fragment() {
 	float sky_u = atan(reflected_world.z, reflected_world.x) / 6.283185 + 0.5;
 	vec2 sky_uv = vec2(sky_u, clamp(0.29 - reflected_world.y * 0.23, 0.015, 0.29));
 	vec3 sky = texture(painted_water, sky_uv).rgb;
-	vec3 reflection = mix(water_color.rgb * 0.88, sky, 0.30);
-	float reflection_weight = 0.08 + fresnel * 0.35;
-	// Bounded local screen reflection catches actual opaque rocks and boat hulls.
-	// It cannot see off-screen surfaces; those fall back to the soft sky pigment.
-	// These envelopes only cull reflection work around the fixed courtyard and
-	// opposite bridge bank; the actual hit/depth still determines any reflection.
-	float island_region = 1.0 - smoothstep(8.8, 11.0, water_radius);
-	vec2 bridge_outside = max(abs(p - vec2(11.0, -1.5)) - vec2(4.5, 4.5), vec2(0.0));
-	float bridge_region = 1.0 - smoothstep(0.0, 1.2, length(bridge_outside));
-	float reflection_region = max(island_region, bridge_region);
-	if (shore_reflection_strength > 0.0 && reflection_region > 0.01) {
-		vec3 ray_direction = reflect(normalize(VERTEX), NORMAL);
-		vec3 origin = VERTEX + NORMAL * 0.035;
-		float travelled = 0.08;
-		float previous_travel = 0.0;
-		for (int i = 0; i < 24; i++) {
-			vec3 ray_position = origin + ray_direction * travelled;
-			vec4 clip = PROJECTION_MATRIX * vec4(ray_position, 1.0);
-			vec2 hit_uv = clip.xy / clip.w * 0.5 + 0.5;
-			if (clip.w <= 0.0 || any(lessThan(hit_uv, vec2(0.002))) || any(greaterThan(hit_uv, vec2(0.998)))) {
-				break;
-			}
-			float hit_depth = textureLod(scene_depth, hit_uv, 0.0).r;
-			vec4 surface = INV_PROJECTION_MATRIX * vec4(hit_uv * 2.0 - 1.0, hit_depth, 1.0);
-			float separation = -ray_position.z + surface.z / surface.w;
-			if (hit_depth > 0.00001 && separation > 0.0 && separation < 0.12) {
-				vec2 edge = min(hit_uv, vec2(1.0) - hit_uv);
-				float confidence = smoothstep(0.0, 0.07, min(edge.x, edge.y));
-				confidence *= 1.0 - smoothstep(0.025, 0.12, separation);
-				confidence *= (1.0 - smoothstep(.4, 3.5, travelled)) * reflection_region;
-				vec3 local_reflection = textureLod(scene_colour, hit_uv, 5.0).rgb;
-				// Broad reflected silhouettes stay submerged in water colour instead
-				// of reading as a second solid bank or pale stones beside the hull.
-				local_reflection = mix(colour, local_reflection, 0.38);
-				// A hit changes reflected colour, never the surface's Fresnel weight.
-				// Adding weight only on hits silhouettes the depth buffer in the lake.
-				reflection = mix(reflection, local_reflection, confidence * shore_reflection_strength);
-				break;
-			}
-			previous_travel = travelled;
-			travelled = previous_travel + 0.14;
-		}
-	}
+	vec3 reflection = mix(water_color.rgb * 0.88, sky, 0.48);
+	float reflection_weight = 0.16 + fresnel * 0.44;
+	// Soft sky reflection is stable when orbiting. Local objects are anchored by
+	// their real submerged continuation, avoiding stepped screen-ray silhouettes.
 	reflection_weight *= 1.0 - smoothstep(15.0, 23.0, water_radius);
 	ALBEDO = colour * (1.0 - reflection_weight);
 	// Screen/sky reflection already contains illumination. Do not light it twice.
 	EMISSION = reflection * reflection_tint.rgb * reflection_weight;
-	ROUGHNESS = mix(0.34, 0.23, glint * distance_fade);
+	// Only geometry genuinely below this water pixel is transmitted. Absorption
+	// hides the deep bank, leaving a short submerged continuation at the waterline.
+	float transmission = (1.0 - smoothstep(0.02, 0.65, water_depth)) * step(0.00001, depth) * 0.30;
+	vec3 submerged = textureLod(scene_colour, SCREEN_UV, 0.5).rgb * vec3(0.64, 0.88, 0.82);
+	ALBEDO *= 1.0 - transmission;
+	EMISSION = EMISSION * (1.0 - transmission) + submerged * transmission;
+	ROUGHNESS = mix(0.28, 0.19, glint * distance_fade);
 	METALLIC = 0.0;
 	SPECULAR = 0.5;
 	// Match the courtyard water-to-painted-distance transition; no opaque horizon.
@@ -160,9 +151,9 @@ void light() {
 	// Water retains cool depth under the warmer, brighter land key light.
 	float luminance = dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722));
 	vec3 diffuse_colour = mix(vec3(luminance), LIGHT_COLOR, 0.18);
-	DIFFUSE_LIGHT += ALBEDO * diffuse_colour * ATTENUATION * max(dot(NORMAL, LIGHT), 0.0) * (0.78 / 3.141593);
+	DIFFUSE_LIGHT += ALBEDO * diffuse_colour * ATTENUATION * max(dot(NORMAL, LIGHT), 0.0) * (0.66 / 3.141593);
 	vec3 halfway = normalize(LIGHT + VIEW);
 	float highlight = pow(max(dot(NORMAL, halfway), 0.0), 100.0);
 	float broken_reflection = pow(max(dot(NORMAL, halfway), 0.0), 14.0) * crest_light;
-	SPECULAR_LIGHT += mix(vec3(luminance), LIGHT_COLOR, 0.55) * ATTENUATION * (highlight * 0.10 + broken_reflection * 0.045);
+	SPECULAR_LIGHT += mix(vec3(luminance), LIGHT_COLOR, 0.55) * ATTENUATION * (highlight * 0.22 + broken_reflection * 0.12);
 }

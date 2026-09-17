@@ -31,9 +31,9 @@ void fragment(){
 	}
 	float foot=(1.0-smoothstep(.13,.23+terrain_noise(world_point.xz*11.0)*.035,world_point.y))*foundation_treatment;
 	painted=mix(painted,mix(painted*.65,turf_colour(world_point.xz),.28),foot);
-	float wet=(1.0-smoothstep(-.23,.06,world_point.y+.06*(broad-.5)))*stone_treatment;
+	float wet=(1.0-smoothstep(-.25,-.12,world_point.y+.025*(broad-.5)))*max(stone_treatment,ground_treatment);
 	float moss=smoothstep(.46,.70,wash(world_point*vec3(3.3,1.7,3.3)))*smoothstep(-.15,.18,world_point.y)*(1.0-smoothstep(.45,.9,world_point.y))*stone_treatment;
-	ALBEDO=mix(painted,painted*vec3(.70,.78,.75),wet*.48);
+	ALBEDO=mix(painted,painted*vec3(.49,.66,.65),wet*.75);
 	ALBEDO=mix(ALBEDO,ALBEDO*vec3(.78,.94,.62),moss*.42);
 	ROUGHNESS=mix(.93+.06*fine,.73,wet);
 	SPECULAR=mix(.08,.15,wet);
