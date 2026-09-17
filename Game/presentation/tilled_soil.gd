@@ -9,7 +9,7 @@ static func height_at(p: Vector2) -> float:
 	return fade * (.010 * furrow + .008 * lumps + .004 * sin(p.x * 37.0 + p.y * 29.0))
 
 
-static func patch(center: Vector3, span: Vector2) -> ArrayMesh:
+static func patch(center: Vector3, span: Vector2, field_seed: int = 0) -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for row: int in 16:
@@ -22,27 +22,42 @@ static func patch(center: Vector3, span: Vector2) -> ArrayMesh:
 				var dx: float = (height_at(p + Vector2(e,0)) - height_at(p - Vector2(e,0))) / (2.0*e)
 				var dz: float = (height_at(p + Vector2(0,e)) - height_at(p - Vector2(0,e))) / (2.0*e)
 				surface.set_uv(uv)
+				surface.set_color(Color(0,0,0,1))
 				surface.set_normal(Vector3(-dx, 1.0, -dz).normalized())
 				surface.add_vertex(Vector3(local.x, height_at(p), local.y))
-	# Embedded crumbs provide real silhouettes, merged into the same draw.
+	# Irregular aggregate clusters, merged with the cell: no per-grain node or physics.
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 71003 + roundi((center.x+1.2)*1000.0) + roundi((center.z+.88)*10000.0)
+	rng.seed = 71003 + field_seed*100003 + roundi((center.x+1.2)*1000.0) + roundi((center.z+.88)*10000.0)
 	var crumb := SphereMesh.new()
 	crumb.radial_segments = 7
-	crumb.rings = 3
+	crumb.rings = 2
 	crumb.radius = 1.0
 	crumb.height = 2.0
 	var arrays: Array = crumb.surface_get_arrays(0)
-	for index: int in 32:
-		var p := Vector2(rng.randf_range(-.28,.28),rng.randf_range(-.20,.20))
-		var size: float = rng.randf_range(.006,.018)
-		var basis := Basis(Vector3.UP, rng.randf()*TAU).scaled(Vector3(size, size*.55, size*rng.randf_range(.65,1.3)))
+	var clusters: Array[Vector2] = []
+	for i: int in 5:
+		clusters.append(Vector2(rng.randf_range(-.23,.23),rng.randf_range(-.15,.15)))
+	for index: int in 192:
+		var contact: bool = index >= 164
+		var p := Vector2(rng.randf_range(-.275,.275),rng.randf_range(-.195,.195))
+		if index < 80:
+			p = clusters[index%5] + Vector2(rng.randf_range(-.05,.05),rng.randf_range(-.04,.04))
+		if contact:
+			var angle: float = rng.randf()*TAU
+			p = Vector2(cos(angle)*rng.randf_range(.035,.09),sin(angle)*rng.randf_range(.035,.07))
+		var size: float = lerpf(.006,.027,pow(rng.randf(),1.3))
+		if contact: size = rng.randf_range(.010,.022)
+		var basis := Basis(Vector3.UP, rng.randf()*TAU).scaled(Vector3(size, size*rng.randf_range(.55,.9), size*rng.randf_range(.6,1.4)))
 		var normal_basis: Basis = basis.inverse().transposed()
-		var at := Vector3(p.x, height_at(p + Vector2(center.x,center.z)) - size*.15, p.y)
+		var at := Vector3(p.x, height_at(p + Vector2(center.x,center.z)) - size*rng.randf_range(.15,.40), p.y)
+		var phase: float = rng.randf()*TAU
 		for vertex_index: int in arrays[Mesh.ARRAY_INDEX]:
-			var vertex: Vector3 = at + basis * arrays[Mesh.ARRAY_VERTEX][vertex_index]
+			var source: Vector3 = arrays[Mesh.ARRAY_VERTEX][vertex_index]
+			var shape: float = 1.0 + .20*sin(source.x*4.1+source.y*3.7+phase)*cos(source.z*3.3-phase)
+			var vertex: Vector3 = at + basis * source * shape
 			surface.set_normal((normal_basis * arrays[Mesh.ARRAY_NORMAL][vertex_index]).normalized())
 			surface.set_uv(Vector2(vertex.x/span.x+.5,vertex.z/span.y+.5))
+			surface.set_color(Color(1 if contact else 0,0,0,1))
 			surface.add_vertex(vertex)
 	surface.index()
 	return surface.commit()

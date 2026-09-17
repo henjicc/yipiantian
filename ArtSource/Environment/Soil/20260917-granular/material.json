@@ -1,0 +1,17 @@
+{
+  "blender": "5.2.2 LTS",
+  "tile_metres": 0.64,
+  "resolution": [
+    2048,
+    2048
+  ],
+  "normal_convention": "OpenGL +Y tangent",
+  "height_amplitude_metres": 0.006,
+  "surface_channels": {
+    "R": "authored cavity, not raytraced AO",
+    "G": "roughness",
+    "B": "height"
+  },
+  "source": "one periodic 4D procedural Blender material; no albedo-to-height conversion",
+  "physics": false
+}

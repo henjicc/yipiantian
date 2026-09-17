@@ -95,8 +95,9 @@ func _build_trellis_bed() -> void:
 	bed.mesh = surface.commit()
 	var soil := ShaderMaterial.new()
 	soil.shader = preload("res://scenes/environment/soil.gdshader")
-	soil.set_shader_parameter("soil_color",Color("80684d"))
-	soil.set_shader_parameter("soil_detail",preload("res://art/environment/soil/loam.png"))
+	soil.set_shader_parameter("loam_albedo",preload("res://art/environment/soil/loam_baked_albedo.png"))
+	soil.set_shader_parameter("loam_normal",preload("res://art/environment/soil/loam_baked_normal.png"))
+	soil.set_shader_parameter("loam_surface",preload("res://art/environment/soil/loam_baked_surface.png"))
 	soil.set_shader_parameter("bank",true)
 	bed.material_override = soil
 	add_child(bed)

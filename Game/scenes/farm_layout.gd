@@ -28,9 +28,9 @@ var _plant_wind := PlantWind.new()
 func _ready() -> void:
 	# Pale soil sat at the same value as the sage crops, so neither read. Rich
 	# earth gives the leaves something to stand against, as in the reference.
-	_soil = _soil_material("665442", 0.0)
-	_wet_soil = _soil_material("665442", 1.0)
-	_ridge = _soil_material("665442", 0.0)
+	_soil = _soil_material(0.0)
+	_wet_soil = _soil_material(1.0)
+	_ridge = _soil_material(0.0)
 	_coping = ShaderMaterial.new()
 	_coping.shader = PigmentShader
 	_coping.set_shader_parameter("base_color", Color("6f6c5b"))
@@ -84,7 +84,10 @@ func show_field(field: Dictionary) -> void:
 		_visual_keys[identity] = key
 		_soil_meshes[field.id][cell_id].material_override = _wet_soil if cell.watered else _soil
 		var root_size: float = {"empty": 1.0, "sprout": .38, "young": .68, "mature": 1.0}[cell.stage]
-		_soil_meshes[field.id][cell_id].set_instance_shader_parameter("root_size", root_size)
+		# Retain the former contact footprint while an emptied patch retracts.
+		if cell.stage != "empty":
+			_soil_meshes[field.id][cell_id].set_instance_shader_parameter("root_size", root_size)
+			_soil_meshes[field.id][cell_id].set_instance_shader_parameter("root_radius", CropVisuals.soil_radius(cell.crop_id,cell.stage))
 		_update_planting(identity, _soil_meshes[field.id][cell_id], cell.stage != "empty")
 		var stage_key: String = "%s/%s" % [cell.crop_id, cell.stage]
 		var existing: Node3D = _cell_crops[field.id].get(cell_id)
@@ -107,6 +110,9 @@ func show_field(field: Dictionary) -> void:
 		_crop_roots[field.id].add_child(crop)
 		_cell_crops[field.id][cell_id] = crop
 		_plant_wind.apply(crop, cell.crop_id)
+		var soil_y: float = crop.global_position.y + CropVisuals.planting_depth(cell.crop_id,cell.stage) + .008
+		for plant_mesh: MeshInstance3D in crop.find_children("*", "MeshInstance3D", true, false):
+			plant_mesh.set_instance_shader_parameter("root_soil", Vector2(soil_y,.045*root_size))
 
 
 func _update_planting(identity: String, patch: MeshInstance3D, planted: bool) -> void:
@@ -132,12 +138,13 @@ func _update_planting(identity: String, patch: MeshInstance3D, planted: bool) ->
 	tween.finished.connect(func() -> void: _planting_tweens.erase(identity))
 
 
-func _soil_material(hex: String, wetness: float) -> ShaderMaterial:
+func _soil_material(wetness: float) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = SoilShader
-	material.set_shader_parameter("soil_color", Color(hex))
 	material.set_shader_parameter("wetness", wetness)
-	material.set_shader_parameter("soil_detail", preload("res://art/environment/soil/loam.png"))
+	material.set_shader_parameter("loam_albedo", preload("res://art/environment/soil/loam_baked_albedo.png"))
+	material.set_shader_parameter("loam_normal", preload("res://art/environment/soil/loam_baked_normal.png"))
+	material.set_shader_parameter("loam_surface", preload("res://art/environment/soil/loam_baked_surface.png"))
 	return material
 
 
@@ -151,9 +158,6 @@ func _mesh(parent: Node3D, resource: Mesh, point: Vector3, material: Material) -
 
 
 func _make_fields() -> void:
-	var soil_patches: Dictionary = {}
-	for cell_id: String in FarmState.CELL_IDS:
-		soil_patches[cell_id] = TilledSoil.patch(cell_center(cell_id), CELL_SPAN)
 	var earthen_bank: ArrayMesh = _earthen_bank()
 	var coping: ArrayMesh = _coping_kerb()
 	for row in 2:
@@ -175,7 +179,7 @@ func _make_fields() -> void:
 			_cell_crops[field_id(index)] = {}
 			for cell_id: String in FarmState.CELL_IDS:
 				var center: Vector3 = cell_center(cell_id)
-				var patch: MeshInstance3D = _mesh(body, soil_patches[cell_id], center, _soil)
+				var patch: MeshInstance3D = _mesh(body, TilledSoil.patch(center, CELL_SPAN, index), center, _soil)
 				patch.name = "Soil_" + cell_id
 				patch.extra_cull_margin = .09
 				patch.set_instance_shader_parameter("cell_center", Vector2(center.x, center.z))

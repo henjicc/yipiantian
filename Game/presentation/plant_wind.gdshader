@@ -17,6 +17,7 @@ instance uniform vec4 wind_bounds = vec4(0.0, 1.0, 0.0, 0.0); // bottom, height,
 instance uniform vec4 wind_motion = vec4(0.018, 0.20, 0.0, 0.005); // metres, root lock, crown profile, flutter
 instance uniform float wind_leaf_texture_mask = 0.0;
 instance uniform float wind_authored = 0.0;
+instance uniform vec2 root_soil = vec2(-1000.0,0.0); // world soil height / contact band; crops only
 instance uniform float frame_enabled = 0.0;
 instance uniform vec4 frame_safe_rect = vec4(0.15, 0.14, 0.85, 0.90);
 varying vec3 world_point;
@@ -80,9 +81,15 @@ void fragment() {
 	// same value as the soil. Deepen the leaf midtones without touching the rest.
 	float leaf_value = dot(color, vec3(0.2126, 0.7152, 0.0722));
 	color = mix(color, color * (0.72 + 0.46 * leaf_value), leaf_pigment);
+	float contact = 0.0;
+	if (root_soil.y > 0.0) {
+		float dirt_edge = root_soil.x + root_soil.y*(.25+.75*pigment_wash(world_point*87.0));
+		contact = (1.0-smoothstep(dirt_edge-.009,dirt_edge+.003,world_point.y))*(1.0-leaf_pigment);
+		color = mix(color,vec3(.100,.060,.029)*(.8+.4*pigment_wash(world_point*145.0)),contact*.90);
+	}
 	ALBEDO = color;
 	BACKLIGHT = color * leaf_pigment * .16;
-	ROUGHNESS = base_roughness;
+	ROUGHNESS = mix(base_roughness,.97,contact);
 	SPECULAR = base_specular;
 	METALLIC = base_metallic;
 }

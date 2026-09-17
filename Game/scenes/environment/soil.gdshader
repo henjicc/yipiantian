@@ -1,32 +1,32 @@
 shader_type spatial;
 #include "res://scenes/environment/terrain_surface.gdshaderinc"
-uniform vec4 soil_color : source_color = vec4(0.40,0.33,0.26,1.0);
+#include "res://scenes/environment/loam_surface.gdshaderinc"
 uniform float wetness : hint_range(0.0,1.0) = 0.0;
 uniform bool bank = false;
-uniform sampler2D soil_detail : source_color, repeat_enable, filter_linear_mipmap_anisotropic;
 instance uniform vec2 cell_center = vec2(0.0);
 instance uniform float planted = 0.0;
 instance uniform float root_size = 1.0;
 instance uniform float field_selected = 0.0;
 instance uniform float cell_selected = 0.0;
+instance uniform vec2 root_radius = vec2(.075,.060);
 varying vec3 soil_point;
 varying vec2 bed_point;
 varying vec2 patch_point;
 
-// A broad asymmetric mound merging back into the original bed, not a separate ring.
+// Pressed root pocket with broken, low shoulders. Support ends inside each cell.
 float mound(vec2 p) {
-	vec2 q = (p + vec2(.012,-.006)) / (vec2(.235,.175)*mix(.65,1.0,root_size));
-	float radius = length(q);
-	float envelope = 1.0 - smoothstep(.38,1.0,radius);
-	float lumps = .90 + .16*sin(p.x*42.0+p.y*19.0)*sin(p.y*37.0-1.2);
-	return planted * root_size * .065 * envelope * lumps;
-}
-float micro_height(vec2 p) {
-	// Albedo luminance is only a restrained artistic micro-bump, not measured height.
-	float grain = dot(textureLod(soil_detail,p*.65,1.0).rgb,vec3(.299,.587,.114));
-	return grain*.004 + terrain_noise(terrain_rotate(p)*27.0)*.0007;
+	float r = length(p/root_radius);
+	float irregular = .65+.6*terrain_noise(p*39.0+cell_center*21.0);
+	float shoulder = exp(-pow((r-.95)*1.35,2.0))*.038*irregular;
+	float fade = 1.0-smoothstep(1.5,2.1,r);
+	return planted*root_size*fade*(shoulder-.004*exp(-r*r*3.0));
 }
 void vertex() {
+	// Red vertices are planted contact crumbs; hidden below the bed when empty.
+	if (!bank && COLOR.r > .5) {
+		VERTEX.xz *= root_radius/vec2(.075,.060);
+		VERTEX.y -= (1.0-planted)*.10;
+	}
 	patch_point = VERTEX.xz;
 	bed_point = VERTEX.xz + cell_center;
 	if (!bank) {
@@ -42,23 +42,22 @@ void fragment() {
 	vec2 p = soil_point.xz;
 	float patch = terrain_noise(terrain_rotate(p)*2.3);
 	float clods = terrain_noise(terrain_rotate(p)*27.0);
-	vec3 detail = texture(soil_detail,p*.65).rgb * vec3(.68,.77,.86);
-	vec3 dirt_colour = mix(soil_color.rgb,detail,.68)*(.85+.22*patch);
+	vec3 detail, grain_normal, surface;
+	sample_loam(p,detail,grain_normal,surface);
+	vec3 dirt_colour = detail*(.82+.32*patch);
 	float dirt = bank ? smoothstep(.0,.76,COLOR.r+(clods-.5)*.18) : 1.0;
 	float root_zone = bank ? 0.0 : 1.0-smoothstep(.025,.20,length(patch_point*vec2(1.0,1.2)));
 	float moisture = bank ? 0.0 : wetness*(1.0-smoothstep(.55,1.0,length(patch_point/vec2(.32,.24))));
-	dirt_colour *= 1.0 - .27*moisture - .18*planted*root_zone;
+	dirt_colour *= 1.0 - .23*moisture - .08*planted*root_zone;
 	ALBEDO = mix(turf_colour(p),dirt_colour,dirt);
-	float e = .004;
-	vec3 gradient = vec3((micro_height(p+vec2(e,0))-micro_height(p-vec2(e,0)))/(2.0*e),0,
-		(micro_height(p+vec2(0,e))-micro_height(p-vec2(0,e)))/(2.0*e));
 	// Tangent-free world-space detail, shared with the bank at the join.
 	vec3 n = normalize((INV_VIEW_MATRIX*vec4(NORMAL,0.0)).xyz);
-	vec3 soil_normal = normalize(n-gradient+n*dot(n,gradient));
+	vec3 perturbation = vec3(grain_normal.x,0,grain_normal.z)/max(grain_normal.y,.15);
+	vec3 soil_normal = normalize(n+perturbation-n*dot(n,perturbation));
 	NORMAL = normalize((VIEW_MATRIX*vec4(normalize(mix(turf_normal(p),soil_normal,dirt)),0.0)).xyz);
-	ROUGHNESS = mix(.98,.90,moisture);
+	ROUGHNESS = mix(surface.g,.85,moisture);
 	SPECULAR = .06;
-	AO = 1.0-.20*planted*root_zone;
+	AO = mix(1.0,surface.r,dirt)*(1.0-.13*planted*root_zone);
 	if (!bank) {
 		// Opaque ground shading: no floating geometry, transparency sorting or z-fighting.
 		vec2 edge = vec2(1.2,.88)-abs(bed_point);

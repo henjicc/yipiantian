@@ -23,6 +23,8 @@ static func instantiate(crop_id: String, stage: String, low_detail: bool = false
 
 static func planting_depth(crop_id: String, stage: String) -> float:
 	# Source origin remains at the root tip; the field owns the soil-surface anchor.
+	if crop_id == "greens":
+		return {"sprout": .001, "young": .009, "mature": .021}.get(stage, 0.0)
 	if crop_id != "radish":
 		return 0.0
 	match stage:
@@ -33,3 +35,10 @@ static func planting_depth(crop_id: String, stage: String) -> float:
 		"mature":
 			return 0.060
 	return 0.0
+
+
+static func soil_radius(crop_id: String, stage: String) -> Vector2:
+	# Audited at the soil contact slice of each imported stage, not canopy bounds.
+	if crop_id == "greens":
+		return {"sprout": Vector2(.018,.022), "young": Vector2(.055,.058), "mature": Vector2(.11,.10)}.get(stage,Vector2(.075,.06))
+	return {"sprout": Vector2(.014,.018), "young": Vector2(.024,.025), "mature": Vector2(.055,.055)}.get(stage,Vector2(.052,.05))

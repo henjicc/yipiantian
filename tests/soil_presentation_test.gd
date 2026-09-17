@@ -86,8 +86,10 @@ func _run() -> void:
 	scene.atmosphere.set_preview_hour(22.0)
 	await shot("06-night-selection")
 	scene.atmosphere.set_preview_hour(13.0)
+	var prior_radius: Vector2 = pad.get_instance_shader_parameter("root_radius")
 	_expect(scene.farm_state.harvest("field_01","cell_06",NOW).ok,"Mature plant harvest accepted")
 	scene.refresh_farm()
+	_expect(pad.get_instance_shader_parameter("root_radius") == prior_radius,"Harvest retracts the existing contact footprint without an instant size jump")
 	await create_timer(.6).timeout
 	_expect(is_zero_approx(float(pad.get_instance_shader_parameter("planted"))),"Harvest restores the soil without leaving a mound")
 	await shot("07-harvested")
