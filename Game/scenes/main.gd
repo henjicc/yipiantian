@@ -45,6 +45,7 @@ var _picks: Array[Dictionary] = []
 var _loaded: bool = false
 var _save_failed: bool = false
 var _record_session: String = ""
+var _exiting: bool = false
 
 
 func _ready() -> void:
@@ -77,7 +78,7 @@ func _ready() -> void:
 	hud.reset_requested.connect(_reset_view)
 	hud.retry_requested.connect(_retry_storage)
 	hud.recovery_requested.connect(_recover_storage)
-	hud.exit_requested.connect(func() -> void: get_tree().quit())
+	hud.exit_requested.connect(_finish_exit)
 	hud.decoration_requested.connect(_begin_decoration)
 	hud.settings_requested.connect(_open_menu)
 	camera.motion_finished.connect(_refresh_hud)
@@ -195,9 +196,11 @@ func _recover_storage() -> void:
 
 
 func _request_exit() -> void:
+	if _exiting:
+		return
 	_cancel_input()
 	if not _loaded:
-		get_tree().quit()
+		_finish_exit()
 		return
 	if game_menu != null:
 		if (_settings_dirty or not _settings_issue.is_empty()) and not _allow_leave_settings:
@@ -209,7 +212,25 @@ func _request_exit() -> void:
 		decoration_layout.finish_mode()
 	settle_farm()
 	if _save_farm():
-		get_tree().quit()
+		_finish_exit()
+
+
+func _finish_exit() -> void:
+	if _exiting:
+		return
+	_exiting = true
+	_cancel_input()
+	selected_tool = ""
+	# Admission is final: saving succeeded, or the player explicitly chose to
+	# leave without saving. No UI, timers, focus events or repeated close may write
+	# state or restart audio during the short mixer drain.
+	get_viewport().gui_disable_input = true
+	process_mode = Node.PROCESS_MODE_DISABLED
+	if is_instance_valid(farm_audio):
+		farm_audio.shutdown()
+	await get_tree().create_timer(0.1, true, false, true).timeout
+	await get_tree().process_frame
+	get_tree().quit()
 
 
 func settle_farm() -> void:
@@ -344,6 +365,8 @@ func _physics_process(_delta: float) -> void:
 
 
 func _notification(what: int) -> void:
+	if _exiting:
+		return
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
 		_request_exit()
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_WM_MOUSE_EXIT:

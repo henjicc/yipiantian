@@ -25,6 +25,7 @@ var _actions: Array[AudioStreamPlayer] = []
 var _last_action_usec: int = -1000000
 var _last_ui_usec: int = -1000000
 var _night_weight: float = 0.0
+var _shutdown: bool = false
 
 
 func _ready() -> void:
@@ -66,6 +67,8 @@ func get_volumes() -> Dictionary:
 
 
 func set_foreground(active: bool) -> void:
+	if _shutdown:
+		return
 	_foreground = active
 	if not is_node_ready():
 		return
@@ -113,7 +116,19 @@ func play_ui() -> bool:
 
 
 func _can_hear_effects() -> bool:
-	return is_node_ready() and _foreground and _volumes.master > 0.0 and _volumes.effects > 0.0
+	return not _shutdown and is_node_ready() and _foreground and _volumes.master > 0.0 and _volumes.effects > 0.0
+
+
+func shutdown() -> void:
+	if _shutdown:
+		return
+	_shutdown = true
+	# AudioServer retires stopped playback on a later mix. The scene's final exit
+	# keeps the engine running briefly after this, instead of stopping at teardown.
+	for player: AudioStreamPlayer in [_music, _day, _night, _ui] + _actions:
+		if is_instance_valid(player):
+			player.stop()
+			player.stream = null
 
 
 func _pause_background_loops() -> void:
