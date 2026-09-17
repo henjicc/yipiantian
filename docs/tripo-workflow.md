@@ -58,7 +58,7 @@ P2 荷花和 Ultra 民居实测还表明：源模型完整并不保证 Godot 自
 三种分件入口应分清，不能把“P2 + 原生四边面 + 语义分件”视为一次请求中可随意叠加的开关。
 
 - **生成时分件**：H3.1 `generate_parts=true` 需要 `texture=false`、`pbr=false`，且不发送 `quad`、`smart_low_poly`。纹理或 PBR 开启会拒绝；quad 被忽略并返回三角网格；smart_low_poly 优先且不产生分件。P2 在本机 CLI 不支持此参数。
-- **已有模型分割**：独立 `mesh/segment` 默认 `v1.0-20250506` 为几何分割；语义标记需明确选择 `v2.0-20260430` Beta。v2 支持 `segmentation_granularity=simple/balanced/detailed`、`split_by_connectivity`；传 `ref_image` 分割参考图时前两项被忽略。精细叶片能否分开、标签是否准确、后续是否保留四边面都待实测。
+- **已有模型分割**：独立 `mesh/segment` 默认 `v1.0-20250506` 为几何分割；语义标记需明确选择 `v2.0-20260430` Beta。v2 支持 `segmentation_granularity=simple/balanced/detailed`、`split_by_connectivity`；传 `ref_image` 分割参考图时前两项被忽略。桂花小样已验证可拆件，但输出只有编号、没有骨骼，且重新归一化尺度、重排UV并生成多张小贴图；详见下方实测。不能承诺逐叶语义正确或保留四边面。
 - **Smart Segmentation**：本机 CLI 的 `mesh smartsegment` 支持图片或已有 GLB、粗细粒度和文字 hint，要求文件 / URL，不能直接接任务 ID。此入口与普通 segment 的参数不同；官网入口见下方，当前仅核验本机说明，尚未执行。
 - **补全**：`mesh/complete` 接分割任务，可指定 `part_names`；`ai_completion` 生成缺失几何，`quick_cap` 只快速封口。拆开的屋顶、灯罩等可按需补内面，不假定分割结果天然水密。
 - **重拓扑**：`mesh/decimate` 的 v2.0 为智能高模转低模，支持 `quad`、部件选择和 `bake=true` 纹理烘焙；v1.0 为基础减面，不支持 bake / part_names。先检查轮廓与薄片再采用，不以目标面数或“智能”名称代替质量比较。
@@ -69,10 +69,26 @@ P2 荷花和 Ultra 民居实测还表明：源模型完整并不保证 Godot 自
 
 ## 动画、桥接与研究入口
 
-- 自动绑定覆盖双足、四足、多足、鸟类、蛇形和水生类型；先用 rig-check 判断可绑定性，再选实际体型与版本，验证蒙皮、接地和循环。作物风动、船体起伏不因此引入骨骼；多模型显隐表情不是通用面部绑定。见 [Auto Rig](https://developers.tripo3d.ai/en/docs/animations-rig)。
+- 自动绑定确实可生成骨骼与蒙皮权重：API 默认 `v1.0-20240301` 面向双足；`v2.5-20260210` 是本机 CLI 默认，可选双足、四足、六足、八足、鸟类、蛇形、水生七类，输出 GLB/FBX。先用免费 rig-check，再选实际体型与版本，检查骨架、蒙皮、接地和循环。公开参数没有 tree 类型，也没有传入自定义枝条关节/骨架的字段；不能把 `spec=mixamo` 当成任意骨架输入。见 [Auto Rig](https://developers.tripo3d.ai/en/docs/animations-rig)、[Rig Check](https://developers.tripo3d.ai/en/docs/animations-rig-check)。
+- 绑定与动作是两步：`animations/retarget` 接绑定任务，动作预设服务角色运动，没有已核验的树木风动/掉叶预设。树木不需要先分割才能蒙皮；分割只是辅助识别部位。桂花整树免费检查实际返回 `riggable=false, rig_type=others`（2026-09-17），本次未提交不匹配的付费绑定或动作任务。不能把检查任务 `status=success` 当成可绑定，必须看 output；本机 CLI 的结束摘要/归档只列 output_fields，需 `tripo task get <check_task_id> --json` 取得实际判断。见 [动作接口](https://developers.tripo3d.ai/en/docs/animations-retarget)及[桂花小样](../ArtSource/Environment/Trees/README.md)。
 - [Godot DCC Bridge](https://www.tripo3d.ai/blog/tripo-dcc-bridge-for-godot) 官方要求 Godot 4.6+，用于 Studio 资产传输；并非质量增强器，也不替代本项目原件保留、Blender 修整和导入验收。当前研究不代表已安装或测试桥接。
 - [Nexus](https://arxiv.org/abs/2607.13563) 研究分离顶点与拓扑的扩散式原生三角网格生成，不据此推断 P2 四边面全部内部实现。[HoloPart](https://github.com/VAST-AI-Research/HoloPart) 研究部件分割与补全，[UniRig](https://github.com/VAST-AI-Research/UniRig) 研究自动绑定。
 - [VAST 研究目录](https://www.tripo3d.ai/research) 还收录 PixTex（多视图一致纹理）、Grow3D（分层几何生成）、TopoCap（视频动作与重定向）、TripoSG / TripoSR 和 TripoSplat。论文与开源项目不自动等于产品 API 已开放；高斯表示也不直接替代本项目可编辑的网格资产。
+
+### 树木分件与动画：已验证边界和后续制作方案
+
+2026-09-17，图片工具桂花参考 → H3.1 Ultra（40000面预算、v3.5 HD纹理）→ `mesh/segment v2.0-20260430`（balanced、split_by_connectivity=false），花费60+40积分。分割前后均38798三角，1网格变19网格；原4K色图变19张128～512像素色图。分割输出将最大跨度归一化到1，恢复统一尺度与中心后，顶点到原表面的最大距离约6.14e-8，说明本例可以把部件标记映射回原高质量几何，而不是直接替换原纹理。
+
+Blender 5.2.2审计在临时拓扑副本焊合UV接缝后，原网格开边为0，分件合计1514条开边；正反面着色分件图可见主枝、叶簇和小枝被交叉分组。编号不是人工语义验收，局部原点也不是枝条铰接点。直接各件旋转会有露缝风险。当前仅完成制作路线小样、正反侧检查和免费绑定检查，未接入游戏、未验证动态接缝，不能称为动态成品。原件、参数、审计与检查工具见[树木源](../ArtSource/Environment/Trees/README.md)。
+
+针对用户要求的“枝条摆动、叶子飘落”，后续按以下分工制作，效果验证后再确定每种树的具体实现：
+
+1. **先整树**：图片工具参考中强调三维树冠、枝叶疏密和连接；整树图生保留自然组织关系。当前桂花小样厚度/宽度仅约0.36，侧面偏薄，后续需补体积或采用检查一致的多视图，不能靠分件或骨骼修复原始体量。
+2. **按需要分组**：利用Tripo分件辅助树干/主要枝条/叶簇标记；在Blender恢复坐标，把分组转成原模型的权重或少量骨骼。保持分叉处连续权重，根部锁定，细梢更柔。轻微远景风动可直接用连续顶点权重；长柳条或明显摆动才用分级骨骼，不要求每片叶子一根骨骼。
+3. **保留高清纹理并控制绘制数**：源文件保留可编辑分组；游戏导出可合并共用材质，保留权重/骨骼。先比较纹理与轮廓再决定减面，不直接把19材质的分析结果当最终资源。
+4. **落叶独立**：从合格叶片部件提取少量叶形，Godot用有限数量的网格粒子/实例表现旋转、随风、下落和落地消退；与枝条共享风向节奏。普通稀疏落叶不必逐帧切割整树或为每叶添加刚体。碰到屋顶、地面和水面需按实际发射区域处理遮挡/落点，验收极端摆幅与相邻模型交叠。参考 [Godot粒子属性](https://docs.godotengine.org/en/stable/tutorials/3d/particles/properties.html)。
+
+Tripo的开源[UniRig](https://github.com/VAST-AI-Research/UniRig)支持骨架预测、蒙皮预测并允许中间人工修骨架，研究范围包含物体；README同时将骨骼刚度等物理属性预测列为未发布。这是可研究的独立本地路线，不等于当前托管API支持树木。当前未安装或实测，不因此引入新的模型运行依赖。论文中的 Skeleton Tree 指骨架层级树，不能据此断言植物树木已受支持。
 
 ## 费用与输出记录
 

@@ -1,0 +1,30 @@
+{
+  "task_id": "8b32baa7-2b9d-43e2-ac95-74dd9328eae7",
+  "type": "image_to_model",
+  "status": "success",
+  "input": {
+    "pbr": false,
+    "delight": true,
+    "texture": true,
+    "export_uv": true,
+    "face_limit": 40000,
+    "model_seed": 9174101,
+    "model_version": "v3.1-20260211",
+    "texture_quality": "detailed",
+    "texture_version": "v3.5-20260815",
+    "geometry_quality": "detailed",
+    "enable_image_autofix": false
+  },
+  "output_fields": [
+    "model_url",
+    "rendered_image_url"
+  ],
+  "credits_consumed": 60,
+  "created_at": "2026-09-17T11:57:00.761865Z",
+  "completed_at": "2026-09-17T11:58:58.842891Z",
+  "files": [
+    "model.glb",
+    "rendered_image.webp",
+    "preview.png"
+  ]
+}

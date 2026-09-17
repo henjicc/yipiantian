@@ -1,0 +1,530 @@
+{
+  "blender": "5.2.2 LTS",
+  "runtime_adopted": false,
+  "raw": {
+    "mesh_count": 1,
+    "triangles": 38798,
+    "bounds_min": [
+      -0.1759708821773529,
+      -0.4908365309238434,
+      -0.4467179477214813
+    ],
+    "bounds_max": [
+      0.17636112868785858,
+      0.49009573459625244,
+      0.44910377264022827
+    ],
+    "parts": [
+      {
+        "name": "tripo_node_8b32baa7-2b9d-43e2-ac95-74dd9328eae7",
+        "triangles": 38798,
+        "vertices": 28672,
+        "connected_components": 3,
+        "boundary_edges": 0,
+        "loose_vertices": 0,
+        "materials": [
+          "tripo_material_8b32baa7-2b9d-43e2-ac95-74dd9328eae7"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.3523319959640503,
+          0.9809322357177734,
+          0.8958216905593872
+        ]
+      }
+    ],
+    "textures": [
+      {
+        "name": "Color_8b32baa7-2b9d-43e2-ac95-74dd9328eae7",
+        "size": [
+          4096,
+          4096
+        ]
+      }
+    ],
+    "armatures": 0,
+    "actions": 0,
+    "max_vertex_distance_to_raw": null,
+    "max_distance_after_uniform_bounds_alignment": null,
+    "topology_audit": "Positions welded at 1e-6 on a disposable copy to avoid counting UV seams as holes."
+  },
+  "segmented": {
+    "mesh_count": 19,
+    "triangles": 38798,
+    "bounds_min": [
+      -0.1795903891324997,
+      -0.5,
+      -0.456617534160614
+    ],
+    "bounds_max": [
+      0.1795903891324997,
+      0.5,
+      0.456617534160614
+    ],
+    "parts": [
+      {
+        "name": "tripo_part_0",
+        "triangles": 6513,
+        "vertices": 4017,
+        "connected_components": 2,
+        "boundary_edges": 125,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_0"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.24582162499427795,
+          0.3280872404575348,
+          0.5181897878646851
+        ]
+      },
+      {
+        "name": "tripo_part_1",
+        "triangles": 4022,
+        "vertices": 3035,
+        "connected_components": 2,
+        "boundary_edges": 108,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_1"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.2644997835159302,
+          0.4175677001476288,
+          0.28014057874679565
+        ]
+      },
+      {
+        "name": "tripo_part_2",
+        "triangles": 2671,
+        "vertices": 2173,
+        "connected_components": 5,
+        "boundary_edges": 99,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_2"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.2120162397623062,
+          0.3262925446033478,
+          0.31799259781837463
+        ]
+      },
+      {
+        "name": "tripo_part_3",
+        "triangles": 2393,
+        "vertices": 1799,
+        "connected_components": 2,
+        "boundary_edges": 19,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_3"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.25297266244888306,
+          0.33912673592567444,
+          0.18353718519210815
+        ]
+      },
+      {
+        "name": "tripo_part_4",
+        "triangles": 2041,
+        "vertices": 1540,
+        "connected_components": 4,
+        "boundary_edges": 71,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_4"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.23261606693267822,
+          0.25426149368286133,
+          0.2521415650844574
+        ]
+      },
+      {
+        "name": "tripo_part_5",
+        "triangles": 2551,
+        "vertices": 2166,
+        "connected_components": 7,
+        "boundary_edges": 177,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_5"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.29374808073043823,
+          0.5519601106643677,
+          0.2914963364601135
+        ]
+      },
+      {
+        "name": "tripo_part_6",
+        "triangles": 2615,
+        "vertices": 2085,
+        "connected_components": 5,
+        "boundary_edges": 55,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_6"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.281249076128006,
+          0.29950034618377686,
+          0.4478674530982971
+        ]
+      },
+      {
+        "name": "tripo_part_7",
+        "triangles": 2872,
+        "vertices": 2296,
+        "connected_components": 2,
+        "boundary_edges": 172,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_7"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.20495915412902832,
+          0.3980647921562195,
+          0.43763303756713867
+        ]
+      },
+      {
+        "name": "tripo_part_8",
+        "triangles": 1657,
+        "vertices": 1460,
+        "connected_components": 4,
+        "boundary_edges": 149,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_8"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.26641473174095154,
+          0.40668976306915283,
+          0.21379050612449646
+        ]
+      },
+      {
+        "name": "tripo_part_9",
+        "triangles": 1210,
+        "vertices": 898,
+        "connected_components": 3,
+        "boundary_edges": 22,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_9"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.2110210359096527,
+          0.16491611301898956,
+          0.1690451204776764
+        ]
+      },
+      {
+        "name": "tripo_part_10",
+        "triangles": 2025,
+        "vertices": 1625,
+        "connected_components": 5,
+        "boundary_edges": 103,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_10"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.259288489818573,
+          0.5463439226150513,
+          0.4659719467163086
+        ]
+      },
+      {
+        "name": "tripo_part_11",
+        "triangles": 1112,
+        "vertices": 798,
+        "connected_components": 1,
+        "boundary_edges": 16,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_11"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.16769185662269592,
+          0.19671425223350525,
+          0.14769023656845093
+        ]
+      },
+      {
+        "name": "tripo_part_12",
+        "triangles": 1022,
+        "vertices": 787,
+        "connected_components": 2,
+        "boundary_edges": 50,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_12"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.19735217094421387,
+          0.1441025286912918,
+          0.1929907500743866
+        ]
+      },
+      {
+        "name": "tripo_part_13",
+        "triangles": 1443,
+        "vertices": 1128,
+        "connected_components": 3,
+        "boundary_edges": 23,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_13"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.1774362325668335,
+          0.1858292818069458,
+          0.18058934807777405
+        ]
+      },
+      {
+        "name": "tripo_part_14",
+        "triangles": 955,
+        "vertices": 749,
+        "connected_components": 1,
+        "boundary_edges": 47,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_14"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.14879541099071503,
+          0.1293468177318573,
+          0.15924595296382904
+        ]
+      },
+      {
+        "name": "tripo_part_15",
+        "triangles": 1296,
+        "vertices": 1008,
+        "connected_components": 2,
+        "boundary_edges": 26,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_15"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.20974019169807434,
+          0.1972401887178421,
+          0.1197076365351677
+        ]
+      },
+      {
+        "name": "tripo_part_16",
+        "triangles": 1268,
+        "vertices": 972,
+        "connected_components": 1,
+        "boundary_edges": 146,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_16"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.13431330025196075,
+          0.4251566529273987,
+          0.2702111601829529
+        ]
+      },
+      {
+        "name": "tripo_part_17",
+        "triangles": 819,
+        "vertices": 652,
+        "connected_components": 2,
+        "boundary_edges": 65,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_17"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.14216288924217224,
+          0.1474437415599823,
+          0.2853103280067444
+        ]
+      },
+      {
+        "name": "tripo_part_18",
+        "triangles": 313,
+        "vertices": 250,
+        "connected_components": 1,
+        "boundary_edges": 41,
+        "loose_vertices": 0,
+        "materials": [
+          "Material_tripo_part_18"
+        ],
+        "uv_layers": 1,
+        "dimensions": [
+          0.08233664184808731,
+          0.13983093202114105,
+          0.04816150665283203
+        ]
+      }
+    ],
+    "textures": [
+      {
+        "name": "tripo_image_0_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_10_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_11_base_color",
+        "size": [
+          256,
+          256
+        ]
+      },
+      {
+        "name": "tripo_image_12_base_color",
+        "size": [
+          256,
+          256
+        ]
+      },
+      {
+        "name": "tripo_image_13_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_14_base_color",
+        "size": [
+          256,
+          256
+        ]
+      },
+      {
+        "name": "tripo_image_15_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_16_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_17_base_color",
+        "size": [
+          256,
+          256
+        ]
+      },
+      {
+        "name": "tripo_image_18_base_color",
+        "size": [
+          128,
+          128
+        ]
+      },
+      {
+        "name": "tripo_image_1_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_2_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_3_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_4_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_5_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_6_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_7_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_8_base_color",
+        "size": [
+          512,
+          512
+        ]
+      },
+      {
+        "name": "tripo_image_9_base_color",
+        "size": [
+          512,
+          512
+        ]
+      }
+    ],
+    "armatures": 0,
+    "actions": 0,
+    "max_vertex_distance_to_raw": 0.010500140488147736,
+    "max_distance_after_uniform_bounds_alignment": 6.143906006172983e-08,
+    "topology_audit": "Positions welded at 1e-6 on a disposable copy to avoid counting UV seams as holes."
+  }
+}

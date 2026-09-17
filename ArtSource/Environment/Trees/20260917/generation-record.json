@@ -1,0 +1,73 @@
+{
+  "date": "2026-09-17",
+  "status": "feasibility_study_complete_runtime_pending",
+  "starting_balance": 8840,
+  "purpose": "江南九月树木更新：先用桂花整树验证语义分割是否能成为枝条/叶簇动画的制作输入；未接入游戏。",
+  "assets": [
+    {
+      "name": "osmanthus",
+      "reference_image": "osmanthus/concept.png",
+      "source_image": "%USERPROFILE%/.codex/generated_images/01a0ae6e-de63-7993-a518-c7a1957240cb/exec-5d460aaf-b019-4855-a7d9-7ad3b693f707.png",
+      "image_tool": "built-in image_gen",
+      "image_model": null,
+      "prompt": "Create a single-object 3D modelling reference for our stylized Jiangnan miniature farming game. Input 1 is the APPROVED pale painted material / rounded shape style reference only (bok choy); input 2 is the APPROVED world art direction only. Do not depict the vegetable, farm, architecture or UI. Exactly ONE sweet osmanthus tree, Osmanthus fragrans, early-flowering pale silver osmanthus in mid-September Jiangnan: healthy warm deep-green oval leaves, only a scattering of tiny ivory-to-pale-gold flowers at leaf axils, not large blossoms and not a yellow-flower ball. A graceful compact courtyard tree about 3.5m tall, gently crooked grey-brown woody trunk dividing into three stout organic branches; trunk clearly exposed in bottom 40%, roots end at a stable simple ground-contact base without a soil clump. Crown wider than tall, irregular rounded tiered clusters with REAL visible gaps between branch groups, visibly layered leafy edges, carefully simplified leaves with volume. Appealing softly rounded stylized 3D game sculpture with fine selective contour definition and restrained gongbi pale painted washes, matte green foliage and warm bark. Maintain leafy green colour separation, not grey-green monochrome. Natural asymmetry, complete freestanding tree with front/side/depth visible, NOT a flat cutout, spherical topiary, bonsai pot, giant broccoli blob or excessively realistic dense microleaves. Three-quarter view, weak perspective, slight elevated view, whole trunk base and every branch tip inside frame with ample margins. Plain light neutral background, soft neutral studio illumination, faint contact shadow only. No ground disc, stone, grass, planter, scene, text, collage, labels, hard baked shadows or dramatic lighting. One coherent object, high quality standalone reference.",
+      "reference_inputs": [
+        "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+        "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+      ],
+      "image_review": "完整单体、基底无附带场景，主枝和叶簇间留空；叶片尺度作卡通化处理，尚需三维与游戏机位复核。",
+      "model": "v3.1-20260211",
+      "model_seed": 9174101,
+      "parameters": {
+        "geometry_quality": "detailed",
+        "face_limit": 40000,
+        "texture": true,
+        "pbr": false,
+        "texture_version": "v3.5-20260815",
+        "texture_quality": "detailed",
+        "delight": true
+      },
+      "task_id": "8b32baa7-2b9d-43e2-ac95-74dd9328eae7",
+      "route_reason": "先保留整树枝叶关系和H3.1 Ultra细节，再单独比较语义分割v2。分割不自动生成骨骼、枢轴或落叶；不因需要动画而盲用P2四边面。",
+      "credits_consumed": 60,
+      "original_model": "osmanthus/raw/model.glb",
+      "server_echo_record": "osmanthus/raw/task.json",
+      "processing": [
+        {
+          "model": "v2.0-20260430",
+          "task_id": "621b897b-e258-44fd-b74b-59d86fd834e8",
+          "parameters": {
+            "split_by_connectivity": false,
+            "segmentation_granularity": "balanced"
+          },
+          "output": "osmanthus/segmented/model.glb",
+          "credits_consumed": 40,
+          "operation": "mesh_segmentation"
+        },
+        {
+          "credits_consumed": 0,
+          "task_id": "b197026e-0dac-483e-a665-4b47b1f96fa9",
+          "output": {
+            "rig_type": "others",
+            "riggable": false
+          },
+          "record": "osmanthus/rig-check.json",
+          "operation": "rig_check"
+        },
+        {
+          "version": "5.2.2 LTS",
+          "views": "front/back/side",
+          "changes_original_glb": false,
+          "entry": "inspect.py",
+          "audit": "osmanthus/segmentation-audit.json",
+          "operation": "blender_inspection"
+        }
+      ],
+      "runtime_adopted": false,
+      "remaining": "改善扁平冠形；制作连续枝条权重/骨骼、叶簇风动和独立落叶；其他树种及场景接入尚未实施"
+    }
+  ],
+  "ending_balance": 8740,
+  "frozen": 0,
+  "total_credits_consumed": 100
+}
