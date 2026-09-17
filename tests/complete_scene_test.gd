@@ -85,11 +85,13 @@ func _run() -> void:
 	scene.camera.drag(Vector2(-300, 160), false)
 	scene.camera.drag(Vector2(800, 800), true)
 	scene.camera.zoom(-100)
+	await create_timer(0.35).timeout
 	await _capture("04-focus-limit.png")
 	scene._reset_view()
 	await create_timer(0.85).timeout
 	scene.camera.drag(Vector2(600, -600), false)
 	scene.camera.zoom(100)
+	await create_timer(0.35).timeout
 	await _capture("05-overview-limit.png")
 	scene._reset_view()
 	await create_timer(0.85).timeout

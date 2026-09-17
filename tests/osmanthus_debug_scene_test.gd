@@ -52,12 +52,14 @@ func _run() -> void:
 	scene._input(press);scene._unhandled_input(press)
 	var motion := InputEventMouseMotion.new();motion.relative=Vector2(150,40)
 	var old_rotation: Vector3=scene.camera.rotation
+	var old_position: Vector3=scene.camera.position
 	scene._unhandled_input(motion)
-	expect(not old_rotation.is_equal_approx(scene.camera.rotation) and scene.camera.free_view, "Right drag rotates without invoking overview cancellation")
+	expect(old_rotation.is_equal_approx(scene.camera.rotation) and not old_position.is_equal_approx(scene.camera.position) and scene.camera.free_view, "Right drag pans without invoking overview cancellation")
 	scene._notification(Node.NOTIFICATION_WM_MOUSE_EXIT)
 	old_rotation=scene.camera.rotation
+	old_position=scene.camera.position
 	scene._unhandled_input(motion)
-	expect(old_rotation.is_equal_approx(scene.camera.rotation), "Leaving window cancels look gesture")
+	expect(old_rotation.is_equal_approx(scene.camera.rotation) and old_position.is_equal_approx(scene.camera.position), "Leaving window cancels camera gesture")
 	scene._open_menu()
 	expect(not scene.camera.free_input_enabled, "Modal blocks free-camera movement")
 	scene._request_menu_close()

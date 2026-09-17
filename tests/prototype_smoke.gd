@@ -66,6 +66,7 @@ func _run() -> void:
 	camera.drag(Vector2(25, -10), false)
 	camera.drag(Vector2(12, 8), true)
 	camera.zoom(-1.0)
+	await create_timer(0.35).timeout
 	var adjusted_point: Vector3 = camera.focus_point
 	var adjusted_view: Vector3 = camera.view
 	await _click(camera.unproject_position(scene.farm.fields[2].global_position + Vector3(0, 0.4, 0)))

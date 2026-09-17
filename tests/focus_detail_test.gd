@@ -111,8 +111,7 @@ func _run() -> void:
 	var stable_meshes: Array[int] = _mesh_ids()
 	for zoom: float in [-100.0, 100.0, -3.1, 0.2, -0.2, 0.2, -0.2]:
 		scene.camera.zoom(zoom)
-		await process_frame
-		await process_frame
+		await create_timer(0.35).timeout
 		_expect(_clear_band_contains_field(1) and _field_bias(1) > 1.0, "Zoom limits and threshold neighbourhood retain focused detail and clear band")
 	scene.camera.drag(Vector2(900, -900), false)
 	scene.camera.drag(Vector2(900, 900), true)

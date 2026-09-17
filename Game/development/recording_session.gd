@@ -16,6 +16,7 @@ var _farm_now: float = 0.0
 var _courtyard_demo: bool = false
 var _final_demo: bool = false
 var _tree_demo: bool = false
+var _camera_demo: bool = false
 var _tree_start: Transform3D
 var _movie_frame_limit: int = 0
 
@@ -36,6 +37,7 @@ func _ready() -> void:
 	_courtyard_demo = bool(config.get("courtyard_demo", false))
 	_final_demo = bool(config.get("final_demo", false))
 	_tree_demo = bool(config.get("tree_demo", false))
+	_camera_demo = bool(config.get("camera_demo", false))
 	_movie_frame_limit = int(config.get("movie_frame_limit", 0))
 	if OS.has_feature("movie") and bool(config.get("capture_audio", false)):
 		# Only this explicit editor-only isolated recording session may render an
@@ -68,7 +70,7 @@ func _ready() -> void:
 			if child is Timer and child.timeout.is_connected(Callable(farm_scene.hud, "_update_clock")):
 				child.stop()
 		_set_demo_hour(12.0)
-	if _tree_demo:
+	if _tree_demo or _camera_demo:
 		for child: Node in farm_scene.hud.get_children():
 			if child is Timer and child.timeout.is_connected(Callable(farm_scene.hud,"_update_clock")): child.stop()
 		_set_demo_hour(16.5)
@@ -131,6 +133,9 @@ func _process(delta: float) -> void:
 	if not _started or _stopping or not _demo:
 		return
 	_elapsed += delta
+	if _camera_demo:
+		_run_camera_demo(delta)
+		return
 	if _tree_demo:
 		_run_tree_demo()
 		return
@@ -155,6 +160,49 @@ func _process(delta: float) -> void:
 	elif _stage == 3 and _elapsed >= 17.0:
 		farm_scene._return_overview()
 		_stage = 4
+
+
+func _run_camera_demo(delta: float) -> void:
+	var camera: FarmCamera = farm_scene.camera
+	if _stage == 0 and _elapsed >= 4.0:
+		camera.zoom(-6.0)
+		_stage = 1
+	elif _stage == 1 and _elapsed >= 8.0:
+		farm_scene._toggle_free_view()
+		_stage = 2
+	elif _stage == 2 and _elapsed >= 9.0:
+		var press := InputEventMouseButton.new()
+		press.button_index = MOUSE_BUTTON_LEFT; press.pressed = true
+		press.position = camera.unproject_position(Vector3(0, 2.5, -3))
+		camera.free_input(press)
+		_stage = 3
+	elif _stage == 3:
+		var motion := InputEventMouseMotion.new()
+		motion.relative = Vector2(-deg_to_rad(3.0) / 0.003 * delta, 0)
+		camera.free_input(motion)
+		if _elapsed >= 14.0:
+			camera.end_free_drag(MOUSE_BUTTON_LEFT)
+			_stage = 4
+	elif _stage == 4 and _elapsed >= 17.0:
+		var press := InputEventMouseButton.new()
+		press.button_index = MOUSE_BUTTON_RIGHT; press.pressed = true
+		press.position = get_viewport().get_visible_rect().size * 0.5
+		camera.free_input(press)
+		_stage = 5
+	elif _stage == 5:
+		var motion := InputEventMouseMotion.new()
+		motion.relative = Vector2(45, -12) * delta
+		motion.position = get_viewport().get_visible_rect().size * 0.5
+		camera.free_input(motion)
+		if _elapsed >= 19.0:
+			camera.end_free_drag(MOUSE_BUTTON_RIGHT)
+			_stage = 6
+	elif _stage == 6 and _elapsed >= 22.0:
+		farm_scene._return_overview()
+		_stage = 7
+	elif _stage == 7 and _elapsed >= 25.0:
+		camera.zoom(100.0)
+		_stage = 8
 
 
 func _run_tree_demo() -> void:

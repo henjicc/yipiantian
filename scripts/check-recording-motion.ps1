@@ -3,13 +3,17 @@
 param(
     [Parameter(Mandatory)][string]$VideoPath,
     [Parameter(Mandatory)][string]$FFmpegPath,
-    [ValidateSet('classic', 'final')][string]$Tour = 'classic'
+    [ValidateSet('classic', 'final', 'camera')][string]$Tour = 'classic'
 )
 
 $ErrorActionPreference = 'Stop'
 # These intervals are inside the current 24-second tour's movement, not its intentional holds.
 # Update them together with recording_session.gd if the tour changes.
-$segments = if ($Tour -eq 'final') { @(
+$segments = if ($Tour -eq 'camera') { @(
+    @{ name='绕点击位置旋转'; start=10.5; frames=120 },
+    @{ name='右键平移'; start=17.4; frames=60 },
+    @{ name='返回普通视角'; start=22.4; frames=60 }
+) } elseif ($Tour -eq 'final') { @(
     @{ name='推进'; start=4.4; frames=60 },
     @{ name='照料后缓转'; start=13.6; frames=120 },
     @{ name='返回全景'; start=27.3; frames=60 }

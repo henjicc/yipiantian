@@ -128,6 +128,7 @@ func _run() -> void:
 	_expect(not scene.camera.focus_point.is_equal_approx(point_before), "Shift-middle drag still pans")
 	var distance_before: float = scene.camera.view.z
 	await _button(_point(1), true, MOUSE_BUTTON_WHEEL_UP)
+	await create_timer(0.35).timeout
 	_expect(scene.camera.view.z < distance_before and scene.farm_state.snapshot() == harvested, "Camera manipulation never farms")
 	await _button(_point(1), true, MOUSE_BUTTON_RIGHT)
 	await _button(_point(1), false, MOUSE_BUTTON_RIGHT)

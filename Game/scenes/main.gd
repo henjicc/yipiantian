@@ -311,8 +311,8 @@ func _input(event: InputEvent) -> void:
 		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 			_return_overview()
 			get_viewport().set_input_as_handled()
-		elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and not event.pressed:
-			camera.cancel_free_look()
+		elif event is InputEventMouseButton and (not event.pressed or event.canceled):
+			camera.end_free_drag(event.button_index)
 		return
 	if decoration_layout != null and decoration_layout.active:
 		decoration_layout.observe_input(event)
@@ -350,6 +350,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		camera.free_input(event)
 		get_viewport().set_input_as_handled()
 		return
+	if event is InputEventMouseButton and event.pressed and not event.canceled and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		_cancel_input()
+		if decoration_layout != null:
+			decoration_layout.cancel_pointer_gesture()
+		camera.zoom((-0.8 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.8) * event.factor)
+		get_viewport().set_input_as_handled()
+		return
 	if decoration_layout != null and decoration_layout.active:
 		decoration_layout.handle_input(event)
 		return
@@ -371,10 +378,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			MOUSE_BUTTON_MIDDLE:
 				_cancel_input()
 				_dragging = event.pressed
-			MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN:
-				if event.pressed:
-					_cancel_input()
-					camera.zoom(-0.8 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.8)
 	elif event is InputEventMouseMotion and _dragging:
 		camera.drag(event.relative, event.shift_pressed)
 
@@ -415,7 +418,7 @@ func _notification(what: int) -> void:
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_WM_MOUSE_EXIT:
 		_cancel_input()
 		if is_instance_valid(camera):
-			camera.cancel_free_look()
+			camera.cancel_free_gesture()
 		selected_tool = ""
 		if decoration_layout != null and decoration_layout.active:
 			if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
@@ -632,7 +635,7 @@ func _open_menu() -> void:
 		return
 	_cancel_input()
 	camera.free_input_enabled = false
-	camera.cancel_free_look()
+	camera.cancel_free_gesture()
 	decoration_layout.cancel_pointer_gesture()
 	selected_tool = ""
 	_allow_leave_settings = false
