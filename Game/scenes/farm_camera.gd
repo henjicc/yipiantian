@@ -3,8 +3,8 @@ extends Camera3D
 
 signal motion_finished
 
-const DEFAULT_POINT := Vector3(0.0, 0.85, 0.0)
-const DEFAULT_VIEW := Vector3(25.0, 22.0, 28.0)
+const DEFAULT_POINT := Vector3(0.25, 0.75, 0.0)
+const DEFAULT_VIEW := Vector3(27.5, 16.5, 28.6)
 const FOCUS_DISTANCE: float = 10.4
 const ARRANGEMENT_DISTANCE: float = 31.0
 const ZOOM_RESPONSE: float = 16.0
