@@ -304,4 +304,4 @@ rc.5交付：源码8f39fd66干净独立克隆、导入和发行导出通过，PC
 
 ### 低机位前景（2026-09-18）
 
-当前按用户选定的16.5°俯角重新安排左右边角，复用已有有纹理的桂花、竹、野花与河石，替换原单色程序叶片。构图、来源、成本和对比截图见[环境前景节点](../ArtSource/Environment/README.md#前景节点20260918-低机位边角框景)。运行 `scripts/godot.ps1 -Action Run -ExtraArgs @('--script','../tests/foreground_composition_test.gd')` 可复现定向原生检查，截图与报告在 `.local/verification/foreground-20260918/after/`。本轮验证构图和受影响的景深／退让，不跑存档或全资产回归，也未将源三角形数当作GPU性能结论。选景深时先定位前景与船／六田的真实深度，再调清晰带；单独增加统一模糊强度会误伤船和水中荷花。
+当前按用户选定的16.5°俯角重新安排左右边角，复用已有有纹理的桂花、竹、野花与河石，替换原单色程序叶片。构图、来源、成本和对比截图见[环境前景节点](../ArtSource/Environment/README.md#前景节点20260918-低机位边角框景)。后续已补充下沿水草与浮动荷花。运行 `scripts/godot.ps1 -Action Run -ExtraArgs @('--script','../tests/foreground_composition_test.gd','--','--output=<REPO_ROOT>/.local/verification/foreground-shore-20260918')` 可复现定向原生检查，截图与报告在指定目录；其他机器改为仓库内`.local/`下绝对路径。默认输出属于首版前景证据，后续务必指定独立目录避免覆盖。本轮验证构图和受影响的景深／退让，不跑存档或全资产回归，也未将源三角形数当作GPU性能结论。选景深时先定位前景与船／六田的真实深度，再调清晰带；单独增加统一模糊强度会误伤船和水中荷花。

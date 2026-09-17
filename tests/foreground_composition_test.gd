@@ -9,6 +9,10 @@ var failures: Array[String] = []
 func _initialize() -> void:
 	before = OS.get_cmdline_user_args().has("--before")
 	output = ProjectSettings.globalize_path("res://../.local/verification/foreground-20260918/" + ("before" if before else "after"))
+	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--output="):
+			output = argument.trim_prefix("--output=")
+	assert(output.replace("\\", "/").begins_with(ProjectSettings.globalize_path("res://../.local/").simplify_path().replace("\\", "/")+"/"))
 	_run.call_deferred()
 
 
@@ -33,7 +37,8 @@ func _run() -> void:
 	for geometry: MeshInstance3D in frame.find_children("*", "MeshInstance3D", true, false):
 		surfaces += geometry.mesh.get_surface_count()
 		for index: int in geometry.mesh.get_surface_count():
-			triangles += geometry.mesh.surface_get_array_index_len(index) / 3
+			var indices: int = geometry.mesh.surface_get_array_index_len(index)
+			triangles += (indices if indices > 0 else geometry.mesh.surface_get_array_len(index)) / 3
 	var report := {"source_triangles": triangles, "surfaces": surfaces,
 		"near_distance": scene.camera.attributes.dof_blur_near_distance,
 		"blur_amount": scene.camera.attributes.dof_blur_amount, "camera": scene.camera.overview_parameters()}
@@ -43,6 +48,13 @@ func _run() -> void:
 			var depths: Vector2 = scene.focus_detail.depth_range(scene.camera,field.global_transform,AABB(Vector3(-1.4,-.1,-1.15),Vector3(2.8,.75,2.3)))
 			expect(scene.camera.attributes.dof_blur_near_distance <= depths.x, "Crop beds stay outside near blur")
 		expect(frame._groups[0].node.visible and frame._groups[1].node.visible, "Both edges visible at selected overview")
+		for group: Dictionary in frame._groups:
+			expect(group.node.visible, "Foreground group appears at intended overview: " + str(group.node.name))
+		for shore: String in ["ReedShoreLeft", "ReedShoreRight"]:
+			for band: int in 3:
+				expect(frame.get_node_or_null(shore+"/ReedBlades%d" % band) != null, "Curved reeds constructed: " + shore)
+		for patch: Dictionary in frame._water_plants:
+			expect(patch.node.global_position.y < -.35, "Scaled P2 lotus roots remain submerged through bobbing")
 		scene.atmosphere.set_preview_hour(7.2)
 		await shot("02-morning.png")
 		scene.focus_detail.set_depth_of_field(false)
