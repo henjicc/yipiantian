@@ -17,6 +17,7 @@ const BankGeometry = preload("res://layout/bank_geometry.gd")
 const Circulation = preload("res://layout/courtyard_circulation.gd")
 const FenceGeometry = preload("res://layout/fence_geometry.gd")
 const Space = preload("res://scenes/environment/animal_space.gd")
+const DoorTools = preload("res://scenes/environment/door_tools.gd")
 # Modules whose feet meet a visible surface and therefore need a contact pool.
 const CONTACT_MODULES := ["veranda", "side_wing", "stone_bridge", "climbing_trellis", "bamboo_fence"]
 const ROOT := "res://art/environment/"
@@ -76,6 +77,9 @@ func _ready() -> void:
 	var animals := CourtyardAnimals.new()
 	animals.name = "CourtyardAnimals"
 	add_child(animals)
+	var door_tools := DoorTools.new()
+	door_tools.name = "DoorTools"
+	add_child(door_tools)
 
 func _circulation_obstacles() -> Dictionary:
 	var result: Dictionary = {}

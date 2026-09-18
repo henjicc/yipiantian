@@ -71,6 +71,8 @@ P2 荷花和 Ultra 民居实测还表明：源模型完整并不保证运行时�
 
 ## 动画、桥接与研究入口
 
+- 2026-09-19农夫实测：需要Tripo预设动作时选择 `spec=tripo`。`spec=mixamo` 的绑定虽成功，retarget实际返回1004“不支持mixamo骨骼的retarget”；不能因兼容Mixamo命名就假定兼容服务自身预设。v1.0原生规格的walk／idle／sit批量动作已成功。CLI0.4用 `-p model=v1.0-20240301` 指定绑定版本，不支持 `--model`。来源、失败任务、费用与实际蒙皮预览见[农夫记录](../ArtSource/Characters/Farmer/README.md)。
+
 - 自动绑定确实可生成骨骼与蒙皮权重：API 默认 `v1.0-20240301` 面向双足；`v2.5-20260210` 是本机 CLI 默认，可选双足、四足、六足、八足、鸟类、蛇形、水生七类，输出 GLB/FBX。先用免费 rig-check，再选实际体型与版本，检查骨架、蒙皮、接地和循环。公开参数没有 tree 类型，也没有传入自定义枝条关节/骨架的字段；不能把 `spec=mixamo` 当成任意骨架输入。见 [Auto Rig](https://developers.tripo3d.ai/en/docs/animations-rig)、[Rig Check](https://developers.tripo3d.ai/en/docs/animations-rig-check)。
 - 绑定与动作是两步：`animations/retarget` 接绑定任务，动作预设服务角色运动，没有已核验的树木风动/掉叶预设。树木不需要先分割才能蒙皮；分割只是辅助识别部位。桂花整树免费检查实际返回 `riggable=false, rig_type=others`（2026-09-17），本次未提交不匹配的付费绑定或动作任务。不能把检查任务 `status=success` 当成可绑定，必须看 output；本机 CLI 的结束摘要/归档只列 output_fields，需 `tripo task get <check_task_id> --json` 取得实际判断。见 [动作接口](https://developers.tripo3d.ai/en/docs/animations-retarget)及[桂花小样](../ArtSource/Environment/Trees/README.md)。
 - [Godot DCC Bridge](https://www.tripo3d.ai/blog/tripo-dcc-bridge-for-godot) 官方要求 Godot 4.6+，用于 Studio 资产传输；并非质量增强器，也不替代本项目原件保留、Blender 修整和导入验收。当前研究不代表已安装或测试桥接。

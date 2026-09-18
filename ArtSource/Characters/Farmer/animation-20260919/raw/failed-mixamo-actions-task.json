@@ -1,0 +1,10 @@
+{
+  "type": "animate_retarget",
+  "status": "failed",
+  "progress": 100,
+  "task_id": "c0b7e96a-9442-459c-8c2d-ed8cd5d25881",
+  "created_at": "2026-09-18T16:32:46.719904Z",
+  "completed_at": "2026-09-18T16:32:57.440641Z",
+  "error_code": 1004,
+  "error_message": "不支持mixamo骨骼的retarget"
+}
