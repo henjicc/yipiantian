@@ -7,6 +7,11 @@ signal view_requested(neighbor: String)
 signal view_closed
 signal kitchen_requested(action: String, request: Dictionary, revision: int)
 signal kitchen_view_requested(station: String)
+signal memory_view_requested(id: String)
+signal photo_requested
+signal photo_action_requested(action: String, photo: Dictionary)
+const MemoryPage=preload("res://ui/memory_page.gd")
+var memory_page:=MemoryPage.new()
 const KitchenPage=preload("res://ui/kitchen_page.gd")
 var kitchen_page:=KitchenPage.new()
 var now_utc: float=0.0
@@ -62,7 +67,7 @@ func _ready() -> void:
 	paper.add_child(page)
 	var header:=HBoxContainer.new()
 	page.add_child(header)
-	for entry: Array in [["food","菜篮"],["neighbors","邻里"],["kitchen","厨房"],["journal","食记"]]:
+	for entry: Array in [["food","菜篮"],["neighbors","邻里"],["kitchen","厨房"],["journal","食记"],["memories","见闻"],["album","相册"]]:
 		var button:=_button(header,entry[1])
 		button.name=entry[0]
 		button.toggle_mode=true
@@ -84,12 +89,15 @@ func _ready() -> void:
 	_view_controls.name="NeighborView"
 	_root.add_child(_view_controls)
 	_view_controls.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_view_controls.offset_left=-120
-	_view_controls.offset_right=120
+	_view_controls.offset_left=-180
+	_view_controls.offset_right=180
 	_view_controls.offset_top=-82
 	_view_controls.offset_bottom=-28
 	_return_button=_button(_view_controls,"回到小笺")
 	_return_button.pressed.connect(end_view)
+	var view_photo:=_button(_view_controls,"拍照")
+	view_photo.name="ViewPhoto";view_photo.icon=preload("res://art/ui/camera.svg")
+	view_photo.pressed.connect(func() -> void: photo_requested.emit())
 	_view_controls.hide()
 	_root.hide()
 
@@ -128,6 +136,11 @@ func begin_kitchen_view(station: String) -> void:
 	_view_controls.show()
 	kitchen_view_requested.emit(station)
 
+func begin_memory_view(id: String) -> void:
+	_return_button.text="回到见闻"
+	viewing=true;_paper.hide();_shade.hide();_view_controls.show()
+	memory_view_requested.emit(id)
+
 func update_time(now: float) -> void:
 	now_utc=now
 	if active and tab=="kitchen": kitchen_page.tick(now)
@@ -158,6 +171,7 @@ func _render() -> void:
 	for id: String in _tabs: _tabs[id].set_pressed_no_signal(id==tab)
 	if tab=="food": _food()
 	elif tab=="neighbors": _neighbors()
+	elif tab in ["memories","album"]: memory_page.render(self,_data,tab=="album")
 	else: kitchen_page.render(self,_data,tab=="journal",now_utc)
 
 func _food() -> void:

@@ -330,3 +330,7 @@ rc.5交付：源码8f39fd66干净独立克隆、导入和发行导出通过，PC
 ## 主岛生活细节与环绕雾（2026-09-18）
 
 14种资产、955积分、禽类动画、夜间灯笼和农田暖光、原始数据与补拍索引见[制作记录](../ArtSource/Environment/CourtyardLife/README.md)。定向原生入口 `scripts/godot.ps1 -Action Run -ExtraArgs @('--script','../tests/courtyard_life_test.gd')` 覆盖昼夜、左右岛雾响应、聚焦连续性、摆件反向接触和水禽运动。另有窗口焦点策略定向检查 `tests/window_preview_activity_test.gd`；可见开发预览失焦上限60fps，最小化15fps，不代表实际稳定帧率。落花改为有界MultiMesh由渲染时间驱动，避免逐帧上传和低物理帧率步进。
+
+## 见闻、相册与缩放窗口输入（2026-09-18）
+
+入口、状态、原图位置和定向证据见[相册节点](design-baseline/动物行为与轻松玩法候选.md#十田园见闻与相册实现节点--20260918)。程序化GUI检查若使用Control的逻辑坐标，应采用Viewport.push_input(event, true)；Input.parse_input_event使用窗口输入语义，在窗口缩放后直接传逻辑坐标会点错位置，不能因此认定实际按钮失效。鼠标按下／释放仍需成对。涉及生长的界面检查注入固定clock，只比较需要保持的状态；不把正常时间结算误报为滚轮修改农场。截图等frame_post_draw，并检查实际图片，不以save_png调用本身作为捕获成功证据。

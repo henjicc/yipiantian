@@ -21,6 +21,8 @@ const CourtyardEditSession = preload("res://layout/courtyard_edit_session.gd")
 const HarvestBook = preload("res://ui/harvest_book.gd")
 const KitchenDisplay=preload("res://presentation/kitchen_display.gd")
 const AnimalPanel=preload("res://ui/animal_panel.gd")
+const GardenAlbum=preload("res://presentation/garden_album.gd")
+var garden_album: GardenAlbum
 var animal_panel: AnimalPanel
 var _pressed_animal: String=""
 var kitchen_display: KitchenDisplay
@@ -232,6 +234,7 @@ func _ready() -> void:
 		atmosphere.set_preview_hour(_presentation_resume.hour)
 	if OS.has_feature("editor") and OS.get_cmdline_user_args().has("--dev-preview"):
 		_report_preview_ready.call_deferred()
+	garden_album=GardenAlbum.new();garden_album.name="GardenAlbum";add_child(garden_album);garden_album.configure(self)
 	var timer := Timer.new()
 	timer.name = "SettlementTimer"
 	timer.wait_time = 1.0
@@ -242,7 +245,7 @@ func _ready() -> void:
 	save_timer.name = "SaveTimer"
 	save_timer.wait_time = 30.0
 	save_timer.timeout.connect(func() -> void:
-		if _loaded and not _save_failed and not _layout_active():
+		if _loaded and not _save_failed and not _layout_active() and not (garden_album!=null and garden_album.busy):
 			_save_farm())
 	add_child(save_timer)
 	save_timer.start()
@@ -316,6 +319,7 @@ func _save_farm() -> bool:
 	var result: Dictionary = store.save(farm_state.snapshot(), decoration_state.snapshot())
 	_save_failed = not result.ok
 	if _save_failed:
+		if garden_album!=null: garden_album.end_photo()
 		if harvest_book!=null: harvest_book.dismiss()
 		if animal_panel!=null: animal_panel.dismiss()
 		if game_menu != null:
@@ -351,6 +355,7 @@ func _recover_storage() -> void:
 func _request_exit() -> void:
 	if _exiting:
 		return
+	if garden_album!=null and garden_album.busy: return
 	_cancel_input()
 	if not _loaded:
 		_finish_exit()
@@ -534,7 +539,9 @@ func _change_decoration(candidate: Dictionary) -> void:
 	if not _loaded or _save_failed: return
 	var replacement:=DecorationState.new()
 	if not replacement.restore_snapshot(candidate): return
-	var saved: Dictionary=store.save(farm_state.snapshot(),replacement.snapshot())
+	var candidate_farm:=FarmState.new();candidate_farm.restore_snapshot(farm_state.snapshot())
+	if replacement.snapshot()!=decoration_state.snapshot(): candidate_farm.remember("arrange",clock.call())
+	var saved: Dictionary=store.save(candidate_farm.snapshot(),replacement.snapshot())
 	if not saved.ok:
 		_save_failed=true
 		decoration_layout.finish_mode()
@@ -542,6 +549,7 @@ func _change_decoration(candidate: Dictionary) -> void:
 		_refresh_hud()
 		return
 	decoration_state=replacement
+	farm_state.restore_snapshot(candidate_farm.snapshot())
 	decoration_layout.accept_state(replacement)
 	_refresh_hud()
 
@@ -616,6 +624,9 @@ func _refresh_lanterns() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if garden_album!=null and garden_album.active:
+		garden_album.cancel_key(event)
+		return
 	if _animal_active():
 		if (event is InputEventKey and event.pressed and not event.echo and event.keycode==KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_RIGHT):
 			animal_panel.dismiss();get_viewport().set_input_as_handled()
@@ -694,6 +705,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if garden_album!=null and garden_album.active: return
 	if _animal_active(): return
 	if _basket_active(): return
 	if _layout_active(): return
@@ -738,6 +750,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if garden_album!=null and garden_album.active:
+		_cancel_input()
+		return
 	if _animal_active():
 		animal_panel.set_activity($Environment/CourtyardAnimals.interaction.status(animal_panel.animal_id))
 		_cancel_input()
@@ -789,6 +804,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
 		_request_exit()
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_WM_MOUSE_EXIT:
+		if garden_album!=null and garden_album.active: camera.cancel_free_gesture()
 		if what==NOTIFICATION_WM_WINDOW_FOCUS_OUT and animal_panel!=null: animal_panel.dismiss()
 		_pointer_position = Vector2(-100, -100)
 		_cancel_input()
