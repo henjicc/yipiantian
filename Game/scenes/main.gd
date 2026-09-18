@@ -18,6 +18,8 @@ const GameMenu = preload("res://ui/game_menu.gd")
 const CameraTuning = preload("res://ui/camera_tuning.gd")
 const CourtyardPlan = preload("res://layout/courtyard_plan.gd")
 const CourtyardEditSession = preload("res://layout/courtyard_edit_session.gd")
+const HarvestBook = preload("res://ui/harvest_book.gd")
+var harvest_book: HarvestBook
 var courtyard_plan := CourtyardPlan.new()
 var courtyard_edit: CourtyardEditSession
 # One-step undo is session history, carried across a spatial scene rebuild.
@@ -114,6 +116,16 @@ func _ready() -> void:
 	hud.crop_requested.connect(_select_crop)
 	hud.cancel_tool_requested.connect(_cancel_tool)
 	hud.palette_requested.connect(_open_palette)
+	harvest_book=HarvestBook.new()
+	harvest_book.name="HarvestBook"
+	add_child(harvest_book)
+	hud.basket_requested.connect(_open_basket)
+	harvest_book.closed.connect(func() -> void:
+		camera.free_input_enabled=true
+		_cancel_input()
+		_refresh_hud())
+	harvest_book.share_requested.connect(func(id: String, visit: int, basket: Dictionary) -> void: _exchange(id,visit,basket,""))
+	harvest_book.gift_requested.connect(func(id: String, visit: int, crop: String) -> void: _exchange(id,visit,{},crop))
 	tool_cursor = ToolCursor.new()
 	add_child(tool_cursor)
 	hud.overview_requested.connect(_return_overview)
@@ -267,6 +279,7 @@ func _save_farm() -> bool:
 	var result: Dictionary = store.save(farm_state.snapshot(), decoration_state.snapshot())
 	_save_failed = not result.ok
 	if _save_failed:
+		if harvest_book!=null: harvest_book.dismiss()
 		if game_menu != null:
 			game_menu.dismiss()
 		if decoration_layout != null:
@@ -354,9 +367,45 @@ func _refresh_hud() -> void:
 	if hud == null or not _loaded:
 		return
 	var cell: Dictionary = {} if hover_field < 0 or hover_cell.is_empty() else farm_state.get_cell(farm.field_id(hover_field), hover_cell)
-	hud.show_state(cell, farm_state.snapshot().harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed or camera.free_view or (camera_tuning != null and camera_tuning.visible), selected_field, selected_palette)
+	var state: Dictionary=farm_state.snapshot()
+	hud.show_state(cell, state.harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed or camera.free_view or _basket_active() or (camera_tuning != null and camera_tuning.visible), selected_field, selected_palette, state.inventory)
 	hud.show_decoration_mode(decoration_layout != null and decoration_layout.active)
 	if _layout_active(): hud.show_decoration_mode(true)
+
+func _basket_active() -> bool:
+	return harvest_book!=null and harvest_book.active
+
+func _open_basket() -> void:
+	if not _tools_available(): return
+	_cancel_tool()
+	hud.hide_time_preview()
+	camera.cancel_free_gesture()
+	camera.cancel_zoom()
+	camera.free_input_enabled=false
+	harvest_book.present(farm_state.snapshot())
+	_refresh_hud()
+
+func _exchange(id: String, visit: int, basket: Dictionary, gift: String) -> void:
+	if not _basket_active() or not _loaded or _save_failed: return
+	var candidate:=FarmState.new()
+	candidate.restore_snapshot(farm_state.snapshot())
+	var result: Dictionary=candidate.share_basket(id,visit,basket) if gift.is_empty() else candidate.claim_gift(id,visit,gift)
+	if not result.ok:
+		harvest_book.refresh(farm_state.snapshot())
+		return
+	# Inventory and delivery receipt are one durable transaction. A failed write
+	# never publishes the draft or charges the player; reopening can retry it.
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok:
+		_save_failed=true
+		harvest_book.dismiss()
+		hud.show_storage_issue(saved.kind,true)
+		_refresh_hud()
+		return
+	farm_state.restore_snapshot(candidate.snapshot())
+	harvest_book.refresh(farm_state.snapshot())
+	farm_audio.play_ui()
+	_refresh_hud()
 
 func _layout_active() -> bool:
 	return courtyard_edit!=null and courtyard_edit.editor.active
@@ -423,6 +472,11 @@ func _refresh_lanterns() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if _basket_active():
+		if (event is InputEventKey and event.pressed and not event.echo and event.keycode==KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_RIGHT):
+			harvest_book.dismiss()
+			get_viewport().set_input_as_handled()
+		return
 	if event is InputEventMouse:
 		_pointer_position = event.position
 	if not _loaded or _save_failed:
@@ -491,6 +545,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _basket_active(): return
 	if _layout_active(): return
 	if camera_tuning != null and camera_tuning.visible:
 		return
@@ -534,7 +589,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(_delta: float) -> void:
 	_update_hover()
-	if _layout_active() or camera.free_view or (game_menu != null and game_menu.visible):
+	if _layout_active() or _basket_active() or camera.free_view or (game_menu != null and game_menu.visible):
 		_cancel_input()
 		return
 	# Space queries belong to the physics boundary. Each gesture carries its admission
@@ -640,7 +695,7 @@ func _select_cell(cell_id: String) -> void:
 
 
 func _tools_available() -> bool:
-	return _loaded and not _save_failed and not _exiting and not _layout_active() and not (camera_tuning != null and camera_tuning.visible) and not camera.free_view and not camera.is_transitioning() and not (game_menu != null and game_menu.visible) and not (decoration_layout != null and decoration_layout.active)
+	return _loaded and not _save_failed and not _exiting and not _layout_active() and not _basket_active() and not (camera_tuning != null and camera_tuning.visible) and not camera.free_view and not camera.is_transitioning() and not (game_menu != null and game_menu.visible) and not (decoration_layout != null and decoration_layout.active)
 
 
 func _start_tool_press(tool: String) -> void:

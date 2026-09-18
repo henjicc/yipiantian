@@ -3,6 +3,7 @@ extends RefCounted
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const Plan = preload("res://layout/courtyard_plan.gd")
+const Neighbors = preload("res://farm/neighbor_catalog.gd")
 const FIELD_IDS: Array[String] = Plan.FIELD_IDS
 # Row-major: columns run along +X and rows along +Z in the presentation layer.
 const CELL_IDS: Array[String] = ["cell_01", "cell_02", "cell_03", "cell_04", "cell_05", "cell_06", "cell_07", "cell_08", "cell_09", "cell_10", "cell_11", "cell_12", "cell_13", "cell_14", "cell_15", "cell_16"]
@@ -16,9 +17,10 @@ func _init(now_utc_seconds: float = 0.0, layout: Dictionary = {}) -> void:
 	assert(_valid_time(now_utc_seconds), "Farm initialization requires finite nonnegative UTC seconds")
 	var plan: RefCounted = Plan.new() if layout.is_empty() else Plan.from_snapshot(layout)
 	assert(plan != null, "Farm initialization requires a valid layout")
-	_data = {"fields": {}, "harvested": {}, "layout":plan.snapshot()}
+	_data = {"fields": {}, "harvested": {}, "inventory":{}, "neighbors":Neighbors.initial_state(), "layout":plan.snapshot()}
 	for crop_id: String in Crops.crop_ids():
 		_data.harvested[crop_id] = 0
+		_data.inventory[crop_id] = 0
 	for definition: Dictionary in plan.fields:
 		var field_id: String = definition.id
 		_data.fields[field_id] = {"cells": {}}
@@ -78,7 +80,39 @@ func restore_snapshot(data: Dictionary) -> bool:
 	_data.layout = Plan.from_snapshot(data.layout).snapshot()
 	for crop_id: String in Crops.crop_ids():
 		_data.harvested[crop_id] = int(_data.harvested[crop_id])
+		_data.inventory[crop_id] = int(_data.inventory[crop_id])
+	for id: String in Neighbors.IDS: _data.neighbors[id].round=int(_data.neighbors[id].round)
 	return true
+
+func share_basket(neighbor: String, round_index: int, basket: Dictionary) -> Dictionary:
+	if neighbor not in Neighbors.IDS: return _result(false,"invalid_neighbor")
+	var visit: Dictionary = _data.neighbors[neighbor]
+	if visit.round!=round_index or visit.pending: return _result(false,"stale_visit")
+	if round_index>=2147483646: return _result(false,"inventory_limit")
+	var needed: int = Neighbors.wish(neighbor,round_index).amount
+	var amount: int = 0
+	for crop: Variant in basket:
+		if not crop is String or not Neighbors.accepts(neighbor,round_index,crop): return _result(false,"wrong_crop")
+		var count: Variant = basket[crop]
+		if not _is_number(count) or count<=0 or count>needed or floorf(count)!=count: return _result(false,"invalid_amount")
+		if _data.inventory[crop]<count: return _result(false,"insufficient_food")
+		amount+=int(count)
+	if amount!=needed: return _result(false,"incomplete_basket")
+	for crop: String in basket: _data.inventory[crop]-=int(basket[crop])
+	visit.pending=true
+	return _result(true,"")
+
+func claim_gift(neighbor: String, round_index: int, crop: String) -> Dictionary:
+	if neighbor not in Neighbors.IDS: return _result(false,"invalid_neighbor")
+	var visit: Dictionary = _data.neighbors[neighbor]
+	if visit.round!=round_index or not visit.pending: return _result(false,"stale_visit")
+	if crop not in Neighbors.HOMES[neighbor].gifts: return _result(false,"invalid_gift")
+	if _data.inventory[crop]>=MAX_HARVEST_COUNT or round_index>=2147483646: return _result(false,"inventory_limit")
+	_data.inventory[crop]+=1
+	visit.pending=false
+	visit.round+=1
+	visit.last_gift=crop
+	return _result(true,"")
 
 
 func get_field(field_id: String) -> Dictionary:
@@ -159,9 +193,10 @@ func _act(action: String, field_id: String, cell_id: String, crop_id: String, no
 			if field.growth_seconds < duration:
 				return _result(false, "not_mature")
 			reward_crop = field.crop_id
-			if candidate.harvested[reward_crop] >= MAX_HARVEST_COUNT:
+			if candidate.harvested[reward_crop] >= MAX_HARVEST_COUNT or candidate.inventory[reward_crop]>=MAX_HARVEST_COUNT:
 				return _result(false, "harvest_limit")
 			candidate.harvested[reward_crop] += 1
+			candidate.inventory[reward_crop] += 1
 			candidate.fields[field_id].cells[cell_id] = _empty_cell(field.last_settled_utc_seconds)
 	if not changed.has(field_id):
 		changed.append(field_id)
@@ -210,8 +245,10 @@ static func _is_number(value: Variant) -> bool:
 
 
 static func _valid_snapshot(data: Dictionary) -> bool:
-	if data.size() != 3 or not data.get("fields") is Dictionary or not data.get("harvested") is Dictionary or not data.get("layout") is Dictionary:
+	if data.size() != 5 or not data.get("fields") is Dictionary or not data.get("harvested") is Dictionary or not data.get("layout") is Dictionary:
 		return false
+	if not data.get("inventory") is Dictionary or not data.get("neighbors") is Dictionary: return false
+	if data.inventory.size()!=Crops.crop_ids().size() or not Neighbors.valid(data.neighbors): return false
 	var plan: RefCounted = Plan.from_snapshot(data.layout)
 	if plan == null: return false
 	var fields: Dictionary = data.fields
@@ -219,6 +256,8 @@ static func _valid_snapshot(data: Dictionary) -> bool:
 	if fields.size() != plan.fields.size() or harvested.size() != Crops.crop_ids().size():
 		return false
 	for crop_id: String in Crops.crop_ids():
+		var stock: Variant = data.inventory.get(crop_id)
+		if not _is_number(stock) or stock<0 or stock>MAX_HARVEST_COUNT or floorf(stock)!=stock: return false
 		var count: Variant = harvested.get(crop_id)
 		if not _is_number(count) or float(count) < 0.0 or float(count) > MAX_HARVEST_COUNT or float(count) != floorf(float(count)):
 			return false

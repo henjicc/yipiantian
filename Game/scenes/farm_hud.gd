@@ -17,6 +17,7 @@ signal free_view_requested
 signal camera_tuning_requested
 signal preview_hour_requested(hour: float)
 signal time_preview_opened
+signal basket_requested
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const FarmTheme = preload("res://ui/farm_theme.gd")
@@ -60,6 +61,12 @@ func _ready() -> void:
 	var left_plate := _status_plate(root)
 	left_plate.position = Vector2(18, 18)
 	left_plate.size = Vector2(300, 74)
+	var open_basket:=Button.new()
+	open_basket.name="OpenBasket"
+	open_basket.flat=true
+	open_basket.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	open_basket.pressed.connect(func() -> void: basket_requested.emit())
+	left_plate.add_child(open_basket)
 	var basket := TextureRect.new()
 	basket.texture = preload("res://art/ui/basket.svg")
 	basket.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -400,10 +407,10 @@ func show_decoration_mode(active: bool) -> void:
 	_sync_rows()
 
 
-func show_state(_cell: Dictionary, harvested: Dictionary, tool: String, crop_id: String, traveling: bool, _field_index: int = -1, palette: String = "") -> void:
+func show_state(_cell: Dictionary, harvested: Dictionary, tool: String, crop_id: String, traveling: bool, _field_index: int = -1, palette: String = "", inventory: Dictionary = {}) -> void:
 	_palette = palette
-	_harvested.text = "%d 篮" % Crops.total_harvested(harvested)
-	_harvest_detail.text = "%s %d" % [Crops.definition(crop_id).name, harvested.get(crop_id, 0)]
+	_harvested.text = "菜篮 · %d" % Crops.total_harvested(inventory)
+	_harvest_detail.text = "累计收获 %d 篮" % Crops.total_harvested(harvested)
 	for id: String in _crop_buttons:
 		var card: Button = _crop_buttons[id]
 		card.disabled = traveling or palette != "sow"

@@ -16,27 +16,22 @@ func _run() -> void:
 	var decorations := Decorations.new()
 	_expect(decorations.unlock(farm.snapshot().harvested).is_empty(), "No unlock before earned harvest")
 	_expect(not decorations.place("pot", "ground_01", 0).ok, "Locked item cannot be placed")
-	for boundary: Array in [[4, 3, false, false], [5, 2, false, false], [5, 3, true, false], [9, 6, true, false], [10, 5, true, false], [10, 6, true, true]]:
+	for boundary: Array in [[6,1,0,false,false],[7,0,1,true,false],[14,2,0,true,false],[14,1,1,true,true]]:
 		var candidate := Decorations.new()
-		candidate.unlock({"greens": boundary[0], "radish": boundary[1]})
-		_expect(candidate.snapshot().flowerpot.unlocked == boundary[2] and candidate.snapshot().lantern.unlocked == boundary[3], "Each crop-specific unlock threshold is exact")
-	var now: float = 1000.0
-	for crop: String in ["greens", "radish"]:
-		for cycle in (10 if crop == "greens" else 6):
-			farm.sow("field_01", "cell_06", crop, now)
-			farm.water("field_01", "cell_06", now)
-			now += 6000.0
-			farm.harvest("field_01", "cell_06", now)
-			var unlocked: Array[String] = decorations.unlock(farm.snapshot().harvested)
-			if crop == "greens" and cycle == 2:
-				_expect(unlocked == ["pot"], "Exactly three total baskets unlock pot")
-			elif crop == "radish" and cycle == 2:
-				_expect(unlocked == ["flowerpot"], "Five greens plus three radish unlock flowerpot")
-			elif crop == "radish" and cycle == 5:
-				_expect(unlocked == ["lantern"], "Ten greens plus six radish unlock lantern")
-			else:
-				_expect(unlocked.is_empty(), "No early or repeated unlock")
-	_expect(farm.snapshot().harvested.greens == 10 and farm.snapshot().harvested.radish == 6 and preload("res://farm/crop_catalog.gd").total_harvested(farm.snapshot().harvested) == 16, "Unlocks never spend harvest")
+		candidate.unlock({"spinach":boundary[0],"carrot":boundary[1],"garlic":boundary[2]})
+		_expect(candidate.snapshot().flowerpot.unlocked==boundary[3] and candidate.snapshot().lantern.unlocked==boundary[4], "Total and variety thresholds accept any crops")
+	var now: float=1000.0
+	for crop: String in ["greens","radish","spinach"]:
+		for cycle in (3 if crop=="greens" else (5 if crop=="radish" else 8)):
+			farm.sow("field_01","cell_06",crop,now)
+			now+=7200
+			farm.harvest("field_01","cell_06",now)
+			var unlocked: Array[String]=decorations.unlock(farm.snapshot().harvested)
+			if crop=="greens" and cycle==2: _expect(unlocked==["pot"],"Three baskets unlock pot")
+			elif crop=="radish" and cycle==4: _expect(unlocked==["flowerpot"],"Eight baskets of two varieties unlock flowerpot")
+			elif crop=="spinach" and cycle==7: _expect(unlocked==["lantern"],"Sixteen baskets of three varieties unlock lantern")
+			else: _expect(unlocked.is_empty(),"No early or repeated unlock")
+	_expect(farm.snapshot().harvested==farm.snapshot().inventory and preload("res://farm/crop_catalog.gd").total_harvested(farm.snapshot().harvested)==16,"Unlocking spends no food")
 	var autumn := Decorations.new()
 	_expect(autumn.unlock({"greens": 0, "radish": 0, "celery": 3}) == ["pot"], "New crop baskets count towards total unlocks")
 	_expect(decorations.unlock({"greens": 0, "radish": 0}).is_empty() and decorations.snapshot().lantern.unlocked, "Earned unlocks are never revoked")

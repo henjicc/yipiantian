@@ -2,6 +2,12 @@ extends RefCounted
 ## September Jiangnan choices; durations and water benefits are game tuning.
 
 const YOUNG_PROGRESS: float = 0.35
+const GROUPS := {"leaf":"叶菜", "root":"根菜", "aromatic":"香辛菜", "stem":"茎菜"}
+const CROP_GROUPS := {
+	"greens":"leaf", "radish":"root", "spinach":"leaf", "lettuce":"leaf",
+	"chrysanthemum":"leaf", "coriander":"aromatic", "celery":"stem", "mustard":"leaf",
+	"tatsoi":"leaf", "carrot":"root", "scallion":"aromatic", "garlic":"aromatic",
+}
 const CROPS := {
 	"greens": {"name": "青菜", "minutes": 30, "water": .20},
 	"radish": {"name": "白萝卜", "minutes": 90, "water": .20},
@@ -28,7 +34,14 @@ static func definition(crop_id: String) -> Dictionary:
 	if not CROPS.has(crop_id):
 		return {}
 	var crop: Dictionary = CROPS[crop_id]
-	return {"id": crop_id, "name": crop.name, "duration_seconds": crop.minutes * 60.0, "water_progress": crop.water}
+	return {"id": crop_id, "name": crop.name, "duration_seconds": crop.minutes * 60.0, "water_progress": crop.water,
+		"group":CROP_GROUPS[crop_id]}
+
+static func varieties(harvested: Dictionary) -> int:
+	var count: int = 0
+	for id: String in crop_ids():
+		if harvested.get(id,0)>0: count+=1
+	return count
 
 
 static func icon_path(crop_id: String) -> String:

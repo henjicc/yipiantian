@@ -3,9 +3,9 @@ extends RefCounted
 
 const IDS: Array[String] = ["pot", "flowerpot", "lantern"]
 const ITEMS: Dictionary = {
-	"pot": {"name": "粗陶罐", "type": "ground", "total": 3, "greens": 0, "radish": 0},
-	"flowerpot": {"name": "花盆", "type": "ground", "total": 0, "greens": 5, "radish": 3},
-	"lantern": {"name": "灯笼", "type": "hanging", "total": 0, "greens": 10, "radish": 6},
+	"pot": {"name": "粗陶罐", "type": "ground", "total": 3, "varieties": 1},
+	"flowerpot": {"name": "花盆", "type": "ground", "total": 8, "varieties": 2},
+	"lantern": {"name": "灯笼", "type": "hanging", "total": 16, "varieties": 3},
 }
 const SLOT_TYPES: Dictionary = {
 	"ground_01": "ground", "ground_02": "ground", "ground_03": "ground", "ground_04": "ground",
@@ -23,4 +23,4 @@ static func allowed_turns(slot_id: String) -> Array[int]:
 
 static func requirement(item_id: String) -> String:
 	var item: Dictionary = ITEMS[item_id]
-	return "累计收获 %d 篮" % item.total if item.total > 0 else "青菜 %d 篮 · 白萝卜 %d 篮" % [item.greens, item.radish]
+	return "累计收获 %d 篮 · %d 种菜" % [item.total,item.varieties]
