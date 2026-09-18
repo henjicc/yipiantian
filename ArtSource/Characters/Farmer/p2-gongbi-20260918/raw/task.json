@@ -1,0 +1,24 @@
+{
+  "type": "image_to_model",
+  "status": "success",
+  "progress": 100,
+  "input": {
+    "pbr": false,
+    "quad": true,
+    "delight": false,
+    "texture": true,
+    "export_uv": true,
+    "face_limit": 12000,
+    "model_seed": 202609183,
+    "texture_seed": 202609183,
+    "model_version": "P2-20260801",
+    "texture_quality": "detailed",
+    "texture_version": "v3.5-20260815",
+    "texture_alignment": "original_image",
+    "enable_image_autofix": false
+  },
+  "task_id": "e7450e78-b606-4ddd-a20b-ff09d5b86e2b",
+  "created_at": "2026-09-18T13:26:12.78461Z",
+  "completed_at": "2026-09-18T13:27:38.638865Z",
+  "credits_consumed": 120
+}

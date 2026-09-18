@@ -1,0 +1,75 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 12861,
+      "polygons": 13086,
+      "quads": 12426,
+      "triangles": 25512,
+      "uv_layers": 1,
+      "boundary_edges": 221,
+      "non_manifold_edges": 242,
+      "zero_area_faces": 1,
+      "materials": 1,
+      "dimensions": [
+        0.45654296875,
+        0.58740234375,
+        0.99951171875
+      ]
+    }
+  ],
+  "repairs": [
+    {
+      "headcloth_small_holes_filled": 3,
+      "weld_distance_m": 1e-06,
+      "degenerate_threshold_m": 1e-07
+    }
+  ],
+  "prepared": [
+    {
+      "vertices": 12861,
+      "polygons": 13088,
+      "quads": 12426,
+      "triangles": 25514,
+      "uv_layers": 1,
+      "boundary_edges": 211,
+      "non_manifold_edges": 233,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "dimensions": [
+        0.7079873085021973,
+        0.9109184145927429,
+        1.5499999523162842
+      ]
+    }
+  ],
+  "height_m": 1.55,
+  "textures": [
+    {
+      "name": "tripo_image_e7450e78_0",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "reimport": [
+    {
+      "vertices": 23324,
+      "polygons": 25514,
+      "quads": 0,
+      "triangles": 25514,
+      "uv_layers": 1,
+      "boundary_edges": 211,
+      "non_manifold_edges": 232,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "dimensions": [
+        0.7079873085021973,
+        0.9109184145927429,
+        1.5499999523162842
+      ]
+    }
+  ],
+  "reimport_verified": true
+}

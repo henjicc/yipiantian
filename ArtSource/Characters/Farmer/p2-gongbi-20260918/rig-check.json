@@ -1,0 +1,9 @@
+{
+  "task_id": "53051fd4-130a-4edf-afc7-ac352052e9bc",
+  "type": "animate_prerigcheck",
+  "status": "success",
+  "input": "first static farmer_gongbi.glb export, before local headcloth repairs",
+  "output": {"riggable": true, "rig_type": "biped"},
+  "credits_consumed": 0,
+  "rigging_performed": false
+}
