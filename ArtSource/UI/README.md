@@ -38,6 +38,10 @@ Create a single polished Windows indie farming game application icon for 我有�
 
 ## 界面贡献
 
+### 除草与开垦图标 · 20260918
+
+两张独立内置 imagegen 透明图标：短柄镰刀用于除草、木柄铁锄用于开垦。原始1254方图保存在 `Game/art/ui/crops/weed.png` 与 `till.png`，Godot导入512像素，工具卡片和持物硬件鼠标共用资源。完整实际提示词及生成文件名见 [tending-icons.json](tending-icons.json)。未调用Tripo，图像工具没有返回费用；草丛复用院落既有曲面草叶生成方法，动作声音复用已有收获／松土声，不冒称新生成模型或实录音效。实际鼠标流程、小窗口截图及保存失败重试见 `.local/verification/tending-scene-1843431/`。
+
 ### 动物互动图标 · 20260918
 
 鸡、鸭、鹅三张独立透明 imagegen 图，正式原件在 `Game/art/ui/animals/`，完整提示词和原始生成路径在 [animal-icons.json](animal-icons.json)。保留1254方图原始字节，Godot导入512像素。用于主动点击动物后的肖像与“招呼一下”图标，投喂复用已有四种叶菜参考图；选择食材、招呼、撒菜叶均沿用上图下字组件。实际选择／扣菜与最小窗口画面见 `.local/verification/animal-food-cards-1631331/`，来源及接触证据见[动物亲近节点](../../docs/design-baseline/动物行为与轻松玩法候选.md#九动物亲近互动实现节点--20260918)。图像工具未提供费用，未调用Tripo或生成新三维动物。现有动物模型、骨架与动作来源仍见院落生活资产节点。

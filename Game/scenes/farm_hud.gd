@@ -177,8 +177,8 @@ func _build_farm_controls(root: Control) -> void:
 		var card := _choice_card(_crop_row, crop_id, Crops.definition(crop_id).name, load(Crops.icon_path(crop_id)))
 		card.pressed.connect(func() -> void: crop_requested.emit(crop_id))
 		_crop_buttons[crop_id] = card
-	_tool_row = _choice_row(root, "ToolChoices", 69)
-	for item: Array in [["water", "浇水"], ["harvest", "收获"]]:
+	_tool_row = _choice_row(root, "ToolChoices", 145)
+	for item: Array in [["water", "浇水"], ["harvest", "收获"], ["weed", "除草"], ["till", "开垦"]]:
 		var button := _choice_card(_tool_row, item[0].capitalize(), item[1], load("res://art/ui/crops/%s.png" % item[0]))
 		button.button_down.connect(func() -> void: tool_press_started.emit(item[0]))
 		button.pressed.connect(func() -> void: tool_requested.emit(item[0]))

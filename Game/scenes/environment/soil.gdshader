@@ -10,6 +10,7 @@ instance uniform float planted = 0.0;
 instance uniform float root_size = 1.0;
 instance uniform float field_selected = 0.0;
 instance uniform float cell_selected = 0.0;
+instance uniform float uncultivated = 0.0;
 instance uniform vec2 root_radius = vec2(.075,.060);
 varying vec3 soil_point;
 varying vec2 bed_point;
@@ -51,7 +52,12 @@ void fragment() {
 	float root_zone = bank ? 0.0 : 1.0-smoothstep(.025,.20,length(patch_point*vec2(1.0,1.2)));
 	float moisture = bank ? 0.0 : wetness*(1.0-smoothstep(.55,1.0,length(patch_point/(cell_half_span+vec2(.02)))));
 	dirt_colour *= 1.0 - .23*moisture - .08*planted*root_zone;
-	ALBEDO = mix(turf_colour(p),dirt_colour,dirt);
+	vec2 patch_edge=cell_half_span-abs(patch_point);
+	float ground_blend=smoothstep(0.0,.055,min(patch_edge.x,patch_edge.y));
+	vec3 packed_earth=mix(dirt_colour,vec3(.20,.15,.075),.32)*(.9+.18*clods);
+	vec3 untended_colour=mix(packed_earth,turf_colour(p)*(.8+.3*patch),smoothstep(.65,.95,uncultivated));
+	vec3 ground_colour=mix(dirt_colour,untended_colour,uncultivated*ground_blend);
+	ALBEDO = mix(turf_colour(p),ground_colour,dirt);
 	// Tangent-free world-space detail, shared with the bank at the join.
 	vec3 n = normalize((INV_VIEW_MATRIX*vec4(NORMAL,0.0)).xyz);
 	vec3 perturbation = vec3(grain_normal.x,0,grain_normal.z)/max(grain_normal.y,.15);

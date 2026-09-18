@@ -1,0 +1,19 @@
+{
+  "date": "2026-09-18",
+  "tool": "built-in image_gen.imagegen",
+  "cost": "Tool did not provide pricing",
+  "assets": [
+    {
+      "id": "weed",
+      "source": "exec-87c4c299-ab13-490c-996e-f634d08c4d18.png",
+      "path": "Game/art/ui/crops/weed.png",
+      "prompt": "Create a single isolated hand-painted gongbi watercolor icon for a cozy Jiangnan Chinese farming game. Sage green, warm brown old wood, muted iron, soft cream highlights. Broad readable silhouette, no text, no badge, no frame, no scenery, no ground, no hands, no modern plastic. One tool centered diagonally occupying 80 percent of square image. Genuine transparent alpha background; preserve soft clean edge antialiasing. Detailed but gently simplified illustration consistent with hand-painted vegetable UI icons. A small traditional weeding sickle, short weathered brown wooden handle and curved dull grey iron blade, with a tiny sage-green sprig next to the blade to convey removing weeds."
+    },
+    {
+      "id": "till",
+      "source": "exec-687d1498-39a3-489b-9d10-4001980be06d.png",
+      "path": "Game/art/ui/crops/till.png",
+      "prompt": "Create a single isolated hand-painted gongbi watercolor icon for a cozy Jiangnan Chinese farming game. Sage green, warm brown old wood, muted iron, soft cream highlights. Broad readable silhouette, no text, no badge, no frame, no scenery, no ground, no hands, no modern plastic. One tool centered diagonally occupying 80 percent of square image. Genuine transparent alpha background; preserve soft clean edge antialiasing. Detailed but gently simplified illustration consistent with hand-painted vegetable UI icons. A traditional Chinese farming hoe, long warm brown wooden handle and a wide dull grey iron blade at right angle near the top, clear physically credible joint."
+    }
+  ]
+}

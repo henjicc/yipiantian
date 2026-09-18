@@ -8,6 +8,8 @@ const ACTIONS: Dictionary = {
 	"sow": preload("res://art/audio/sow.wav"),
 	"water": preload("res://art/audio/water.wav"),
 	"harvest": preload("res://art/audio/harvest.wav"),
+	"weed": preload("res://art/audio/harvest.wav"),
+	"till": preload("res://art/audio/sow.wav"),
 }
 const UI = preload("res://art/audio/ui.wav")
 const BUS_MASTER: StringName = &"FarmMaster"

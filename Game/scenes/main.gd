@@ -908,7 +908,7 @@ func _open_palette(palette: String) -> void:
 
 func _select_tool(tool: String) -> void:
 	_cancel_input()
-	if not _tools_available() or tool not in ["sow", "water", "harvest"]:
+	if not _tools_available() or tool not in ["sow", "water", "harvest", "weed", "till"]:
 		return
 	selected_tool = "" if selected_tool == tool else tool
 	selected_palette = "sow" if tool == "sow" else "tools"
@@ -955,18 +955,30 @@ func _apply_tool() -> void:
 		return
 	var field_id: String = farm.field_id(selected_field)
 	var now: float = clock.call()
+	var candidate:=FarmState.new()
+	candidate.restore_snapshot(farm_state.snapshot())
 	var result: Dictionary
 	match selected_tool:
-		"sow": result = farm_state.sow(field_id, selected_cell, selected_crop, now)
-		"water": result = farm_state.water(field_id, selected_cell, now)
-		"harvest": result = farm_state.harvest(field_id, selected_cell, now)
+		"sow": result = candidate.sow(field_id, selected_cell, selected_crop, now)
+		"water": result = candidate.water(field_id, selected_cell, now)
+		"harvest": result = candidate.harvest(field_id, selected_cell, now)
+		"weed", "till": result = candidate.tidy(selected_tool,field_id,selected_cell,now)
 		_: return
-	farm_audio.play_action(selected_tool, result)
 	if result.ok:
-		decoration_state.unlock(farm_state.snapshot().harvested)
+		var decorations:=DecorationState.new()
+		decorations.restore_snapshot(decoration_state.snapshot())
+		decorations.unlock(candidate.snapshot().harvested)
+		var saved: Dictionary=store.save(candidate.snapshot(),decorations.snapshot())
+		if not saved.ok:
+			_save_failed=true
+			_cancel_tool()
+			hud.show_storage_issue(saved.kind,true)
+			return
+		farm_state.restore_snapshot(candidate.snapshot())
+		decoration_state.restore_snapshot(decorations.snapshot())
+		farm_audio.play_action(selected_tool, result)
 		refresh_farm()
 		farm_changed.emit(result)
-		_save_farm()
 
 
 func _cancel_or_return() -> void:

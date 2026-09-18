@@ -9,6 +9,7 @@ const PigmentShader = preload("res://scenes/environment/pigment.gdshader")
 const TilledSoil = preload("res://presentation/tilled_soil.gd")
 const PlantingSoilBurst = preload("res://presentation/planting_soil_burst.gd")
 const Plan = preload("res://layout/courtyard_plan.gd")
+const UntendedPatch = preload("res://presentation/untended_patch.gd")
 const FIELD_SIZE := Vector3(2.6, 0.16, 2.05)
 const CELL_SPAN := Vector2(0.60, 0.44)
 const CELL_ORIGIN := Vector2(-1.20, -0.88)
@@ -20,6 +21,7 @@ var _soil_meshes: Dictionary = {}
 var _cell_crops: Dictionary = {}
 var _planting_tweens: Dictionary = {}
 var _planted: Dictionary = {}
+var _untended: Dictionary = {}
 var _definitions: Dictionary = {}
 var _wet_soil: ShaderMaterial
 var _soil: ShaderMaterial
@@ -91,10 +93,11 @@ func show_field(field: Dictionary) -> void:
 	for cell_id: String in definition.cells:
 		var cell: Dictionary = field.cells[cell_id]
 		var identity: String = field.id + "/" + cell_id
-		var key: String = "%s/%s/%s" % [cell.crop_id, cell.stage, cell.watered]
+		var key: String = "%s/%s/%s/%s" % [cell.crop_id, cell.stage, cell.watered,cell.ground]
 		if _visual_keys.get(identity) == key:
 			continue
 		_visual_keys[identity] = key
+		_update_ground(identity,definition,cell_id,cell.ground)
 		_soil_meshes[field.id][cell_id].material_override = _wet_soil if cell.watered else _soil
 		var root_size: float = {"empty": 1.0, "sprout": .38, "young": .68, "mature": 1.0}[cell.stage]
 		# Retain the former contact footprint while an emptied patch retracts.
@@ -126,6 +129,29 @@ func show_field(field: Dictionary) -> void:
 		var soil_y: float = crop.global_position.y + CropVisuals.planting_depth(cell.crop_id,cell.stage) + .008
 		for plant_mesh: MeshInstance3D in crop.find_children("*", "MeshInstance3D", true, false):
 			plant_mesh.set_instance_shader_parameter("root_soil", Vector2(soil_y,.045*root_size))
+
+
+func _update_ground(identity: String, definition: Dictionary, cell_id: String, ground: String) -> void:
+	var patch: MeshInstance3D=_soil_meshes[definition.id][cell_id]
+	var initial: bool=not _untended.has(identity)
+	var previous: String=_untended.get(identity,{}).get("ground",ground)
+	patch.set_instance_shader_parameter("uncultivated",0.0 if ground=="ready" else (.58 if ground=="rough" else 1.0))
+	if previous==ground and not initial: return
+	var existing: Node3D=_untended.get(identity,{}).get("mesh")
+	if is_instance_valid(existing):
+		# A brief settling motion is visual only; no delayed action can clear twice.
+		var tween:=existing.create_tween()
+		tween.tween_property(existing,"scale:y",.01,.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_callback(existing.queue_free)
+	_untended[identity]={"ground":ground,"mesh":null}
+	if ground!="ready":
+		var mesh:=UntendedPatch.build(Plan.cell_position(definition,cell_id),Plan.cell_span(definition),(definition.size-Vector2(.20,.29))*.5,absi(identity.hash()),ground=="rough")
+		_crop_roots[definition.id].add_child(mesh)
+		_untended[identity].mesh=mesh
+	elif not initial and ground=="ready":
+		var burst:=PlantingSoilBurst.new()
+		burst.position=patch.position+Vector3.UP*.025
+		patch.get_parent().add_child(burst)
 
 
 func _update_planting(identity: String, patch: MeshInstance3D, planted: bool) -> void:

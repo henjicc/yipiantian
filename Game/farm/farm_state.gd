@@ -33,6 +33,10 @@ func _init(now_utc_seconds: float = 0.0, layout: Dictionary = {}) -> void:
 	_set_initial_crop("field_04", "greens", 0.2)
 	_set_initial_crop("field_05", "radish", 0.1)
 	_set_initial_crop("field_06", "radish", 0.6)
+	# A small optional corner, not a recurring chore or a gate on the whole garden.
+	for id: String in ["cell_11","cell_12","cell_13","cell_14","cell_15","cell_16"]:
+		if _data.fields.has("field_06") and _data.fields.field_06.cells.has(id):
+			_data.fields.field_06.cells[id].ground = "rough" if id in ["cell_11","cell_12"] else "weedy"
 
 
 func snapshot() -> Dictionary:
@@ -190,6 +194,11 @@ func harvest(field_id: String, cell_id: String, now_utc_seconds: float) -> Dicti
 	return _act("harvest", field_id, cell_id, "", now_utc_seconds)
 
 
+func tidy(action: String, field_id: String, cell_id: String, now: float) -> Dictionary:
+	if action not in ["weed","till"]: return _result(false,"invalid_tool")
+	return _act(action,field_id,cell_id,"",now)
+
+
 func _act(action: String, field_id: String, cell_id: String, crop_id: String, now_utc_seconds: float) -> Dictionary:
 	if not _valid_time(now_utc_seconds):
 		return _result(false, "invalid_time")
@@ -202,7 +211,13 @@ func _act(action: String, field_id: String, cell_id: String, crop_id: String, no
 	var changed: Array[String] = _settle_data(candidate, now_utc_seconds)
 	var field: Dictionary = candidate.fields[field_id].cells[cell_id]
 	var reward_crop: String = ""
-	if action == "sow":
+	if action in ["weed","till"]:
+		if not field.crop_id.is_empty(): return _result(false,"occupied")
+		if field.ground != ("weedy" if action=="weed" else "rough"):
+			return _result(false,"wrong_ground")
+		field.ground = "rough" if action=="weed" else "ready"
+	elif action == "sow":
+		if field.ground != "ready": return _result(false,"unprepared")
 		if not field.crop_id.is_empty():
 			return _result(false, "occupied")
 		field.crop_id = crop_id
@@ -257,7 +272,7 @@ func _set_initial_crop(field_id: String, crop_id: String, progress: float) -> vo
 
 
 static func _empty_cell(now_utc_seconds: float) -> Dictionary:
-	return {"crop_id": "", "growth_seconds": 0.0, "last_settled_utc_seconds": now_utc_seconds, "watered": false}
+	return {"crop_id": "", "growth_seconds": 0.0, "last_settled_utc_seconds": now_utc_seconds, "watered": false, "ground":"ready"}
 
 
 static func _result(ok: bool, reason: String, changed: Array[String] = [], reward_crop: String = "") -> Dictionary:
@@ -306,8 +321,10 @@ static func _valid_snapshot(data: Dictionary) -> bool:
 
 
 static func valid_cell_snapshot(field: Dictionary) -> bool:
-	if field.size() != 4 or not field.get("crop_id") is String or not field.get("watered") is bool:
+	if field.size() != 5 or not field.get("crop_id") is String or not field.get("watered") is bool:
 		return false
+	if field.get("ground") not in ["ready","rough","weedy"]: return false
+	if field.ground!="ready" and not field.crop_id.is_empty(): return false
 	var growth: Variant = field.get("growth_seconds")
 	var baseline: Variant = field.get("last_settled_utc_seconds")
 	if not _is_number(growth) or float(growth) < 0.0 or not _is_number(baseline) or not _valid_time(float(baseline)):
