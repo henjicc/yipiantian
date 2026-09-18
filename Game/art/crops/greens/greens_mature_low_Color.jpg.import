@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dqnpdnqx62let"
-path="res://.godot/imported/greens_mature_low_Color_d056fa4b-d573-4e9f-9f48-a9522c315446.jpg-91d18e6b634474c0a07999406ea02322.ctex"
+uid="uid://chi0a6jj8fsfe"
+path="res://.godot/imported/greens_mature_low_Color.jpg-1b91f0bf2da10b1a9398d56f08b0fc47.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "8063bdbb61fbfe65a551ec906aea811e"
+"md5": "5144c01728594f07cf3e6aae753ce151"
 }
 
 [deps]
 
-source_file="res://art/crops/greens/greens_mature_low_Color_d056fa4b-d573-4e9f-9f48-a9522c315446.jpg"
-dest_files=["res://.godot/imported/greens_mature_low_Color_d056fa4b-d573-4e9f-9f48-a9522c315446.jpg-91d18e6b634474c0a07999406ea02322.ctex"]
+source_file="res://art/crops/greens/greens_mature_low_Color.jpg"
+dest_files=["res://.godot/imported/greens_mature_low_Color.jpg-1b91f0bf2da10b1a9398d56f08b0fc47.ctex"]
 
 [params]
 

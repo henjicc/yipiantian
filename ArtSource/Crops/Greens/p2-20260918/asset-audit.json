@@ -1,0 +1,83 @@
+{
+  "source": "raw/model.fbx",
+  "blender": "5.2.2 LTS",
+  "source_topology": {
+    "vertices": 5239,
+    "faces": 5617,
+    "quads": 3669,
+    "triangles": 9286,
+    "dimensions_godot_xyz": [
+      0.98388671875,
+      0.99951171875,
+      0.98974609375
+    ],
+    "materials": 1,
+    "uv_layers": 1,
+    "color_attributes": 0,
+    "non_manifold_edges": 1326,
+    "loose_vertices": 0,
+    "zero_area_faces": 0
+  },
+  "meshes": {
+    "greens_mature": {
+      "vertices": 1998,
+      "faces": 3399,
+      "quads": 0,
+      "triangles": 3399,
+      "dimensions_godot_xyz": [
+        0.4774743914604187,
+        0.4855782389640808,
+        0.4803931713104248
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "color_attributes": 1,
+      "non_manifold_edges": 725,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "greens_mature_low": {
+      "vertices": 861,
+      "faces": 1399,
+      "quads": 0,
+      "triangles": 1399,
+      "dimensions_godot_xyz": [
+        0.4770190715789795,
+        0.4824417233467102,
+        0.48147153854370117
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "color_attributes": 1,
+      "non_manifold_edges": 451,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "name": "Color",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  },
+  "up_axis_detected": {
+    "axis": 2,
+    "green_at_max": true,
+    "greenness_gradient": 0.1367
+  },
+  "godot_import": "Disable automatic mesh LOD on both GLBs; use authored high/low only."
+}

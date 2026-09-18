@@ -16,6 +16,13 @@ const PROFILES := {
 	"trellis": Vector4(0.010, 0.08, 0.0, 0.003),
 	"flowerpot": Vector4(0.010, 0.42, 0.0, 0.003),
 }
+# Meshes with authored wind weights (COLOR_0: r bend, g flutter, b phase) and their
+# crown bend amplitude in metres. Kinds absent here keep the bounds-based mask even
+# when an unrelated vertex colour layer exists.
+const AUTHORED_BEND := {
+	"osmanthus": 0.07,
+	"greens": 0.006,
+}
 var _materials: Dictionary = {}
 
 
@@ -44,13 +51,22 @@ func _apply_node(node: Node, kind: String) -> void:
 			mesh.material_override = _convert(mesh.material_override)
 		mesh.set_instance_shader_parameter("wind_bounds", Vector4(bounds.position.y, bounds.size.y, centre.x, centre.z))
 		mesh.set_instance_shader_parameter("wind_motion", motion)
-		mesh.set_instance_shader_parameter("wind_authored", 1.0 if kind == "osmanthus" else 0.0)
+		var authored := AUTHORED_BEND.has(kind) and _has_vertex_colors(mesh.mesh)
+		mesh.set_instance_shader_parameter("wind_authored", 1.0 if authored else 0.0)
+		mesh.set_instance_shader_parameter("wind_authored_bend", AUTHORED_BEND.get(kind, 0.07))
 		mesh.set_instance_shader_parameter("leaf_paint_strength", 0.0 if kind == "autumn_crop" else 1.0)
 		mesh.set_instance_shader_parameter("wind_leaf_texture_mask", 1.0 if kind == "trellis" else 0.0)
 		mesh.extra_cull_margin = maxf(mesh.extra_cull_margin, 0.22 if kind == "osmanthus" else motion.x + motion.w)
 		mesh.set_meta("plant_wind_kind", kind)
 	for child: Node in node.get_children():
 		_apply_node(child, kind)
+
+
+func _has_vertex_colors(mesh: Mesh) -> bool:
+	for surface: int in mesh.get_surface_count():
+		if mesh.surface_get_arrays(surface)[Mesh.ARRAY_COLOR] != null:
+			return true
+	return false
 
 
 func _convert(source: Material) -> ShaderMaterial:

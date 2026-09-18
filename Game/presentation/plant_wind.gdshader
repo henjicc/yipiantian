@@ -18,6 +18,8 @@ instance uniform vec4 wind_bounds = vec4(0.0, 1.0, 0.0, 0.0); // bottom, height,
 instance uniform vec4 wind_motion = vec4(0.018, 0.20, 0.0, 0.005); // metres, root lock, crown profile, flutter
 instance uniform float wind_leaf_texture_mask = 0.0;
 instance uniform float wind_authored = 0.0;
+// Crown bend amplitude in metres for authored meshes; per-plant scale set by the caller.
+instance uniform float wind_authored_bend = 0.07;
 instance uniform float leaf_paint_strength = 1.0;
 instance uniform vec2 root_soil = vec2(-1000.0,0.0); // world soil height / contact band; crops only
 instance uniform float frame_enabled = 0.0;
@@ -57,7 +59,7 @@ void vertex() {
 	offset_world += vec3(0.35, 0.12, -0.75) * ripple * wind_motion.w * (wind_authored > 0.5 ? COLOR.g : mask * mask);
 	if (wind_authored > 0.5) {
 		// One continuous bend through all branch junctions; only leaves flutter.
-		offset_world += vec3(-0.20, 0.10, 0.42) * sin(TIME * 1.05 + COLOR.b * 3.0 + phase) * 0.07 * mask;
+		offset_world += vec3(-0.20, 0.10, 0.42) * sin(TIME * 1.05 + COLOR.b * 3.0 + phase) * wind_authored_bend * mask;
 		offset_world += vec3(0.5, 0.25, -0.4) * sin(TIME * 3.1 + COLOR.b * 11.0 + phase) * wind_motion.w * COLOR.g;
 	}
 	// Convert a direction, not a point. Scaling a plant never increases its world wind limit.

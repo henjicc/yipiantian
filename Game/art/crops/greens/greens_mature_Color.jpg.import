@@ -2,24 +2,23 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://btdklhoajlbjn"
-path.s3tc="res://.godot/imported/greens_mature_Color_d056fa4b-d573-4e9f-9f48-a9522c315446.jpg-38ffe5004928461b27cd8bb61c5e26f9.s3tc.ctex"
+uid="uid://csr4qiefepawf"
+path="res://.godot/imported/greens_mature_Color.jpg-1517630c63e0a737f43a82112650f824.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
-"md5": "8063bdbb61fbfe65a551ec906aea811e"
+"md5": "5144c01728594f07cf3e6aae753ce151"
 }
 
 [deps]
 
-source_file="res://art/crops/greens/greens_mature_Color_d056fa4b-d573-4e9f-9f48-a9522c315446.jpg"
-dest_files=["res://.godot/imported/greens_mature_Color_d056fa4b-d573-4e9f-9f48-a9522c315446.jpg-38ffe5004928461b27cd8bb61c5e26f9.s3tc.ctex"]
+source_file="res://art/crops/greens/greens_mature_Color.jpg"
+dest_files=["res://.godot/imported/greens_mature_Color.jpg-1517630c63e0a737f43a82112650f824.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -41,4 +40,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1
