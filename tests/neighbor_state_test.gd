@@ -36,7 +36,9 @@ func _initialize() -> void:
 	var earned: Dictionary=farm.snapshot().harvested
 	for id: String in Neighbors.IDS:
 		for round_index: int in 9:
+			expect(Neighbors.Stories.history(id,farm.snapshot().neighbors[id]).size()==mini(round_index,3),"History only contains delivered chapters")
 			var wish: Dictionary=Neighbors.wish(id,round_index)
+			expect(wish.has("reply")== (round_index<3),"Complete story is followed by repeatable daily wishes")
 			var basket: Dictionary={}
 			var remaining: int=wish.amount
 			for crop: String in Crops.crop_ids():
@@ -44,6 +46,11 @@ func _initialize() -> void:
 					basket[crop]=1
 					remaining-=1
 			expect(remaining==0 and farm.share_basket(id,round_index,basket).ok,"Each household has sustainable varied wishes")
+			expect(Neighbors.Stories.delivered(id,farm.snapshot().neighbors[id])==mini(round_index+1,3),"Scene chapter appears on durable delivery, before claiming the gift")
+			var replay_before: Dictionary=farm.snapshot()
+			var letters: Array[Dictionary]=Neighbors.Stories.history(id,replay_before.neighbors[id])
+			letters[0].title="reader-local change"
+			expect(farm.snapshot()==replay_before and Neighbors.Stories.history(id,replay_before.neighbors[id])[0].title!="reader-local change","Reading letters cannot mutate state or shared story content")
 			before=farm.snapshot()
 			expect(not farm.claim_gift(id,round_index,"lettuce").ok and farm.snapshot()==before,"Unlisted gifts rejected atomically")
 			var gift: String=Neighbors.HOMES[id].gifts[round_index%2]

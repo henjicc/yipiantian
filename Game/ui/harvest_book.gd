@@ -3,6 +3,8 @@ extends CanvasLayer
 signal closed
 signal share_requested(neighbor: String, round_index: int, basket: Dictionary)
 signal gift_requested(neighbor: String, round_index: int, crop: String)
+signal view_requested(neighbor: String)
+signal view_closed
 const Crops = preload("res://farm/crop_catalog.gd")
 const Neighbors = preload("res://farm/neighbor_catalog.gd")
 const Decorations = preload("res://farm/decoration_catalog.gd")
@@ -19,6 +21,11 @@ var _send: Button
 var _total: Label
 var _fade: Tween
 var _delivery: Tween
+var _history_open: bool = false
+var viewing: bool = false
+var _paper: PanelContainer
+var _shade: ColorRect
+var _view_controls: HBoxContainer
 
 func _ready() -> void:
 	layer=20
@@ -35,9 +42,11 @@ func _ready() -> void:
 	shade.color=Color(.12,.18,.15,.3)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_root.add_child(shade)
+	_shade=shade
 	var paper:=PanelContainer.new()
 	paper.name="Paper"
 	_root.add_child(paper)
+	_paper=paper
 	paper.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	paper.offset_left=-440
 	paper.offset_right=440
@@ -65,6 +74,16 @@ func _ready() -> void:
 	_content=VBoxContainer.new()
 	_content.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	scroll.add_child(_content)
+	_view_controls=HBoxContainer.new()
+	_view_controls.name="NeighborView"
+	_root.add_child(_view_controls)
+	_view_controls.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_view_controls.offset_left=-120
+	_view_controls.offset_right=120
+	_view_controls.offset_top=-82
+	_view_controls.offset_bottom=-28
+	_button(_view_controls,"回到小笺").pressed.connect(end_view)
+	_view_controls.hide()
 	_root.hide()
 
 func present(data: Dictionary) -> void:
@@ -80,10 +99,27 @@ func present(data: Dictionary) -> void:
 
 func dismiss() -> void:
 	if not active: return
+	if viewing: end_view()
 	active=false
 	if _fade: _fade.kill()
 	_root.hide()
 	closed.emit()
+
+func begin_view() -> void:
+	viewing=true
+	_paper.hide()
+	_shade.hide()
+	_view_controls.show()
+	view_requested.emit(neighbor)
+
+func end_view() -> void:
+	if not viewing: return
+	viewing=false
+	view_closed.emit()
+	_view_controls.hide()
+	_paper.show()
+	_shade.show()
+	_render()
 
 func refresh(data: Dictionary) -> void:
 	_data=data.duplicate(true)
@@ -95,6 +131,7 @@ func _exit_tree() -> void:
 
 func _render() -> void:
 	if _delivery: _delivery.kill()
+	(_content.get_parent() as ScrollContainer).scroll_vertical=0
 	for child: Node in _content.get_children():
 		_content.remove_child(child)
 		child.queue_free()
@@ -139,9 +176,25 @@ func _neighbors() -> void:
 		choose.name=id
 		choose.toggle_mode=true
 		choose.set_pressed_no_signal(id==neighbor)
-		choose.pressed.connect(func() -> void: neighbor=id; _render())
+		choose.pressed.connect(func() -> void: neighbor=id; _history_open=false; _render())
 	var visit: Dictionary=_data.neighbors[neighbor]
 	var round_index: int=visit.round
+	var actions:=HBoxContainer.new()
+	_content.add_child(actions)
+	var history:=_button(actions,"当前来信" if _history_open else "往来小笺")
+	history.name="History"
+	history.disabled=Neighbors.Stories.delivered(neighbor,visit)==0
+	history.pressed.connect(func() -> void: _history_open=not _history_open; _render())
+	var view_button:=_button(actions,"看看院落")
+	view_button.name="ViewHome"
+	view_button.pressed.connect(begin_view)
+	if _history_open:
+		for chapter: Dictionary in Neighbors.Stories.history(neighbor,visit):
+			_label(_content,chapter.title,26)
+			_label(_content,chapter.letter,21)
+			_label(_content,"回笺 · "+chapter.reply,21)
+			_label(_content,chapter.change,18)
+		return
 	if visit.pending:
 		var arrival:=Control.new()
 		arrival.custom_minimum_size.y=56
@@ -155,7 +208,7 @@ func _neighbors() -> void:
 		_delivery=create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		_delivery.tween_property(basket,"position:x",30.0,.4)
 		_label(_content,"菜篮已送达",24)
-		_label(_content,Neighbors.HOMES[neighbor].thanks,22)
+		_label(_content,Neighbors.reply(neighbor,round_index),22)
 		var gifts:=HBoxContainer.new()
 		_content.add_child(gifts)
 		for crop: String in Neighbors.HOMES[neighbor].gifts:
@@ -194,11 +247,11 @@ func _neighbors() -> void:
 			if value>0: _draft[crop]=int(value)
 			else: _draft.erase(crop)
 			_selection(wish.amount))
-	var actions:=HBoxContainer.new()
-	_content.add_child(actions)
-	_total=_label(actions,"",20)
+	var send_actions:=HBoxContainer.new()
+	_content.add_child(send_actions)
+	_total=_label(send_actions,"",20)
 	_total.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	_send=_button(actions,"送出菜篮")
+	_send=_button(send_actions,"送出菜篮")
 	_send.name="Share"
 	_send.pressed.connect(func() -> void: share_requested.emit(neighbor,round_index,_draft.duplicate()))
 	_selection(wish.amount)

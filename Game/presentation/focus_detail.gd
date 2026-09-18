@@ -21,6 +21,13 @@ var _dof_strength: float = 1.7
 var _fog_strength: float = 0.28
 var _field_bounds: Dictionary = {}
 var _bounds_dirty: bool = true
+var _neighbor: Node3D
+var _neighbor_clear: float = 0.0
+var _neighbor_center: Vector2 = Vector2.ZERO
+
+func protect_neighbor(island: Node3D) -> void:
+	_neighbor=island
+	if is_instance_valid(island): _neighbor_center=Vector2(island.global_position.x,island.global_position.z)
 
 
 func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations: Node3D) -> void:
@@ -29,6 +36,7 @@ func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations
 	_environment = environment
 	_decorations = decorations
 	RenderingServer.global_shader_parameter_set("courtyard_haze_region", environment.plan.haze_region)
+	RenderingServer.global_shader_parameter_set("courtyard_haze_visit",Vector4.ZERO)
 	_attributes = CameraAttributesPractical.new()
 	_attributes.dof_blur_amount = 0.0
 	_attributes.dof_blur_near_transition = 2.0
@@ -152,6 +160,10 @@ func protected_depth_range() -> Vector2:
 		var depths: Vector2 = depth_range(_camera, field.global_transform, _field_bounds[field])
 		result.x = minf(result.x, depths.x)
 		result.y = maxf(result.y, depths.y)
+	if is_instance_valid(_neighbor):
+		var depths: Vector2=depth_range(_camera,_neighbor.global_transform,AABB(Vector3(-5,-.2,-5),Vector3(10,6.2,10)))
+		result.x=minf(result.x,depths.x)
+		result.y=maxf(result.y,depths.y)
 	return result
 
 
@@ -174,10 +186,13 @@ func _process(delta: float) -> void:
 	environment.fog_enabled = true
 	environment.fog_density = 0.0
 	RenderingServer.global_shader_parameter_set("courtyard_haze_strength", _fog_strength)
+	var visiting: bool=is_instance_valid(_neighbor) and _camera.get("neighbor_view")==true
+	_neighbor_clear=move_toward(_neighbor_clear,1.0 if visiting else 0.0,delta/0.7)
+	RenderingServer.global_shader_parameter_set("courtyard_haze_visit",Vector4(_neighbor_center.x,_neighbor_center.y,0,_neighbor_clear))
 	# Global buffer colors are consumed directly by spatial shaders in linear space.
 	RenderingServer.global_shader_parameter_set("courtyard_haze_color", environment.fog_light_color.srgb_to_linear())
 	var inspecting: bool = _camera.get("free_view") == true
-	var framing: bool = not inspecting and not is_instance_valid(_target) and not _decorations.active and _quality == "standard"
+	var framing: bool = not inspecting and not is_instance_valid(_neighbor) and not is_instance_valid(_target) and not _decorations.active and _quality == "standard"
 	_foreground.set_overview_visible(framing, inspecting)
 	var allowed: bool = not inspecting and _dof_enabled and _quality == "standard" and _dof_strength > 0.0
 	var effect_active: bool = allowed and not _decorations.active

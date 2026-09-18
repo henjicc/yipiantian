@@ -3,6 +3,10 @@ extends Node3D
 const ROOT := "res://art/environment/islets/"
 const EXPANSION := "res://art/environment/archipelago/"
 const MarshPlants = preload("res://scenes/environment/marsh_plants.gd")
+const Stories = preload("res://farm/neighbor_stories.gd")
+const StoryProps = preload("res://scenes/environment/neighbor_story_props.gd")
+const HOUSE_NODES := {"willow":"WillowNeighbor", "bamboo":"BambooNeighbor", "ferry":"EasternCottage"}
+var _story_groups: Dictionary = {}
 var _islets: Array[Dictionary] = []
 var _low_quality: bool = false
 var _lake_plants: Node3D
@@ -87,3 +91,18 @@ func waterline_sources() -> Array[Node3D]:
 		# Source triangles, once at construction; hidden LOD must not be counted.
 		if entry.node.position.length() < 28.0: result.append(entry.high)
 	return result
+
+func show_stories(neighbors: Dictionary, living: Node3D) -> void:
+	for id: String in HOUSE_NODES:
+		var island: Node3D=get_node(HOUSE_NODES[id])
+		var count: int=Stories.delivered(id,neighbors[id])
+		if not _story_groups.has(id):
+			if count==0: continue
+			_story_groups[id]=StoryProps.create(id,island,island.get_child(0),living)
+		for chapter: Node3D in _story_groups[id].get_children():
+			chapter.visible=chapter.get_index()<count
+
+func story_view(id: String) -> Dictionary:
+	var island: Node3D=get_node(HOUSE_NODES[id])
+	return {"island":island,"point":island.to_global(Vector3(0,1.2,0)),
+		"view":Vector3(rad_to_deg(island.rotation.y)+18,32,18.5)}

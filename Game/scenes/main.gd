@@ -126,6 +126,10 @@ func _ready() -> void:
 		_refresh_hud())
 	harvest_book.share_requested.connect(func(id: String, visit: int, basket: Dictionary) -> void: _exchange(id,visit,basket,""))
 	harvest_book.gift_requested.connect(func(id: String, visit: int, crop: String) -> void: _exchange(id,visit,{},crop))
+	harvest_book.view_requested.connect(_view_neighbor)
+	harvest_book.view_closed.connect(func() -> void:
+		camera.leave_neighbor()
+		hud.show())
 	tool_cursor = ToolCursor.new()
 	add_child(tool_cursor)
 	hud.overview_requested.connect(_return_overview)
@@ -148,6 +152,8 @@ func _ready() -> void:
 		camera_tuning.fog_strength_changed.connect(func(strength: float) -> void:
 			focus_detail.set_fog_strength(strength))
 	camera.motion_finished.connect(_refresh_hud)
+	camera.motion_finished.connect(func() -> void:
+		if not camera.neighbor_view and focus_detail!=null: focus_detail.protect_neighbor(null))
 	_load_game(_startup_state)
 	_startup_state = {}
 	# The courtyard owns all slot transforms and art; no duplicate fallback layout.
@@ -245,6 +251,7 @@ func _load_game(initial: Dictionary = {}) -> void:
 		decoration_layout.bind_state(decoration_state)
 		_refresh_lanterns()
 	_loaded = true
+	_refresh_neighbor_stories()
 	farm.visible = true
 	settle_farm()
 	_save_farm()
@@ -403,9 +410,19 @@ func _exchange(id: String, visit: int, basket: Dictionary, gift: String) -> void
 		_refresh_hud()
 		return
 	farm_state.restore_snapshot(candidate.snapshot())
+	_refresh_neighbor_stories()
 	harvest_book.refresh(farm_state.snapshot())
 	farm_audio.play_ui()
 	_refresh_hud()
+
+func _refresh_neighbor_stories() -> void:
+	$Environment/NeighborIslets.show_stories(farm_state.snapshot().neighbors,$Environment/LivingDetails)
+
+func _view_neighbor(id: String) -> void:
+	var scene_view: Dictionary=$Environment/NeighborIslets.story_view(id)
+	focus_detail.protect_neighbor(scene_view.island)
+	camera.view_neighbor(scene_view.point,scene_view.view)
+	hud.hide()
 
 func _layout_active() -> bool:
 	return courtyard_edit!=null and courtyard_edit.editor.active
@@ -474,7 +491,8 @@ func _refresh_lanterns() -> void:
 func _input(event: InputEvent) -> void:
 	if _basket_active():
 		if (event is InputEventKey and event.pressed and not event.echo and event.keycode==KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_RIGHT):
-			harvest_book.dismiss()
+			if harvest_book.viewing: harvest_book.end_view()
+			else: harvest_book.dismiss()
 			get_viewport().set_input_as_handled()
 		return
 	if event is InputEventMouse:

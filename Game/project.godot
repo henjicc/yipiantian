@@ -48,6 +48,10 @@ courtyard_haze_region={
 "type": "vec4",
 "value": Vector4(0, -1, 10.8, 10)
 }
+courtyard_haze_visit={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 courtyard_haze_strength={
 "type": "float",
 "value": 0.28

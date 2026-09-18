@@ -1,6 +1,7 @@
 extends RefCounted
 ## Persistent identities and non-expiring, repeatable neighbour wishes.
 const Crops = preload("res://farm/crop_catalog.gd")
+const Stories = preload("res://farm/neighbor_stories.gd")
 const IDS: Array[String] = ["willow", "bamboo", "ferry"]
 const HOMES := {
 	"willow": {"name":"柳岸 · 林婶", "wishes":[
@@ -21,8 +22,14 @@ const HOMES := {
 }
 
 static func wish(id: String, round_index: int) -> Dictionary:
-	var entry: Array = HOMES[id].wishes[round_index%HOMES[id].wishes.size()]
+	var story: Dictionary = Stories.chapter(id, round_index)
+	if not story.is_empty(): return story
+	var entry: Array = HOMES[id].wishes[(round_index-Stories.CHAPTERS[id].size())%HOMES[id].wishes.size()]
 	return {"title":entry[0],"letter":entry[1],"group":entry[2],"amount":entry[3]}
+
+static func reply(id: String, round_index: int) -> String:
+	var story: Dictionary = Stories.chapter(id,round_index)
+	return HOMES[id].thanks if story.is_empty() else story.reply
 
 static func accepts(id: String, round_index: int, crop: String) -> bool:
 	var definition: Dictionary = Crops.definition(crop)

@@ -64,6 +64,7 @@ func _run() -> void:
 	DirAccess.make_dir_absolute(pending)
 	await click(book._send)
 	expect(scene._save_failed and not book.active and scene.farm_state.snapshot()==before,"Failed write closes book and does not spend inventory")
+	expect(not scene.get_node("Environment/NeighborIslets")._story_groups.has("willow"),"Failed delivery cannot publish a story scene change")
 	DirAccess.remove_absolute(pending)
 	scene._retry_storage()
 	scene._open_basket()
@@ -72,6 +73,7 @@ func _run() -> void:
 	await process_frame
 	await click(book._send)
 	expect(scene.farm_state.snapshot().neighbors.willow.pending,"Delivered basket persists a reply")
+	expect(scene.get_node("Environment/NeighborIslets")._story_groups.willow.get_child(0).visible,"Successful durable delivery publishes its story change")
 	expect(scene.farm_state.snapshot().inventory.greens==0 and scene.farm_state.snapshot().harvested.greens==1,"UI shares food without reducing progress")
 	await shot("reply")
 	var reopened: Dictionary=Store.new(scene.store.directory).load_state()

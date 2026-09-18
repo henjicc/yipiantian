@@ -37,6 +37,21 @@ var _zoom_target: float = 0.0 # Distance in normal view; remaining travel in fre
 var _zoom_velocity: float = 0.0
 var _free_return_point: Vector3
 var _free_return_view: Vector3
+var neighbor_view: bool = false
+var _neighbor_return_point: Vector3
+var _neighbor_return_view: Vector3
+
+func view_neighbor(point: Vector3, angles: Vector3) -> void:
+	if not neighbor_view:
+		_neighbor_return_point = _destination_point if is_transitioning() else focus_point
+		_neighbor_return_view = _destination_view if is_transitioning() else view
+	neighbor_view=true
+	_move_to(point,angles)
+
+func leave_neighbor() -> void:
+	if not neighbor_view: return
+	neighbor_view=false
+	_move_to(_neighbor_return_point,_neighbor_return_view)
 
 func configure_layout(point: Vector3, distance: float) -> void:
 	overview_point = point
