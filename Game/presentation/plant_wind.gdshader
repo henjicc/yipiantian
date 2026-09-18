@@ -22,11 +22,13 @@ instance uniform float wind_authored = 0.0;
 instance uniform float wind_authored_bend = 0.07;
 instance uniform float leaf_paint_strength = 1.0;
 instance uniform float preserve_painted_color = 0.0;
+instance uniform float leaf_roughness_variation = 0.0;
 instance uniform vec2 root_soil = vec2(-1000.0,0.0); // world soil height / contact band; crops only
 instance uniform float frame_enabled = 0.0;
 instance uniform float haze_exempt = 0.0;
 instance uniform vec4 frame_safe_rect = vec4(0.15, 0.14, 0.85, 0.90);
 varying vec3 world_point;
+varying vec3 surface_point;
 
 float pigment_hash(vec3 p) { return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 43758.5453); }
 float pigment_wash(vec3 p) {
@@ -35,6 +37,7 @@ float pigment_wash(vec3 p) {
 }
 
 void vertex() {
+	surface_point = VERTEX;
 	vec3 original_world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	float height = max(wind_bounds.y, 0.001);
 	float relative_height = (VERTEX.y - wind_bounds.x) / height;
@@ -102,6 +105,14 @@ void fragment() {
 	ALBEDO = color;
 	BACKLIGHT = color * leaf_pigment * .16;
 	ROUGHNESS = mix(base_roughness,.97,contact);
+	if (leaf_roughness_variation > 0.5) {
+		// Object-space variation stays attached during wind and plant rotation.
+		// Broad, matte patches only: pigment colour is not interpreted as height.
+		float patches = pigment_wash(surface_point * 65.0);
+		float grain = pigment_wash(surface_point * 220.0);
+		float leaf_roughness = mix(.70, .98, smoothstep(.20, .80, patches * .8 + grain * .2));
+		ROUGHNESS = mix(ROUGHNESS, leaf_roughness, leaf_pigment * (1.0 - contact));
+	}
 	SPECULAR = base_specular;
 	METALLIC = base_metallic;
 }
