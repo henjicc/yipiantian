@@ -20,11 +20,15 @@ func _ready() -> void:
 		["weed",Vector3(-1.55,.28,.22),90.0,-45.0],
 		["water",Vector3(.65,.28,.24),-90.0,0.0],
 		["till",Vector3(1.38,.28,.34),0.0,-26.0]]:
-		var prop: Node3D = load("res://art/tools/%s.glb" % item[0]).instantiate()
+		var resource_path: String = "res://art/characters/farmer/hoe.glb" if item[0] == "till" else "res://art/tools/%s.glb" % item[0]
+		var prop: Node3D = load(resource_path).instantiate()
 		prop.name = item[0]
 		add_child(prop)
 		prop.position = pose * item[1]
 		prop.basis = pose.basis * Basis(Vector3.RIGHT,deg_to_rad(item[3])) * Basis(Vector3.UP,deg_to_rad(item[2]))
+		if item[0] == "till":
+			# The previous approved hoe has a baked-in lateral lean.
+			prop.basis = pose.basis * Basis(Vector3.RIGHT,deg_to_rad(-20)) * Basis(Vector3.UP,PI*.5) * Basis(Vector3.FORWARD,deg_to_rad(18))
 		_ground(prop,pose.origin.y+.28)
 		tools[item[0]] = prop
 	_outline = ShaderMaterial.new()
