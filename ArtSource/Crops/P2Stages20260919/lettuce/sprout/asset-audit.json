@@ -1,0 +1,88 @@
+{
+  "crop": "lettuce",
+  "stage": "sprout",
+  "task": "61749ba5-8340-4425-b03b-bb61ce64c815",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 2054,
+      "polygons": 2436,
+      "quads": 1511,
+      "triangles": 3947,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 163,
+      "non_manifold_edges": 163,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "min_godot": [
+    -0.037524592131376266,
+    0.0,
+    -0.032214708626270294
+  ],
+  "max_godot": [
+    0.04806074872612953,
+    0.08500000089406967,
+    0.03597761690616608
+  ],
+  "root_transform": [
+    [
+      0.08562715351581573,
+      0.0,
+      0.0,
+      0.005268076900392771
+    ],
+    [
+      0.0,
+      0.08562715351581573,
+      0.0,
+      -0.0018814560025930405
+    ],
+    [
+      0.0,
+      0.0,
+      0.08562715351581573,
+      0.042500000447034836
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 2054,
+      "polygons": 2436,
+      "quads": 1511,
+      "triangles": 3947,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 163,
+      "non_manifold_edges": 163,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.009,
+    0.009
+  ],
+  "triangles": 3947,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/lettuce/lettuce_sprout.glb"
+}

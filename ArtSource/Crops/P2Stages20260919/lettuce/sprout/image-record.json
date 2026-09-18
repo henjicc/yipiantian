@@ -1,0 +1,12 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "inputs": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    ".local/crop-research-20260919/lettuce-seedling.jpg"
+  ],
+  "prompt": "Use case: stylized-concept. Create ONE single rooted green loose-leaf lettuce (Lactuca sativa) plant reference for a Jiangnan miniature farm, intended for image-to-3D. Image 1 is ONLY the approved Chinese gongbi light-colour style, not bok choy anatomy. Image 2 supplies real lettuce anatomy. Soft matte thin leaf blades, selective fine moss-green contour and branching vein lines, restrained watercolor pigment mottling, fresh muted light jade greens without yellow vintage filter. Clear dimensional overlaps and shallow natural wrinkles; never inflated rubber pads or thick white bok choy stalks. Elevated three-quarter view 35 degrees down, leaves radiate into foreground, sides AND back from one basal crown; full silhouette fits with margin. Plain neutral light-gray background and neutral diffuse illumination, no cast shadow, no text, no pot, no soil or ground disk, no roots visible, no extraneous objects. End at short basal stem soil anchor. Seedling stage: TWO small opposite smooth oval/spatulate cotyledons with rounded unnotched tips, one larger upright obovate first true leaf gently undulating at margin and one tiny emerging true leaf at center. Four leaves total on a very short slender pale green hypocotyl. Do not copy the strong yellow lighting of real photo. Cotyledons are oval, not kidney/heart-shaped, not long grass straps. True leaves noticeably broader than cotyledons, clearly delicate.",
+  "output_original": "%USERPROFILE%/.codex/generated_images/01a0b678-f598-7d00-915f-051f5aa8efc6/exec-e9283720-1077-45f4-8326-dcf731afec06.png",
+  "review": "Oval unnotched cotyledons with two ruffled true leaves.",
+  "model_seed_cost": "not returned"
+}

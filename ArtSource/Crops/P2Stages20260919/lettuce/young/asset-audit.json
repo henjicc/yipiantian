@@ -1,0 +1,92 @@
+{
+  "crop": "lettuce",
+  "stage": "young",
+  "task": "3db24431-26ec-4fdb-afbc-4b2588fef27c",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 3655,
+      "polygons": 4584,
+      "quads": 2372,
+      "triangles": 6956,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 431,
+      "non_manifold_edges": 457,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "min_godot": [
+    -0.1248561441898346,
+    -0.03519999980926514,
+    -0.15242105722427368
+  ],
+  "max_godot": [
+    0.10341052711009979,
+    0.12479999661445618,
+    0.07741754502058029
+  ],
+  "root_transform": [
+    [
+      0.22995087504386902,
+      0.0,
+      0.0,
+      -0.010722806677222252
+    ],
+    [
+      0.0,
+      0.22995087504386902,
+      0.0,
+      0.037501752376556396
+    ],
+    [
+      0.0,
+      0.0,
+      0.22995087504386902,
+      0.04479999840259552
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 3655,
+      "polygons": 4584,
+      "quads": 2372,
+      "triangles": 6956,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 431,
+      "non_manifold_edges": 457,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.0158,
+    0.0298
+  ],
+  "whole_mesh_soil_slice_radius": [
+    0.06355087459087372,
+    0.07550877332687378
+  ],
+  "triangles": 6956,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/lettuce/lettuce_young.glb"
+}
