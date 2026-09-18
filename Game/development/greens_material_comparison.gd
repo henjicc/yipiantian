@@ -24,6 +24,7 @@ var original_color: Texture2D
 var generated_colors: Array[Texture2D] = []
 var use_generated_color := false
 var fresh_enabled := true
+var wind_enabled := true
 
 func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--dev-preview"):
@@ -86,10 +87,13 @@ func _ready() -> void:
 		plants.append(plant)
 		if available:
 			_prepare_candidate(plant)
+			Wind.new().apply(plant,"greens",true)
+			for mesh: Node in plant.find_children("*","MeshInstance3D",true,false):
+				mesh.set_instance_shader_parameter("leaf_roughness_variation",0.0)
 		else:
 			original_color = _find_color(plant)
 			Wind.new().apply(plant,"greens",true)
-			_freeze(plant)
+			_prepare_original(plant)
 	camera = cameras[0]
 	sun = suns[0]
 	_update_cameras()
@@ -132,13 +136,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			view_target += (-camera.global_basis.x*event.relative.x+camera.global_basis.y*event.relative.y)*step
 		_update_cameras()
 
-func _freeze(node: Node) -> void:
+func _prepare_original(node: Node) -> void:
 	if node is MeshInstance3D:
-		node.set_instance_shader_parameter("wind_motion",Vector4.ZERO)
 		node.set_instance_shader_parameter("haze_exempt",1.0)
 		node.set_instance_shader_parameter("fresh_leaf_color",0.0)
 	for child: Node in node.get_children():
-		_freeze(child)
+		_prepare_original(child)
+
+func _toggle_wind() -> void:
+	wind_enabled = not wind_enabled
+	for plant: Node3D in plants:
+		for mesh: Node in plant.find_children("*","MeshInstance3D",true,false):
+			if not mesh.has_meta("review_wind_motion"):
+				mesh.set_meta("review_wind_motion",mesh.get_instance_shader_parameter("wind_motion"))
+			mesh.set_instance_shader_parameter("wind_motion",mesh.get_meta("review_wind_motion") if wind_enabled else Vector4.ZERO)
 
 func _prepare_candidate(node: Node) -> void:
 	if node is MeshInstance3D:
@@ -213,6 +224,7 @@ func _build_ui() -> void:
 	var color_button: Button = _button(controls,"切换配色",_toggle_color)
 	color_button.disabled = candidate_materials.is_empty()
 	_button(controls,"冷暖对比",_toggle_fresh)
+	_button(controls,"风动开／关",_toggle_wind)
 	_button(controls,"复位",_reset)
 	_button(controls,"返回农场",func() -> void: get_tree().change_scene_to_file("res://scenes/main.tscn"))
 
@@ -268,8 +280,10 @@ func _reset() -> void:
 	if not normals_enabled: _toggle_normals()
 	if use_generated_color: _toggle_color()
 	if not fresh_enabled: _toggle_fresh()
+	if not wind_enabled: _toggle_wind()
 
 func _capture(directory: String) -> void:
+	if wind_enabled: _toggle_wind()
 	DirAccess.make_dir_recursive_absolute(directory)
 	var normal_on: Image
 	for view: int in 3:
@@ -280,6 +294,7 @@ func _capture(directory: String) -> void:
 		_rotate(PI/2.0)
 		_cycle_light()
 	_reset()
+	_toggle_wind()
 	_toggle_normals()
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw

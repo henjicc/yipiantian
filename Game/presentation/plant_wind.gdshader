@@ -26,6 +26,7 @@ uniform float wash_scale = 8.0;
 instance uniform vec4 wind_bounds = vec4(0.0, 1.0, 0.0, 0.0); // bottom, height, centre x/z
 instance uniform vec4 wind_motion = vec4(0.018, 0.20, 0.0, 0.005); // metres, root lock, crown profile, flutter
 instance uniform float wind_leaf_texture_mask = 0.0;
+instance uniform float wind_rate = 1.0;
 instance uniform float wind_authored = 0.0;
 // Crown bend amplitude in metres for authored meshes; per-plant scale set by the caller.
 instance uniform float wind_authored_bend = 0.07;
@@ -67,8 +68,9 @@ void vertex() {
 		mask *= green;
 	}
 	float phase = dot(NODE_POSITION_WORLD.xz, vec2(0.71, 0.43));
-	float breeze = sin(TIME * 0.72 + phase) * 0.68 + sin(TIME * 1.13 + phase * 1.7) * 0.32;
-	float ripple = sin(dot(original_world, vec3(4.1, 2.7, 3.6)) + TIME * 2.2);
+	float wind_time = TIME * wind_rate;
+	float breeze = sin(wind_time * 0.72 + phase) * 0.68 + sin(wind_time * 1.13 + phase * 1.7) * 0.32;
+	float ripple = sin(dot(original_world, vec3(4.1, 2.7, 3.6)) + wind_time * 2.2);
 	vec3 offset_world = vec3(0.86, 0.04, 0.51) * breeze * wind_motion.x * mask;
 	offset_world += vec3(0.35, 0.12, -0.75) * ripple * wind_motion.w * (wind_authored > 0.5 ? COLOR.g : mask * mask);
 	if (wind_authored > 0.5) {

@@ -25,6 +25,22 @@ func _run() -> void:
 	var scene: Node3D = load("res://development/greens_material_comparison.tscn").instantiate()
 	root.add_child(scene)
 	await create_timer(1.0).timeout
+	await RenderingServer.frame_post_draw
+	var moving_a: Image = root.get_texture().get_image()
+	await create_timer(2.0).timeout
+	await RenderingServer.frame_post_draw
+	var moving_b: Image = root.get_texture().get_image()
+	assert(_changed(moving_a,moving_b,0) > 20 and _changed(moving_a,moving_b,1) > 20,"Both plants must visibly move")
+	await _click(scene,"风动开／关")
+	assert(not scene.wind_enabled)
+	await RenderingServer.frame_post_draw
+	var still_a: Image = root.get_texture().get_image()
+	await create_timer(.7).timeout
+	await RenderingServer.frame_post_draw
+	var still_b: Image = root.get_texture().get_image()
+	assert(_changed(still_a,still_b,0) == 0 and _changed(still_a,still_b,1) == 0,"Disabled wind must leave both plants still")
+	await _click(scene,"复位")
+	assert(scene.wind_enabled)
 	await _click(scene,"向右转")
 	assert(is_equal_approx(scene.yaw,PI/6.0))
 	assert(scene.plants[0].rotation.is_equal_approx(scene.plants[1].rotation))
@@ -61,8 +77,16 @@ func _run() -> void:
 	scene.queue_free()
 	await process_frame
 	await process_frame
-	print("MATERIAL_COMPARISON_CONTROLS_OK buttons, left orbit, middle pan, wheel zoom, synchronized cameras, reset")
+	print("MATERIAL_COMPARISON_CONTROLS_OK rendered wind on/off both sides, buttons, left orbit, middle pan, wheel zoom, synchronized cameras, reset")
 	quit()
+
+func _changed(a: Image, b: Image, side: int) -> int:
+	var count := 0
+	for y: int in range(180,700,2):
+		for x: int in range(100+side*800,700+side*800,2):
+			var delta: Color = a.get_pixel(x,y)-b.get_pixel(x,y)
+			if maxf(absf(delta.r),maxf(absf(delta.g),absf(delta.b))) > .01: count += 1
+	return count
 
 func _drag(button: int, start: Vector2, delta: Vector2) -> void:
 	var down := InputEventMouseButton.new()
