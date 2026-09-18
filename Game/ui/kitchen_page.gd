@@ -61,18 +61,29 @@ func render(book: Node, data: Dictionary, journal: bool, now: float) -> void:
 		crop=eligible[0]
 		for id: String in eligible:
 			if data.inventory[id]>0: crop=id; break
-	var ingredients:=OptionButton.new()
-	ingredients.name="KitchenIngredient"
-	ingredients.custom_minimum_size.y=40
+	var ingredients:=GridContainer.new()
+	ingredients.name="KitchenIngredients"
+	ingredients.columns=4
 	details.add_child(ingredients)
-	for id: String in eligible: ingredients.add_item("%s · 存有%d篮"%[Crops.definition(id).name,data.inventory[id]])
-	ingredients.select(eligible.find(crop))
+	var ingredient_cards: Dictionary={}
+	for id: String in eligible:
+		var card:=ItemCard.new()
+		card.name="Ingredient_"+id
+		card.configure(Crops.definition(id).name,load(Crops.icon_path(id)),Vector2(106,106),18)
+		card.toggle_mode=true
+		card.set_pressed_no_signal(id==crop)
+		card.disabled=data.inventory[id]<=0
+		card._badge.text="%d篮"%data.inventory[id]
+		ingredients.add_child(card)
+		ingredient_cards[id]=card
 	var start: Button=book._button(details,"开始制作")
 	start.name="StartCooking"
 	start.disabled=data.inventory[crop]<1 or not state.jobs[rule.station].is_empty()
-	ingredients.item_selected.connect(func(index: int) -> void:
-		crop=eligible[index]
-		start.disabled=data.inventory[crop]<1 or not state.jobs[rule.station].is_empty())
+	for id: String in ingredient_cards:
+		ingredient_cards[id].pressed.connect(func() -> void:
+			crop=id
+			for key: String in ingredient_cards: ingredient_cards[key].set_pressed_no_signal(key==id)
+			start.disabled=data.inventory[crop]<1 or not state.jobs[rule.station].is_empty())
 	var selected_recipe: String=recipe
 	start.pressed.connect(func() -> void: book.kitchen_requested.emit("start",{"recipe":selected_recipe,"crop":crop},int(state.revision)))
 	var views:=HBoxContainer.new()

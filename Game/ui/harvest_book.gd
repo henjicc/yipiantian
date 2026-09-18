@@ -271,10 +271,10 @@ func _neighbors() -> void:
 		var gifts:=HBoxContainer.new()
 		_content.add_child(gifts)
 		for crop: String in Neighbors.HOMES[neighbor].gifts:
-			var column:=VBoxContainer.new()
-			gifts.add_child(column)
-			_icon(column,crop,80)
-			var take:=_button(column,"带回一篮"+Crops.definition(crop).name)
+			var take:=ItemCard.new()
+			take.configure(Crops.definition(crop).name,load(Crops.icon_path(crop)),Vector2(150,132),21)
+			take._badge.text="一篮"
+			gifts.add_child(take)
 			take.name="Gift_"+crop
 			take.pressed.connect(func() -> void: gift_requested.emit(neighbor,round_index,crop))
 		return

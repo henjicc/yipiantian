@@ -27,6 +27,7 @@ var seasonal_courtyard: SeasonalCourtyard
 var garden_album: GardenAlbum
 var animal_panel: AnimalPanel
 var _pressed_animal: String=""
+var _pressed_entry: String=""
 var kitchen_display: KitchenDisplay
 var harvest_book: HarvestBook
 var courtyard_plan := CourtyardPlan.new()
@@ -494,6 +495,35 @@ func _open_basket() -> void:
 	harvest_book.present(farm_state.snapshot())
 	_refresh_hud()
 
+func _scene_entry_at(point: Vector2) -> String:
+	var hit: MeshInstance3D=decoration_layout.environment_surface_at(point)
+	if hit==null: return ""
+	for item: String in ["drying_rack","tea_table","pot"]:
+		var placed: Node=decoration_layout._instances.get(item)
+		if placed!=null and (placed==hit or placed.is_ancestor_of(hit)):
+			return {"drying_rack":"rack","tea_table":"table","pot":"jar"}[item]
+	var courtyard: Node3D=$Environment
+	for pair: Array in [["Kitchen","stove"],["LivingDetails/SidePorchDryingRack","rack"],
+		["LivingDetails/YardJarCluster","jar"],["LivingDetails/PorchHarvestTable","table"],
+		["NeighborIslets/WillowNeighbor","willow"],["NeighborIslets/BambooNeighbor","bamboo"],
+		["NeighborIslets/EasternCottage","ferry"]]:
+		var source: Node=courtyard.get_node(pair[0])
+		if source==hit or source.is_ancestor_of(hit): return pair[1]
+	return ""
+
+func _open_scene_entry(id: String) -> void:
+	if not _tools_available(): return
+	if id in ["willow","bamboo","ferry"]:
+		harvest_book.tab="neighbors"
+		harvest_book.neighbor=id
+		harvest_book._history_open=false
+	elif id in ["stove","rack","jar","table"]:
+		harvest_book.tab="kitchen"
+		var choices: Dictionary={"stove":"leaf_stir","rack":"root_dry","jar":"leaf_pickle"}
+		if choices.has(id): harvest_book.kitchen_page.recipe=choices[id]
+	else: return
+	_open_basket()
+
 func _exchange(id: String, visit: int, basket: Dictionary, gift: String) -> void:
 	if not _basket_active() or not _loaded or _save_failed: return
 	var candidate:=FarmState.new()
@@ -801,11 +831,18 @@ func _physics_process(_delta: float) -> void:
 	for pick: Dictionary in picks:
 		if selected_tool.is_empty():
 			var animal: String=_animal_at(pick.position)
-			if pick.down: _pressed_animal=animal
-			elif not _pressed_animal.is_empty():
-				var same: bool=animal==_pressed_animal
+			var entry: String=_scene_entry_at(pick.position) if animal.is_empty() else ""
+			if pick.down:
+				_pressed_animal=animal
+				_pressed_entry=entry
+			elif not _pressed_animal.is_empty() or not _pressed_entry.is_empty():
+				var same_animal: bool=not _pressed_animal.is_empty() and animal==_pressed_animal
+				var same_entry: bool=not _pressed_entry.is_empty() and entry==_pressed_entry
 				_pressed_animal=""
-				if same and not pick.dragged and pick.action_allowed and _press_context.get("action_allowed",false): _open_animal(animal)
+				_pressed_entry=""
+				if not pick.dragged and pick.action_allowed and _press_context.get("action_allowed",false):
+					if same_animal: _open_animal(animal)
+					elif same_entry: _open_scene_entry(entry)
 				_pressed_field=-1;_pressed_cell="";_press_context={}
 				continue
 		var hit: Dictionary = _farm_hit(pick.position)
@@ -1073,6 +1110,7 @@ func _toggle_camera_tuning() -> void:
 
 func _cancel_input(cancel_tool_press: bool = true) -> void:
 	_pressed_animal=""
+	_pressed_entry=""
 	if cancel_tool_press:
 		_tool_press = {}
 	_dragging = false

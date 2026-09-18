@@ -289,6 +289,36 @@ func world_point_visible(target: Vector3,excluded: Node=null) -> bool:
 	return true
 
 
+func environment_surface_at(screen_point: Vector2) -> MeshInstance3D:
+	# Reuse the existing visibility mesh cache. A scene entrance must be the
+	# actual frontmost surface, not an invisible screen rectangle behind a tree.
+	var origin: Vector3=camera.project_ray_origin(screen_point)
+	var endpoint: Vector3=origin+camera.project_ray_normal(screen_point)*camera.far
+	var nearest: MeshInstance3D=null
+	var nearest_distance: float=INF
+	var surfaces: Array[Node]=environment.find_children("*","MeshInstance3D",true,false)
+	for item: Node3D in _instances.values():
+		surfaces.append_array(item.find_children("*","MeshInstance3D",true,false))
+	var panorama: Node=environment.get_node_or_null("DistantRiverPanorama")
+	for instance: MeshInstance3D in surfaces:
+		if not instance.is_visible_in_tree() or instance.mesh==null: continue
+		if instance==environment.get_water_surface() or (panorama!=null and panorama.is_ancestor_of(instance)): continue
+		var inverse: Transform3D=instance.global_transform.affine_inverse()
+		var start: Vector3=inverse*origin
+		var end: Vector3=inverse*endpoint
+		if instance.mesh.get_aabb().intersects_segment(start,end)==null: continue
+		var mesh_id: int=instance.mesh.get_instance_id()
+		if not _triangle_meshes.has(mesh_id): _triangle_meshes[mesh_id]=instance.mesh.generate_triangle_mesh()
+		var triangles: TriangleMesh=_triangle_meshes[mesh_id]
+		if triangles==null: continue
+		var hit: Dictionary=triangles.intersect_segment(start,end)
+		if hit.is_empty(): continue
+		var distance: float=origin.distance_squared_to(instance.to_global(hit.position))
+		if distance<nearest_distance:
+			nearest=instance;nearest_distance=distance
+	return nearest
+
+
 func _instantiate(item_id: String, slot_id: String, turn: int) -> Node3D:
 	var instance: Node3D
 	if item_id in ["bench","drying_rack","tea_table"]:
