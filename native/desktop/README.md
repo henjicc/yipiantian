@@ -4,6 +4,8 @@
 
 发行文件为同目录的 `Farm.exe`、`Farm.pck`、`FarmDesktop.exe`。玩家无需安装 Godot、Lively、Wallpaper Engine 或编译环境。桌面宿主只在壁纸模式存在，不读取农场存档。
 
+多屏范围：同一时间只展示在一块屏幕上，以进入时游戏所在屏幕为目标；其他屏幕保持原桌面，不跨屏拉伸或复制。当前换屏方式是返回窗口模式，把游戏移到目标屏幕，再点击「设为桌面壁纸」。覆盖检测只计算目标屏幕，另一块屏幕上的窗口不会单独触发限帧。
+
 ## 构建与职责
 
 开发机需要 CMake、Visual Studio 2022 C++ Build Tools 和 Windows SDK。仓库根目录执行 `pwsh -NoProfile -File scripts/build-desktop.ps1`，输出 `.local/builds/windows/FarmDesktop.exe`；普通开发启动和 Windows 导出已自动调用。MSVC 使用静态运行库，宿主只链接 Windows 系统组件。
