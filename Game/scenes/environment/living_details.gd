@@ -1,5 +1,5 @@
 extends Node3D
-## Authored static porch props; positions deliberately stay outside farm and decoration slots.
+## Authored porch props; four living areas can be replaced by player decorations.
 const PIGMENT := preload("res://scenes/environment/pigment.gdshader")
 const WINDOW_SHADER := preload("res://scenes/environment/house_warmth.gdshader")
 const Assets = preload("res://scenes/environment/courtyard_assets.gd")
@@ -45,7 +45,12 @@ func _merge_static_group(group: Node3D) -> void:
 			if not surfaces.has(material):
 				var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 				surfaces[material]=surface
-			surfaces[material].append_from(child.mesh,0,child.transform)
+			# Primitive meshes carry indices; lathes do not. Appending the latter
+			# into an indexed surface otherwise leaves their vertices undrawn.
+			var indexed:=SurfaceTool.new()
+			indexed.create_from(child.mesh,0)
+			indexed.index()
+			surfaces[material].append_from(indexed.commit(),0,child.transform)
 			group.remove_child(child)
 			child.free()
 	for material: Material in surfaces:
@@ -261,9 +266,8 @@ func set_window_warmth(amount: float) -> void:
 			mesh.set_instance_shader_parameter("lantern_warmth",strength)
 
 
-## Yard set dressing. Everything here is decoration only: no collision, no farm
-## state and no decoration slot. Positions keep the six fields, the eight slots,
-## the stone routes and the bottom tool shelf area clear.
+## Yard set dressing. Layout and animal navigation consume these actual meshes;
+## the shared plan identifies the four replaceable living areas.
 func _build_yard_props() -> void:
 	_build_water_vats()
 	_build_firewood()

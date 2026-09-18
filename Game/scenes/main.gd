@@ -175,7 +175,8 @@ func _ready() -> void:
 	add_child(decoration_layout)
 	decoration_layout.configure(courtyard, camera, decoration_state if _loaded else DecorationState.new())
 	decoration_layout.mode_changed.connect(_on_decoration_mode_changed)
-	decoration_layout.confirmed.connect(_save_farm)
+	decoration_layout.change_requested.connect(_change_decoration)
+	decoration_layout.update_life(farm_state.snapshot().kitchen)
 	farm_audio = FarmAudio.new()
 	farm_audio.name = "FarmAudio"
 	add_child(farm_audio)
@@ -193,6 +194,8 @@ func _ready() -> void:
 	courtyard.set_window_warmth(atmosphere.get_window_warmth())
 	atmosphere.night_weight_changed.connect(farm_audio.set_night_weight)
 	farm_audio.set_night_weight(atmosphere.get_night_weight())
+	atmosphere.night_weight_changed.connect(decoration_layout.set_night_weight)
+	decoration_layout.set_night_weight(atmosphere.get_night_weight())
 	window_activity = WindowActivity.new()
 	window_activity.name = "WindowActivity"
 	window_activity.foreground_changed.connect(farm_audio.set_foreground)
@@ -261,6 +264,7 @@ func _load_game(initial: Dictionary = {}) -> void:
 	decoration_state.unlock(farm_state.snapshot().harvested)
 	if decoration_layout != null:
 		decoration_layout.bind_state(decoration_state)
+		decoration_layout.update_life(farm_state.snapshot().kitchen)
 		_refresh_lanterns()
 	_loaded = true
 	_refresh_neighbor_stories()
@@ -450,10 +454,26 @@ func _kitchen_action(action: String, request: Dictionary, revision: int) -> void
 		return
 	farm_state.restore_snapshot(candidate.snapshot())
 	kitchen_display.refresh(farm_state.snapshot().kitchen)
+	decoration_layout.update_life(farm_state.snapshot().kitchen)
 	if action=="share": harvest_book.tab="journal"
 	harvest_book.update_time(clock.call())
 	harvest_book.refresh(farm_state.snapshot())
 	farm_audio.play_ui()
+	_refresh_hud()
+
+func _change_decoration(candidate: Dictionary) -> void:
+	if not _loaded or _save_failed: return
+	var replacement:=DecorationState.new()
+	if not replacement.restore_snapshot(candidate): return
+	var saved: Dictionary=store.save(farm_state.snapshot(),replacement.snapshot())
+	if not saved.ok:
+		_save_failed=true
+		decoration_layout.finish_mode()
+		hud.show_storage_issue(saved.kind,true)
+		_refresh_hud()
+		return
+	decoration_state=replacement
+	decoration_layout.accept_state(replacement)
 	_refresh_hud()
 
 func _view_neighbor(id: String) -> void:

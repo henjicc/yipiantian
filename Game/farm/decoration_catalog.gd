@@ -1,11 +1,14 @@
 extends RefCounted
 ## Stable decoration and slot identities; spatial transforms belong to the courtyard.
 
-const IDS: Array[String] = ["pot", "flowerpot", "lantern"]
+const IDS: Array[String] = ["pot", "flowerpot", "lantern", "bench", "drying_rack", "tea_table"]
 const ITEMS: Dictionary = {
 	"pot": {"name": "粗陶罐", "type": "ground", "total": 3, "varieties": 1},
 	"flowerpot": {"name": "花盆", "type": "ground", "total": 8, "varieties": 2},
 	"lantern": {"name": "灯笼", "type": "hanging", "total": 16, "varieties": 3},
+	"bench": {"name": "竹长凳", "type": "ground", "total": 0, "varieties": 0},
+	"drying_rack": {"name": "小晒架", "type": "ground", "total": 0, "varieties": 0},
+	"tea_table": {"name": "茶桌", "type": "ground", "total": 0, "varieties": 0},
 }
 const SLOT_TYPES: Dictionary = {
 	"ground_01": "ground", "ground_02": "ground", "ground_03": "ground", "ground_04": "ground",

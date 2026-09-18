@@ -1,0 +1,44 @@
+{
+  "tool": "Built-in image_gen",
+  "date": "2026-09-18",
+  "purpose": "院落布置统一透明图标",
+  "billing": "Tool did not provide billing information",
+  "assets": [
+    {
+      "id": "pot",
+      "source_file": "exec-eb704c2a-4339-40a9-bdc5-167105c0d6a1.png",
+      "runtime": "Game/art/ui/decorations/pot.png",
+      "prompt": "Use case: stylized-concept. Asset type: a SINGLE transparent PNG item icon for a cozy Jiangnan Chinese farming game. Square canvas. Fine warm brown outlines, soft gongbi watercolor pigment, muted sage, celadon, ochre and aged bamboo palette, rounded readable silhouette, modest handmade rural household object, three-quarter view, gentle diffuse upper-left light. Center the complete object filling about 82% of the square with clean generous margins. GENUINE transparent alpha background including between thin parts; absolutely no opaque paper rectangle, no checkerboard painted into pixels, no ground plane, no drop shadow outside object, no scene, no typography, no border or UI badge. Illustrative hand painted game art, not photography, not glossy plastic, not vector-flat. Subject: One small rustic wide-bellied brown earthenware storage jar, open narrow round mouth with dark interior, short neck, soft terracotta body, simple unglazed surface, no handles. No lid, flowers, food or extra objects."
+    },
+    {
+      "id": "flowerpot",
+      "source_file": "exec-a59bebb1-ca31-4dad-8e8a-bd8f0a112342.png",
+      "runtime": "Game/art/ui/decorations/flowerpot.png",
+      "prompt": "Use case: stylized-concept. Asset type: a SINGLE transparent PNG item icon for a cozy Jiangnan Chinese farming game. Square canvas. Fine warm brown outlines, soft gongbi watercolor pigment, muted sage, celadon, ochre and aged bamboo palette, rounded readable silhouette, modest handmade rural household object, three-quarter view, gentle diffuse upper-left light. Center the complete object filling about 82% of the square with clean generous margins. GENUINE transparent alpha background including between thin parts; absolutely no opaque paper rectangle, no checkerboard painted into pixels, no ground plane, no drop shadow outside object, no scene, no typography, no border or UI badge. Illustrative hand painted game art, not photography, not glossy plastic, not vector-flat. Subject: One small weathered terracotta flowerpot containing a compact green chrysanthemum plant with five ivory-white flowers with soft yellow centers. Leaves broad and rounded, distinct pot rim. No ground or accessories."
+    },
+    {
+      "id": "lantern",
+      "source_file": "exec-eaeb2c62-f471-4688-a3cf-95bf3b7b155e.png",
+      "runtime": "Game/art/ui/decorations/lantern.png",
+      "prompt": "Use case: stylized-concept. Asset type: a SINGLE transparent PNG item icon for a cozy Jiangnan Chinese farming game. Square canvas. Fine warm brown outlines, soft gongbi watercolor pigment, muted sage, celadon, ochre and aged bamboo palette, rounded readable silhouette, modest handmade rural household object, three-quarter view, gentle diffuse upper-left light. Center the complete object filling about 82% of the square with clean generous margins. GENUINE transparent alpha background including between thin parts; absolutely no opaque paper rectangle, no checkerboard painted into pixels, no ground plane, no drop shadow outside object, no scene, no typography, no border or UI badge. Illustrative hand painted game art, not photography, not glossy plastic, not vector-flat. Subject: One simple oval cream paper household lantern, fine brown bamboo ribs, short warm wooden top and bottom caps, curved dark hanging loop, restrained warm amber glow confined inside the lantern, one short ochre tassel. Ming-style rural Jiangnan, not a festive red palace lantern."
+    },
+    {
+      "id": "bench",
+      "source_file": "exec-47a7bb48-1c1f-41c9-b76b-cae7c2f9be40.png",
+      "runtime": "Game/art/ui/decorations/bench.png",
+      "prompt": "Use case: stylized-concept. Asset type: a SINGLE transparent PNG item icon for a cozy Jiangnan Chinese farming game. Square canvas. Fine warm brown outlines, soft gongbi watercolor pigment, muted sage, celadon, ochre and aged bamboo palette, rounded readable silhouette, modest handmade rural household object, three-quarter view, gentle diffuse upper-left light. Center the complete object filling about 82% of the square with clean generous margins. GENUINE transparent alpha background including between thin parts; absolutely no opaque paper rectangle, no checkerboard painted into pixels, no ground plane, no drop shadow outside object, no scene, no typography, no border or UI badge. Illustrative hand painted game art, not photography, not glossy plastic, not vector-flat. Subject: One simple low backless bamboo bench, long horizontal seat of five thick rounded aged ochre bamboo slats, four short brown wooden legs and low cross brace, all connections plausible. Wide low silhouette. No backrest, cushions or accessories."
+    },
+    {
+      "id": "drying_rack",
+      "source_file": "exec-436fbc69-8470-4a76-8722-aa68a691d59d.png",
+      "runtime": "Game/art/ui/decorations/drying_rack.png",
+      "prompt": "Use case: stylized-concept. Asset type: a SINGLE transparent PNG item icon for a cozy Jiangnan Chinese farming game. Square canvas. Fine warm brown outlines, soft gongbi watercolor pigment, muted sage, celadon, ochre and aged bamboo palette, rounded readable silhouette, modest handmade rural household object, three-quarter view, gentle diffuse upper-left light. Center the complete object filling about 82% of the square with clean generous margins. GENUINE transparent alpha background including between thin parts; absolutely no opaque paper rectangle, no checkerboard painted into pixels, no ground plane, no drop shadow outside object, no scene, no typography, no border or UI badge. Illustrative hand painted game art, not photography, not glossy plastic, not vector-flat. Subject: One compact square waist-low bamboo drying stand, four brown wooden legs and lower braces, a round shallow woven bamboo tray resting on top, containing a restrained scatter of golden dried vegetable slices. Sturdy complete stand and all feet visible."
+    },
+    {
+      "id": "tea_table",
+      "source_file": "exec-cd5d0d96-c7d1-4f8e-8396-78bcaa53763c.png",
+      "runtime": "Game/art/ui/decorations/tea_table.png",
+      "prompt": "Use case: stylized-concept. Asset type: a SINGLE transparent PNG item icon for a cozy Jiangnan Chinese farming game. Square canvas. Fine warm brown outlines, soft gongbi watercolor pigment, muted sage, celadon, ochre and aged bamboo palette, rounded readable silhouette, modest handmade rural household object, three-quarter view, gentle diffuse upper-left light. Center the complete object filling about 82% of the square with clean generous margins. GENUINE transparent alpha background including between thin parts; absolutely no opaque paper rectangle, no checkerboard painted into pixels, no ground plane, no drop shadow outside object, no scene, no typography, no border or UI badge. Illustrative hand painted game art, not photography, not glossy plastic, not vector-flat. Subject: One compact low square bamboo tea table, five rounded bamboo slats on top, four brown wooden legs and low brace, one small celadon teapot and two matching cups placed on the table. Quiet rural handmade forms, whole table and all feet visible."
+    }
+  ]
+}

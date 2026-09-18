@@ -16,6 +16,12 @@ var _hens: Array[Node3D] = []
 var _time: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var ready_for_motion: bool = false
+var _decorations: Dictionary={}
+var decoration_rest := PackedVector2Array()
+
+func set_decorations(instances: Dictionary) -> void:
+	_decorations=instances.duplicate()
+	if ready_for_motion: rebuild_spaces(false)
 
 func _ready() -> void:
 	_rng.randomize()
@@ -28,13 +34,13 @@ func _build() -> void:
 	for i: int in 2: _spawn("hen", "YardHen%d" % (i + 1), Vector2(-.7 + i * .8, 4.62), .88 + i * .12)
 	ready_for_motion = true
 
-func rebuild_spaces() -> void:
-	water = Space.new()
+func rebuild_spaces(update_water: bool=true) -> void:
+	if update_water: water = Space.new()
 	yard = Space.new()
 	var environment: Node3D = get_parent()
 	var rise: float=environment.plan.ground_height-.13
 	yard.floor_level=environment.plan.ground_height
-	water.configure(environment.plan.animal_areas.water, .46)
+	if update_water: water.configure(environment.plan.animal_areas.water, .46)
 	var safe_plateaus: Array[PackedVector2Array] = Geometry2D.offset_polygon(environment.plan.plateau(), -.21)
 	yard.configure(environment.plan.animal_areas.yard, .21, safe_plateaus[0])
 	for child: Node in environment.get_children():
@@ -48,11 +54,11 @@ func rebuild_spaces() -> void:
 				var side := Vector2(-(b-a).y,(b-a).x).normalized()*.064
 				yard.block(PackedVector2Array([a-side,b-side,b+side,a+side]))
 			continue
-		if child.name == "NeighborIslets":
+		if update_water and child.name == "NeighborIslets":
 			for island: Node3D in child.waterline_sources(): water.block(Space.footprint(island, -.55, .55, false))
-		if not bank_role.is_empty():
+		if update_water and not bank_role.is_empty():
 			water.block(Space.footprint(child, -.35, .16))
-		elif path.contains("stone_") or child.name == "CoveredBoat" or String(child.name).begins_with("Lotus"):
+		elif update_water and (path.contains("stone_") or child.name == "CoveredBoat" or String(child.name).begins_with("Lotus")):
 			water.block(Space.footprint(child, -.55, .55))
 		if bank_role == "main" or path.contains("stone_"): yard.add_floor(child)
 		if child.name in ["WaterSurface", "GroundCover", "DistantLandscape", "NeighborIslets", "ContactShading", "DecorationSlots", "OsmanthusLeaves"]: continue
@@ -70,16 +76,32 @@ func rebuild_spaces() -> void:
 				var p: Vector3 = field.to_global(Vector3(corner.x, 0, corner.y))
 				polygon.append(Vector2(p.x, p.z))
 			yard.block(polygon)
-	water.bake()
+	for prop: Node3D in _decorations.values():
+		if is_instance_valid(prop): yard.block(Space.footprint(prop,.05+rise,1.3+rise,false))
+	if update_water: water.bake()
 	yard.bake()
-	for p: Vector2 in environment.plan.animal_rest.water: water.resting.append(water.nearest(p))
+	decoration_rest.clear()
+	for id: String in ["bench","flowerpot","tea_table","pot"]:
+		if not _decorations.has(id): continue
+		var prop: Node3D=_decorations[id]
+		for direction: int in 8:
+			var offset: Vector2=Vector2.from_angle(direction*TAU/8)*.85
+			var world: Vector3=prop.to_global(Vector3(offset.x,0,offset.y))
+			var point:=Vector2(world.x,world.z)
+			var snapped: Vector2=yard.nearest(point)
+			if snapped.distance_to(point)<.22 and not decoration_rest.has(snapped): decoration_rest.append(snapped)
+	if update_water:
+		for p: Vector2 in environment.plan.animal_rest.water: water.resting.append(water.nearest(p))
 	for p: Vector2 in environment.plan.animal_rest.yard: yard.resting.append(yard.nearest(p))
 	for entry: Dictionary in birds:
+		if not update_water and entry.kind!="hen": continue
 		entry.space = yard if entry.kind == "hen" else water
 		entry.pose.ground = entry.space.ground_height
 		entry.route = PackedVector2Array()
 		entry.state = "observe"
 		entry.timer = 0.0
+		entry.velocity=Vector2.ZERO
+		entry.interest=Vector2.INF
 
 func _spawn(kind: String, label: String, start: Vector2, size: float) -> void:
 	var space: RefCounted = yard if kind == "hen" else water
@@ -95,7 +117,7 @@ func _spawn(kind: String, label: String, start: Vector2, size: float) -> void:
 		"radius": PROFILES[kind].radius, "buddy": null, "follow_time": 0.0, "repath": 0.0,
 		"state": "observe", "timer": _rng.randf_range(.5, 3.0), "route": PackedVector2Array(),
 		"waypoint": 0, "stuck": 0.0, "phase": _rng.randf_range(0, TAU), "wake_strength": 0.0,
-		"wake": null if kind == "hen" else _wake(.32 if kind == "duck" else .43), "recoveries": 0}
+		"wake": null if kind == "hen" else _wake(.32 if kind == "duck" else .43), "recoveries": 0,"interest":Vector2.INF}
 	birds.append(entry)
 	if kind == "hen": _hens.append(bird)
 	else: _swimmers.append(entry)
@@ -105,9 +127,13 @@ func _choose(entry: Dictionary) -> void:
 	var start: Vector2 = entry.position
 	for attempt: int in 16:
 		entry.buddy = null
+		entry.interest=Vector2.INF
 		var target: Vector2
 		var pick: float = _rng.randf()
-		if pick < .16:
+		if entry.kind=="hen" and pick<.32 and not decoration_rest.is_empty():
+			target=decoration_rest[_rng.randi_range(0,decoration_rest.size()-1)]
+			entry.interest=target
+		elif pick < .16:
 			target = space.resting[_rng.randi_range(0, space.resting.size() - 1)]
 		elif pick < .40 and entry.kind != "hen":
 			var companion: Dictionary = _swimmers[_rng.randi_range(0, _swimmers.size() - 1)]
@@ -135,6 +161,10 @@ func _idle(entry: Dictionary) -> void:
 	entry.state = choices[_rng.randi_range(0, choices.size() - 1)]
 	var pause: Vector2 = PROFILES[entry.kind].pause
 	entry.timer = _rng.randf_range(pause.x, pause.y)
+	if entry.position.distance_to(entry.interest)<.28:
+		entry.state="rest"
+		entry.timer=_rng.randf_range(7,13)
+	entry.interest=Vector2.INF
 	entry.route = PackedVector2Array()
 	entry.stuck = 0.0
 	entry.buddy = null

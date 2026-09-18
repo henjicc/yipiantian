@@ -4,6 +4,7 @@ extends RefCounted
 const FIELD_IDS: Array[String] = ["field_01", "field_02", "field_03", "field_04", "field_05", "field_06"]
 const FENCE_STYLES: Array[String] = ["bamboo", "crossed", "picket"]
 const BankGeometry = preload("res://layout/bank_geometry.gd")
+const DECORATION_SCENERY={"ground_01":"YardWaterVats","ground_02":"YardMelonPile","ground_03":"YardGroundTrays","ground_04":"YardBasketStack"}
 var ground_height: float = .13
 var bank_width: float = 1.0
 var east_rim := PackedVector2Array([Vector2(-2.9,-1.1),Vector2(-1.9,-3.5),Vector2(1.3,-3.8),Vector2(3.5,-2.1),Vector2(4.2,.7),Vector2(3.2,3.8),Vector2(.5,4.4),Vector2(-2.8,3.9),Vector2(-3.05,2.5)])
@@ -23,8 +24,6 @@ var anchors := {
 }
 var angles := {"house": 0.0, "veranda": 0.0, "kitchen": 0.0, "trellis": 90.0, "bridge": -9.0, "east_bank": 0.0, "boat": -24.0}
 var slots := {
-	"ground_01": Vector3(-5.35,.16,-1.85), "ground_02": Vector3(4.7,.16,-1.8),
-	"ground_03": Vector3(-5,.16,4.7), "ground_04": Vector3(4.75,.16,4.8),
 	"hanging_01": Vector3(-2.5,2.27,-2.05), "hanging_02": Vector3(3.8,2.27,-2.05),
 	"hanging_03": Vector3(-5.08,1.82,2.13), "hanging_04": Vector3(-4.85,1.98,-2.95),
 }
@@ -69,6 +68,11 @@ var site: String = "original"
 var shore_expansion := Vector2.ZERO
 
 func _init() -> void:
+	# Ground decoration replaces an authored living area, leaving paths intact.
+	for slot: String in DECORATION_SCENERY:
+		var point: Vector3=props[DECORATION_SCENERY[slot]][0]
+		point.y=ground_height+.005
+		slots[slot]=point
 	animal_areas.yard = land_bounds()
 	for i: int in 7:
 		var t: float = i / 6.0

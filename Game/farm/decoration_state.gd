@@ -8,7 +8,7 @@ var _items: Dictionary = {}
 
 func _init() -> void:
 	for item_id: String in Catalog.IDS:
-		_items[item_id] = {"unlocked": false, "slot_id": "", "quarter_turn": 0}
+		_items[item_id] = {"unlocked": Catalog.ITEMS[item_id].total==0, "slot_id": "", "quarter_turn": 0}
 
 
 func snapshot() -> Dictionary:
@@ -51,7 +51,7 @@ func unlock(harvested: Dictionary) -> Array[String]:
 	return unlocked
 
 
-func can_place(item_id: String, slot_id: String, quarter_turn: int) -> Dictionary:
+func can_place(item_id: String, slot_id: String, quarter_turn: int, replace_occupied: bool=false) -> Dictionary:
 	if not _items.has(item_id) or not Catalog.SLOT_TYPES.has(slot_id):
 		return {"ok": false, "reason": "invalid_target"}
 	if not _items[item_id].unlocked:
@@ -61,14 +61,22 @@ func can_place(item_id: String, slot_id: String, quarter_turn: int) -> Dictionar
 	if not Catalog.allowed_turns(slot_id).has(quarter_turn):
 		return {"ok": false, "reason": "invalid_rotation"}
 	for other_id: String in Catalog.IDS:
-		if other_id != item_id and _items[other_id].slot_id == slot_id:
+		if not replace_occupied and other_id != item_id and _items[other_id].slot_id == slot_id:
 			return {"ok": false, "reason": "occupied"}
 	return {"ok": true, "reason": ""}
 
 
-func place(item_id: String, slot_id: String, quarter_turn: int) -> Dictionary:
-	var result: Dictionary = can_place(item_id, slot_id, quarter_turn)
+func place(item_id: String, slot_id: String, quarter_turn: int, replace_occupied: bool=false) -> Dictionary:
+	var result: Dictionary = can_place(item_id, slot_id, quarter_turn,replace_occupied)
 	if result.ok:
+		for other_id: String in Catalog.IDS:
+			if other_id!=item_id and _items[other_id].slot_id==slot_id: remove(other_id)
 		_items[item_id].slot_id = slot_id
 		_items[item_id].quarter_turn = quarter_turn
 	return result
+
+func remove(item_id: String) -> Dictionary:
+	if not _items.has(item_id) or _items[item_id].slot_id.is_empty(): return {"ok":false,"reason":"not_placed"}
+	_items[item_id].slot_id=""
+	_items[item_id].quarter_turn=0
+	return {"ok":true,"reason":""}

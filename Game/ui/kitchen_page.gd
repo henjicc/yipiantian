@@ -3,6 +3,7 @@ extends RefCounted
 const Kitchen=preload("res://farm/kitchen.gd")
 const Crops=preload("res://farm/crop_catalog.gd")
 const Neighbors=preload("res://farm/neighbor_catalog.gd")
+const ItemCard=preload("res://ui/item_card.gd")
 var recipe: String="leaf_stir"
 var crop: String="greens"
 var recipient: String="willow"
@@ -35,7 +36,9 @@ func render(book: Node, data: Dictionary, journal: bool, now: float) -> void:
 	choices.columns=3
 	page.add_child(choices)
 	for id: String in Kitchen.RECIPES:
-		var button: Button=book._button(choices,Kitchen.RECIPES[id].name)
+		var button:=ItemCard.new()
+		choices.add_child(button)
+		button.configure(Kitchen.RECIPES[id].name,load("res://art/ui/kitchen/%s.png"%Kitchen.RECIPES[id].asset),Vector2(140,100),18)
 		button.name="Recipe_"+id
 		button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		button.toggle_mode=true

@@ -186,25 +186,11 @@ func _build_farm_controls(root: Control) -> void:
 
 
 func _choice_card(parent: Control, card_name: String, text: String, texture: Texture2D) -> Button:
-	var card := Button.new()
+	var card := preload("res://ui/item_card.gd").new()
 	card.name = card_name
-	card.custom_minimum_size = Vector2(66, 84)
 	card.toggle_mode = true
 	parent.add_child(card)
-	var picture := TextureRect.new()
-	picture.name = "Icon"
-	picture.texture = texture
-	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	picture.position = Vector2(7, 3)
-	picture.size = Vector2(52, 54)
-	card.add_child(picture)
-	var caption := _label(card, text, 16)
-	caption.name = "Caption"
-	caption.position = Vector2(0, 57)
-	caption.size = Vector2(66, 22)
-	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	card.configure(text,texture)
 	return card
 
 
@@ -415,12 +401,10 @@ func show_state(_cell: Dictionary, harvested: Dictionary, tool: String, crop_id:
 		var card: Button = _crop_buttons[id]
 		card.disabled = traveling or palette != "sow"
 		card.set_pressed_no_signal(tool == "sow" and id == crop_id)
-		card.get_node("Caption").add_theme_color_override("font_color", FarmTheme.PAPER if card.button_pressed else INK)
 	for tool_id: String in _buttons:
 		var button: Button = _buttons[tool_id]
 		button.disabled = traveling or palette != "tools"
 		button.set_pressed_no_signal(tool_id == tool)
-		button.get_node("Caption").add_theme_color_override("font_color", FarmTheme.PAPER if button.button_pressed else INK)
 	for entry: String in ["Sow", "Tools"]:
 		var button: Button = _tools.get_node(entry)
 		button.disabled = traveling
