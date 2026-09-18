@@ -334,3 +334,9 @@ rc.5交付：源码8f39fd66干净独立克隆、导入和发行导出通过，PC
 ## 见闻、相册与缩放窗口输入（2026-09-18）
 
 入口、状态、原图位置和定向证据见[相册节点](design-baseline/动物行为与轻松玩法候选.md#十田园见闻与相册实现节点--20260918)。程序化GUI检查若使用Control的逻辑坐标，应采用Viewport.push_input(event, true)；Input.parse_input_event使用窗口输入语义，在窗口缩放后直接传逻辑坐标会点错位置，不能因此认定实际按钮失效。鼠标按下／释放仍需成对。涉及生长的界面检查注入固定clock，只比较需要保持的状态；不把正常时间结算误报为滚轮修改农场。截图等frame_post_draw，并检查实际图片，不以save_png调用本身作为捕获成功证据。
+
+### 田园生活版独立验证 · 20260918
+
+Godot4.7.2当前存档v14。`tests/start-isolated-game.ps1` 已改为从 farm_store.gd 的VERSION解析目标存档目录，避免验证入口继续查旧farm-v4而误报不存在；先解析再启动进程。用该入口启动独立候选后，等待真实存档写入及窗口响应，再通过 `tests/native-game-window.ps1 -Action close` 正常关闭，由保留的进程句柄读取退出码。只凭Get-Process新取得对象的ExitCode可能为null，不能将null伪报0。当前原包两次启动／关闭均由启动入口取得真实退出码0；重开stdout明确FARM_LOAD stage=loaded version=14，证据 life-final-native/。
+
+Windows图形独立包stdout在重定向时可能缓冲到退出，期间指定log-file可为空；不要仅凭实时日志空白判断未启动。窗口Responding与真实v14存档更新时间联合判断就绪，退出后审计stdout／stderr。截屏前核验本次窗口真实屏幕范围及遮挡；被其他窗口遮挡时不抓整屏、不为截图夺取主屏焦点，同源码场景截图与普通独立包启动证据分别报告。此轮普通窗口实测位于(3840,0)，Godot全屏客户区为3840×2162；视觉渲染测试为3840×2160。
