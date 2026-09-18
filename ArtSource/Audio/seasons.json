@@ -1,0 +1,26 @@
+[
+  {
+    "name": "season_drying",
+    "file": "Game\\art\\audio\\season_drying.ogg",
+    "seconds": 48.0,
+    "rate": 48000,
+    "channels": 2,
+    "loop": true,
+    "rms_dbfs": -51.52,
+    "peak_dbfs": -27.03,
+    "loop_boundary_delta": 0.0013803117908537388,
+    "origin": "original score and deterministic synthesis; no external samples"
+  },
+  {
+    "name": "season_after_rain",
+    "file": "Game\\art\\audio\\season_after_rain.ogg",
+    "seconds": 48.0,
+    "rate": 48000,
+    "channels": 2,
+    "loop": true,
+    "rms_dbfs": -51.93,
+    "peak_dbfs": -24.56,
+    "loop_boundary_delta": 2.380420937697636e-05,
+    "origin": "original score and deterministic synthesis; no external samples"
+  }
+]

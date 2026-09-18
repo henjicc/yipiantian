@@ -1,5 +1,11 @@
 # 农场声音源
 
+## 时令环境层 · 20260918
+
+`compose_season_audio.py` 复用本目录原始合成／导出函数，分别制作48秒秋日叶片与竹席沙沙声、雨后稀疏水滴声；新增两条OGG和PCM24母带。完整数值见 [seasons.json](seasons.json)，均非田野录音，无外部采样或付费音频服务。运行时只激活对应的一条环境层，九月日常关闭附加层，雨后略压低原日间环境；沿用环境音总线、失焦暂停和退出释放。
+
+Godot 4.7.2实际播放跨循环末尾、失焦暂停和恢复通过，证据 `tests/season_scene_test.gd` 及 `.local/verification/season-scene-final.log`。暂停时 `playing` 不足以判定是否已有播放实例，应依照官方 [AudioStreamPlayer.has_stream_playback](https://docs.godotengine.org/en/4.7/classes/class_audiostreamplayer.html#class-audiostreamplayer-method-has-stream-playback) 检查；恢复后再核验播放位置跨末尾。数值和运行验证不代表主观听感复核，下面原声音制作记录中的听感限制仍适用。
+
 任务 3.4，2026-09-17。采用原创程序作曲／合成，不使用外部采样；“筝类拨弦／笛类气息”描述合成音色，不能写成真实古筝、箫或田野录音。素材目录服务曾尝试 media-use，因本机无 HeyGen CLI 未能返回音源；没有安装服务、调查账户或继续商务核验。
 
 ## 制作入口

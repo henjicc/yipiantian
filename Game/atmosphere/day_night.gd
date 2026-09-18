@@ -214,12 +214,32 @@ static func sample_hour(hour: float) -> Dictionary:
 	}
 
 
+var _season: String = "daily"
+
+func set_season(id: String) -> void:
+	_season = id
+	if _sun != null: _apply_clock()
+
 func _apply_clock() -> void:
 	var hour: float = _preview_hour
 	if hour < 0:
 		var local: Dictionary = Time.get_datetime_dict_from_system(false)
 		hour = float(local.hour) + float(local.minute) / 60.0 + float(local.second) / 3600.0
 	var values: Dictionary = sample_hour(hour)
+	# Mood is composed with clock lighting in its sole owner, never overwritten
+	# by the next clock tick. Night keeps its readable moonlight and warm windows.
+	var daylight: float = 1.0-values.night_weight
+	if _season=="after_rain":
+		values.sun_energy *= lerpf(1.0,.60,daylight)
+		values.ambient_energy *= 1.07
+		values.sun_color = values.sun_color.lerp(Color("dbe4da"),daylight*.45)
+		values.ambient_color = values.ambient_color.lerp(Color("bacfd0"),daylight*.18)
+		values.water_color = values.water_color.lerp(Color("6f9c9c"),daylight*.20)
+		values.sky_top = values.sky_top.lerp(values.sky_horizon,.45)
+	elif _season=="drying":
+		values.sun_energy *= lerpf(1.0,1.10,daylight)
+		values.sun_color = values.sun_color.lerp(Color("ffe3ae"),daylight*.25)
+		values.backdrop_tint = values.backdrop_tint.lerp(Color("f5e5c8"),daylight*.07)
 	_backdrop_values = values
 	_sun.light_energy = values.sun_energy
 	_sun.light_color = values.sun_color

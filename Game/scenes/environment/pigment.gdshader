@@ -8,6 +8,7 @@ uniform float stone_treatment : hint_range(0.0,1.0) = 0.0;
 uniform float ground_treatment : hint_range(0.0,1.0) = 0.0;
 uniform float foundation_treatment : hint_range(0.0,1.0) = 0.0;
 uniform float ground_level = .13;
+uniform float rain_dampness = 0.0;
 uniform bool painted_rock = false;
 uniform sampler2D rock_color : source_color, filter_linear_mipmap, repeat_disable;
 varying vec3 world_point;
@@ -58,4 +59,11 @@ void fragment(){
 	ALBEDO=mix(ALBEDO,ALBEDO*vec3(.78,.94,.62),moss*(painted_rock ? .14 : .42));
 	ROUGHNESS=mix(.93+.06*fine,.73,wet);
 	SPECULAR=mix(.08,.15,wet);
+	// Damp stone and earth after rain. World-space variation avoids repeated
+	// stamps; high furniture and building materials never receive this wash.
+	float rain_area=(1.0-smoothstep(ground_level+.18,ground_level+.55,world_point.y))*max(stone_treatment,ground_treatment);
+	float damp=rain_dampness*rain_area*(.4+.6*smoothstep(.27,.69,terrain_noise(world_point.xz*2.7)));
+	ALBEDO=mix(ALBEDO,ALBEDO*vec3(.69,.76,.79),damp);
+	ROUGHNESS=mix(ROUGHNESS,.42,damp);
+	SPECULAR=mix(SPECULAR,.27,damp);
 }

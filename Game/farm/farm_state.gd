@@ -7,6 +7,7 @@ const Neighbors = preload("res://farm/neighbor_catalog.gd")
 const Kitchen = preload("res://farm/kitchen.gd")
 const Companions = preload("res://farm/animal_companions.gd")
 const Memories = preload("res://farm/garden_memories.gd")
+const Seasons = preload("res://farm/season_catalog.gd")
 const FIELD_IDS: Array[String] = Plan.FIELD_IDS
 # Row-major: columns run along +X and rows along +Z in the presentation layer.
 const CELL_IDS: Array[String] = ["cell_01", "cell_02", "cell_03", "cell_04", "cell_05", "cell_06", "cell_07", "cell_08", "cell_09", "cell_10", "cell_11", "cell_12", "cell_13", "cell_14", "cell_15", "cell_16"]
@@ -20,7 +21,7 @@ func _init(now_utc_seconds: float = 0.0, layout: Dictionary = {}) -> void:
 	assert(_valid_time(now_utc_seconds), "Farm initialization requires finite nonnegative UTC seconds")
 	var plan: RefCounted = Plan.new() if layout.is_empty() else Plan.from_snapshot(layout)
 	assert(plan != null, "Farm initialization requires a valid layout")
-	_data = {"fields": {}, "harvested": {}, "inventory":{}, "neighbors":Neighbors.initial_state(), "layout":plan.snapshot(), "kitchen":Kitchen.initial_state(),"animals":Companions.initial_state(),"memories":Memories.initial_state()}
+	_data = {"fields": {}, "harvested": {}, "inventory":{}, "neighbors":Neighbors.initial_state(), "layout":plan.snapshot(), "kitchen":Kitchen.initial_state(),"animals":Companions.initial_state(),"memories":Memories.initial_state(),"season":"daily"}
 	for crop_id: String in Crops.crop_ids():
 		_data.harvested[crop_id] = 0
 		_data.inventory[crop_id] = 0
@@ -41,6 +42,11 @@ func _init(now_utc_seconds: float = 0.0, layout: Dictionary = {}) -> void:
 
 func snapshot() -> Dictionary:
 	return _data.duplicate(true)
+
+func set_season(id: String) -> bool:
+	if not Seasons.valid(id): return false
+	_data.season = id
+	return true
 
 func field_ids() -> Array[String]:
 	var result: Array[String] = []
@@ -288,7 +294,7 @@ static func _is_number(value: Variant) -> bool:
 
 
 static func _valid_snapshot(data: Dictionary) -> bool:
-	if data.size() != 8 or not data.get("fields") is Dictionary or not data.get("harvested") is Dictionary or not data.get("layout") is Dictionary:
+	if data.size() != 9 or not Seasons.valid(data.get("season")) or not data.get("fields") is Dictionary or not data.get("harvested") is Dictionary or not data.get("layout") is Dictionary:
 		return false
 	if not data.get("memories") is Dictionary or not Memories.valid(data.memories): return false
 	if not data.get("animals") is Dictionary or not Companions.valid(data.animals): return false

@@ -10,6 +10,9 @@ signal kitchen_view_requested(station: String)
 signal memory_view_requested(id: String)
 signal photo_requested
 signal photo_action_requested(action: String, photo: Dictionary)
+signal season_requested(id: String)
+const Seasons = preload("res://farm/season_catalog.gd")
+const ItemCard = preload("res://ui/item_card.gd")
 const MemoryPage=preload("res://ui/memory_page.gd")
 var memory_page:=MemoryPage.new()
 const KitchenPage=preload("res://ui/kitchen_page.gd")
@@ -67,7 +70,7 @@ func _ready() -> void:
 	paper.add_child(page)
 	var header:=HBoxContainer.new()
 	page.add_child(header)
-	for entry: Array in [["food","菜篮"],["neighbors","邻里"],["kitchen","厨房"],["journal","食记"],["memories","见闻"],["album","相册"]]:
+	for entry: Array in [["food","菜篮"],["neighbors","邻里"],["kitchen","厨房"],["journal","食记"],["memories","见闻"],["album","相册"],["season","时令"]]:
 		var button:=_button(header,entry[1])
 		button.name=entry[0]
 		button.toggle_mode=true
@@ -172,7 +175,28 @@ func _render() -> void:
 	if tab=="food": _food()
 	elif tab=="neighbors": _neighbors()
 	elif tab in ["memories","album"]: memory_page.render(self,_data,tab=="album")
+	elif tab=="season": _seasons()
 	else: kitchen_page.render(self,_data,tab=="journal",now_utc)
+
+func _seasons() -> void:
+	var center := CenterContainer.new()
+	_content.add_child(center)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation",18)
+	center.add_child(row)
+	for id: String in Seasons.THEMES:
+		var choice: Dictionary = Seasons.THEMES[id]
+		var card := ItemCard.new()
+		card.name = id
+		card.configure(choice.name,load(choice.icon),Vector2(212,216),23)
+		card.toggle_mode = true
+		card.set_pressed_no_signal(_data.season==id)
+		row.add_child(card)
+		card.pressed.connect(func() -> void: season_requested.emit(id))
+	var controls := HBoxContainer.new()
+	controls.alignment=BoxContainer.ALIGNMENT_CENTER
+	_content.add_child(controls)
+	_button(controls,"看看院落").pressed.connect(dismiss)
 
 func _food() -> void:
 	_label(_content,"存有 %d 篮　·　累计收获 %d 篮"%[Crops.total_harvested(_data.inventory),Crops.total_harvested(_data.harvested)],24)

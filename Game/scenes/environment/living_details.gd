@@ -404,7 +404,8 @@ func _build_drying_line() -> void:
 	for i: int in 4:
 		var x: float = -.55 + i * .36
 		var size: float = .86+float(i%2)*.10
-		Assets.place(group,"radish_bundle",Vector3(x,.69-.43*size,0),i*37.0,size)
+		var bundle: Node3D=Assets.place(group,"radish_bundle",Vector3(x,.69-.43*size,0),i*37.0,size)
+		bundle.set_meta("drying_bundle",true)
 		_beam(group,Vector3(x,.69,0),Vector3(x,.72,0),.007,_rope)
 	_basket(group, Vector3(-1.02, 0, .18), .20, .28, true)
 

@@ -4,6 +4,10 @@ extends Node
 const MUSIC = preload("res://art/audio/courtyard_theme.ogg")
 const DAY = preload("res://art/audio/ambience_day.ogg")
 const NIGHT = preload("res://art/audio/ambience_night.ogg")
+const SEASONS = {
+	"drying": preload("res://art/audio/season_drying.ogg"),
+	"after_rain": preload("res://art/audio/season_after_rain.ogg"),
+}
 const ACTIONS: Dictionary = {
 	"sow": preload("res://art/audio/sow.wav"),
 	"water": preload("res://art/audio/water.wav"),
@@ -22,6 +26,8 @@ var _foreground: bool = true
 var _music: AudioStreamPlayer
 var _day: AudioStreamPlayer
 var _night: AudioStreamPlayer
+var _season: AudioStreamPlayer
+var _season_id: String = "daily"
 var _ui: AudioStreamPlayer
 var _actions: Array[AudioStreamPlayer] = []
 var _last_action_usec: int = -1000000
@@ -43,6 +49,7 @@ func _ready() -> void:
 	_music = _player("Music", MUSIC, BUS_MUSIC)
 	_day = _player("DayAmbience", DAY, BUS_AMBIENT)
 	_night = _player("NightAmbience", NIGHT, BUS_AMBIENT)
+	_season = _player("SeasonAmbience", null, BUS_AMBIENT)
 	_ui = _player("Interface", UI, BUS_EFFECTS)
 	for index in 2:
 		_actions.append(_player("Action%d" % index, null, BUS_EFFECTS))
@@ -89,8 +96,19 @@ func is_foreground() -> bool:
 func set_night_weight(weight: float) -> void:
 	_night_weight = clampf(weight, 0.0, 1.0) if is_finite(weight) else 0.0
 	if _day != null:
-		_day.volume_linear = cos(_night_weight * PI * 0.5)
+		_day.volume_linear = cos(_night_weight * PI * 0.5) * (.70 if _season_id=="after_rain" else 1.0)
 		_night.volume_linear = sin(_night_weight * PI * 0.5)
+	if _season != null:
+		_season.volume_linear = 1.0 if _season_id=="after_rain" else lerpf(1.0,.3,_night_weight)
+
+func set_season(id: String) -> void:
+	if _shutdown or _season==null or id==_season_id: return
+	_season_id=id
+	_season.stop()
+	_season.stream=SEASONS.get(id)
+	if _season.stream!=null: _season.play()
+	set_night_weight(_night_weight)
+	_pause_background_loops()
 
 
 func play_action(tool: String, result: Dictionary) -> bool:
@@ -127,14 +145,14 @@ func shutdown() -> void:
 	_shutdown = true
 	# AudioServer retires stopped playback on a later mix. The scene's final exit
 	# keeps the engine running briefly after this, instead of stopping at teardown.
-	for player: AudioStreamPlayer in [_music, _day, _night, _ui] + _actions:
+	for player: AudioStreamPlayer in [_music, _day, _night, _season, _ui] + _actions:
 		if is_instance_valid(player):
 			player.stop()
 			player.stream = null
 
 
 func _pause_background_loops() -> void:
-	for player in [_music, _day, _night]:
+	for player in [_music, _day, _night, _season]:
 		player.stream_paused = not _foreground
 
 

@@ -22,6 +22,8 @@ const HarvestBook = preload("res://ui/harvest_book.gd")
 const KitchenDisplay=preload("res://presentation/kitchen_display.gd")
 const AnimalPanel=preload("res://ui/animal_panel.gd")
 const GardenAlbum=preload("res://presentation/garden_album.gd")
+const SeasonalCourtyard=preload("res://presentation/seasonal_courtyard.gd")
+var seasonal_courtyard: SeasonalCourtyard
 var garden_album: GardenAlbum
 var animal_panel: AnimalPanel
 var _pressed_animal: String=""
@@ -139,6 +141,7 @@ func _ready() -> void:
 	harvest_book.gift_requested.connect(func(id: String, visit: int, crop: String) -> void: _exchange(id,visit,{},crop))
 	harvest_book.view_requested.connect(_view_neighbor)
 	harvest_book.kitchen_requested.connect(_kitchen_action)
+	harvest_book.season_requested.connect(_change_season)
 	harvest_book.kitchen_view_requested.connect(func(station: String) -> void:
 		var framing: Dictionary=kitchen_display.viewpoint(station)
 		focus_detail.protect_neighbor(framing.subject)
@@ -210,6 +213,11 @@ func _ready() -> void:
 	farm_audio.set_night_weight(atmosphere.get_night_weight())
 	atmosphere.night_weight_changed.connect(decoration_layout.set_night_weight)
 	decoration_layout.set_night_weight(atmosphere.get_night_weight())
+	seasonal_courtyard=SeasonalCourtyard.new()
+	seasonal_courtyard.name="SeasonalCourtyard"
+	courtyard.add_child(seasonal_courtyard)
+	seasonal_courtyard.configure(courtyard)
+	_apply_season()
 	window_activity = WindowActivity.new()
 	window_activity.name = "WindowActivity"
 	window_activity.foreground_changed.connect(farm_audio.set_foreground)
@@ -286,6 +294,7 @@ func _load_game(initial: Dictionary = {}) -> void:
 	_refresh_neighbor_stories()
 	kitchen_display.refresh(farm_state.snapshot().kitchen)
 	farm.visible = true
+	if seasonal_courtyard!=null: _apply_season()
 	settle_farm()
 	_save_farm()
 	print("FARM_LOAD stage=%s version=%d migrated=%s saved=%s" % [result.kind, FarmStore.VERSION, result.get("migrated", false), not _save_failed])
@@ -534,6 +543,30 @@ func _kitchen_action(action: String, request: Dictionary, revision: int) -> void
 	harvest_book.refresh(farm_state.snapshot())
 	farm_audio.play_ui()
 	_refresh_hud()
+
+func _change_season(id: String) -> void:
+	if not _basket_active() or not _loaded or _save_failed: return
+	var candidate:=FarmState.new()
+	candidate.restore_snapshot(farm_state.snapshot())
+	if not candidate.set_season(id): return
+	if candidate.snapshot().season!=farm_state.snapshot().season:
+		var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+		if not saved.ok:
+			_save_failed=true
+			harvest_book.dismiss()
+			hud.show_storage_issue(saved.kind,true)
+			_refresh_hud()
+			return
+		farm_state.restore_snapshot(candidate.snapshot())
+		_apply_season()
+	harvest_book.refresh(farm_state.snapshot())
+	farm_audio.play_ui()
+
+func _apply_season() -> void:
+	var id: String=farm_state.snapshot().season
+	seasonal_courtyard.set_season(id)
+	atmosphere.set_season(id)
+	farm_audio.set_season(id)
 
 func _change_decoration(candidate: Dictionary) -> void:
 	if not _loaded or _save_failed: return
