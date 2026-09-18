@@ -240,7 +240,8 @@ func _advance(entry: Dictionary, delta: float) -> void:
 		else:
 			var offset: Vector2 = route[entry.waypoint] - p
 			var arrival: float = clampf(offset.length() / .32, .16, 1.0) if entry.waypoint == route.size() - 1 else 1.0
-			desired = offset.normalized() * entry.speed * arrival * Gait.pace(entry.kind, _time + entry.phase)
+			var pace: float = Gait.hen_pace(entry.pose.phase) if entry.kind == "hen" else Gait.pace(entry.kind, _time + entry.phase)
+			desired = offset.normalized() * entry.speed * arrival * pace
 			route_velocity = desired
 	else:
 		entry.timer -= delta

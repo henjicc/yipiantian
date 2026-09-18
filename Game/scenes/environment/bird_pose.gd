@@ -65,8 +65,10 @@ func configure(bird: Node3D, kind: String) -> void:
 		legs.append({"hip": skeleton.get_bone_parent(knee), "knee": knee, "foot": foot})
 
 func update(delta: float, distance: float, speed: float, behavior: String, time: float) -> void:
-	motion = move_toward(motion, clampf(speed / (.23 if species == "hen" else .3), 0.0, 1.0), delta * 4.0)
-	phase += distance / (.22 if species == "hen" else .5)
+	var target_motion: float = clampf(speed / .3, 0.0, 1.0)
+	if species == "hen": target_motion = 1.0 if behavior == "walk" and speed > .005 else 0.0
+	motion = move_toward(motion, target_motion, delta * 4.0)
+	phase += distance / (Gait.HEN_STRIDE * root.scale.x if species == "hen" else .5)
 	if behavior != action:
 		action_mix = move_toward(action_mix, 0.0, delta * 3.0)
 		if action_mix == 0.0: action = behavior
@@ -88,25 +90,28 @@ func update(delta: float, distance: float, speed: float, behavior: String, time:
 		if behavior in ["walk","swim"] and species in ["hen","duck"]:
 			var stroke: float = Gait.cycle(species,time)
 			var reach: Vector3 = beak_rest
-			# Small physical neck extension, not a rigid whole-model rocking motion.
-			reach.z += sin(stroke-.45) * (.028 if species=="hen" else .022) * motion
-			reach.y += cos(stroke) * (.009 if species=="hen" else .012) * motion
-			_neck_reach(skeleton.to_local(root.to_global(reach)),true)
-		if action == "observe": turn = sin(time * 1.6) * .55
+			if species == "hen":
+				reach.z += Gait.hen_head_offset(phase) * motion
+			else:
+				reach.z += sin(stroke-.45) * .022 * motion
+				reach.y += cos(stroke) * .012 * motion
+			_neck_reach(skeleton.to_local(root.to_global(reach)),true,species == "hen")
+			if species == "hen": turn = 0.0
+		if action == "observe" and not (species == "hen" and behavior == "walk"): turn = sin(time * 1.6) * .55
 		_rotate(head, Vector3.UP, turn * action_mix)
 	for i: int in legs.size():
 		var leg: Dictionary = legs[i]
 		if species == "hen":
 			var cycle: float = fposmod(phase + i * .5, 1.0)
 			# 55% planted stance: backwards travel exactly matches body distance.
-			var stride: float = .22 * .55
+			var stride: float = Gait.HEN_STRIDE * .55
 			var along: float = lerpf(stride * .5, -stride * .5, cycle / .55) if cycle < .55 else lerpf(-stride * .5, stride * .5, smoothstep(.55, 1.0, cycle))
 			var lift: float = 0.0 if cycle < .55 else sin((cycle - .55) / .45 * PI) * .038
-			var offset := Vector3(0, lift, along) * motion
+			var offset := Vector3(0, lift, along) * motion * root.scale.x
 			var local_offset: Vector3 = skeleton.global_basis.inverse() * root.global_basis.orthonormalized() * offset
 			var target: Vector3 = skeleton.to_global(rests[leg.foot].origin + local_offset)
 			var standing: Vector3 = root.to_local(skeleton.to_global(rests[leg.foot].origin))
-			target.y = ground.call(Vector2(target.x, target.z)) + standing.y * root.scale.y + lift * motion
+			target.y = ground.call(Vector2(target.x, target.z)) + (standing.y + lift * motion) * root.scale.y
 			_solve_leg(leg, skeleton.to_local(target))
 		else:
 			var paddle: float = Gait.cycle(species,time) if species=="duck" else phase*TAU
@@ -122,7 +127,8 @@ func support_height() -> float:
 	for i: int in legs.size():
 		var cycle: float=fposmod(phase+i*.5,1.0)
 		if cycle>=.55 and motion>.01: continue
-		var along: float=lerpf(.0605,-.0605,cycle/.55)*motion
+		var half_stance: float=Gait.HEN_STRIDE*.55*.5
+		var along: float=lerpf(half_stance,-half_stance,cycle/.55)*motion*root.scale.x
 		var foot: Vector3=skeleton.to_global(rests[legs[i].foot].origin)
 		foot+=root.global_basis.orthonormalized()*Vector3(0,0,along)
 		height=minf(height,float(ground.call(Vector2(foot.x,foot.z))))
@@ -134,7 +140,7 @@ func _beak_position() -> Vector3:
 		point += (skeleton.get_bone_global_pose(binding.bone) * binding.local) * binding.weight
 	return point
 
-func _neck_reach(target: Vector3, sagittal: bool) -> void:
+func _neck_reach(target: Vector3, sagittal: bool, level_head: bool = false) -> void:
 	# CCD is restricted to the authored neck chain; the body and feet stay planted.
 	# Clamp total joint displacement from rest rather than accumulating unbounded turns.
 	var rotations: Array[Quaternion] = []
@@ -142,6 +148,7 @@ func _neck_reach(target: Vector3, sagittal: bool) -> void:
 	for iteration: int in 7:
 		for index: int in range(neck_chain.size() - 1, -1, -1):
 			var bone: int = neck_chain[index]
+			if level_head and skeleton.get_bone_name(bone).contains("Head"): continue
 			var joint: Transform3D = skeleton.get_bone_global_pose(bone)
 			var tip: Vector3 = _beak_position()
 			var from: Vector3 = (tip - joint.origin).normalized()
@@ -158,6 +165,7 @@ func _neck_reach(target: Vector3, sagittal: bool) -> void:
 			var angle: float = relative.get_angle()
 			if angle > neck_limits[index]: relative = Quaternion.IDENTITY.slerp(relative, neck_limits[index] / angle)
 			skeleton.set_bone_pose_rotation(bone, (rotations[index] * relative).normalized())
+			if level_head: _global_rotation(head, rests[head].basis)
 
 func _rotate(bone: int, axis: Vector3, angle: float) -> void:
 	if bone < 0: return
