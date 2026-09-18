@@ -18,8 +18,12 @@ const STAGES: Array[String] = ["sprout", "young", "mature"]
 const P2_STAGE_CROPS: Array[String] = ["spinach", "radish"]
 
 
+static func is_p2_stage(crop_id: String, stage: String) -> bool:
+	return P2_STAGE_CROPS.has(crop_id) or (crop_id == "greens" and stage in ["sprout", "young"])
+
+
 static func preserves_painted_color(crop_id: String, stage: String) -> bool:
-	return P2_STAGE_CROPS.has(crop_id) or (crop_id == "greens" and stage == "mature")
+	return is_p2_stage(crop_id, stage) or (crop_id == "greens" and stage == "mature")
 
 
 static func wind_profile(crop_id: String) -> String:
@@ -29,7 +33,7 @@ static func wind_profile(crop_id: String) -> String:
 static func scene_path(crop_id: String, stage: String, low_detail: bool = false) -> String:
 	if not CROP_IDS.has(crop_id) or not STAGES.has(stage):
 		return ""
-	return "res://art/crops/%s/%s_%s%s.glb" % [crop_id, crop_id, stage, "_low" if low_detail and crop_id in ["greens", "radish"] and not P2_STAGE_CROPS.has(crop_id) else ""]
+	return "res://art/crops/%s/%s_%s%s.glb" % [crop_id, crop_id, stage, "_low" if low_detail and crop_id in ["greens", "radish"] and not is_p2_stage(crop_id, stage) else ""]
 
 
 static func instantiate(crop_id: String, stage: String, low_detail: bool = false) -> Node3D:
@@ -44,7 +48,7 @@ static func instantiate(crop_id: String, stage: String, low_detail: bool = false
 
 static func planting_depth(crop_id: String, stage: String) -> float:
 	# New P2 stages are authored around the soil slice; storage roots extend below it.
-	if P2_STAGE_CROPS.has(crop_id):
+	if is_p2_stage(crop_id, stage):
 		return 0.0
 	# Source origin remains at the root tip; the field owns the soil-surface anchor.
 	if crop_id == "greens":
@@ -70,5 +74,5 @@ static func soil_radius(crop_id: String, stage: String) -> Vector2:
 		return Vector2(.015,.015) if stage == "sprout" else ROOT_RADII[crop_id] * (.54 if stage == "young" else 1.0)
 	# Audited at the soil contact slice of each imported stage, not canopy bounds.
 	if crop_id == "greens":
-		return {"sprout": Vector2(.018,.022), "young": Vector2(.055,.058), "mature": Vector2(.11,.10)}.get(stage,Vector2(.075,.06))
+		return {"sprout": Vector2(.009,.009), "young": Vector2(.0148,.0142), "mature": Vector2(.11,.10)}.get(stage,Vector2(.075,.06))
 	return {"sprout": Vector2(.014,.018), "young": Vector2(.024,.025), "mature": Vector2(.055,.055)}.get(stage,Vector2(.052,.05))

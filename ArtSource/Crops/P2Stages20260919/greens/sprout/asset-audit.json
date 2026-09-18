@@ -1,0 +1,88 @@
+{
+  "crop": "greens",
+  "stage": "sprout",
+  "task": "88716263-9369-4083-99b2-d81a330d47b1",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 1899,
+      "polygons": 2411,
+      "quads": 1383,
+      "triangles": 3794,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "min_godot": [
+    -0.05059315264225006,
+    0.0,
+    -0.04328744113445282
+  ],
+  "max_godot": [
+    0.03834405541419983,
+    0.08500000089406967,
+    0.0462622195482254
+  ],
+  "root_transform": [
+    [
+      0.08959341049194336,
+      0.0,
+      0.0,
+      -0.006124549545347691
+    ],
+    [
+      0.0,
+      0.08959341049194336,
+      0.0,
+      -0.0014873906038701534
+    ],
+    [
+      0.0,
+      0.0,
+      0.08959341049194336,
+      0.042500000447034836
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 1899,
+      "polygons": 2411,
+      "quads": 1383,
+      "triangles": 3794,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.009,
+    0.009
+  ],
+  "triangles": 3794,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/greens/greens_sprout.glb"
+}

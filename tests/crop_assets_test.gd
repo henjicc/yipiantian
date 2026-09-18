@@ -57,7 +57,7 @@ func _run() -> void:
 				pair.append(report)
 				statistics[path] = {"triangles": report.triangles, "mesh_instances": report.mesh_instances,
 					"bounds_position": str(report.bounds.position), "bounds_size": str(report.bounds.size)}
-				if Visuals.P2_STAGE_CROPS.has(crop_id):
+				if Visuals.is_p2_stage(crop_id, stage):
 					var audit_path: String = "res://../ArtSource/Crops/P2Stages20260919/%s/%s/asset-audit.json" % [crop_id, stage]
 					var audit: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(audit_path))
 					_expect(report.triangles == int(audit.triangles), "P2 stage matches audited export: " + path)
@@ -73,10 +73,10 @@ func _run() -> void:
 				else:
 					_expect(report.triangles > 0 and report.triangles <= 3600, "Measured stage triangle budget: " + path)
 				_expect(report.mesh_instances <= 2 and report.mesh_instances > 0, "No unexpected mesh fragments: " + path)
-				if not Visuals.P2_STAGE_CROPS.has(crop_id):
+				if not Visuals.is_p2_stage(crop_id, stage):
 					_expect(absf(report.bounds.position.y) <= 0.008, "Ground root remains at zero: " + path)
 				_expect(report.bounds.size.y > 0.04 and report.bounds.size.y < 0.65, "Metre-scale crop height: " + path)
-				if crop_id == "greens" or Visuals.P2_STAGE_CROPS.has(crop_id):
+				if crop_id == "greens" or Visuals.is_p2_stage(crop_id, stage):
 					var painted: bool = Visuals.preserves_painted_color(crop_id, stage)
 					Wind.new().apply(crop, Visuals.wind_profile(crop_id), painted)
 					for mesh: MeshInstance3D in crop.find_children("*", "MeshInstance3D", true, false):

@@ -1,0 +1,53 @@
+{
+  "species": "Brassica rapa Chinensis Group",
+  "stages": {
+    "sprout": {
+      "task_id": "88716263-9369-4083-99b2-d81a330d47b1",
+      "height": 0.085,
+      "max_width": 0.14,
+      "face_request": 1800,
+      "seed": 2026091908,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    },
+    "young": {
+      "task_id": "2815ec70-15d5-4015-9a7a-4600dc8b9a88",
+      "height": 0.18,
+      "max_width": 0.28,
+      "face_request": 3500,
+      "seed": 2026091909,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "remove_loose_vertices": 1,
+      "credits": 120
+    }
+  },
+  "preserved_mature": {
+    "source": "ArtSource/Crops/Greens/p2-gongbi-20260918",
+    "high_sha256": "98864A034E9F4672AC48025C2E5F45217997FCF05287570FA51727C87A81E0DF",
+    "low_sha256": "28668B94D3CCEBC02150422FBD6C627C9BF2583F0038BC374460B9ADCCEF06EF"
+  },
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "quad": true,
+  "delight": false,
+  "pbr": false,
+  "texture_alignment": "original_image",
+  "enable_image_autofix": false,
+  "not_used": [
+    "semantic segmentation",
+    "rigging",
+    "paid retopology",
+    "paid retexturing",
+    "decimation"
+  ],
+  "adoption": "installed and technically checked; user aesthetic acceptance pending"
+}

@@ -1,0 +1,12 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "inputs": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    ".local/crop-research-20260919/greens-seedling.webp"
+  ],
+  "prompt": "Use case: stylized-concept. Create ONE botanical game-asset reference of a very young bok choy / Brassica rapa Chinensis Group seedling, not a miniature mature cabbage. Image 1 defines the approved fine-line gongbi light-colour painting style ONLY; image 2 is the real seedling anatomy. One slender short pale-green upright hypocotyl ending at the soil line (no visible root system), TWO opposite rounded kidney/heart-shaped cotyledons with shallow notches, ONE larger obovate first true leaf with a smooth gently wavy margin rising from the center, and ONE tiny emerging true leaf. Exactly a single plant, four leaves total. True leaf has a pale midrib and restrained fine branching veins, cotyledons simpler. Thin natural blades, gentle dimensional curvature, no thick inflated rubber leaf pads, no bulbous white mature stalks. Show elevated three-quarter view at 30 degrees downward; leaves project into real front/back space and petioles all join the same basal stem, entire plant fits frame. Preserve fresh muted sage/celadon watercolor pigment mottling and selective clearly visible fine moss-green contour/vein lines so they survive later 3D texturing; avoid yellow vintage-paper tint, neon saturation or photoreal glossy texture. Plain neutral light-gray background, soft even neutral light, no cast shadow, soil, ground disk, pot, labels, text or other objects. Bottom of short stem is the planting anchor. The style matches the reference mature plant while anatomy remains an unmistakable seedling.",
+  "output_original": "%USERPROFILE%/.codex/generated_images/01a0b678-f598-7d00-915f-051f5aa8efc6/exec-9aa9ea68-9dc1-42e0-a3e1-a3732e7b81c4.png",
+  "review": "Paired notched cotyledons, one large and one emerging true leaf; no mature stalk bundle.",
+  "model_seed_cost": "not returned"
+}

@@ -1,0 +1,89 @@
+{
+  "crop": "greens",
+  "stage": "young",
+  "task": "2815ec70-15d5-4015-9a7a-4600dc8b9a88",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 3487,
+      "polygons": 3675,
+      "quads": 2827,
+      "triangles": 6502,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 500,
+      "non_manifold_edges": 507,
+      "loose_vertices": 1,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "removed_loose_vertices": 1,
+  "min_godot": [
+    -0.124334916472435,
+    0.0,
+    -0.11534098535776138
+  ],
+  "max_godot": [
+    0.12445645034313202,
+    0.18000000715255737,
+    0.12713031470775604
+  ],
+  "root_transform": [
+    [
+      0.24891290068626404,
+      0.0,
+      0.0,
+      6.076975114410743e-05
+    ],
+    [
+      0.0,
+      0.24891290068626404,
+      0.0,
+      -0.005894666071981192
+    ],
+    [
+      0.0,
+      0.0,
+      0.24891290068626404,
+      0.09000000357627869
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 3486,
+      "polygons": 3675,
+      "quads": 2827,
+      "triangles": 6502,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 500,
+      "non_manifold_edges": 507,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.014827819541096687,
+    0.014220120385289192
+  ],
+  "triangles": 6502,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/greens/greens_young.glb"
+}
