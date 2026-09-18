@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "armatures": [],
+  "blender_version": "5.2.2 LTS",
+  "failures": [],
+  "meshes": [
+    {
+      "dimensions": [
+        0.312548,
+        0.38,
+        0.283716
+      ],
+      "edges": 47898,
+      "faces": 29808,
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loose_vertices": 0,
+      "material_slots": 1,
+      "modifiers": [],
+      "name": "pickled_greens",
+      "non_manifold_edges": 6372,
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 29808,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "vertices": 18252
+    }
+  ],
+  "missing_files": [],
+  "passed": true,
+  "scene": "Scene",
+  "schema_version": 1,
+  "source_file": "D:\\VibeCode\\\u6211\u6709\u4e00\u7247\u7530\\ArtSource\\Environment\\Kitchen\\20260918\\pickled_greens.blend",
+  "summary": {
+    "actions": 0,
+    "armatures": 0,
+    "images": 1,
+    "materials": 1,
+    "mesh_objects": 1,
+    "objects": 1,
+    "triangles": 29808
+  },
+  "units": {
+    "scale_length": 1.0,
+    "system": "METRIC"
+  },
+  "warnings": [
+    "pickled_greens: 6372 non-manifold edges"
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "armatures": [],
+  "blender_version": "5.2.2 LTS",
+  "failures": [],
+  "meshes": [
+    {
+      "dimensions": [
+        0.399647,
+        0.4,
+        0.249226
+      ],
+      "edges": 45406,
+      "faces": 28238,
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loose_vertices": 0,
+      "material_slots": 1,
+      "modifiers": [],
+      "name": "root_soup",
+      "non_manifold_edges": 6098,
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 28238,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "vertices": 17363
+    }
+  ],
+  "missing_files": [],
+  "passed": true,
+  "scene": "Scene",
+  "schema_version": 1,
+  "source_file": "D:\\VibeCode\\\u6211\u6709\u4e00\u7247\u7530\\ArtSource\\Environment\\Kitchen\\20260918\\root_soup.blend",
+  "summary": {
+    "actions": 0,
+    "armatures": 0,
+    "images": 1,
+    "materials": 1,
+    "mesh_objects": 1,
+    "objects": 1,
+    "triangles": 28238
+  },
+  "units": {
+    "scale_length": 1.0,
+    "system": "METRIC"
+  },
+  "warnings": [
+    "root_soup: 6098 non-manifold edges"
+  ]
+}

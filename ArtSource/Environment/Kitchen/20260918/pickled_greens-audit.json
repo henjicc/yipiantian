@@ -1,0 +1,20 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\pickled_greens-original\\tripo-out\\kitchen-pickled-greens-ea32e36e\\model.glb",
+  "geometry": {
+    "triangles": 29808,
+    "open_edges": 0,
+    "zero_area_faces": 0
+  },
+  "width": 0.38,
+  "reimport_verified": true,
+  "textures": [
+    {
+      "name": "Color_ea32e36e-7cdc-49ff-bf1c-439aa94cf99d",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ]
+}

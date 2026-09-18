@@ -5,6 +5,12 @@ signal share_requested(neighbor: String, round_index: int, basket: Dictionary)
 signal gift_requested(neighbor: String, round_index: int, crop: String)
 signal view_requested(neighbor: String)
 signal view_closed
+signal kitchen_requested(action: String, request: Dictionary, revision: int)
+signal kitchen_view_requested(station: String)
+const KitchenPage=preload("res://ui/kitchen_page.gd")
+var kitchen_page:=KitchenPage.new()
+var now_utc: float=0.0
+var _return_button: Button
 const Crops = preload("res://farm/crop_catalog.gd")
 const Neighbors = preload("res://farm/neighbor_catalog.gd")
 const Decorations = preload("res://farm/decoration_catalog.gd")
@@ -56,7 +62,7 @@ func _ready() -> void:
 	paper.add_child(page)
 	var header:=HBoxContainer.new()
 	page.add_child(header)
-	for entry: Array in [["food","菜篮"],["neighbors","邻里"]]:
+	for entry: Array in [["food","菜篮"],["neighbors","邻里"],["kitchen","厨房"],["journal","食记"]]:
 		var button:=_button(header,entry[1])
 		button.name=entry[0]
 		button.toggle_mode=true
@@ -82,7 +88,8 @@ func _ready() -> void:
 	_view_controls.offset_right=120
 	_view_controls.offset_top=-82
 	_view_controls.offset_bottom=-28
-	_button(_view_controls,"回到小笺").pressed.connect(end_view)
+	_return_button=_button(_view_controls,"回到小笺")
+	_return_button.pressed.connect(end_view)
 	_view_controls.hide()
 	_root.hide()
 
@@ -106,11 +113,24 @@ func dismiss() -> void:
 	closed.emit()
 
 func begin_view() -> void:
+	_return_button.text="回到小笺"
 	viewing=true
 	_paper.hide()
 	_shade.hide()
 	_view_controls.show()
 	view_requested.emit(neighbor)
+
+func begin_kitchen_view(station: String) -> void:
+	_return_button.text="回到厨房"
+	viewing=true
+	_paper.hide()
+	_shade.hide()
+	_view_controls.show()
+	kitchen_view_requested.emit(station)
+
+func update_time(now: float) -> void:
+	now_utc=now
+	if active and tab=="kitchen": kitchen_page.tick(now)
 
 func end_view() -> void:
 	if not viewing: return
@@ -137,7 +157,8 @@ func _render() -> void:
 		child.queue_free()
 	for id: String in _tabs: _tabs[id].set_pressed_no_signal(id==tab)
 	if tab=="food": _food()
-	else: _neighbors()
+	elif tab=="neighbors": _neighbors()
+	else: kitchen_page.render(self,_data,tab=="journal",now_utc)
 
 func _food() -> void:
 	_label(_content,"存有 %d 篮　·　累计收获 %d 篮"%[Crops.total_harvested(_data.inventory),Crops.total_harvested(_data.harvested)],24)

@@ -1,0 +1,20 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\root_soup-original\\tripo-out\\kitchen-root-soup-3de1eb15\\model.glb",
+  "geometry": {
+    "triangles": 28238,
+    "open_edges": 0,
+    "zero_area_faces": 0
+  },
+  "width": 0.4,
+  "reimport_verified": true,
+  "textures": [
+    {
+      "name": "Color_3de1eb15-a51a-4409-8fea-e4b73fb6f5aa",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ]
+}

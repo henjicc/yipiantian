@@ -19,6 +19,8 @@ const CameraTuning = preload("res://ui/camera_tuning.gd")
 const CourtyardPlan = preload("res://layout/courtyard_plan.gd")
 const CourtyardEditSession = preload("res://layout/courtyard_edit_session.gd")
 const HarvestBook = preload("res://ui/harvest_book.gd")
+const KitchenDisplay=preload("res://presentation/kitchen_display.gd")
+var kitchen_display: KitchenDisplay
 var harvest_book: HarvestBook
 var courtyard_plan := CourtyardPlan.new()
 var courtyard_edit: CourtyardEditSession
@@ -117,6 +119,10 @@ func _ready() -> void:
 	hud.cancel_tool_requested.connect(_cancel_tool)
 	hud.palette_requested.connect(_open_palette)
 	harvest_book=HarvestBook.new()
+	kitchen_display=KitchenDisplay.new()
+	kitchen_display.name="KitchenDisplay"
+	add_child(kitchen_display)
+	kitchen_display.configure($Environment)
 	harvest_book.name="HarvestBook"
 	add_child(harvest_book)
 	hud.basket_requested.connect(_open_basket)
@@ -127,6 +133,12 @@ func _ready() -> void:
 	harvest_book.share_requested.connect(func(id: String, visit: int, basket: Dictionary) -> void: _exchange(id,visit,basket,""))
 	harvest_book.gift_requested.connect(func(id: String, visit: int, crop: String) -> void: _exchange(id,visit,{},crop))
 	harvest_book.view_requested.connect(_view_neighbor)
+	harvest_book.kitchen_requested.connect(_kitchen_action)
+	harvest_book.kitchen_view_requested.connect(func(station: String) -> void:
+		var framing: Dictionary=kitchen_display.viewpoint(station)
+		focus_detail.protect_neighbor(framing.subject)
+		camera.view_neighbor(framing.point,framing.view)
+		hud.hide())
 	harvest_book.view_closed.connect(func() -> void:
 		camera.leave_neighbor()
 		hud.show())
@@ -252,6 +264,7 @@ func _load_game(initial: Dictionary = {}) -> void:
 		_refresh_lanterns()
 	_loaded = true
 	_refresh_neighbor_stories()
+	kitchen_display.refresh(farm_state.snapshot().kitchen)
 	farm.visible = true
 	settle_farm()
 	_save_farm()
@@ -360,6 +373,7 @@ func settle_farm() -> void:
 	if not _loaded:
 		return
 	var result: Dictionary = farm_state.settle(clock.call())
+	harvest_book.update_time(clock.call())
 	if result.ok:
 		refresh_farm()
 
@@ -389,6 +403,7 @@ func _open_basket() -> void:
 	camera.cancel_free_gesture()
 	camera.cancel_zoom()
 	camera.free_input_enabled=false
+	harvest_book.update_time(clock.call())
 	harvest_book.present(farm_state.snapshot())
 	_refresh_hud()
 
@@ -417,6 +432,29 @@ func _exchange(id: String, visit: int, basket: Dictionary, gift: String) -> void
 
 func _refresh_neighbor_stories() -> void:
 	$Environment/NeighborIslets.show_stories(farm_state.snapshot().neighbors,$Environment/LivingDetails)
+
+func _kitchen_action(action: String, request: Dictionary, revision: int) -> void:
+	if not _basket_active() or not _loaded or _save_failed: return
+	var candidate:=FarmState.new()
+	candidate.restore_snapshot(farm_state.snapshot())
+	var result: Dictionary=candidate.kitchen_action(action,request,revision,clock.call())
+	if not result.ok:
+		harvest_book.refresh(farm_state.snapshot())
+		return
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok:
+		_save_failed=true
+		harvest_book.dismiss()
+		hud.show_storage_issue(saved.kind,true)
+		_refresh_hud()
+		return
+	farm_state.restore_snapshot(candidate.snapshot())
+	kitchen_display.refresh(farm_state.snapshot().kitchen)
+	if action=="share": harvest_book.tab="journal"
+	harvest_book.update_time(clock.call())
+	harvest_book.refresh(farm_state.snapshot())
+	farm_audio.play_ui()
+	_refresh_hud()
 
 func _view_neighbor(id: String) -> void:
 	var scene_view: Dictionary=$Environment/NeighborIslets.story_view(id)

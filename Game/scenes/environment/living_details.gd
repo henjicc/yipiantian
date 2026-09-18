@@ -164,7 +164,10 @@ func _build_drying_rack() -> void:
 	for y: float in [.55,1.04]:
 		for z: float in [-.22,.07]:
 			_beam(group,Vector3(-.53,y,z),Vector3(.53,y,z),.025,_bamboo)
-		_tray(group,Vector3(-.25,y+.03,-.04),.215,true)
+		_tray(group,Vector3(-.25,y+.03,-.04),.215,y<.8)
+		if y>.8:
+			var food: Node3D=Assets.place(group,"slices",Vector3(-.25,y+.063,-.04),45,.78)
+			food.name="DryingContents"
 		_tray(group,Vector3(.25,y+.03,-.04),.215,y<.8)
 	_beam(group,Vector3(-.54,1.45,-.25),Vector3(.54,1.45,-.25),.033,_bamboo)
 	_basket(group,Vector3(.74,0,.03),.22,.32,false)
@@ -342,12 +345,16 @@ func _build_stone_mill() -> void:
 
 func _build_jar_cluster() -> void:
 	var group := _group("YardJarCluster")
-	_vessel(group, Vector3.ZERO, .30, .46, _clay)
+	var base:=Node3D.new()
+	base.name="PickleBase"
+	group.add_child(base)
+	_vessel(base, Vector3.ZERO, .30, .46, _clay)
 	_vessel(group, Vector3(.50, 0, .22), .22, .32, _paint(Color("8b7159"), 8.0))
 	_vessel(group, Vector3(.24, 0, -.38), .17, .24, _paint(Color("b0905f"), 9.0))
 	# Straw cap tied over the largest mouth.
-	_lathe(group, Vector3(0, .44, 0), [Vector2(.245, 0), Vector2(.20, .055), Vector2(.10, .09), Vector2(.01, .10)], _straw, 16)
-	_ring(group, Vector3(0, .445, 0), .235, .016, _rope)
+	_lathe(base, Vector3(0, .44, 0), [Vector2(.245, 0), Vector2(.20, .055), Vector2(.10, .09), Vector2(.01, .10)], _straw, 16)
+	_ring(base, Vector3(0, .445, 0), .235, .016, _rope)
+	_merge_static_group(base)
 
 
 func _build_ground_trays() -> void:

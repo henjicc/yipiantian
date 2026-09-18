@@ -1,0 +1,2 @@
+# Immutable raw task responses contain upload credentials; redacted provenance is versioned.
+**/task.json

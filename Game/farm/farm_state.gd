@@ -4,6 +4,7 @@ extends RefCounted
 const Crops = preload("res://farm/crop_catalog.gd")
 const Plan = preload("res://layout/courtyard_plan.gd")
 const Neighbors = preload("res://farm/neighbor_catalog.gd")
+const Kitchen = preload("res://farm/kitchen.gd")
 const FIELD_IDS: Array[String] = Plan.FIELD_IDS
 # Row-major: columns run along +X and rows along +Z in the presentation layer.
 const CELL_IDS: Array[String] = ["cell_01", "cell_02", "cell_03", "cell_04", "cell_05", "cell_06", "cell_07", "cell_08", "cell_09", "cell_10", "cell_11", "cell_12", "cell_13", "cell_14", "cell_15", "cell_16"]
@@ -17,7 +18,7 @@ func _init(now_utc_seconds: float = 0.0, layout: Dictionary = {}) -> void:
 	assert(_valid_time(now_utc_seconds), "Farm initialization requires finite nonnegative UTC seconds")
 	var plan: RefCounted = Plan.new() if layout.is_empty() else Plan.from_snapshot(layout)
 	assert(plan != null, "Farm initialization requires a valid layout")
-	_data = {"fields": {}, "harvested": {}, "inventory":{}, "neighbors":Neighbors.initial_state(), "layout":plan.snapshot()}
+	_data = {"fields": {}, "harvested": {}, "inventory":{}, "neighbors":Neighbors.initial_state(), "layout":plan.snapshot(), "kitchen":Kitchen.initial_state()}
 	for crop_id: String in Crops.crop_ids():
 		_data.harvested[crop_id] = 0
 		_data.inventory[crop_id] = 0
@@ -82,6 +83,16 @@ func restore_snapshot(data: Dictionary) -> bool:
 		_data.harvested[crop_id] = int(_data.harvested[crop_id])
 		_data.inventory[crop_id] = int(_data.inventory[crop_id])
 	for id: String in Neighbors.IDS: _data.neighbors[id].round=int(_data.neighbors[id].round)
+	_data.kitchen.revision = int(_data.kitchen.revision)
+	for recipe: String in Kitchen.RECIPES:
+		_data.kitchen.stock[recipe] = int(_data.kitchen.stock[recipe])
+		_data.kitchen.records[recipe].made = int(_data.kitchen.records[recipe].made)
+		_data.kitchen.records[recipe].shared = int(_data.kitchen.records[recipe].shared)
+	for station: String in Kitchen.STATIONS:
+		var job: Dictionary = _data.kitchen.jobs[station]
+		if not job.is_empty():
+			job.start_utc = float(job.start_utc)
+			job.finish_utc = float(job.finish_utc)
 	return true
 
 func share_basket(neighbor: String, round_index: int, basket: Dictionary) -> Dictionary:
@@ -101,6 +112,9 @@ func share_basket(neighbor: String, round_index: int, basket: Dictionary) -> Dic
 	for crop: String in basket: _data.inventory[crop]-=int(basket[crop])
 	visit.pending=true
 	return _result(true,"")
+
+func kitchen_action(action: String, request: Dictionary, revision: int, now: float) -> Dictionary:
+	return Kitchen.act(_data.kitchen,_data.inventory,action,request,revision,now)
 
 func claim_gift(neighbor: String, round_index: int, crop: String) -> Dictionary:
 	if neighbor not in Neighbors.IDS: return _result(false,"invalid_neighbor")
@@ -245,8 +259,9 @@ static func _is_number(value: Variant) -> bool:
 
 
 static func _valid_snapshot(data: Dictionary) -> bool:
-	if data.size() != 5 or not data.get("fields") is Dictionary or not data.get("harvested") is Dictionary or not data.get("layout") is Dictionary:
+	if data.size() != 6 or not data.get("fields") is Dictionary or not data.get("harvested") is Dictionary or not data.get("layout") is Dictionary:
 		return false
+	if not data.get("kitchen") is Dictionary or not Kitchen.valid(data.kitchen): return false
 	if not data.get("inventory") is Dictionary or not data.get("neighbors") is Dictionary: return false
 	if data.inventory.size()!=Crops.crop_ids().size() or not Neighbors.valid(data.neighbors): return false
 	var plan: RefCounted = Plan.from_snapshot(data.layout)

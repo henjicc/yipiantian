@@ -1,0 +1,77 @@
+[
+  {
+    "asset": "pickled_greens",
+    "task_id": "ea32e36e-7cdc-49ff-bf1c-439aa94cf99d",
+    "type": "image_to_model",
+    "status": "success",
+    "input": {
+      "pbr": false,
+      "delight": true,
+      "texture": true,
+      "export_uv": true,
+      "face_limit": 30000,
+      "model_seed": 91842,
+      "model_version": "v3.1-20260211",
+      "smart_low_poly": false,
+      "texture_quality": "detailed",
+      "texture_version": "v3.5-20260815",
+      "geometry_quality": "detailed",
+      "enable_image_autofix": false
+    },
+    "credits_consumed": 60,
+    "reference": "20260918/pickled_greens-reference.png",
+    "original_directory": "20260918/pickled_greens-original/tripo-out/kitchen-pickled-greens-ea32e36e",
+    "created_at": "2026-09-18T02:15:20.444744Z",
+    "completed_at": "2026-09-18T02:18:11.425319Z"
+  },
+  {
+    "asset": "root_soup",
+    "task_id": "3de1eb15-a51a-4409-8fea-e4b73fb6f5aa",
+    "type": "image_to_model",
+    "status": "success",
+    "input": {
+      "pbr": false,
+      "delight": true,
+      "texture": true,
+      "export_uv": true,
+      "face_limit": 30000,
+      "model_seed": 91841,
+      "model_version": "v3.1-20260211",
+      "smart_low_poly": false,
+      "texture_quality": "detailed",
+      "texture_version": "v3.5-20260815",
+      "geometry_quality": "detailed",
+      "enable_image_autofix": false
+    },
+    "credits_consumed": 60,
+    "reference": "20260918/root_soup-reference.png",
+    "original_directory": "20260918/root_soup-original/tripo-out/kitchen-root-soup-3de1eb15",
+    "created_at": "2026-09-18T02:15:18.512631Z",
+    "completed_at": "2026-09-18T02:17:55.56231Z"
+  },
+  {
+    "asset": "stir_fry",
+    "task_id": "cc8adf3c-faa1-405f-b6c2-99f9e8ee5767",
+    "type": "image_to_model",
+    "status": "success",
+    "input": {
+      "pbr": false,
+      "delight": true,
+      "texture": true,
+      "export_uv": true,
+      "face_limit": 30000,
+      "model_seed": 91840,
+      "model_version": "v3.1-20260211",
+      "smart_low_poly": false,
+      "texture_quality": "detailed",
+      "texture_version": "v3.5-20260815",
+      "geometry_quality": "detailed",
+      "enable_image_autofix": false
+    },
+    "credits_consumed": 60,
+    "reference": "20260918/stir_fry-reference.png",
+    "original_directory": "20260918/stir_fry-original/tripo-out/kitchen-stir-fry-cc8adf3c",
+    "created_at": "2026-09-18T02:15:19.261098Z",
+    "completed_at": "2026-09-18T02:17:53.564251Z"
+  }
+]

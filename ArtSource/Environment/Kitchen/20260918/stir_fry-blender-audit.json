@@ -1,0 +1,63 @@
+{
+  "actions": [],
+  "armatures": [],
+  "blender_version": "5.2.2 LTS",
+  "failures": [],
+  "meshes": [
+    {
+      "dimensions": [
+        0.42,
+        0.418552,
+        0.163913
+      ],
+      "edges": 46935,
+      "faces": 28193,
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loose_vertices": 0,
+      "material_slots": 1,
+      "modifiers": [],
+      "name": "stir_fry",
+      "non_manifold_edges": 9291,
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 28193,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "vertices": 19135
+    }
+  ],
+  "missing_files": [],
+  "passed": true,
+  "scene": "Scene",
+  "schema_version": 1,
+  "source_file": "D:\\VibeCode\\\u6211\u6709\u4e00\u7247\u7530\\ArtSource\\Environment\\Kitchen\\20260918\\stir_fry.blend",
+  "summary": {
+    "actions": 0,
+    "armatures": 0,
+    "images": 1,
+    "materials": 1,
+    "mesh_objects": 1,
+    "objects": 1,
+    "triangles": 28193
+  },
+  "units": {
+    "scale_length": 1.0,
+    "system": "METRIC"
+  },
+  "warnings": [
+    "stir_fry: 9291 non-manifold edges"
+  ]
+}

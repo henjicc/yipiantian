@@ -1,0 +1,20 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": "20260918\\stir_fry-original\\tripo-out\\kitchen-stir-fry-cc8adf3c\\model.glb",
+  "geometry": {
+    "triangles": 28193,
+    "open_edges": 1,
+    "zero_area_faces": 0
+  },
+  "width": 0.42,
+  "reimport_verified": true,
+  "textures": [
+    {
+      "name": "Color_cc8adf3c-faa1-405f-b6c2-99f9e8ee5767",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ]
+}

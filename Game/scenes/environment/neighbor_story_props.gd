@@ -23,6 +23,8 @@ static func create(id: String, island: Node3D, source: Node3D, living: Node3D) -
 		var entry: Array=PLACEMENTS[id][index]
 		var original: Node3D=living.get_node(entry[0])
 		var prop: Node3D=original.duplicate(0)
+		# Living kitchen contents may be temporarily hidden on the source support.
+		for child: Node3D in prop.find_children("*","Node3D",true,false): child.show()
 		prop.name="Chapter%d"%(index+1)
 		result.add_child(prop)
 		prop.rotation=Vector3(0,deg_to_rad(entry[2]),0)

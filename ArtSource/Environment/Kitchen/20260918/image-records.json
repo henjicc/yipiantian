@@ -1,0 +1,38 @@
+[
+  {
+    "id": "stir_fry",
+    "prompt": "Create one isolated game asset reference for a Jiangnan Ming-era cozy farming game. Reference image 1 sets gongbi light-watercolor brush texture and soft volumetric forms; reference image 2 sets the countryside world. A single shallow celadon ceramic plate filled with home-cooked stir-fried seasonal leafy greens, softly folded cooked green leaves and short ivory stems, irregular appetizing arrangement, no whole raw plant. One self-contained prop only, complete shape and base, three-quarter view 30 degrees above tabletop, centered at 75% canvas width, neutral diffuse light, readable silhouette. Muted natural green, ivory and clay, selective delicate linework, detailed and dimensional but matte painterly not plastic or photoreal. Plain pale neutral background, no scene, no table, no ground slab, no text, no characters, no extra utensil, no cast shadow outside the asset, no collage. Square image. This is the full finished prop to turn into a 3D mesh.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-6f2a40da-a7b7-488f-a0b6-0fac76f990e9.png",
+    "reference_order": [
+      "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ],
+    "tool": "built-in image_gen",
+    "model": null,
+    "seed": null
+  },
+  {
+    "id": "root_soup",
+    "prompt": "Create one isolated game asset reference for a Jiangnan Ming-era cozy farming game. Reference image 1 sets gongbi light-watercolor brush texture and soft volumetric forms; reference image 2 sets the countryside world. A single round earthenware soup bowl, with thick matte muted celadon glaze inside and a warm clay foot, filled with pale warm broth and chunky ivory radish and a few orange carrot pieces and small green herbs; clearly show the solid vegetables above the soup surface. No steam. One self-contained prop only, complete shape and base, three-quarter view 30 degrees above tabletop, centered at 75% canvas width, neutral diffuse light, readable silhouette. Muted natural green, ivory and clay, selective delicate linework, detailed and dimensional but matte painterly not plastic or photoreal. Plain pale neutral background, no scene, no table, no ground slab, no text, no characters, no extra utensil, no cast shadow outside the asset, no collage. Square image. This is the full finished prop to turn into a 3D mesh.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-d1feca2b-77d6-4eca-aeb1-b2004e454457.png",
+    "reference_order": [
+      "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ],
+    "tool": "built-in image_gen",
+    "model": null,
+    "seed": null
+  },
+  {
+    "id": "pickled_greens",
+    "prompt": "Create one isolated game asset reference for a Jiangnan Ming-era cozy farming game. Reference image 1 sets gongbi light-watercolor brush texture and soft volumetric forms; reference image 2 sets the countryside world. A single small rustic warm-brown stoneware pickling crock, open wide mouth full of finely chopped olive-green mustard greens, a round fitted ceramic lid leaning against the base as part of this single compact grouped asset. Clearly chunky vegetable texture; no liquid spill. One self-contained prop only, complete shape and base, three-quarter view 30 degrees above tabletop, centered at 75% canvas width, neutral diffuse light, readable silhouette. Muted natural green, ivory and clay, selective delicate linework, detailed and dimensional but matte painterly not plastic or photoreal. Plain pale neutral background, no scene, no table, no ground slab, no text, no characters, no extra utensil, no cast shadow outside the asset, no collage. Square image. This is the full finished prop to turn into a 3D mesh.",
+    "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-e896770b-7495-4e6f-9d09-d9589b56eac7.png",
+    "reference_order": [
+      "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ],
+    "tool": "built-in image_gen",
+    "model": null,
+    "seed": null
+  }
+]
