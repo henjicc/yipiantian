@@ -56,6 +56,7 @@ func _apply_node(node: Node, kind: String, preserve_painted_color: bool) -> void
 		mesh.set_instance_shader_parameter("leaf_paint_strength", 0.0 if kind == "autumn_crop" else 1.0)
 		mesh.set_instance_shader_parameter("preserve_painted_color", 1.0 if preserve_painted_color else 0.0)
 		mesh.set_instance_shader_parameter("leaf_roughness_variation", 1.0 if kind == "greens" and preserve_painted_color else 0.0)
+		mesh.set_instance_shader_parameter("fresh_leaf_color", 1.0 if kind == "greens" and preserve_painted_color else 0.0)
 		mesh.set_instance_shader_parameter("wind_leaf_texture_mask", 1.0 if kind == "trellis" else 0.0)
 		mesh.extra_cull_margin = maxf(mesh.extra_cull_margin, 0.22 if kind == "osmanthus" else motion.x + motion.w)
 		mesh.set_meta("plant_wind_kind", kind)

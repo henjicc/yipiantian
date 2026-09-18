@@ -25,8 +25,8 @@
       "quads": 5776,
       "triangles": 12552,
       "dimensions_godot_xyz": [
-        0.48000001907348633,
-        0.4026184678077698,
+        0.3784834146499634,
+        0.4532325565814972,
         0.47062042355537415
       ],
       "materials": 1,
@@ -51,9 +51,9 @@
       "quads": 2783,
       "triangles": 8158,
       "dimensions_godot_xyz": [
-        0.48000001907348633,
-        0.40280666947364807,
-        0.4706866145133972
+        0.3784834146499634,
+        0.45312121510505676,
+        0.4706866443157196
       ],
       "materials": 1,
       "uv_layers": 1,
@@ -72,6 +72,7 @@
       "reimport_verified": true
     }
   },
+  "upright_rotation_y_degrees": 21.0,
   "high_detail_policy": "Full generated geometry; no decimation or extra Godot LOD",
   "wind": "Existing root-anchored bounds wind; no invented per-leaf segmentation"
 }

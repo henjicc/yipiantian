@@ -3,12 +3,12 @@ from pathlib import Path
 import json
 import bpy
 from mathutils.kdtree import KDTree
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 folder = Path(__file__).resolve().parent
 repo = folder.parents[3]
 bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.gltf(filepath=str(repo / 'Game/art/crops/greens/greens_mature.glb'))
+bpy.ops.import_scene.gltf(filepath=str(folder / 'raw/input.glb'))
 original = [o for o in bpy.context.scene.objects if o.type == 'MESH']
 points = [o.matrix_world @ v.co for o in original for v in o.data.vertices]
 original_min = Vector([min(p[i] for p in points) for i in range(3)])
@@ -60,7 +60,12 @@ for material in bpy.data.materials:
                       'roughness_linked':bsdf.inputs['Roughness'].is_linked,
                       'images':[{'name':n.image.name,'size':list(n.image.size)} for n in material.node_tree.nodes if n.type == 'TEX_IMAGE' and n.image]})
 assert materials and all(m['normal_linked'] and m['roughness_linked'] for m in materials), 'Expected PBR maps missing'
+upright = json.loads((folder.parent / 'p2-gongbi-20260918/upright-transform.json').read_text(encoding='utf-8'))
+transform = Matrix(upright['blender_matrix'])
+for obj in objects:
+    obj.data.transform(transform)
 report = {'blender':bpy.app.version_string,'original_triangles':triangles,
+          'upright_rotation_y_degrees':upright['rotation_y_degrees'],
           'restored_uniform_scale':factor,
           'max_uv_distance':uv_error,
           'candidate_triangles':candidate_triangles,'max_vertex_distance_m':error,'materials':materials}

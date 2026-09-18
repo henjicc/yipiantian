@@ -8,6 +8,13 @@ var plants: Array[Node3D] = []
 var sun: DirectionalLight3D
 var environment: Environment
 var camera: Camera3D
+var cameras: Array[Camera3D] = []
+var suns: Array[DirectionalLight3D] = []
+var orbit_yaw := 0.0
+var orbit_pitch := .38
+var view_size := .78
+var view_target := Vector3(0,.22,0)
+var dragging := 0
 var title_right: Label
 var candidate_materials: Array[ShaderMaterial] = []
 var yaw := 0.0
@@ -16,6 +23,7 @@ var normals_enabled := true
 var original_color: Texture2D
 var generated_colors: Array[Texture2D] = []
 var use_generated_color := false
+var fresh_enabled := true
 
 func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--dev-preview"):
@@ -28,25 +36,39 @@ func _ready() -> void:
 	environment.ambient_light_color = Color("e7ece7")
 	environment.ambient_light_energy = .45
 	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-	var world := WorldEnvironment.new()
-	world.environment = environment
-	add_child(world)
-	sun = DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-45,-35,0)
-	sun.light_energy = 1.0
-	sun.shadow_enabled = true
-	add_child(sun)
-	camera = Camera3D.new()
-	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 1.00
-	add_child(camera)
-	camera.position = Vector3(0,.87,1.7)
-	camera.look_at(Vector3(0,.20,0))
-	camera.current = true
+	var views := HBoxContainer.new()
+	views.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	views.add_theme_constant_override("separation",2)
+	views.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(views)
 	for side: int in 2:
+		var container := SubViewportContainer.new()
+		container.stretch = true
+		container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		views.add_child(container)
+		var viewport := SubViewport.new()
+		viewport.own_world_3d = true
+		viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		viewport.msaa_3d = Viewport.MSAA_4X
+		viewport.mesh_lod_threshold = 0.0
+		container.add_child(viewport)
 		var slot := Node3D.new()
-		slot.position.x = -.40 if side == 0 else .40
-		add_child(slot)
+		viewport.add_child(slot)
+		var world := WorldEnvironment.new()
+		world.environment = environment
+		slot.add_child(world)
+		var light := DirectionalLight3D.new()
+		light.rotation_degrees = Vector3(-45,-35,0)
+		light.light_energy = 1.0
+		light.shadow_enabled = true
+		slot.add_child(light)
+		suns.append(light)
+		var view_camera := Camera3D.new()
+		view_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+		slot.add_child(view_camera)
+		view_camera.current = true
+		cameras.append(view_camera)
 		var floor_mesh := MeshInstance3D.new()
 		var plane := PlaneMesh.new()
 		plane.size = Vector2(.72,.72)
@@ -68,6 +90,9 @@ func _ready() -> void:
 			original_color = _find_color(plant)
 			Wind.new().apply(plant,"greens",true)
 			_freeze(plant)
+	camera = cameras[0]
+	sun = suns[0]
+	_update_cameras()
 	_build_ui()
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
@@ -76,10 +101,42 @@ func _ready() -> void:
 		if arg.begins_with("--capture="):
 			await _capture(arg.trim_prefix("--capture="))
 
+func _update_cameras() -> void:
+	var direction := Vector3(sin(orbit_yaw)*cos(orbit_pitch),sin(orbit_pitch),cos(orbit_yaw)*cos(orbit_pitch))
+	for view_camera: Camera3D in cameras:
+		view_camera.size = view_size
+		view_camera.position = view_target + direction * 2.0
+		view_camera.look_at(view_target)
+
+func _input(event: InputEvent) -> void:
+	# A release over a toolbar or outside the original viewport must end dragging.
+	if event is InputEventMouseButton and not event.pressed and event.button_index == dragging:
+		dragging = 0
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT: dragging = 0
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.pressed and event.button_index in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_MIDDLE]:
+			dragging = event.button_index
+		elif event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
+			view_size = clampf(view_size * (.88 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0/.88),.20,2.4)
+			_update_cameras()
+	elif event is InputEventMouseMotion and dragging != 0:
+		if dragging == MOUSE_BUTTON_LEFT:
+			orbit_yaw -= event.relative.x * .008
+			orbit_pitch = clampf(orbit_pitch + event.relative.y * .008,-1.35,1.35)
+		elif dragging == MOUSE_BUTTON_MIDDLE:
+			var step: float = view_size / maxf(get_viewport().get_visible_rect().size.y,1.0)
+			view_target += (-camera.global_basis.x*event.relative.x+camera.global_basis.y*event.relative.y)*step
+		_update_cameras()
+
 func _freeze(node: Node) -> void:
 	if node is MeshInstance3D:
 		node.set_instance_shader_parameter("wind_motion",Vector4.ZERO)
 		node.set_instance_shader_parameter("haze_exempt",1.0)
+		node.set_instance_shader_parameter("fresh_leaf_color",0.0)
 	for child: Node in node.get_children():
 		_freeze(child)
 
@@ -98,7 +155,10 @@ func _prepare_candidate(node: Node) -> void:
 			material.set_shader_parameter("base_specular",.08)
 			material.set_shader_parameter("normal_textured",source.normal_texture != null)
 			material.set_shader_parameter("normal_texture",source.normal_texture)
-			material.set_shader_parameter("normal_strength",.45)
+			material.set_shader_parameter("normal_strength",.9)
+			material.set_shader_parameter("leaf_detail_only",true)
+			material.set_shader_parameter("leaf_backlight",.30)
+			material.set_shader_parameter("roughness_range",Vector2(.58,.88))
 			material.set_shader_parameter("roughness_textured",source.roughness_texture != null)
 			material.set_shader_parameter("roughness_texture",source.roughness_texture)
 			var channels: Array[Vector4] = [Vector4(1,0,0,0),Vector4(0,1,0,0),Vector4(0,0,1,0),Vector4(0,0,0,1),Vector4(1.0/3,1.0/3,1.0/3,0)]
@@ -106,6 +166,7 @@ func _prepare_candidate(node: Node) -> void:
 			node.set_surface_override_material(surface,material)
 			candidate_materials.append(material)
 		node.set_instance_shader_parameter("preserve_painted_color",1.0)
+		node.set_instance_shader_parameter("fresh_leaf_color",1.0)
 		node.set_instance_shader_parameter("wind_motion",Vector4.ZERO)
 		node.set_instance_shader_parameter("haze_exempt",1.0)
 	for child: Node in node.get_children():
@@ -128,7 +189,7 @@ func _build_ui() -> void:
 	layer.add_child(layout)
 	for side: int in 2:
 		var label := Label.new()
-		label.text = "原版 · 当前游戏材质" if side == 0 else ("候选 · 原配色＋PBR细节" if not candidate_materials.is_empty() else "候选 · 资源尚未导入")
+		label.text = "原材质 · 已摆正" if side == 0 else ("候选 · 清新配色＋叶面细节" if not candidate_materials.is_empty() else "候选 · 资源尚未导入")
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.add_theme_color_override("font_color",Color("303b32"))
 		label.add_theme_font_size_override("font_size",30)
@@ -151,6 +212,7 @@ func _build_ui() -> void:
 	normal_button.disabled = candidate_materials.is_empty()
 	var color_button: Button = _button(controls,"切换配色",_toggle_color)
 	color_button.disabled = candidate_materials.is_empty()
+	_button(controls,"冷暖对比",_toggle_fresh)
 	_button(controls,"复位",_reset)
 	_button(controls,"返回农场",func() -> void: get_tree().change_scene_to_file("res://scenes/main.tscn"))
 
@@ -169,7 +231,8 @@ func _rotate(amount: float) -> void:
 
 func _cycle_light() -> void:
 	light_index = (light_index + 1) % 3
-	sun.rotation_degrees = [Vector3(-45,-35,0),Vector3(-22,65,0),Vector3(-30,160,0)][light_index]
+	for light: DirectionalLight3D in suns:
+		light.rotation_degrees = [Vector3(-45,-35,0),Vector3(-22,65,0),Vector3(-30,160,0)][light_index]
 
 func _toggle_normals() -> void:
 	normals_enabled = not normals_enabled
@@ -184,14 +247,27 @@ func _toggle_color() -> void:
 	_update_title()
 
 func _update_title() -> void:
-	title_right.text = "候选 · " + ("新配色＋PBR细节" if use_generated_color else "原配色＋PBR细节") + ("" if normals_enabled else "（关闭法线）")
+	title_right.text = "候选 · " + ("Tripo新配色" if use_generated_color else ("清新配色" if fresh_enabled else "原配色")) + "＋叶面细节" + ("" if normals_enabled else "（关闭法线）")
+
+func _toggle_fresh() -> void:
+	fresh_enabled = not fresh_enabled
+	for mesh: Node in plants[1].find_children("*","MeshInstance3D",true,false):
+		mesh.set_instance_shader_parameter("fresh_leaf_color",1.0 if fresh_enabled else 0.0)
+	_update_title()
 
 func _reset() -> void:
+	orbit_yaw = 0.0
+	orbit_pitch = .38
+	view_size = .78
+	view_target = Vector3(0,.22,0)
+	dragging = 0
+	_update_cameras()
 	_rotate(-yaw)
 	light_index = 2
 	_cycle_light()
 	if not normals_enabled: _toggle_normals()
 	if use_generated_color: _toggle_color()
+	if not fresh_enabled: _toggle_fresh()
 
 func _capture(directory: String) -> void:
 	DirAccess.make_dir_recursive_absolute(directory)
@@ -219,7 +295,7 @@ func _capture(directory: String) -> void:
 			if delta > .003: changed += 1
 	assert(changed > 30,"Normal map must visibly affect the candidate under fixed lighting")
 	var report := FileAccess.open(directory.path_join("normal-check.json"),FileAccess.WRITE)
-	report.store_string(JSON.stringify({"changed_sample_pixels":changed,"max_channel_delta":peak,"normal_strength":.45,"maps":candidate_materials.size()},"  "))
+	report.store_string(JSON.stringify({"changed_sample_pixels":changed,"max_channel_delta":peak,"normal_strength":.9,"maps":candidate_materials.size()},"  "))
 	report.close()
 	_toggle_normals()
 	_toggle_color()

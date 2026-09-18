@@ -14,6 +14,9 @@ uniform float normal_strength = 1.0;
 uniform bool roughness_textured = false;
 uniform sampler2D roughness_texture : hint_default_white, filter_linear_mipmap_anisotropic;
 uniform vec4 roughness_channel = vec4(1.0,0.0,0.0,0.0);
+uniform vec2 roughness_range = vec2(0.0,1.0);
+uniform float leaf_backlight = .16;
+uniform bool leaf_detail_only = false;
 uniform vec3 uv_scale = vec3(1.0);
 uniform vec3 uv_offset = vec3(0.0);
 uniform bool pigment = false;
@@ -29,6 +32,7 @@ instance uniform float wind_authored_bend = 0.07;
 instance uniform float leaf_paint_strength = 1.0;
 instance uniform float preserve_painted_color = 0.0;
 instance uniform float leaf_roughness_variation = 0.0;
+instance uniform float fresh_leaf_color = 0.0;
 instance uniform vec2 root_soil = vec2(-1000.0,0.0); // world soil height / contact band; crops only
 instance uniform float frame_enabled = 0.0;
 instance uniform float haze_exempt = 0.0;
@@ -103,13 +107,18 @@ void fragment() {
 		color = mix(color, color * (0.72 + 0.46 * leaf_value), leaf_pigment * leaf_paint_strength);
 	}
 	float contact = 0.0;
+	if (fresh_leaf_color > 0.5) {
+		// Cool the painted colour in linear space; retain ivory stems and brushwork.
+		vec3 balance = mix(vec3(.94,1.0,1.10),vec3(.76,1.01,1.23),leaf_pigment);
+		color *= balance;
+	}
 	if (root_soil.y > 0.0) {
 		float dirt_edge = root_soil.x + root_soil.y*(.25+.75*pigment_wash(world_point*87.0));
 		contact = (1.0-smoothstep(dirt_edge-.009,dirt_edge+.003,world_point.y))*(1.0-leaf_pigment);
 		color = mix(color,vec3(.100,.060,.029)*(.8+.4*pigment_wash(world_point*145.0)),contact*.90);
 	}
 	ALBEDO = color;
-	BACKLIGHT = color * leaf_pigment * .16;
+	BACKLIGHT = color * leaf_pigment * leaf_backlight;
 	ROUGHNESS = mix(base_roughness,.97,contact);
 	if (leaf_roughness_variation > 0.5) {
 		// Object-space variation stays attached during wind and plant rotation.
@@ -121,11 +130,12 @@ void fragment() {
 	}
 	SPECULAR = base_specular;
 	if (roughness_textured) {
-		ROUGHNESS = mix(base_roughness * dot(texture(roughness_texture, UV), roughness_channel), .97, contact);
+		float mapped = mix(roughness_range.x,roughness_range.y,dot(texture(roughness_texture, UV), roughness_channel));
+		ROUGHNESS = mix(base_roughness * mapped, .97, contact);
 	}
 	if (normal_textured) {
 		NORMAL_MAP = texture(normal_texture, UV).rgb;
-		NORMAL_MAP_DEPTH = normal_strength;
+		NORMAL_MAP_DEPTH = normal_strength * (leaf_detail_only ? mix(.25,1.0,leaf_pigment) : 1.0);
 	}
 	METALLIC = base_metallic;
 }
