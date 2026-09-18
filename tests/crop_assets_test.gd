@@ -57,7 +57,12 @@ func _run() -> void:
 				pair.append(report)
 				statistics[path] = {"triangles": report.triangles, "mesh_instances": report.mesh_instances,
 					"bounds_position": str(report.bounds.position), "bounds_size": str(report.bounds.size)}
-				if crop_id == "greens" and stage == "mature":
+				if Visuals.P2_STAGE_CROPS.has(crop_id):
+					var audit_path: String = "res://../ArtSource/Crops/P2Stages20260919/%s/%s/asset-audit.json" % [crop_id, stage]
+					var audit: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(audit_path))
+					_expect(report.triangles == int(audit.triangles), "P2 stage matches audited export: " + path)
+					_expect(bool(audit.reimport_verified), "P2 stage roundtrip was verified: " + path)
+				elif crop_id == "greens" and stage == "mature":
 					var tier: String = "greens_mature_low" if low else "greens_mature"
 					_expect(report.triangles == int(greens_audit.meshes[tier].triangles), "Imported P2 geometry matches audited export: " + path)
 					if not low:
@@ -67,16 +72,22 @@ func _run() -> void:
 				_expect(report.mesh_instances <= 2 and report.mesh_instances > 0, "No unexpected mesh fragments: " + path)
 				_expect(absf(report.bounds.position.y) <= 0.008, "Ground root remains at zero: " + path)
 				_expect(report.bounds.size.y > 0.04 and report.bounds.size.y < 0.65, "Metre-scale crop height: " + path)
-				if crop_id == "greens":
-					Wind.new().apply(crop, "greens", stage == "mature")
+				if crop_id == "greens" or Visuals.P2_STAGE_CROPS.has(crop_id):
+					var painted: bool = Visuals.preserves_painted_color(crop_id, stage)
+					Wind.new().apply(crop, Visuals.wind_profile(crop_id), painted)
 					for mesh: MeshInstance3D in crop.find_children("*", "MeshInstance3D", true, false):
-						_expect(mesh.get_instance_shader_parameter("preserve_painted_color") == (1.0 if stage == "mature" else 0.0), "Only mature gongbi greens bypass legacy colour boost")
+						_expect(mesh.get_instance_shader_parameter("preserve_painted_color") == (1.0 if painted else 0.0), "Painted crop stages bypass legacy colour boost")
 						var original: StandardMaterial3D = mesh.mesh.surface_get_material(0)
 						var animated: ShaderMaterial = mesh.get_active_material(0)
 						_expect(animated.get_shader_parameter("color_texture") == original.albedo_texture, "Wind retains source brushwork texture")
+						var motion: Vector4 = mesh.get_instance_shader_parameter("wind_motion")
+						_expect(motion.x <= report.bounds.size.y * .025 + .00001 and motion.y > 0.0, "Wind is stage-scaled and root anchored")
 				crop.free()
 			if pair.size() == 2:
-				_expect(pair[1].triangles < pair[0].triangles, "Low mesh uses fewer triangles: " + crop_id + "/" + stage)
+				if Visuals.scene_path(crop_id, stage, true) != Visuals.scene_path(crop_id, stage, false):
+					_expect(pair[1].triangles < pair[0].triangles, "Distinct low mesh uses fewer triangles: " + crop_id + "/" + stage)
+				else:
+					_expect(pair[1].triangles == pair[0].triangles, "Single-tier crop remains full geometry: " + crop_id + "/" + stage)
 				_expect((pair[1].bounds.size - pair[0].bounds.size).length() < 0.03, "LOD retains silhouette bounds: " + crop_id + "/" + stage)
 				_expect(pair[0].bounds.size.y > prior_height, "Growth increases height: " + crop_id + "/" + stage)
 				prior_height = pair[0].bounds.size.y

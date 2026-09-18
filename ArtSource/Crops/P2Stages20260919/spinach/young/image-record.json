@@ -1,0 +1,13 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "output_original": "%USERPROFILE%/.codex/generated_images/01a0b678-f598-7d00-915f-051f5aa8efc6/exec-54025490-f6dd-4318-8622-10b171705c18.png",
+  "inputs": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png",
+    ".local/crop-research-20260919/spinach-young.jpg"
+  ],
+  "prompt": "Use case: stylized-concept. One complete single SPINACH plant, Spinacia oleracea, INTERMEDIATE young vegetative stage, not a seedling and not fully mature. Exactly 5 or 6 true leaves form a loose open basal rosette with negative spaces, smaller inner leaves and two larger outer oval to slightly triangular leaves. Thin green petioles all join one compact root collar at ground level. The leaves are softly curved and thin, oval pointed tips, fine pale midribs, slight natural ripples, no white fleshy bok choy stalks, no round cabbage head, no flowers. Input 1 and 2 are approved style references only, input 3 is real spinach true-leaf growth for species anatomy. Match gongbi light-colour painted 3D volume: fine selective moss-green and tea-brown structural contours, layered fresh sage/celadon green washes, visible restrained pigment variation, matte surfaces. Preserve stronger meaningful leaf-edge and vein lines for subsequent 3D texture generation, avoid dense photographic microtexture or inflated rubber. Render only one upright plant, front three-quarter weak-perspective view 20 degrees above, all leaves and root collar visible, 75 percent frame occupancy, plain light-neutral gray background, neutral diffuse lighting. No soil mound, roots, pot, base, text, collage, scene, hard shadow, gloss, yellow cast. It will be the middle stage between a 4-leaf seedling and a fuller harvestable rosette.",
+  "model_seed_cost": "not returned",
+  "review": "Developer inspected independent true-leaf stage, readable connections and gongbi brushwork. Candidate for P2 generation; final 3D not yet accepted."
+}

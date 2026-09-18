@@ -1,0 +1,88 @@
+{
+  "crop": "spinach",
+  "stage": "sprout",
+  "task": "aa29825e-bb95-4e69-9011-bd2ae1a03279",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 1911,
+      "polygons": 1948,
+      "quads": 1870,
+      "triangles": 3818,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "min_godot": [
+    -0.03374259173870087,
+    0.0,
+    -0.05620967596769333
+  ],
+  "max_godot": [
+    0.011079656891524792,
+    0.08500000089406967,
+    0.05833607167005539
+  ],
+  "root_transform": [
+    [
+      0.11460170894861221,
+      0.0,
+      0.0,
+      -0.011331467889249325
+    ],
+    [
+      0.0,
+      0.11460170894861221,
+      0.0,
+      -0.0010631994809955359
+    ],
+    [
+      0.0,
+      0.0,
+      0.11460170894861221,
+      0.042500000447034836
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 1911,
+      "polygons": 1948,
+      "quads": 1870,
+      "triangles": 3818,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.009,
+    0.009
+  ],
+  "triangles": 3818,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/spinach/spinach_sprout.glb"
+}

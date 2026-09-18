@@ -1,0 +1,14 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "output_original": "%USERPROFILE%/.codex/generated_images/01a0b678-f598-7d00-915f-051f5aa8efc6/exec-c8d5b885-b5d8-486e-8757-759b57ba4ce9.png",
+  "inputs": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png",
+    ".local/crop-research-20260919/spinach-mature.jpg",
+    "ArtSource/Crops/P2Stages20260919/spinach/young/reference.png"
+  ],
+  "prompt": "Use case: stylized-concept. ONE complete rooted SPINACH plant (Spinacia oleracea), mature harvestable leafy vegetative stage before bolting, full basal rosette with 9 distinct leaves opening radially in three dimensions. Lower outer leaves spread outward near ground, middle leaves tilt outward, small central leaves upright. Smooth to slightly crinkled oval-arrow shaped true leaves with subtly pointed tips and shallow basal lobes, THIN green petioles and one small root collar. No tall central trunk, no thick white stalks, not bok choy, not chard, not tied harvested bunch, no bulb. Input 1 and 2 are approved gongbi Jiangnan style references only. Input 3 shows real mature spinach morphology, input 4 is our younger spinach stage to maintain colour and species continuity but increase radial spread, leaf count and fullness. Strong selective fine moss-green/tea-brown leaf-edge and midrib brush lines, layered pale sage and cool spinach-green washes, visible soft pigment mottling, matte dimensional volumes. Leaves thin gently folded with clear separation and readable petiole connections, never inflated rubber or shiny plastic. Three-quarter view from 25 degrees above to show radial rosette, complete silhouette including base, centered 75 percent square frame with clean margin. Plain neutral gray background and neutral diffuse light. No scene, soil clod, trailing roots, pot, pedestal, text, seals, collage, shadows or yellow paper.",
+  "model_seed_cost": "not returned",
+  "review": "Developer inspected independent true-leaf stage, readable connections and gongbi brushwork. Candidate for P2 generation; final 3D not yet accepted."
+}

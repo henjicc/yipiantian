@@ -16,18 +16,33 @@ varying vec3 soil_point;
 varying vec2 bed_point;
 varying vec2 patch_point;
 
+// GPU counterpart of TilledSoil.height_at: relocated crumbs follow the same bed.
+float bed_height(vec2 p) {
+	vec2 edge = field_half_extent-abs(p);
+	float fade = smoothstep(0.0,.13,min(edge.x,edge.y));
+	float furrow = sin((p.y+field_half_extent.y)*TAU/(cell_half_span.y*2.0)+sin(p.x*5.0)*.16);
+	float lumps = sin(p.x*17.0+p.y*8.0)*sin(p.y*21.0-p.x*6.0);
+	return fade*(.010*furrow+.008*lumps+.004*sin(p.x*37.0+p.y*29.0));
+}
+
 // Pressed root pocket with broken, low shoulders. Support ends inside each cell.
 float mound(vec2 p) {
 	float r = length(p/root_radius);
 	float irregular = .65+.6*terrain_noise(p*39.0+cell_center*21.0);
 	float shoulder = exp(-pow((r-.95)*1.35,2.0))*.038*irregular;
 	float fade = 1.0-smoothstep(1.5,2.1,r);
-	return planted*root_size*fade*(shoulder-.004*exp(-r*r*3.0));
+	float height_scale = min(1.0,min(root_radius.x/.075,root_radius.y/.060));
+	return planted*root_size*height_scale*fade*(shoulder-.004*exp(-r*r*3.0));
 }
 void vertex() {
 	// Red vertices are planted contact crumbs; hidden below the bed when empty.
 	if (!bank && COLOR.r > .5) {
-		VERTEX.xz *= root_radius/vec2(.075,.060);
+		vec2 scale_xz = root_radius/vec2(.075,.060);
+		float scale_y = min(1.0,min(scale_xz.x,scale_xz.y));
+		float above_bed = VERTEX.y-bed_height(VERTEX.xz+cell_center);
+		VERTEX.xz *= scale_xz;
+		VERTEX.y = bed_height(VERTEX.xz+cell_center)+above_bed*scale_y;
+		NORMAL = normalize(NORMAL/vec3(scale_xz.x,scale_y,scale_xz.y));
 		VERTEX.y -= (1.0-planted)*.10;
 	}
 	patch_point = VERTEX.xz;

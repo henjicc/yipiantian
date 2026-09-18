@@ -1,0 +1,18 @@
+{
+  "species": "Spinacia oleracea",
+  "stages": {
+    "sprout": {"task_id": "aa29825e-bb95-4e69-9011-bd2ae1a03279", "height": 0.085, "max_width": 0.15, "face_request": 1800, "seed": 2026091901, "rotation_degrees": [0, 0, 0], "credits": 120},
+    "young": {"task_id": "22045328-0178-4aaa-9dee-9ad17d998e8f", "height": 0.19, "max_width": 0.28, "face_request": 3500, "seed": 2026091902, "rotation_degrees": [0, 0, 0], "credits": 120},
+    "mature": {"task_id": "47552d30-e6d4-43d2-b003-3bffd5500b6d", "height": 0.31, "max_width": 0.44, "face_request": 6500, "seed": 2026091903, "rotation_degrees": [0, 0, 0], "credits": 120}
+  },
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "quad": true,
+  "delight": false,
+  "pbr": false,
+  "texture_alignment": "original_image",
+  "enable_image_autofix": false,
+  "not_used": ["semantic segmentation", "rigging", "paid retopology", "paid retexturing", "decimation"],
+  "adoption": "All three independent stages installed; source/export audit, four views, farm day/night, soil contact and wind on/off verified. User aesthetic signoff pending."
+}

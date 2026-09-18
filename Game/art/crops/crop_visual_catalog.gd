@@ -15,6 +15,15 @@ const ROOT_RADII := {
 	"garlic": Vector2(0.04260, 0.03028),
 }
 const STAGES: Array[String] = ["sprout", "young", "mature"]
+const P2_STAGE_CROPS: Array[String] = ["spinach"]
+
+
+static func preserves_painted_color(crop_id: String, stage: String) -> bool:
+	return P2_STAGE_CROPS.has(crop_id) or (crop_id == "greens" and stage == "mature")
+
+
+static func wind_profile(crop_id: String) -> String:
+	return crop_id if crop_id in ["greens", "radish", "spinach"] else "autumn_crop"
 
 
 static func scene_path(crop_id: String, stage: String, low_detail: bool = false) -> String:
@@ -50,6 +59,8 @@ static func planting_depth(crop_id: String, stage: String) -> float:
 
 
 static func soil_radius(crop_id: String, stage: String) -> Vector2:
+	if crop_id == "spinach":
+		return {"sprout": Vector2(.009,.009), "young": Vector2(.0114,.0106), "mature": Vector2(.0263,.0219)}.get(stage, Vector2(.0263,.0219))
 	if ROOT_RADII.has(crop_id):
 		return Vector2(.015,.015) if stage == "sprout" else ROOT_RADII[crop_id] * (.54 if stage == "young" else 1.0)
 	# Audited at the soil contact slice of each imported stage, not canopy bounds.
