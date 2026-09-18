@@ -1,7 +1,7 @@
 {
   "blender": "5.2.2 LTS",
   "original_triangles": 12552,
-  "upright_rotation_y_degrees": 21.0,
+  "upright_rotation_y_degrees": -20.0,
   "restored_uniform_scale": 0.4800000199344487,
   "max_uv_distance": 0.0,
   "candidate_triangles": 12552,

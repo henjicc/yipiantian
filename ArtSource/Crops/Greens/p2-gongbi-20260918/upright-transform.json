@@ -1,10 +1,10 @@
 {
   "blender_matrix": [
     [
-      0.9335803985595703,
+      0.9396926164627075,
       0.0,
-      0.35836800932884216,
-      0.026392318308353424
+      -0.34202006459236145,
+      0.026565110310912132
     ],
     [
       0.0,
@@ -13,10 +13,10 @@
       0.004730000160634518
     ],
     [
-      -0.35836800932884216,
+      0.34202006459236145,
       0.0,
-      0.9335803985595703,
-      0.004002840258181095
+      0.9396926164627075,
+      0.007281599100679159
     ],
     [
       0.0,
@@ -25,6 +25,6 @@
       1.0
     ]
   ],
-  "rotation_y_degrees": 21.0,
-  "reason": "Align dominant leaf axis; restore root to ground, preserve natural leaf spread"
+  "rotation_y_degrees": -20.0,
+  "reason": "Align stalk bundle root-to-heart; preserve asymmetrical outer leaves"
 }

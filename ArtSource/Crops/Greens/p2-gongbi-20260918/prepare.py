@@ -55,16 +55,16 @@ factor = WIDTH / max((hi - lo).x, (hi - lo).y)
 pivot = Vector(((lo.x + hi.x)/2, (lo.y + hi.y)/2, lo.z))
 for v in high.data.vertices:
     v.co = (v.co - pivot) * factor
-# Authoring correction: dominant upright leaf axis leaned left by about 21 degrees.
+# Authoring correction: align the stalk bundle from root to heart, not the tallest leaf.
 # Bake the rigid correction into every reusable tier, never into gameplay placement.
-rotation = Matrix.Rotation(radians(21.0), 4, 'Y')
+rotation = Matrix.Rotation(radians(-20.0), 4, 'Y')
 root = Vector((-.02827, -.00473, 0.0))
 transform = rotation @ Matrix.Translation(-root)
 corrected = [transform @ v.co for v in high.data.vertices]
 transform = Matrix.Translation(Vector((0,0,-min(p.z for p in corrected)))) @ transform
 high.data.transform(transform)
-(FOLDER / 'upright-transform.json').write_text(json.dumps({'blender_matrix':[list(row) for row in transform], 'rotation_y_degrees':21.0, 'reason':'Align dominant leaf axis; restore root to ground, preserve natural leaf spread'},indent=2),encoding='utf-8')
-report['upright_rotation_y_degrees'] = 21.0
+(FOLDER / 'upright-transform.json').write_text(json.dumps({'blender_matrix':[list(row) for row in transform], 'rotation_y_degrees':-20.0, 'reason':'Align stalk bundle root-to-heart; preserve asymmetrical outer leaves'},indent=2),encoding='utf-8')
+report['upright_rotation_y_degrees'] = -20.0
 high.name = 'greens_mature'
 for face in high.data.polygons:
     face.use_smooth = True
