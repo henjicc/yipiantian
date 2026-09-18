@@ -18,7 +18,7 @@ func _ready() -> void:
 	for item: Array in [
 		["harvest",Vector3(-2.25,.28,.28),0.0,0.0],
 		["weed",Vector3(-1.55,.28,.22),90.0,-45.0],
-		["water",Vector3(.65,.28,.24),-90.0,0.0],
+		["water",Vector3(.65,.28,.24),0.0,0.0],
 		["till",Vector3(1.38,.28,.34),0.0,-26.0]]:
 		var resource_path: String = "res://art/characters/farmer/hoe.glb" if item[0] == "till" else "res://art/tools/%s.glb" % item[0]
 		var prop: Node3D = load(resource_path).instantiate()

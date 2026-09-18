@@ -1,0 +1,34 @@
+{
+  "blender": "5.2.2 LTS",
+  "height_m": 0.62,
+  "scale": 0.6203028822667318,
+  "source_pivot": [
+    0.0,
+    0.0,
+    -0.499755859375
+  ],
+  "triangles": 6649,
+  "polygons": 3569,
+  "quads": 3080,
+  "dimensions_xyz": [
+    [
+      0.45644354820251465,
+      0.4522032141685486,
+      0.6199999451637268
+    ]
+  ],
+  "materials": [
+    "tripo_mat_1447617e"
+  ],
+  "textures": [
+    {
+      "name": "tripo_image_1447617e_0",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "processing": "Uniform scale, bottom-center pivot, matte material. No decimation, repainting, segmentation or animation.",
+  "reimport_verified": true
+}
