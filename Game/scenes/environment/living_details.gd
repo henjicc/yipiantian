@@ -157,7 +157,8 @@ func _build_porch_group() -> void:
 		_beam(group,Vector3(x,.25,-.2),Vector3(x,.25,.2),.023,_wood)
 	_beam(group,Vector3(-.33,.25,0),Vector3(.33,.25,0),.025,_wood)
 	_tray(group,Vector3(.03,.67,0),.27,true)
-	_basket(group,Vector3(-.66,0,.21),.16,.32,true)
+	# Leave the front-left railing contact clear for the usable hoe blade.
+	_basket(group,Vector3(-.50,0,-.02),.13,.30,true)
 	_basket(group,Vector3(.66,0,.21),.13,.25,false)
 
 func _build_drying_rack() -> void:

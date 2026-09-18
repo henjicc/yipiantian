@@ -1,4 +1,5 @@
 extends RefCounted
+const Gait = preload("res://scenes/environment/bird_gait.gd")
 ## Tripo rest rig retained. Local procedural poses replace the old unrelated idle loop.
 var skeleton: Skeleton3D
 var species: String
@@ -84,6 +85,13 @@ func update(delta: float, distance: float, speed: float, behavior: String, time:
 		var shoulder := Vector3(.095 * size, .23 * size + .008 * sin(time * 4.5), -.01 * sign_forward)
 		_neck_reach(skeleton.to_local(root.to_global(beak_rest.lerp(shoulder, action_mix))), false)
 	else:
+		if behavior in ["walk","swim"] and species in ["hen","duck"]:
+			var stroke: float = Gait.cycle(species,time)
+			var reach: Vector3 = beak_rest
+			# Small physical neck extension, not a rigid whole-model rocking motion.
+			reach.z += sin(stroke-.45) * (.028 if species=="hen" else .022) * motion
+			reach.y += cos(stroke) * (.009 if species=="hen" else .012) * motion
+			_neck_reach(skeleton.to_local(root.to_global(reach)),true)
 		if action == "observe": turn = sin(time * 1.6) * .55
 		_rotate(head, Vector3.UP, turn * action_mix)
 	for i: int in legs.size():
@@ -101,7 +109,8 @@ func update(delta: float, distance: float, speed: float, behavior: String, time:
 			target.y = ground.call(Vector2(target.x, target.z)) + standing.y * root.scale.y + lift * motion
 			_solve_leg(leg, skeleton.to_local(target))
 		else:
-			_rotate(leg.knee, Vector3.RIGHT, sin(phase * TAU + i * PI) * .42 * motion * sign_forward)
+			var paddle: float = Gait.cycle(species,time) if species=="duck" else phase*TAU
+			_rotate(leg.knee, Vector3.RIGHT, sin(paddle + i * PI) * .42 * motion * sign_forward)
 
 func beak_world_position() -> Vector3:
 	return skeleton.to_global(_beak_position())

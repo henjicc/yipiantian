@@ -1,4 +1,5 @@
 extends Node3D
+const Gait = preload("res://scenes/environment/bird_gait.gd")
 ## Goal selection, safe routes, local yielding and distance-driven skeletal movement.
 const Assets = preload("res://scenes/environment/courtyard_assets.gd")
 const Space = preload("res://scenes/environment/animal_space.gd")
@@ -239,7 +240,7 @@ func _advance(entry: Dictionary, delta: float) -> void:
 		else:
 			var offset: Vector2 = route[entry.waypoint] - p
 			var arrival: float = clampf(offset.length() / .32, .16, 1.0) if entry.waypoint == route.size() - 1 else 1.0
-			desired = offset.normalized() * entry.speed * arrival
+			desired = offset.normalized() * entry.speed * arrival * Gait.pace(entry.kind, _time + entry.phase)
 			route_velocity = desired
 	else:
 		entry.timer -= delta
@@ -252,7 +253,7 @@ func _advance(entry: Dictionary, delta: float) -> void:
 			var urgency: float = 1.0 - smoothstep(safe, safe + .5, away.length())
 			desired += away.normalized() * urgency * entry.speed
 			if moving and urgency > .1: desired += Vector2(-away.y, away.x).normalized() * .09
-	var velocity: Vector2 = (entry.velocity as Vector2).move_toward(desired.limit_length(entry.speed), delta * .65)
+	var velocity: Vector2 = (entry.velocity as Vector2).move_toward(desired.limit_length(entry.speed), delta * (2.3 if entry.kind=="hen" else .65))
 	if velocity.length() > .015:
 		var target_heading: float = atan2(velocity.x, velocity.y)
 		entry.heading = rotate_toward(entry.heading, target_heading, delta * PROFILES[entry.kind].turn)

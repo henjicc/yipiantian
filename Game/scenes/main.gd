@@ -4,6 +4,9 @@ signal farm_changed(result: Dictionary)
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const ToolCursor = preload("res://ui/tool_cursor.gd")
+const FieldMenu = preload("res://ui/field_menu.gd")
+var field_menu: FieldMenu
+var _menu_target: Dictionary = {}
 const FarmState = preload("res://farm/farm_state.gd")
 const FarmStore = preload("res://farm/farm_store.gd")
 const DecorationState = preload("res://farm/decoration_state.gd")
@@ -124,6 +127,10 @@ func _ready() -> void:
 	hud = HUD.new()
 	hud.name = "HUD"
 	add_child(hud)
+	field_menu = FieldMenu.new()
+	field_menu.name = "FieldMenu"
+	add_child(field_menu)
+	field_menu.action_requested.connect(_field_menu_action)
 	hud.tool_press_started.connect(_start_tool_press)
 	hud.tool_requested.connect(_finish_tool_press)
 	hud.crop_requested.connect(_select_crop)
@@ -513,6 +520,8 @@ func _open_basket() -> void:
 func _scene_entry_at(point: Vector2) -> String:
 	var hit: MeshInstance3D=decoration_layout.environment_surface_at(point)
 	if hit==null: return ""
+	var tool: String = $Environment/DoorTools.tool_for_mesh(hit)
+	if not tool.is_empty(): return "tool_" + tool
 	for item: String in ["drying_rack","tea_table","pot"]:
 		var placed: Node=decoration_layout._instances.get(item)
 		if placed!=null and (placed==hit or placed.is_ancestor_of(hit)):
@@ -528,6 +537,15 @@ func _scene_entry_at(point: Vector2) -> String:
 
 func _open_scene_entry(id: String) -> void:
 	if not _tools_available(): return
+	if id.begins_with("tool_"):
+		_cancel_input()
+		var tool: String = id.trim_prefix("tool_")
+		if tool=="sow":
+			_cancel_tool()
+			_menu_target = {}
+			field_menu.present_seeds(_pointer_position)
+		else: _select_tool(tool)
+		return
 	if id in ["willow","bamboo","ferry"]:
 		harvest_book.tab="neighbors"
 		harvest_book.neighbor=id
@@ -703,6 +721,12 @@ func _refresh_lanterns() -> void:
 
 func _input(event: InputEvent) -> void:
 	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
+	if field_menu != null and field_menu.active:
+		if (event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index!=MOUSE_BUTTON_LEFT):
+			field_menu.dismiss()
+			_cancel_input()
+			get_viewport().set_input_as_handled()
+		return
 	if garden_album!=null and garden_album.active:
 		garden_album.cancel_key(event)
 		return
@@ -785,6 +809,7 @@ func _input(event: InputEvent) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
+	if field_menu != null and field_menu.active: return
 	if garden_album!=null and garden_album.active: return
 	if _animal_active(): return
 	if _basket_active(): return
@@ -831,6 +856,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(_delta: float) -> void:
 	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
+	if field_menu != null and field_menu.active:
+		$Environment/DoorTools.set_hover("")
+		if not _tools_available(): field_menu.dismiss()
+		_cancel_input()
+		return
 	if garden_album!=null and garden_album.active:
 		_cancel_input()
 		return
@@ -847,9 +877,10 @@ func _physics_process(_delta: float) -> void:
 	var picks: Array[Dictionary] = _picks
 	_picks = []
 	for pick: Dictionary in picks:
-		if selected_tool.is_empty():
-			var animal: String=_animal_at(pick.position)
+		if selected_tool.is_empty() or $Environment/DoorTools.may_hit(camera,pick.position):
+			var animal: String=_animal_at(pick.position) if selected_tool.is_empty() else ""
 			var entry: String=_scene_entry_at(pick.position) if animal.is_empty() else ""
+			if not selected_tool.is_empty() and not entry.begins_with("tool_"): entry=""
 			if pick.down:
 				_pressed_animal=animal
 				_pressed_entry=entry
@@ -877,6 +908,8 @@ func _physics_process(_delta: float) -> void:
 						selected_field = index
 						selected_cell = cell_id
 						_apply_tool()
+					elif not cell_id.is_empty():
+						_present_field_menu(index,cell_id,pick.position)
 					elif index != selected_field or not camera.focused:
 						_focus_field(index)
 					else:
@@ -892,6 +925,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
 		_request_exit()
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_WM_MOUSE_EXIT:
+		if field_menu != null: field_menu.dismiss()
 		if garden_album!=null and garden_album.active: camera.cancel_free_gesture()
 		if what==NOTIFICATION_WM_WINDOW_FOCUS_OUT and animal_panel!=null: animal_panel.dismiss()
 		_pointer_position = Vector2(-100, -100)
@@ -1027,6 +1061,12 @@ func _update_hover() -> void:
 		return
 	var ui: Control = get_viewport().gui_get_hovered_control()
 	var blocked: bool = not _tools_available() or _dragging or (ui != null and ui.mouse_filter != Control.MOUSE_FILTER_IGNORE) or not get_viewport().get_visible_rect().has_point(_pointer_position)
+	var door_tools: Node3D = $Environment/DoorTools
+	var tool_hit: String = ""
+	# Test the three tiny bounds first; only perform scene occlusion when nearby.
+	if not blocked and door_tools.may_hit(camera,_pointer_position):
+		tool_hit = _scene_entry_at(_pointer_position).trim_prefix("tool_")
+	door_tools.set_hover(tool_hit)
 	var hit: Dictionary = {} if blocked else _farm_hit(_pointer_position)
 	var index: int = hit.get("field", -1)
 	var cell_id: String = hit.get("cell", "")
@@ -1036,6 +1076,33 @@ func _update_hover() -> void:
 		farm.select_cell(index, cell_id)
 		_refresh_hud()
 	tool_cursor.show_tool("" if blocked else selected_tool, selected_crop)
+
+
+func _present_field_menu(index: int, cell_id: String, point: Vector2) -> void:
+	if not _tools_available(): return
+	_cancel_input()
+	selected_field = index
+	selected_cell = cell_id
+	_menu_target = {"field":index,"cell":cell_id}
+	farm.select_cell(index,cell_id)
+	field_menu.present(point,farm_state.get_cell(farm.field_id(index),cell_id))
+	_refresh_hud()
+
+
+func _field_menu_action(tool: String, crop: String) -> void:
+	var target: Dictionary = _menu_target
+	_menu_target = {}
+	if not _tools_available(): return
+	if not crop.is_empty(): selected_crop = crop
+	if target.is_empty():
+		_select_crop(crop)
+		return
+	selected_field = target.field
+	selected_cell = target.cell
+	selected_tool = tool
+	_apply_tool()
+	# A soil-menu action is one-shot; a prop equips a tool for repeated use.
+	_cancel_tool()
 
 
 func _apply_tool() -> void:
