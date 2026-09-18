@@ -6,6 +6,7 @@ signal rotate_requested
 signal confirm_requested
 signal cancel_requested
 signal finish_requested
+signal courtyard_requested
 
 const Catalog = preload("res://farm/decoration_catalog.gd")
 const FarmTheme = preload("res://ui/farm_theme.gd")
@@ -51,6 +52,9 @@ func _ready() -> void:
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 10)
 	box.add_child(actions)
+	var courtyard := _button(actions, "整理田地", 132)
+	courtyard.name = "Courtyard"
+	courtyard.pressed.connect(func() -> void: courtyard_requested.emit())
 	_rotate = _button(actions, "旋转", 132)
 	_rotate.name = "Rotate"
 	_rotate.pressed.connect(func() -> void: rotate_requested.emit())

@@ -261,6 +261,13 @@ func _clear_preview() -> void:
 func cancel_pointer_gesture() -> void:
 	_cancel_press()
 
+func ground_footprints() -> Dictionary:
+	var result: Dictionary = {}
+	for key: String in _instances:
+		var polygon: PackedVector2Array = preload("res://scenes/environment/animal_space.gd").footprint(_instances[key],.05,.75)
+		if polygon.size()>=3: result["decoration_"+key]=polygon
+	return result
+
 
 func _cancel_press() -> void:
 	_press_slot = ""

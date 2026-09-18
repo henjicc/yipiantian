@@ -17,7 +17,13 @@ const SettingsStore = preload("res://settings/settings_store.gd")
 const GameMenu = preload("res://ui/game_menu.gd")
 const CameraTuning = preload("res://ui/camera_tuning.gd")
 const CourtyardPlan = preload("res://layout/courtyard_plan.gd")
+const CourtyardEditSession = preload("res://layout/courtyard_edit_session.gd")
 var courtyard_plan := CourtyardPlan.new()
+var courtyard_edit: CourtyardEditSession
+# One-step undo is session history, carried across a spatial scene rebuild.
+# It reverses layout only, never harvests, elapsed growth or subsequent planting.
+var previous_layout: Dictionary = {}
+var _presentation_resume: Dictionary = {}
 
 @onready var farm: FarmLayout = $Farm
 @onready var camera: FarmCamera = $Camera3D
@@ -169,6 +175,16 @@ func _ready() -> void:
 	add_child(focus_detail)
 	focus_detail.configure(camera, farm.fields, courtyard, decoration_layout)
 	_setup_settings()
+	courtyard_edit=CourtyardEditSession.new()
+	courtyard_edit.name="CourtyardEditor"
+	add_child(courtyard_edit)
+	courtyard_edit.apply_requested.connect(_apply_courtyard)
+	courtyard_edit.closed.connect(_refresh_hud)
+	decoration_layout.hud.courtyard_requested.connect(_begin_courtyard_edit)
+	if not _presentation_resume.is_empty():
+		focus_detail.set_depth_of_field(_presentation_resume.dof_enabled,_presentation_resume.dof_strength)
+		focus_detail.set_fog_strength(_presentation_resume.fog_strength)
+		atmosphere.set_preview_hour(_presentation_resume.hour)
 	if OS.has_feature("editor") and OS.get_cmdline_user_args().has("--dev-preview"):
 		_report_preview_ready.call_deferred()
 	var timer := Timer.new()
@@ -181,7 +197,7 @@ func _ready() -> void:
 	save_timer.name = "SaveTimer"
 	save_timer.wait_time = 30.0
 	save_timer.timeout.connect(func() -> void:
-		if _loaded and not _save_failed:
+		if _loaded and not _save_failed and not _layout_active():
 			_save_farm())
 	add_child(save_timer)
 	save_timer.start()
@@ -228,9 +244,14 @@ func _reload_saved_scene() -> void:
 	if is_instance_valid(farm_audio): farm_audio.shutdown()
 	await get_tree().create_timer(.1,true,false,true).timeout
 	var replacement: Node3D = load("res://scenes/main.tscn").instantiate()
+	replacement.name=name
 	replacement.store = store
 	replacement.settings_store = settings_store
 	replacement.clock = clock
+	replacement.previous_layout=previous_layout.duplicate(true)
+	if focus_detail!=null:
+		replacement._presentation_resume=focus_detail.get_settings()
+		replacement._presentation_resume.hour=atmosphere.get_preview_hour()
 	var tree: SceneTree = get_tree()
 	var parent: Node = get_parent()
 	var was_current: bool = tree.current_scene == self
@@ -335,10 +356,44 @@ func _refresh_hud() -> void:
 	var cell: Dictionary = {} if hover_field < 0 or hover_cell.is_empty() else farm_state.get_cell(farm.field_id(hover_field), hover_cell)
 	hud.show_state(cell, farm_state.snapshot().harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed or camera.free_view or (camera_tuning != null and camera_tuning.visible), selected_field, selected_palette)
 	hud.show_decoration_mode(decoration_layout != null and decoration_layout.active)
+	if _layout_active(): hud.show_decoration_mode(true)
+
+func _layout_active() -> bool:
+	return courtyard_edit!=null and courtyard_edit.editor.active
+
+func _begin_courtyard_edit() -> void:
+	if not _loaded or _save_failed or _layout_active(): return
+	_return_overview()
+	hud.hide_time_preview()
+	camera.cancel_zoom()
+	courtyard_edit.begin($Environment,farm_state,decoration_layout.ground_footprints(),previous_layout)
+	_refresh_hud()
+
+func _apply_courtyard(snapshot: Dictionary, undo: bool) -> void:
+	if not _layout_active() or courtyard_edit.editor.busy: return
+	var candidate:=FarmState.new()
+	candidate.restore_snapshot(farm_state.snapshot())
+	var result: Dictionary=candidate.apply_layout(snapshot,clock.call())
+	if not result.ok:
+		courtyard_edit.editor.set_busy(false,"将移除的田格里还有作物，请先收获，或保留这些田格。")
+		return
+	courtyard_edit.editor.set_busy(true,"正在整理小院…")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if _exiting: return
+	# Commit to disk before replacing either the authoritative state or its scene.
+	# A failed write leaves the old island/crops intact and the draft retryable.
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok:
+		courtyard_edit.editor.set_busy(false,"未能保存，本次整理还没有生效。可以重试，或取消保留原来的小院。")
+		return
+	previous_layout={} if undo else farm_state.snapshot().layout
+	farm_state=candidate
+	_reload_saved_scene()
 
 
 func _begin_decoration() -> void:
-	if not _loaded or _save_failed or decoration_layout == null:
+	if not _loaded or _save_failed or decoration_layout == null or _layout_active():
 		return
 	if decoration_layout.active:
 		decoration_layout.finish_mode()
@@ -371,6 +426,11 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouse:
 		_pointer_position = event.position
 	if not _loaded or _save_failed:
+		return
+	if _layout_active():
+		if (event is InputEventKey and event.pressed and not event.echo and event.keycode==KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_RIGHT):
+			courtyard_edit.editor.cancel()
+			get_viewport().set_input_as_handled()
 		return
 	if camera_tuning != null and camera_tuning.visible:
 		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
@@ -431,6 +491,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _layout_active(): return
 	if camera_tuning != null and camera_tuning.visible:
 		return
 	if not _loaded or _save_failed or (game_menu != null and game_menu.visible):
@@ -473,7 +534,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(_delta: float) -> void:
 	_update_hover()
-	if camera.free_view or (game_menu != null and game_menu.visible):
+	if _layout_active() or camera.free_view or (game_menu != null and game_menu.visible):
 		_cancel_input()
 		return
 	# Space queries belong to the physics boundary. Each gesture carries its admission
@@ -512,6 +573,7 @@ func _notification(what: int) -> void:
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_WM_MOUSE_EXIT:
 		_pointer_position = Vector2(-100, -100)
 		_cancel_input()
+		if _layout_active(): courtyard_edit.editor.chart.cancel_drag()
 		if is_instance_valid(camera):
 			camera.cancel_free_gesture()
 			camera.cancel_zoom()
@@ -578,7 +640,7 @@ func _select_cell(cell_id: String) -> void:
 
 
 func _tools_available() -> bool:
-	return _loaded and not _save_failed and not _exiting and not (camera_tuning != null and camera_tuning.visible) and not camera.free_view and not camera.is_transitioning() and not (game_menu != null and game_menu.visible) and not (decoration_layout != null and decoration_layout.active)
+	return _loaded and not _save_failed and not _exiting and not _layout_active() and not (camera_tuning != null and camera_tuning.visible) and not camera.free_view and not camera.is_transitioning() and not (game_menu != null and game_menu.visible) and not (decoration_layout != null and decoration_layout.active)
 
 
 func _start_tool_press(tool: String) -> void:

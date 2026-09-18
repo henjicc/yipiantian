@@ -42,6 +42,9 @@ var _night_weight: float = -1.0
 var _window_warmth: float = 0.0
 var _ripple_age: float = 10.0
 
+func get_preview_hour() -> float:
+	return _preview_hour
+
 
 func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInstance3D = null) -> void:
 	_sun = sun

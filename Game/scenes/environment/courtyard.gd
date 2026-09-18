@@ -38,11 +38,19 @@ var _contact_sources: Array[Node3D] = []
 var _shore_sources: Array[Node3D] = []
 var circulation := Circulation.new()
 var layout_obstacles: Dictionary = {}
+var layout_probe: bool = false
 
 func _ready() -> void:
 	_rng.seed = 32026
 	_build_ground()
 	_build_architecture()
+	if layout_probe:
+		# Synchronous admission probe: use the same builders and actual mesh feet,
+		# then free before drawing. No distant scenery, animals or contact bakes.
+		_build_plants()
+		_living=LivingDetails.new();_living.name="LivingDetails";_living.plan=plan;add_child(_living)
+		layout_obstacles=_circulation_obstacles()
+		return
 	var neighbors := NeighborIslets.new()
 	neighbors.name = "NeighborIslets"
 	add_child(neighbors)
