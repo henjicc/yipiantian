@@ -64,7 +64,7 @@ func _ready() -> void:
 	layout_obstacles = _circulation_obstacles()
 	circulation.build(plan,layout_obstacles)
 	_build_paths()
-	var fence: Node3D = FenceGeometry.build(plan.fences)
+	var fence: Node3D = FenceGeometry.build(plan.fences,plan.fence_style)
 	add_child(fence)
 	_contact_sources.append(fence)
 	var cover := GroundCover.new()

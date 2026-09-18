@@ -5,6 +5,8 @@ signal apply_requested(snapshot: Dictionary, undo: bool)
 signal closed
 const Plan = preload("res://layout/courtyard_plan.gd")
 const Map = preload("res://ui/courtyard_map.gd")
+const Presets = preload("res://layout/courtyard_presets.gd")
+const FencePreview = preload("res://ui/fence_preview.gd")
 const ThemeFactory = preload("res://ui/farm_theme.gd")
 var draft: RefCounted
 var revision: int = 0
@@ -19,6 +21,9 @@ var _occupied: Dictionary = {}
 var _root: Control
 var _selector: OptionButton
 var _spacing: OptionButton
+var _preset: OptionButton
+var _fence: OptionButton
+var _fence_preview: FencePreview
 var _values: Dictionary = {}
 var _message: Label
 var _confirm: Button
@@ -72,6 +77,19 @@ func _ready() -> void:
 	var controls:=VBoxContainer.new()
 	controls.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	scroll.add_child(controls)
+	_preset=OptionButton.new()
+	_preset.name="Arrangement"
+	_preset.add_item("选择布局")
+	for label: String in Presets.NAMES: _preset.add_item(label)
+	_preset.item_selected.connect(_arrange)
+	controls.add_child(_preset)
+	_fence=OptionButton.new()
+	_fence.name="FenceStyle"
+	for label: String in ["双横竹栏","交叉竹栏","细竹篱"]: _fence.add_item(label)
+	_fence.item_selected.connect(_change_fence)
+	controls.add_child(_fence)
+	_fence_preview=FencePreview.new()
+	controls.add_child(_fence_preview)
 	_selector=OptionButton.new()
 	_selector.item_selected.connect(_select)
 	controls.add_child(_selector)
@@ -177,6 +195,19 @@ func _move_field(index: int, point: Vector2) -> void:
 	draft.fields[index].position=Vector3(clampf(point.x,-14,6),.2,clampf(point.y,-8,13))
 	_changed()
 
+func _arrange(index: int) -> void:
+	if busy or index==0: return
+	_undo_draft=false
+	draft=Presets.arrange(draft,Presets.IDS[index-1])
+	_preset.select(0)
+	_changed()
+
+func _change_fence(index: int) -> void:
+	if busy or _syncing: return
+	_undo_draft=false
+	draft.fence_style=Plan.FENCE_STYLES[index]
+	_changed()
+
 func _change(key: String, value: float) -> void:
 	if busy or _syncing or not active: return
 	_undo_draft=false
@@ -192,9 +223,11 @@ func _change(key: String, value: float) -> void:
 			draft.fields[selected]=Plan.resized_field(field,columns,rows,span*Vector2(columns,rows)+Vector2(.2,.29))
 		"west","south":
 			var fields: Array[Dictionary]=draft.fields
+			var fence_style: String=draft.fence_style
 			draft=Plan.new()
 			draft.expand_shore(_values.west.value,_values.south.value)
 			draft.fields=fields
+			draft.fence_style=fence_style
 	_changed()
 
 func _rotate(amount: float) -> void:
@@ -245,6 +278,8 @@ func _sync() -> void:
 	_selector.clear()
 	for i: int in draft.fields.size(): _selector.add_item("第 %d 块田"%(i+1))
 	_selector.select(selected)
+	_fence.select(Plan.FENCE_STYLES.find(draft.fence_style))
+	_fence_preview.show_style(draft.fence_style)
 	var field: Dictionary=draft.fields[selected]
 	var span: Vector2=Plan.cell_span(field)
 	_spacing.select(0 if span.x<.7 else (1 if span.x<.9 else 2))

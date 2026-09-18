@@ -1,6 +1,9 @@
 extends SceneTree
 const Plan=preload("res://layout/courtyard_plan.gd")
 const Store=preload("res://farm/farm_store.gd")
+const Presets=preload("res://layout/courtyard_presets.gd")
+const Fence=preload("res://layout/fence_geometry.gd")
+const Circulation=preload("res://layout/courtyard_circulation.gd")
 var scene: Node3D
 var now: float=200000
 var failures: Array[String]=[]
@@ -63,6 +66,41 @@ func _run() -> void:
 	expect(editor.chart.invalid.is_empty(),"Default layout is admitted")
 	expect(editor._confirm.disabled,"Unchanged layout is not a new action")
 	await shot("editor-original.png")
+	if "--presets" in OS.get_cmdline_user_args():
+		for i: int in Presets.IDS.size():
+			editor._preset.item_selected.emit(i+1)
+			await checked()
+			print("PRESET ",Presets.IDS[i]," issues=",editor.chart.invalid)
+			expect(editor.chart.invalid.is_empty(),"Named arrangement has supported fields and reachable entrances: "+Presets.IDS[i])
+			var routes:=Circulation.new()
+			routes.build(editor.draft,scene.courtyard_edit._blocks)
+			for path: PackedVector3Array in editor.draft.paths:
+				for j: int in range(path.size()-1):
+					expect(routes.road.clear_segment(Vector2(path[j].x,path[j].z),Vector2(path[j+1].x,path[j+1].z)),"Preset roads never cross an obstacle")
+			expect(scene.farm_state.snapshot()==original,"Choosing an arrangement is preview-only")
+			editor._fence.item_selected.emit(i)
+			await checked()
+			expect(editor.draft.fence_style==Plan.FENCE_STYLES[i],"Fence picker updates draft")
+			await shot("preset-"+Presets.IDS[i]+".png")
+			if visual:
+				expect(RenderingServer.viewport_get_update_mode(editor._fence_preview._viewport.get_viewport_rid())==RenderingServer.VIEWPORT_UPDATE_DISABLED,"Fence sample stops rendering after one update")
+			var mesh: Node3D=Fence.build(editor.draft.fences,editor.draft.fence_style)
+			expect(mesh.get_meta("fence_spans")==editor.draft.fences,"Fence style preserves exact collision/gate spans")
+			mesh.free()
+		# A preset must keep non-default dimensions, all IDs, and additional beds.
+		var custom: RefCounted=Plan.from_snapshot(editor.draft.snapshot())
+		custom.fields[0]=Plan.resized_field(custom.fields[0],5,3,Vector2(3.2,1.61))
+		var extra: Dictionary=custom.fields[1].duplicate(true)
+		extra.id="field_20"
+		custom.fields.append(extra)
+		var arranged: RefCounted=Presets.arrange(custom,"original")
+		expect(arranged.fields.size()==7 and arranged.fields[-1].id=="field_20","Presets retain additional field identities")
+		expect(arranged.fields[0].cells==custom.fields[0].cells and arranged.fields[0].size==custom.fields[0].size,"Presets preserve custom cell IDs and dimensions")
+		var malformed: Dictionary=arranged.snapshot()
+		malformed.fence_style="unknown"
+		expect(Plan.from_snapshot(malformed)==null,"Unknown saved fence styles are rejected")
+		editor._reset_draft()
+		await checked()
 	if "--ui-only" in OS.get_cmdline_user_args():
 		var point: Vector2=editor.chart.global_position+editor.chart.world_to_map(Vector2(-3.3,0))
 		var down:=InputEventMouseButton.new()
@@ -130,6 +168,7 @@ func _run() -> void:
 	editor._values.rows.value=3
 	editor._add_field()
 	editor._move_field(6,Vector2(-3.3,6.9))
+	editor._fence.item_selected.emit(1)
 	await checked()
 	print("EDITOR_DRAFT issues=",editor.chart.invalid," message=",editor._message.text)
 	expect(editor.chart.invalid.is_empty() and not editor._confirm.disabled,"Expanded seven-field player draft has supported fields and connected roads")
@@ -151,6 +190,7 @@ func _run() -> void:
 	await replaced(before)
 	expect(scene.farm_state.field_ids().size()==7 and scene.farm.fields.size()==7,"Confirmed layout rebuilds all fields from saved state")
 	expect(scene.courtyard_plan.shore_expansion==Vector2(2.5,3),"Expansion survives scene reload")
+	expect(scene.courtyard_plan.fence_style=="crossed" and scene.get_node("Environment/BoundaryFence").get_meta("fence_style")=="crossed","Confirmed fence choice rebuilds actual scene geometry")
 	expect(scene.get_node("Environment").circulation.issues.is_empty(),"Final real-world roads remain connected")
 	expect(scene.previous_layout==original.layout,"Undo history crosses scene rebuild")
 	expect(scene.farm_state.get_cell("field_03","cell_06").crop_id==original.fields.field_03.cells.cell_06.crop_id,"Unmoved planted crop identity survives editing")

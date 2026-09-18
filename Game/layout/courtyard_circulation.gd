@@ -95,8 +95,21 @@ func _connect(target: Vector2, key: String, tolerance: float) -> void:
 		return
 	var route: PackedVector2Array = _route_to(snapped)
 	if route.is_empty():
-		issues.append(key+":unreachable")
-		return
+		# The nearest free sample can belong to a tiny pocket behind shoreline
+		# rocks. Try reachable approaches within the same entrance tolerance;
+		# never extend that tolerance or bridge across a blocked segment.
+		var candidates: Array[Vector2] = []
+		for point: Vector2 in road.points:
+			if point.distance_to(target)<=tolerance: candidates.append(point)
+		candidates.sort_custom(func(a: Vector2,b: Vector2) -> bool: return a.distance_squared_to(target)<b.distance_squared_to(target))
+		for point: Vector2 in candidates:
+			route=_route_to(point)
+			if not route.is_empty():
+				snapped=point
+				break
+		if route.is_empty():
+			issues.append(key+":unreachable")
+			return
 	endpoints[key] = snapped
 	_add_route(route)
 

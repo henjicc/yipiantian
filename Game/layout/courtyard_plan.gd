@@ -2,6 +2,7 @@ extends RefCounted
 ## Shared spatial data. Scene builders consume this instance; farm state owns crops.
 ## The original metric composition is retained; banks are generated from these contours.
 const FIELD_IDS: Array[String] = ["field_01", "field_02", "field_03", "field_04", "field_05", "field_06"]
+const FENCE_STYLES: Array[String] = ["bamboo", "crossed", "picket"]
 const BankGeometry = preload("res://layout/bank_geometry.gd")
 var ground_height: float = .13
 var bank_width: float = 1.0
@@ -44,6 +45,7 @@ var props := {
 	"YardSeedFrames": [Vector3(-2.62,.14,4.65),-25.0],
 }
 var fences: Array[Dictionary] = []
+var fence_style: String = "bamboo"
 var animal_areas := {"water": Rect2(-14.5,-6,25,19.5), "yard": Rect2(-6.25,-6.8,12,11.75)}
 var animal_rest := {
 	"water": PackedVector2Array([Vector2(-11,1),Vector2(-10,6),Vector2(-3,10),Vector2(5,10)]),
@@ -92,12 +94,13 @@ func snapshot() -> Dictionary:
 	for field: Dictionary in fields:
 		encoded.append({"id":field.id,"position":[field.position.x,field.position.y,field.position.z],"yaw":field.yaw,
 			"size":[field.size.x,field.size.y],"columns":field.columns,"rows":field.rows,"cells":field.cells.duplicate(),"seed":field.seed})
-	return {"shore":[shore_expansion.x,shore_expansion.y],"fields":encoded}
+	return {"shore":[shore_expansion.x,shore_expansion.y],"fields":encoded,"fence_style":fence_style}
 
 static func from_snapshot(data: Dictionary) -> RefCounted:
 	# This is the disk/edit admission boundary. Reject malformed layouts before any
 	# geometry or crop state is rebuilt; JSON must never allocate unbounded meshes.
-	if data.size()!=2 or not _numbers(data.get("shore"),2) or not data.get("fields") is Array: return null
+	if data.size()!=3 or not _numbers(data.get("shore"),2) or not data.get("fields") is Array: return null
+	if not data.get("fence_style") in FENCE_STYLES: return null
 	if data.shore[0]<0 or data.shore[0]>8 or data.shore[1]<0 or data.shore[1]>8: return null
 	if data.fields.is_empty() or data.fields.size()>12: return null
 	var decoded: Array[Dictionary] = []
@@ -128,6 +131,7 @@ static func from_snapshot(data: Dictionary) -> RefCounted:
 	var plan: RefCounted = load("res://layout/courtyard_plan.gd").new()
 	if data.shore[0]>0 or data.shore[1]>0: plan.expand_shore(data.shore[0],data.shore[1])
 	plan.fields = decoded
+	plan.fence_style=data.fence_style
 	return plan
 
 static func _number(value: Variant) -> bool:
