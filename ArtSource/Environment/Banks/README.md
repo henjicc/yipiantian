@@ -62,3 +62,11 @@ Godot4.7.2实测：围栏样图用独立世界的SubViewport显示真实模型�
 接地修改后的默认院落动物回归通过，日志 `.local/verification/terrain-animal-regression.log`：360秒模拟覆盖7只动物，两只鸡分别移动约59.8／55.6米，恢复各6次。含测试开销的无图形单步样本约1.38ms；该数字不是实际游戏GPU帧率或长期性能承诺。
 
 验证入口：`tests/bank_layout_test.gd --terrain --expanded --visual` 为高岸／宽坡／扩岸，`--terrain --low` 为低岸／窄坡；覆盖闭合网格、三角面精确高度、田角支承、桥头、固定水位、动物初始化及60秒支撑脚、落花／阴影与相机。通过日志 `terrain-high-exact.log`、`terrain-low-support.log`，可视图 `.local/verification/layout-banks/expanded/terrain/`。`tests/courtyard_editor_test.gd --terrain --presets` 覆盖高岸三个预设、七田扩建、保存失败重试、重建和作物安全撤销，日志 `terrain-editor-fixed.log`；v7存档定向检查通过，日志 `farm-store-v7.log`。图形退出仍偶发既有12 ObjectDB／6资源清理告警，留待最终独立程序验收；不能用功能断言通过宣称发布包退出已无告警。没有新生成费用或录屏。
+
+### 最大院落衔接检查 · 20260918
+
+第25项定向整合发现：向西扩岸8米时，原固定柳岸邻岛会与主岛相接。现把西侧邻岛与湖面菱叶的平移关联到共享 shore_expansion；只调整真实世界位置，邻岛模型仍保持单位尺度。近岸植被、邻里近看、LOD、接触水线和动物水域继续从移动后的实例派生，普通零扩岸构图不变。
+
+`tests/life_capacity_scene_test.gd` 从实际模型脚部障碍生成合法12田／384格测试布局，十二菜混种、七只动物、全部邻里场景、雨后主题共同运行。最大扩岸的田地支承、通路、柳岸分离、持久状态与昼夜全景／近景通过；最终日志 `.local/verification/life-capacity-final.log`，截图和布局、指标在 `.local/verification/life-capacity-2091379/`。本次图形场景两帧释放后退出无旧的ObjectDB／资源清理告警，仍需最终普通独立程序退出证据，不能声称永久消除了间歇引擎告警。
+
+本机 Ryzen 9 5900X／RTX4090，4K标准设置，三组各120帧；GPU渲染中位约21.2–21.5ms，CPU渲染中位1.95–2.08ms，显存统计约7.14GB。未抢占主屏焦点，全部为失焦样本，实际帧间隔受15fps后台上限约束；它证明最大规模可运行和具体渲染开销，不代表前台60fps、低配或长期性能保证。此前没有最大规模验证的历史描述由此补充，不重写历史证据。

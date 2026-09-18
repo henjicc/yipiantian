@@ -16,6 +16,9 @@ if (-not $profileRoot.StartsWith($allowedRoot + [IO.Path]::DirectorySeparatorCha
 }
 if (-not $GamePath) { $GamePath = Join-Path $repoRoot '.local/builds/windows/Farm.exe' }
 $GamePath = (Resolve-Path -LiteralPath $GamePath).Path
+$storeSource = Get-Content -LiteralPath (Join-Path $repoRoot 'Game/farm/farm_store.gd') -Raw
+$storeVersion = [regex]::Match($storeSource, 'const VERSION: int = (\d+)')
+if (-not $storeVersion.Success) { throw 'Cannot resolve the current farm storage version.' }
 New-Item -ItemType Directory -Path (Join-Path $profileRoot 'profile/roaming') -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $profileRoot 'profile/local') -Force | Out-Null
 $info = [Diagnostics.ProcessStartInfo]::new()
@@ -36,7 +39,7 @@ $info.ArgumentList.Add((Join-Path $profileRoot ($Phase + '.godot.log')))
 $process = [Diagnostics.Process]::Start($info)
 $outputTask = $process.StandardOutput.ReadToEndAsync()
 $errorTask = $process.StandardError.ReadToEndAsync()
-$saveFile = Join-Path $profileRoot 'profile/roaming/Godot/app_userdata/我有一片田/farm-v4/farm.json'
+$saveFile = Join-Path $profileRoot ('profile/roaming/Godot/app_userdata/我有一片田/farm-v' + $storeVersion.Groups[1].Value + '/farm.json')
 $metadata = @{ phase=$Phase; pid=$process.Id; executable=$GamePath; save_file=$saveFile; started=(Get-Date -Format o); status='running' }
 $metadata | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $profileRoot ($Phase + '.process.json')) -Encoding utf8
 Write-Output "ISOLATED_GAME_STARTED phase=$Phase pid=$($process.Id) evidence=$profileRoot"

@@ -10,6 +10,7 @@ var _story_groups: Dictionary = {}
 var _islets: Array[Dictionary] = []
 var _low_quality: bool = false
 var _lake_plants: Node3D
+var shore_expansion:=Vector2.ZERO
 
 func _ready() -> void:
 	_add("WillowNeighbor", "willow", Vector3(-16,-.68,-3), 28)
@@ -33,7 +34,7 @@ func _ready() -> void:
 	_lake_plants=MarshPlants.new()
 	_lake_plants.name="OpenWaterTrapa"
 	add_child(_lake_plants)
-	_lake_plants.populate_lake()
+	_lake_plants.populate_lake(shore_expansion)
 
 func _world_position(across: float, depth: float, height: float) -> Vector3:
 	var heading := Basis(Vector3.UP,deg_to_rad(27.5))
@@ -49,6 +50,9 @@ func _add(label: String, asset: String, at: Vector3, yaw: float, directory: Stri
 	holder.name = label
 	add_child(holder)
 	holder.position = at
+	# Keep the same water corridor when the player's western bank expands.
+	# Only world positions change; authored household scales remain identical.
+	holder.position.x-=shore_expansion.x*(1.0-smoothstep(-10.0,-4.0,at.x))
 	holder.rotation.y = deg_to_rad(yaw)
 	# All islands share the authored ten-metre span. Perspective alone changes
 	# their apparent size; layout never scales a distant household down or up.

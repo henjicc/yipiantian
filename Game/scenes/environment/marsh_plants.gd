@@ -52,13 +52,15 @@ func populate(island: Node3D, seed_value: int) -> void:
 	for species: String in placements: clump_count += placements[species].size()
 	set_low_detail(true)
 
-func populate_lake() -> void:
+func populate_lake(shore_expansion: Vector2=Vector2.ZERO) -> void:
 	var transforms: Array = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed=91839
 	var heading := Basis(Vector3.UP,deg_to_rad(27.5))
 	for cove: Vector2 in [Vector2(-16,2),Vector2(-11,15),Vector2(-21,23),Vector2(11,8),Vector2(21,23),Vector2(0,32)]:
 		var centre: Vector3=heading*Vector3(cove.x,0,-cove.y)
+		centre.x-=shore_expansion.x*(1.0-smoothstep(-10.0,-4.0,centre.x))
+		centre.z+=shore_expansion.y*smoothstep(1.0,6.0,centre.z)
 		for index: int in 12:
 			var angle: float=rng.randf()*TAU
 			var radius: float=sqrt(rng.randf())*1.05

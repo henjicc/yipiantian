@@ -50,6 +50,7 @@ func _ready() -> void:
 		return
 	var neighbors := NeighborIslets.new()
 	neighbors.name = "NeighborIslets"
+	neighbors.shore_expansion=plan.shore_expansion
 	add_child(neighbors)
 	_shore_sources.append_array(neighbors.waterline_sources())
 	_build_plants()
