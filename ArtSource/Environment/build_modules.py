@@ -181,10 +181,7 @@ for x in [-3.15,-1.5,1.5,3.15]:
     porch.append(pole('Veranda timber pillar',(x,.32,.28),(x,.32,2.37),.075,timber))
     porch.append(box('Post stone shoe',(x,.32,.34),(.22,.22,.20),stone[0],.035))
 porch.append(box('Long lintel',(0,.32,2.29),(6.9,.15,.19),timber,.02))
-for x0,x1 in [(-3.15,-1.5),(1.5,3.15)]:
-    for z in [.62,.95]:porch.append(pole('Low veranda balustrade',(x0,-.38,z),(x1,-.38,z),.033,timber))
-    for j in range(7):
-        x=x0+(x1-x0)*j/6;porch.append(pole('Turned railing',(x,-.38,.32),(x,-.38,.98),.025,timber))
+# Open porch front: retain the structural posts and lintel, remove low railings.
 save('veranda',porch)
 
 # Field rim comes in four gently softened timber sides with open soil interior.

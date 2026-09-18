@@ -409,7 +409,7 @@ func show_state(_cell: Dictionary, harvested: Dictionary, tool: String, crop_id:
 		var button: Button = _tools.get_node(entry)
 		button.disabled = traveling
 		button.set_pressed_no_signal(palette == ("sow" if entry == "Sow" else "tools"))
-	_tools.get_node("CancelTool").visible = not palette.is_empty()
+	_tools.get_node("CancelTool").visible = not tool.is_empty()
 	_sync_rows()
 
 

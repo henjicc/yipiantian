@@ -48,14 +48,17 @@ func run() -> void:
 	animals.set_process(false)
 	print("INPUT_CONTEXT viewport=",root.get_visible_rect()," window=",root.size," target=",point(0,"cell_01")," hit=",scene._farm_hit(point(0,"cell_01"))," available=",scene._tools_available())
 	await click(point(0,"cell_01"))
+	check(scene.camera.focused and scene.selected_field==0 and not scene.field_menu.active and actions==0,"Overview click only focuses the whole field")
+	while scene.camera.is_transitioning(): await process_frame
+	check(scene._farm_hit(point(1,"cell_01")).get("cell", "").is_empty(),"Adjacent field never exposes cells before focus")
+	await click(point(0,"cell_01"))
 	check(scene.field_menu.active and actions==0,"Soil click opens menu without changing farm")
 	if not scene.field_menu.active: quit(1); return
 	await shot("menu")
 	await click(petal("sow"))
 	check(scene.field_menu.active and actions==0,"Sow opens crop choice without planting")
 	await shot("seeds")
-	var seed: Control=scene.field_menu.veil.get_node("Seeds").get_child(0).get_node("radish")
-	await click(seed.get_global_rect().get_center())
+	await click(petal("radish"))
 	check(actions==1 and scene.farm_state.get_cell(scene.farm.field_id(0),"cell_01").crop_id=="radish","Selected seed commits once to captured cell")
 	check(scene.selected_tool.is_empty(),"Menu is one-shot")
 	await click(point(0,"cell_01")); await click(petal("water"))
@@ -69,6 +72,10 @@ func run() -> void:
 	await click(point(0,"cell_02"))
 	scene._notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT)
 	check(not scene.field_menu.active and actions==2,"Focus loss cancels pending menu")
+	scene._select_tool("water")
+	await click(point(5,"cell_13"))
+	check(scene.selected_field==5 and not scene.field_menu.active and actions==2,"Armed tool switches adjacent field focus without farming")
+	while scene.camera.is_transitioning(): await process_frame
 	await click(point(5,"cell_13")); await click(petal("weed"))
 	check(scene.farm_state.get_cell(scene.farm.field_id(5),"cell_13").ground=="rough","Weed action clears weeds")
 	await click(point(5,"cell_13")); await click(petal("till"))
@@ -104,11 +111,22 @@ func run() -> void:
 			scene.field_menu.dismiss(); scene._cancel_tool()
 	scene.field_menu.present_seeds(Vector2(1590,20))
 	await process_frame;await process_frame
-	var seed_panel: Control=scene.field_menu.veil.get_node("Seeds")
+	var seed_panel: Control=scene.field_menu.cards
 	check(root.get_visible_rect().encloses(seed_panel.get_global_rect()),"Crop picker fits at viewport edge")
+	var reached: Array[String] = []
+	for page: int in 3:
+		for item: Node in scene.field_menu.cards.get_children(): reached.append(str(item.name))
+		if page < 2: await click(scene.field_menu.veil.get_node("Next").get_global_rect().get_center())
+	check(reached.size()==12 and reached.has("garlic"),"All twelve crops are reachable in the fan menu")
 	var escape := InputEventKey.new();escape.keycode=KEY_ESCAPE;escape.pressed=true
 	root.push_input(escape,true);await process_frame
 	check(not scene.field_menu.active,"Escape closes the crop picker")
+	await click(scene.hud.get_node("Layout/FarmControls/Tools").get_global_rect().get_center())
+	check(scene.field_menu.active and scene.field_menu.cards.has_node("water"),"HUD opens the same fan-style tool picker")
+	await shot("tools-fan")
+	await click(petal("water"))
+	check(scene.selected_tool=="water" and not scene.field_menu.active,"HUD fan equips without applying to stale target")
+	scene._cancel_tool()
 	# A short real navigation sample verifies changing speeds, bounded travel and neck motion.
 	var limits: Dictionary={}; var beaks: Dictionary={}
 	for entry: Dictionary in animals.birds:

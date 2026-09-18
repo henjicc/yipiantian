@@ -1,0 +1,33 @@
+{
+  "height_m": 0.48,
+  "triangles": 5106,
+  "source_polygons": 2951,
+  "quads": 2155,
+  "dimensions_blender_xyz": [
+    [
+      0.4588959515094757,
+      0.45655107498168945,
+      0.48000001907348633
+    ]
+  ],
+  "rotation_quaternion_wxyz": [
+    1.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "scale": 0.4802344894968246,
+  "decorative_grass_vertices_removed": 0,
+  "textures": [
+    {
+      "name": "tripo_image_b6be3b14_0",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "reimport_verified": true,
+  "prepared_polygons": 2951,
+  "source_quads": 2155
+}

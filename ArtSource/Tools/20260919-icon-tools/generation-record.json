@@ -1,0 +1,94 @@
+[
+  {
+    "id": "water",
+    "reference_source": "Game/art/ui/crops/water.png",
+    "reference_sha256": "db733b1ce3941a9bc9a47886f8e468e08600d2f3745568bf5020e61ef1a387a3",
+    "reference_review": "Existing approved image-generated transparent tool icon, reused directly at user request. Original unmodified.",
+    "task_id": "479b6059-a181-44bd-9541-2670e91c41d8",
+    "credits_consumed": 120,
+    "parameters": {
+      "pbr": false,
+      "quad": true,
+      "delight": false,
+      "texture": true,
+      "export_uv": true,
+      "face_limit": 2500,
+      "model_version": "P2-20260801",
+      "texture_quality": "detailed",
+      "texture_version": "v3.5-20260815",
+      "texture_alignment": "original_image",
+      "enable_image_autofix": false
+    },
+    "runtime": "Game/art/tools/water.glb",
+    "audit": "water/audit.json"
+  },
+  {
+    "id": "harvest",
+    "reference_source": "Game/art/ui/crops/harvest.png",
+    "reference_sha256": "2571349926d2e6c4f379348287e3bda0bf4c4ff6cc01cbd559fa6fbf568379f1",
+    "reference_review": "Existing approved image-generated transparent tool icon, reused directly at user request. Original unmodified.",
+    "task_id": "b6be3b14-4233-4d7c-afde-2fc05aa992b0",
+    "credits_consumed": 120,
+    "parameters": {
+      "pbr": false,
+      "quad": true,
+      "delight": false,
+      "texture": true,
+      "export_uv": true,
+      "face_limit": 2500,
+      "model_version": "P2-20260801",
+      "texture_quality": "detailed",
+      "texture_version": "v3.5-20260815",
+      "texture_alignment": "original_image",
+      "enable_image_autofix": false
+    },
+    "runtime": "Game/art/tools/harvest.glb",
+    "audit": "harvest/audit.json"
+  },
+  {
+    "id": "weed",
+    "reference_source": "Game/art/ui/crops/weed.png",
+    "reference_sha256": "f19fc0a7a85f9fafbe7edadcf061238a0addb931941c8ba02cfa614ecd84ae3d",
+    "reference_review": "Existing approved image-generated transparent tool icon, reused directly at user request. Original unmodified.",
+    "task_id": "11e88fa1-0d68-4aea-a70a-368e465d30ba",
+    "credits_consumed": 120,
+    "parameters": {
+      "pbr": false,
+      "quad": true,
+      "delight": false,
+      "texture": true,
+      "export_uv": true,
+      "face_limit": 2500,
+      "model_version": "P2-20260801",
+      "texture_quality": "detailed",
+      "texture_version": "v3.5-20260815",
+      "texture_alignment": "original_image",
+      "enable_image_autofix": false
+    },
+    "runtime": "Game/art/tools/weed.glb",
+    "audit": "weed/audit.json"
+  },
+  {
+    "id": "till",
+    "reference_source": "Game/art/ui/crops/till.png",
+    "reference_sha256": "f58a74bd4cdd58d95928d1837c588167e6cdd132d21b554acee964e66fc8c4e6",
+    "reference_review": "Existing approved image-generated transparent tool icon, reused directly at user request. Original unmodified.",
+    "task_id": "6af57e47-cd5e-4a50-bba4-6988464bdd31",
+    "credits_consumed": 120,
+    "parameters": {
+      "pbr": false,
+      "quad": true,
+      "delight": false,
+      "texture": true,
+      "export_uv": true,
+      "face_limit": 2500,
+      "model_version": "P2-20260801",
+      "texture_quality": "detailed",
+      "texture_version": "v3.5-20260815",
+      "texture_alignment": "original_image",
+      "enable_image_autofix": false
+    },
+    "runtime": "Game/art/tools/till.glb",
+    "audit": "till/audit.json"
+  }
+]

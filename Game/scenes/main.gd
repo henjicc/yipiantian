@@ -970,7 +970,7 @@ func _farm_hit(screen_point: Vector2) -> Dictionary:
 	if index < 0:
 		return {}
 	# Only the actual top soil plane can select a cell; bed sides still focus its field.
-	var cell_id: String = farm.cell_at(index, hit.position) if hit.normal.y > 0.9 else ""
+	var cell_id: String = farm.cell_at(index, hit.position) if camera.focused and index == selected_field and hit.normal.y > 0.9 else ""
 	return {"field": index, "cell": cell_id}
 
 
@@ -1015,7 +1015,7 @@ func _finish_tool_press(tool: String) -> void:
 
 
 func _can_work_cell() -> bool:
-	return _tools_available() and selected_field >= 0 and not selected_cell.is_empty()
+	return _tools_available() and camera.focused and selected_field >= 0 and not selected_cell.is_empty()
 
 
 func _open_palette(palette: String) -> void:
@@ -1023,7 +1023,10 @@ func _open_palette(palette: String) -> void:
 		return
 	_cancel_input()
 	selected_tool = ""
-	selected_palette = "" if selected_palette == palette else palette
+	selected_palette = ""
+	_menu_target = {}
+	if palette == "sow": field_menu.present_seeds(_pointer_position)
+	else: field_menu.present_tools(_pointer_position)
 	farm_audio.play_ui()
 	_refresh_hud()
 
@@ -1033,7 +1036,7 @@ func _select_tool(tool: String) -> void:
 	if not _tools_available() or tool not in ["sow", "water", "harvest", "weed", "till"]:
 		return
 	selected_tool = "" if selected_tool == tool else tool
-	selected_palette = "sow" if tool == "sow" else "tools"
+	selected_palette = ""
 	_refresh_hud()
 
 
@@ -1044,7 +1047,7 @@ func _select_crop(crop_id: String) -> void:
 	camera.cancel_zoom()
 	selected_crop = crop_id
 	selected_tool = "sow"
-	selected_palette = "sow"
+	selected_palette = ""
 	farm_audio.play_ui()
 	_refresh_hud()
 
@@ -1074,12 +1077,13 @@ func _update_hover() -> void:
 		hover_field = index
 		hover_cell = cell_id
 		farm.select_cell(index, cell_id)
+		farm.select_field(index if index >= 0 and cell_id.is_empty() else selected_field)
 		_refresh_hud()
 	tool_cursor.show_tool("" if blocked else selected_tool, selected_crop)
 
 
 func _present_field_menu(index: int, cell_id: String, point: Vector2) -> void:
-	if not _tools_available(): return
+	if not _tools_available() or not camera.focused or index != selected_field or cell_id.is_empty(): return
 	_cancel_input()
 	selected_field = index
 	selected_cell = cell_id
@@ -1095,8 +1099,10 @@ func _field_menu_action(tool: String, crop: String) -> void:
 	if not _tools_available(): return
 	if not crop.is_empty(): selected_crop = crop
 	if target.is_empty():
-		_select_crop(crop)
+		if tool == "sow": _select_crop(crop)
+		else: _select_tool(tool)
 		return
+	if not camera.focused or target.field != selected_field: return
 	selected_field = target.field
 	selected_cell = target.cell
 	selected_tool = tool

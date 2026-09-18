@@ -39,21 +39,25 @@ func _run() -> void:
 	await _choose("spinach")
 	_expect(scene.selected_tool == "sow" and scene.selected_field == -1, "Select seeds before selecting any land")
 	await _motion(_point(0,"cell_01"), Vector2.ZERO)
-	_expect(scene.hover_field == 0 and scene.hover_cell == "cell_01", "Hover targets exact cell without clicking")
+	_expect(scene.hover_field == 0 and scene.hover_cell.is_empty(), "Overview hover selects only the whole field")
 	_expect(scene.farm_state.snapshot() == initial, "Hover never modifies farm state")
 	_expect(scene.tool_cursor._key == "spinach" and scene.tool_cursor._cursor_texture.get_width() > scene.tool_cursor._cursor_pixels, "Carried crop shares hardware cursor texture")
 	var distance: float = scene.camera.view.z
 	await _button(_point(0,"cell_01"), true, MOUSE_BUTTON_WHEEL_DOWN)
 	_expect(scene.selected_crop == "lettuce" and scene.camera.view.z == distance, "Armed wheel changes seeds rather than zoom")
 	await _click(_point(0,"cell_01"))
-	_expect(_cell(0,"cell_01").crop_id == "lettuce" and actions == 1, "One click plants the hovered overview cell")
+	_expect(actions == 0 and scene.camera.focused and not scene.field_menu.active, "Overview click focuses without farming")
+	await _camera_settled()
+	await _choose("lettuce")
+	await _click(_point(0,"cell_01"))
+	_expect(_cell(0,"cell_01").crop_id == "lettuce" and actions == 1, "Focused click plants selected crop")
 	_expect(scene.selected_tool == "sow", "Successful sow stays armed")
 	await _click(_point(0,"cell_02"))
 	_expect(_cell(0,"cell_02").crop_id == "lettuce" and actions == 2, "Continuous planting works in next cell")
 	await _click(_point(0,"cell_02"))
 	_expect(actions == 2 and _cell(0,"cell_02").crop_id == "lettuce", "Occupied target cannot overwrite crop")
 	await _tool("Water")
-	_expect(not scene.hud.get_node("Layout/CropChoices").visible and scene.hud.get_node("Layout/ToolChoices").visible, "Tools replace crops without overlap")
+	_expect(not scene.field_menu.active and scene.selected_tool == "water", "Tool fan closes after equipping water")
 	await _capture("00-tool-palette.png")
 	_expect(not _cell(0,"cell_01").watered, "Selecting water never acts on prior target")
 	await _click(_point(0,"cell_01"))
@@ -155,9 +159,11 @@ func _run() -> void:
 	await create_timer(.3).timeout
 	await _choose("spinach")
 	var viewport: Rect2 = root.get_visible_rect()
-	for card: Control in scene.hud.get_node("Layout/CropChoices").get_children():
+	scene.field_menu.present_seeds(Vector2(950,20))
+	for card: Control in [scene.field_menu.cards]:
 		_expect(viewport.encloses(card.get_global_rect()), "Crop card fits compact window: "+card.name)
 	await _capture("04-compact.png")
+	await _click(scene.field_menu.veil.get_node("Cancel").get_global_rect().get_center())
 	await _click(_control("CancelTool").get_global_rect().get_center())
 	await create_timer(.3).timeout
 	_expect(scene.selected_palette.is_empty() and not scene.hud.get_node("Layout/CropChoices").visible, "Cancel button hides active row")
@@ -185,10 +191,13 @@ func _camera_settled() -> void:
 
 func _choose(id: String) -> void:
 	await _camera_settled()
-	if scene.selected_palette != "sow":
+	if not scene.field_menu.active:
 		await _click(_control("Sow").get_global_rect().get_center())
-		await create_timer(.3).timeout
-	await _click(scene.hud.get_node("Layout/CropChoices/"+id).get_global_rect().get_center())
+	for page: int in 3:
+		if scene.field_menu.cards.has_node(id): break
+		await _click(scene.field_menu.veil.get_node("Next").get_global_rect().get_center())
+	var petal: Control = scene.field_menu.cards.get_node(id)
+	await _click(petal.global_position + petal.center)
 
 
 func _cell(index: int, cell_id: String) -> Dictionary:
@@ -196,7 +205,7 @@ func _cell(index: int, cell_id: String) -> Dictionary:
 
 
 func _point(index: int, cell_id: String = "") -> Vector2:
-	var local: Vector3 = Vector3(0, .08, 0) if cell_id.is_empty() else scene.farm.cell_center(cell_id)
+	var local: Vector3 = Vector3(0, .08, 0) if cell_id.is_empty() else scene.farm.cell_position(index,cell_id)
 	return scene.camera.unproject_position(scene.farm.fields[index].to_global(local))
 
 
@@ -205,10 +214,9 @@ func _control(control_name: String) -> Control:
 
 
 func _tool(control_name: String) -> void:
-	if scene.selected_palette != "tools":
-		await _click(_control("Tools").get_global_rect().get_center())
-		await create_timer(.3).timeout
-	await _click(scene.hud.get_node("Layout/ToolChoices/" + control_name).get_global_rect().get_center())
+	await _click(_control("Tools").get_global_rect().get_center())
+	var petal: Control = scene.field_menu.cards.get_node(control_name.to_lower())
+	await _click(petal.global_position + petal.center)
 
 
 func _button(point: Vector2, down: bool, button_index: MouseButton = MOUSE_BUTTON_LEFT, double: bool = false) -> void:

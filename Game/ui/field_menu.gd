@@ -49,7 +49,7 @@ func present(point: Vector2, cell: Dictionary) -> void:
 	active = true
 	veil.show()
 	var view := get_viewport().get_visible_rect().size
-	anchor = Vector2(clampf(point.x, 166, view.x-166), clampf(point.y, 160, view.y-55))
+	anchor = Vector2(clampf(point.x, 166, view.x-166), clampf(point.y, 160, view.y-110))
 	cards = Control.new()
 	veil.add_child(cards)
 	cards.position = anchor - Vector2(160,160)
@@ -74,7 +74,7 @@ func present(point: Vector2, cell: Dictionary) -> void:
 		for step: int in 25:
 			button.polygon.append(Vector2(160,160) + Vector2.from_angle(lerpf(finish,start,step/24.0))*44)
 		button.center = Vector2(160,160) + Vector2.from_angle((start+finish)*.5)*99
-		button.picture = load("res://art/ui/crops/porch-%s.png" % id if id in ["sow","water"] else "res://art/ui/crops/%s.png" % id)
+		button.picture = load("res://art/ui/crops/porch-sow.png" if id == "sow" else "res://art/ui/crops/%s.png" % id)
 		var empty: bool = cell.get("crop_id", "").is_empty()
 		button.disabled = (id=="sow" and (not empty or cell.get("ground", "ready")!="ready")) or (id=="water" and (empty or harvest or cell.get("watered",false))) or (id in ["weed","till"] and (not empty or cell.get("ground", "ready") != ("weedy" if id=="weed" else "rough")))
 		cards.add_child(button)
@@ -93,35 +93,61 @@ func present_seeds(point: Vector2) -> void:
 	present(point, {"crop_id":"", "ground":"ready"})
 	_show_seeds()
 
-func _show_seeds() -> void:
-	cards.hide()
-	var panel := PanelContainer.new()
-	panel.name = "Seeds"
-	veil.add_child(panel)
-	panel.position = Vector2(clampf(anchor.x-188, 8, get_viewport().get_visible_rect().size.x-384), maxf(8,anchor.y-290))
-	var grid := GridContainer.new()
-	grid.columns = 4
-	panel.add_child(grid)
-	for id: String in Crops.crop_ids():
-		var button := Button.new()
-		button.name = id
-		button.text = Crops.definition(id).name
-		button.icon = load(Crops.icon_path(id))
-		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
-		button.expand_icon = true
-		button.custom_minimum_size = Vector2(92,84)
-		button.add_theme_constant_override("icon_max_width",42)
-		grid.add_child(button)
-		button.pressed.connect(func() -> void: _choose("sow",id))
-	_fit_seed_panel.call_deferred(panel)
+func present_tools(point: Vector2) -> void:
+	present(point, {})
+	_choice_fan(["water", "harvest", "weed", "till"], false)
 
-func _fit_seed_panel(panel: PanelContainer) -> void:
-	if not is_instance_valid(panel) or not panel.is_inside_tree(): return
+func _show_seeds(page: int = 0) -> void:
+	_choice_fan(Crops.crop_ids().slice(page * 4, page * 4 + 4), true)
+	var pages: int = ceili(Crops.crop_ids().size() / 4.0)
+	for step: int in [-1, 1]:
+		var button := Button.new()
+		button.name = "Previous" if step < 0 else "Next"
+		button.text = "‹" if step < 0 else "›"
+		button.position = anchor + Vector2(-100 if step < 0 else 58, 10)
+		button.size = Vector2(42, 34)
+		button.disabled = page + step < 0 or page + step >= pages
+		veil.add_child(button)
+		button.pressed.connect(func() -> void: _show_seeds(page + step))
+
+func _choice_fan(ids: Array, seeds: bool) -> void:
+	var point: Vector2 = anchor
+	_clear()
 	var view: Vector2 = get_viewport().get_visible_rect().size
-	panel.reset_size()
-	panel.position = Vector2(clampf(anchor.x-panel.size.x*.5,8,view.x-panel.size.x-8),clampf(anchor.y-panel.size.y-14,8,view.y-panel.size.y-56))
-	veil.get_node("Cancel").position = Vector2(panel.position.x+panel.size.x*.5-36,panel.position.y+panel.size.y+8)
+	anchor = Vector2(clampf(point.x, 196, view.x - 196), clampf(point.y, 196, view.y - 110))
+	cards = Control.new()
+	cards.name = "Seeds" if seeds else "Tools"
+	cards.position = anchor - Vector2(190, 190)
+	cards.size = Vector2(380, 190)
+	cards.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	veil.add_child(cards)
+	var labels: Dictionary = {"water":"浇水", "harvest":"收获", "weed":"除草", "till":"开垦"}
+	for i: int in ids.size():
+		var id: String = ids[i]
+		var button := Petal.new()
+		button.name = id
+		button.caption = Crops.definition(id).name if seeds else labels[id]
+		button.picture = load(Crops.icon_path(id) if seeds else "res://art/ui/crops/%s.png" % id)
+		button.size = cards.size
+		button.focus_mode = Control.FOCUS_NONE
+		for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
+			button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		var start: float = PI + i * PI / ids.size() + .025
+		var finish: float = PI + (i + 1) * PI / ids.size() - .025
+		for step: int in 25:
+			button.polygon.append(Vector2(190, 190) + Vector2.from_angle(lerpf(start, finish, step / 24.0)) * 184)
+		for step: int in 25:
+			button.polygon.append(Vector2(190, 190) + Vector2.from_angle(lerpf(finish, start, step / 24.0)) * 48)
+		button.center = Vector2(190, 190) + Vector2.from_angle((start + finish) * .5) * 120
+		cards.add_child(button)
+		button.pressed.connect(func() -> void: _choose("sow" if seeds else id, id if seeds else ""))
+	var cancel := Button.new()
+	cancel.name = "Cancel"
+	cancel.text = "取消"
+	cancel.position = anchor + Vector2(-36, 10)
+	cancel.size = Vector2(72, 34)
+	veil.add_child(cancel)
+	cancel.pressed.connect(dismiss)
 
 func _choose(tool: String, crop: String) -> void:
 	if not active: return
