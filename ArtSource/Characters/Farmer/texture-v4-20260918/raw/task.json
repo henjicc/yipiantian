@@ -1,0 +1,33 @@
+{
+  "task_id": "4e44b65c-536b-4b19-be7f-80cda648fd71",
+  "type": "texture_model",
+  "status": "success",
+  "input": {
+    "pbr": false,
+    "bake": false,
+    "delight": false,
+    "texture": true,
+    "texture_seed": 202609186,
+    "model_version": "v3.5-20260815",
+    "texture_prompt": {
+      "image": {
+        "path": "../../tpose-v2-20260918/front.png"
+      }
+    },
+    "texture_quality": "detailed",
+    "original_model_id": "310b40a6-fad5-4651-b7fd-2ddbc82d6c18",
+    "texture_alignment": "geometry"
+  },
+  "output_fields": [
+    "model_url",
+    "rendered_image_url"
+  ],
+  "credits_consumed": 20,
+  "created_at": "2026-09-18T13:53:20.809295Z",
+  "completed_at": "2026-09-18T13:54:08.030286Z",
+  "files": [
+    "model.glb",
+    "rendered_image.webp",
+    "preview.png"
+  ]
+}

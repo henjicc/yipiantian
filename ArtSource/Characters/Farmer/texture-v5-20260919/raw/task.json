@@ -1,0 +1,33 @@
+{
+  "task_id": "a1ff2ed4-cef1-40cf-9d8b-d9694a8e243f",
+  "type": "texture_model",
+  "status": "success",
+  "input": {
+    "pbr": false,
+    "bake": false,
+    "delight": false,
+    "texture": true,
+    "texture_seed": 202609190,
+    "model_version": "v3.5-20260815",
+    "texture_prompt": {
+      "image": {
+        "path": "../reference.png"
+      }
+    },
+    "texture_quality": "detailed",
+    "original_model_id": "ae76e99d-b509-4c60-a81a-5a94c0095656",
+    "texture_alignment": "geometry"
+  },
+  "output_fields": [
+    "model_url",
+    "rendered_image_url"
+  ],
+  "credits_consumed": 20,
+  "created_at": "2026-09-18T16:09:29.655676Z",
+  "completed_at": "2026-09-18T16:10:16.235789Z",
+  "files": [
+    "model.glb",
+    "rendered_image.webp",
+    "preview.png"
+  ]
+}

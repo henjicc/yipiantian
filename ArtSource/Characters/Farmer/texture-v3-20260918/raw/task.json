@@ -1,0 +1,34 @@
+{
+  "task_id": "6ca57d22-bf16-4fcb-afe8-b66264c9fafa",
+  "type": "texture_model",
+  "status": "success",
+  "input": {
+    "pbr": false,
+    "bake": false,
+    "delight": false,
+    "texture": true,
+    "texture_seed": 202609185,
+    "model_version": "v3.5-20260815",
+    "texture_prompt": {
+      "text": "Chinese Ming commoner farmer painted in classical GONGBI DANCAI technique, match the reference precisely. Fine controlled dark umber ink lines trace actual collar edges, sleeve hems, sash seams, fingers, facial features and selected flowing garment folds. Clearly visible delicate brush contours, not thick cartoon outlines. Broad clean pale sage-green mineral pigment washes on shirt, pale warm ochre skin, restrained rose cheeks, muted tea-brown trousers, ivory collar and cuffs. Elegant layered translucent color gradients, selective darker ink pooling along actual folds. Hair drawn as grouped fine ink strands, friendly eyes softly painted without glossy highlights. Remove realistic woven fabric grain, mottled noise, uniform fuzzy cloth shading, plastic skin, leather texture and baked directional shadows. Plain clothing with NO embroidery, floral patterns, symbols or lettering. Preserve exact facial identity, level eyes, upright head, existing colors and garment construction. Delicate traditional album painting, matte and softly shaded, not photorealistic, not shiny 3D toy.",
+      "style_image": {
+        "path": "../../tpose-v2-20260918/front.png"
+      }
+    },
+    "texture_quality": "detailed",
+    "original_model_id": "14a0e802-fe2b-4b71-bd1b-2098f1be62c9",
+    "texture_alignment": "geometry"
+  },
+  "output_fields": [
+    "model_url",
+    "rendered_image_url"
+  ],
+  "credits_consumed": 20,
+  "created_at": "2026-09-18T13:48:06.684105Z",
+  "completed_at": "2026-09-18T13:48:55.642846Z",
+  "files": [
+    "model.glb",
+    "rendered_image.webp",
+    "preview.png"
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 23210,
+      "polygons": 24889,
+      "quads": 0,
+      "triangles": 24889,
+      "uv_layers": 1,
+      "boundary_edges": 560,
+      "non_manifold_edges": 561,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "dimensions": [
+        0.30630189180374146,
+        0.9999999403953552,
+        0.9872984290122986
+      ]
+    }
+  ],
+  "prepared": [
+    {
+      "vertices": 23210,
+      "polygons": 24889,
+      "quads": 0,
+      "triangles": 24889,
+      "uv_layers": 1,
+      "boundary_edges": 560,
+      "non_manifold_edges": 561,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "dimensions": [
+        0.48087579011917114,
+        1.5699405670166016,
+        1.5499999523162842
+      ]
+    }
+  ],
+  "max_vertex_distance_m": 1.3333209381016786e-07,
+  "height_m": 1.55,
+  "textures": [
+    {
+      "name": "tripo_rgb_a1ff2ed4-cef1-40cf-9d8b-d9694a8e243f",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "reimport": [
+    {
+      "vertices": 23214,
+      "polygons": 24889,
+      "quads": 0,
+      "triangles": 24889,
+      "uv_layers": 1,
+      "boundary_edges": 560,
+      "non_manifold_edges": 561,
+      "zero_area_faces": 0,
+      "materials": 1,
+      "dimensions": [
+        0.48087579011917114,
+        1.5699405670166016,
+        1.5499999523162842
+      ]
+    }
+  ],
+  "reimport_verified": true
+}

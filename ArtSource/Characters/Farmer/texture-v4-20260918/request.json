@@ -1,0 +1,15 @@
+{
+  "model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "delight": false,
+  "pbr": false,
+  "bake": false,
+  "texture_alignment": "geometry",
+  "texture_seed": 202609186,
+  "texture_prompt": {
+    "image": {
+      "path": "../tpose-v2-20260918/front.png"
+    }
+  },
+  "input": "ArtSource/Characters/Farmer/tpose-v2-20260918/farmer_gongbi.glb"
+}
