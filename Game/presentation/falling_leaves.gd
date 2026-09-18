@@ -4,6 +4,7 @@ extends MultiMeshInstance3D
 const COUNT: int = 14
 var _anchors: Array[Vector3] = []
 var _rng := RandomNumberGenerator.new()
+var ground_height: float = .15
 
 
 func configure(tree: Node3D) -> void:
@@ -27,7 +28,7 @@ func configure(tree: Node3D) -> void:
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	custom_aabb = AABB(_anchors[0],Vector3.ZERO)
 	for point: Vector3 in _anchors:
-		custom_aabb = custom_aabb.expand(point).expand(Vector3(point.x+.32,.15-global_position.y,point.z+.25))
+		custom_aabb = custom_aabb.expand(point).expand(Vector3(point.x+.32,ground_height-global_position.y,point.z+.25))
 	custom_aabb = custom_aabb.grow(.15)
 	set_process(false)
 
@@ -63,5 +64,6 @@ func _leaf_mesh() -> ArrayMesh:
 	st.generate_normals()
 	var material := ShaderMaterial.new()
 	material.shader = preload("res://presentation/falling_petals.gdshader")
+	material.set_shader_parameter("ground_height",ground_height)
 	st.set_material(material)
 	return st.commit()

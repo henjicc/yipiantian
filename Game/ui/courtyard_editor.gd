@@ -192,7 +192,7 @@ func _move_field(index: int, point: Vector2) -> void:
 	if busy: return
 	_undo_draft=false
 	selected=index
-	draft.fields[index].position=Vector3(clampf(point.x,-14,6),.2,clampf(point.y,-8,13))
+	draft.fields[index].position=Vector3(clampf(point.x,-14,6),draft.ground_height+.07,clampf(point.y,-8,13))
 	_changed()
 
 func _arrange(index: int) -> void:
@@ -224,8 +224,11 @@ func _change(key: String, value: float) -> void:
 		"west","south":
 			var fields: Array[Dictionary]=draft.fields
 			var fence_style: String=draft.fence_style
+			var height: float=draft.ground_height
+			var width: float=draft.bank_width
 			draft=Plan.new()
 			draft.expand_shore(_values.west.value,_values.south.value)
+			draft.set_terrain(height,width)
 			draft.fields=fields
 			draft.fence_style=fence_style
 	_changed()
@@ -249,7 +252,7 @@ func _add_field() -> void:
 	field.id="field_%02d"%_next_field
 	field.seed=91744+_next_field*7919
 	_next_field+=1
-	field.position=Vector3(-3.3,.2,6.2)
+	field.position=Vector3(-3.3,draft.ground_height+.07,6.2)
 	draft.fields.append(field)
 	selected=draft.fields.size()-1
 	_changed()

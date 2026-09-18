@@ -1,5 +1,6 @@
 shader_type spatial;
 render_mode cull_disabled;
+uniform float ground_height = .15;
 // Analytic render-time motion: one fixed MultiMesh upload, no transform streaming
 // or particle fixed-FPS stepping. Reset happens only at zero visible size.
 void vertex() {
@@ -15,7 +16,7 @@ void vertex() {
     VERTEX.xy = turn * VERTEX.xy;
     NORMAL.xy = turn * NORMAL.xy;
     VERTEX += vec3(.25*fall+sin(age*.85+phase)*.07*sin(3.14159*fall),
-        (.15-INSTANCE_CUSTOM.y)*pow(fall,1.08),
+        (ground_height-INSTANCE_CUSTOM.y)*pow(fall,1.08),
         .18*fall+cos(age*.7+phase)*.055*sin(3.14159*fall));
 }
 void fragment() {

@@ -81,6 +81,26 @@ func _init() -> void:
 func field_transform(index: int) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, deg_to_rad(fields[index].yaw)), fields[index].position)
 
+func set_terrain(height: float, width: float) -> void:
+	assert(height>=.08 and height<=.38 and width>=.8 and width<=1.2)
+	var rise: float=height-ground_height
+	ground_height=height
+	bank_width=width
+	# Land anchors move as rigid objects. The opposite bank mesh receives height
+	# directly, while the floating boat and the buried mooring base keep water level.
+	for key: String in anchors:
+		if key not in ["boat","mooring","east_bank"]: anchors[key].y+=rise
+	for key: String in slots: slots[key].y+=rise
+	for key: String in props: props[key][0].y+=rise
+	for tree: Dictionary in trees: tree.at.y+=rise
+	for points: Array in [bamboo_positions,reeds,flower_centres]:
+		for i: int in points.size(): points[i].y+=rise
+	for i: int in east_path.size(): east_path[i].y+=rise
+	for field: Dictionary in fields: field.position.y+=rise
+	camera_point.y+=rise
+	paths.clear()
+	fences.clear()
+
 func field_polygon(index: int, margin: float = 0.0) -> PackedVector2Array:
 	var half: Vector2 = fields[index].size*.5+Vector2.ONE*margin
 	var polygon := PackedVector2Array()
@@ -94,12 +114,14 @@ func snapshot() -> Dictionary:
 	for field: Dictionary in fields:
 		encoded.append({"id":field.id,"position":[field.position.x,field.position.y,field.position.z],"yaw":field.yaw,
 			"size":[field.size.x,field.size.y],"columns":field.columns,"rows":field.rows,"cells":field.cells.duplicate(),"seed":field.seed})
-	return {"shore":[shore_expansion.x,shore_expansion.y],"fields":encoded,"fence_style":fence_style}
+	return {"shore":[shore_expansion.x,shore_expansion.y],"terrain":[ground_height,bank_width],"fields":encoded,"fence_style":fence_style}
 
 static func from_snapshot(data: Dictionary) -> RefCounted:
 	# This is the disk/edit admission boundary. Reject malformed layouts before any
 	# geometry or crop state is rebuilt; JSON must never allocate unbounded meshes.
-	if data.size()!=3 or not _numbers(data.get("shore"),2) or not data.get("fields") is Array: return null
+	if data.size()!=4 or not _numbers(data.get("shore"),2) or not data.get("fields") is Array: return null
+	if not _numbers(data.get("terrain"),2): return null
+	if data.terrain[0]<.08 or data.terrain[0]>.38 or data.terrain[1]<.8 or data.terrain[1]>1.2: return null
 	if not data.get("fence_style") in FENCE_STYLES: return null
 	if data.shore[0]<0 or data.shore[0]>8 or data.shore[1]<0 or data.shore[1]>8: return null
 	if data.fields.is_empty() or data.fields.size()>12: return null
@@ -115,7 +137,7 @@ static func from_snapshot(data: Dictionary) -> RefCounted:
 		if not _number(field.get("yaw")) or absf(field.yaw)>180: return null
 		if not _integer(field.get("columns"),2,8) or not _integer(field.get("rows"),2,8): return null
 		if not _integer(field.get("seed"),0,2147483647): return null
-		if absf(field.position[0])>30 or absf(field.position[2])>30 or absf(field.position[1]-.2)>.001: return null
+		if absf(field.position[0])>30 or absf(field.position[2])>30 or absf(field.position[1]-data.terrain[0]-.07)>.001: return null
 		var size := Vector2(field.size[0],field.size[1])
 		var span: Vector2 = (size-Vector2(.20,.29))/Vector2(field.columns,field.rows)
 		if span.x<.5999 or span.y<.4399 or span.x>1.2001 or span.y>1.0001: return null
@@ -130,6 +152,7 @@ static func from_snapshot(data: Dictionary) -> RefCounted:
 			"yaw":float(field.yaw),"size":size,"columns":int(field.columns),"rows":int(field.rows),"cells":cells,"seed":int(field.seed)})
 	var plan: RefCounted = load("res://layout/courtyard_plan.gd").new()
 	if data.shore[0]>0 or data.shore[1]>0: plan.expand_shore(data.shore[0],data.shore[1])
+	plan.set_terrain(data.terrain[0],data.terrain[1])
 	plan.fields = decoded
 	plan.fence_style=data.fence_style
 	return plan

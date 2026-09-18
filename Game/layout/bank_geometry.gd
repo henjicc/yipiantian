@@ -18,7 +18,9 @@ static func contour(points: PackedVector2Array) -> PackedVector2Array:
 
 static func ring(outline: PackedVector2Array, scale_value: float, width: float) -> PackedVector2Array:
 	var result := PackedVector2Array()
-	for p: Vector2 in outline: result.append(p * (1.0 + (scale_value - 1.0) * width))
+	# Width grows the slope outside the usable plateau, not into planted land.
+	var factor: float=scale_value if scale_value<=.96 else .96+(scale_value-.96)*width
+	for p: Vector2 in outline: result.append(p*factor)
 	return result
 
 static func build(points: PackedVector2Array, height: float = .13, width: float = 1.0) -> ArrayMesh:
@@ -35,7 +37,8 @@ static func build(points: PackedVector2Array, height: float = .13, width: float 
 		for i: int in n:
 			var wave: float = (sin(i / float(n) * TAU * 7 + .4) + .45 * sin(i / float(n) * TAU * 13)) * .012
 			# Caps remain planar; all surface height comes from the same definition.
-			var y: float = PROFILE[r].y + height - .13
+			# Keep the submerged skirt and waterline fixed as land height changes.
+			var y: float = PROFILE[r].y + (height-.13)*clampf((PROFILE[r].y+.25)/.38,0,1)
 			if r > 1 and r < PROFILE.size() - 1: y += wave
 			vertices.append(Vector3(band[i].x, y, band[i].y))
 	# 2D CCW triangles in XZ are Godot clockwise faces viewed from above.

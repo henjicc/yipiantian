@@ -19,7 +19,8 @@ var allowed := PackedVector2Array()
 var points := PackedVector2Array()
 var resting := PackedVector2Array()
 var radius: float
-var heights: Dictionary = {}
+var _floor_faces: Dictionary = {}
+var floor_level: float = .13
 
 func configure(area: Rect2, clearance: float, polygon: PackedVector2Array = PackedVector2Array()) -> void:
 	bounds = area
@@ -107,11 +108,23 @@ func path(start: Vector2, end: Vector2) -> PackedVector2Array:
 	return result
 
 func ground_height(p: Vector2) -> float:
-	var cell := Vector2i(((p - bounds.position) / CELL).round())
-	return heights.get(cell, .13)
+	var cell := Vector2i(((p-bounds.position)/CELL).floor())
+	var height: float=floor_level
+	for face: PackedVector3Array in _floor_faces.get(cell,[]):
+		var a:=Vector2(face[0].x,face[0].z)
+		var b:=Vector2(face[1].x,face[1].z)-a
+		var c:=Vector2(face[2].x,face[2].z)-a
+		var point: Vector2=p-a
+		var determinant: float=b.cross(c)
+		var u: float=point.cross(c)/determinant
+		var v: float=b.cross(point)/determinant
+		if u>=0 and v>=0 and u+v<=1:
+			height=maxf(height,face[0].y+u*(face[1].y-face[0].y)+v*(face[2].y-face[0].y))
+	return height
 
 func add_floor(node: Node3D) -> void:
-	# Rasterize the actual low walking surfaces, not bounding-box tops.
+	# Index real low triangles per spatial cell; feet sample the triangle at their
+	# exact XZ rather than snapping to a neighbouring grid point on a stone edge.
 	for mesh: MeshInstance3D in node.find_children("*", "MeshInstance3D", true, false):
 		if not mesh.is_visible_in_tree(): continue
 		var faces: PackedVector3Array = mesh.mesh.get_faces()
@@ -119,7 +132,7 @@ func add_floor(node: Node3D) -> void:
 			var a: Vector3 = mesh.global_transform * faces[i]
 			var b: Vector3 = mesh.global_transform * faces[i + 1]
 			var c: Vector3 = mesh.global_transform * faces[i + 2]
-			if minf(a.y, minf(b.y, c.y)) < .09 or maxf(a.y, maxf(b.y, c.y)) > .24: continue
+			if minf(a.y, minf(b.y, c.y)) < floor_level-.04 or maxf(a.y, maxf(b.y, c.y)) > floor_level+.11: continue
 			var av := Vector2(a.x, a.z)
 			var bv := Vector2(b.x, b.z)
 			var cv := Vector2(c.x, c.z)
@@ -127,14 +140,12 @@ func add_floor(node: Node3D) -> void:
 			if absf(determinant) < .000001: continue
 			var lo := Vector2i(((av.min(bv).min(cv) - bounds.position) / CELL).floor())
 			var hi := Vector2i(((av.max(bv).max(cv) - bounds.position) / CELL).ceil())
+			var triangle:=PackedVector3Array([a,b,c])
 			for y: int in range(maxi(0, lo.y), mini(grid.region.size.y, hi.y + 1)):
 				for x: int in range(maxi(0, lo.x), mini(grid.region.size.x, hi.x + 1)):
 					var id := Vector2i(x, y)
-					var p: Vector2 = grid.get_point_position(id) - av
-					var u: float = p.cross(cv - av) / determinant
-					var v: float = (bv - av).cross(p) / determinant
-					if u >= 0 and v >= 0 and u + v <= 1:
-						heights[id] = maxf(heights.get(id, .13), a.y + u * (b.y - a.y) + v * (c.y - a.y))
+					if not _floor_faces.has(id): _floor_faces[id]=[]
+					_floor_faces[id].append(triangle)
 
 static func footprint(node: Node3D, bottom: float, top: float, visible_only: bool = true) -> PackedVector2Array:
 	var vertices := PackedVector2Array()

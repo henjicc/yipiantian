@@ -49,6 +49,7 @@ func _run() -> void:
 	folder=ProjectSettings.globalize_path("res://../.local/verification/courtyard-editor-%d"%Time.get_ticks_usec())
 	DirAccess.make_dir_recursive_absolute(folder)
 	scene=load("res://scenes/main.tscn").instantiate()
+	if "--terrain" in OS.get_cmdline_user_args(): scene.courtyard_plan.set_terrain(.38,1.2)
 	scene.name="FarmScene"
 	scene.store=Store.new(folder.path_join("farm"))
 	scene.settings_store=load("res://settings/settings_store.gd").new(folder.path_join("settings"))

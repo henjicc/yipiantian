@@ -12,7 +12,7 @@ func build(courtyard: Node3D) -> void:
 	_build_trellis_bed(courtyard.plan)
 	_build_foundation_contacts(courtyard.plan)
 	for key: String in ["MainHouse","Kitchen","EntranceTrellis"]:
-		_exclusions.append(Space.footprint(courtyard.get_node(key),.0,.70))
+		_exclusions.append(Space.footprint(courtyard.get_node(key),courtyard.plan.ground_height-.13,courtyard.plan.ground_height+.57))
 	# The veranda is a module, but it uses the same plan anchor as its apron.
 	var porch := PackedVector2Array()
 	var porch_pose := Transform3D(Basis(Vector3.UP,deg_to_rad(courtyard.plan.angles.veranda)),courtyard.plan.anchors.veranda)
@@ -89,7 +89,7 @@ func _build_foundation_contacts(plan: RefCounted) -> void:
 		decal.texture_albedo = ImageTexture.create_from_image(image)
 		decal.size = Vector3(extent.x,.18,extent.y)
 		decal.transform = pose
-		decal.position = pose * Vector3(footprint.get_center().x,.17-plan.anchors[item.anchor].y,footprint.get_center().y)
+		decal.position = pose * Vector3(footprint.get_center().x,plan.ground_height+.04-plan.anchors[item.anchor].y,footprint.get_center().y)
 		decal.cull_mask = 2
 		add_child(decal)
 

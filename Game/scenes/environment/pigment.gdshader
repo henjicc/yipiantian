@@ -7,6 +7,7 @@ uniform float wash_scale = 3.0;
 uniform float stone_treatment : hint_range(0.0,1.0) = 0.0;
 uniform float ground_treatment : hint_range(0.0,1.0) = 0.0;
 uniform float foundation_treatment : hint_range(0.0,1.0) = 0.0;
+uniform float ground_level = .13;
 uniform bool painted_rock = false;
 uniform sampler2D rock_color : source_color, filter_linear_mipmap, repeat_disable;
 varying vec3 world_point;
@@ -38,13 +39,18 @@ void fragment(){
 	if (ground_treatment>.5) {
 		vec3 world_normal=(INV_VIEW_MATRIX*vec4(NORMAL,0.0)).xyz;
 		float top=smoothstep(.6,.95,world_normal.y);
-		float turf=top*smoothstep(-.16,.12,world_point.y+(ground_patch-.5)*.19);
-		painted=mix(painted,turf_colour(world_point.xz),turf);
+		float turf=top*smoothstep(ground_level-.29,ground_level-.01,world_point.y+(ground_patch-.5)*.19);
+		// The exposed slope needs its own earth pigment; widening or raising it
+		// must not reveal a broad yellow strip underneath the grassy plateau.
+		vec2 soil_point=world_point.xz+world_point.y*vec2(.63,-.47);
+		float clumps=terrain_noise(soil_point*5.7)*.65+terrain_noise(soil_point*31.0)*.35;
+		vec3 earth=mix(vec3(.115,.089,.055),vec3(.205,.164,.105),clumps);
+		painted=mix(earth,turf_colour(world_point.xz),turf);
 		// Keep the rounded bank's geometric normal. The former replacement with
 		// an upward turf normal flattened the light across its entire shoulder.
 		NORMAL=normalize(NORMAL+(VIEW_MATRIX*vec4(turf_normal(world_point.xz)-vec3(0,1,0),0.0)).xyz*top);
 	}
-	float foot=(1.0-smoothstep(.13,.23+terrain_noise(world_point.xz*11.0)*.035,world_point.y))*foundation_treatment;
+	float foot=(1.0-smoothstep(ground_level,ground_level+.10+terrain_noise(world_point.xz*11.0)*.035,world_point.y))*foundation_treatment;
 	painted=mix(painted,mix(painted*.65,turf_colour(world_point.xz),.28),foot);
 	float wet=(1.0-smoothstep(-.25,-.12,world_point.y+.025*(broad-.5)))*max(stone_treatment,ground_treatment);
 	float moss=smoothstep(.46,.70,wash(world_point*vec3(3.3,1.7,3.3)))*smoothstep(-.15,.18,world_point.y)*(1.0-smoothstep(.45,.9,world_point.y))*stone_treatment;

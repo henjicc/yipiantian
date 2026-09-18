@@ -32,6 +32,8 @@ func rebuild_spaces() -> void:
 	water = Space.new()
 	yard = Space.new()
 	var environment: Node3D = get_parent()
+	var rise: float=environment.plan.ground_height-.13
+	yard.floor_level=environment.plan.ground_height
 	water.configure(environment.plan.animal_areas.water, .46)
 	var safe_plateaus: Array[PackedVector2Array] = Geometry2D.offset_polygon(environment.plan.plateau(), -.21)
 	yard.configure(environment.plan.animal_areas.yard, .21, safe_plateaus[0])
@@ -57,8 +59,8 @@ func rebuild_spaces() -> void:
 		if not bank_role.is_empty() or String(child.name).begins_with("BankGrass"): continue
 		if child.name == "LivingDetails":
 			for prop: Node in child.get_children():
-				if prop is Node3D: yard.block(Space.footprint(prop, .19, .70))
-		else: yard.block(Space.footprint(child, .23, .70))
+				if prop is Node3D: yard.block(Space.footprint(prop, .19+rise, .70+rise))
+		else: yard.block(Space.footprint(child, .23+rise, .70+rise))
 	var farm: Node3D = environment.get_parent().get_node_or_null("Farm")
 	if farm != null:
 		for field: Node3D in farm.fields:
@@ -82,7 +84,7 @@ func rebuild_spaces() -> void:
 func _spawn(kind: String, label: String, start: Vector2, size: float) -> void:
 	var space: RefCounted = yard if kind == "hen" else water
 	var p: Vector2 = space.nearest(start)
-	var bird: Node3D = Assets.place(self, kind, Vector3(p.x, .13 if kind == "hen" else -.25 - (.20 if kind == "duck" else .29), p.y), 0, size)
+	var bird: Node3D = Assets.place(self, kind, Vector3(p.x, space.ground_height(p) if kind == "hen" else -.25 - (.20 if kind == "duck" else .29), p.y), 0, size)
 	bird.name = label
 	bird.set_meta("species", kind)
 	var pose := Pose.new()
@@ -245,10 +247,12 @@ func _advance(entry: Dictionary, delta: float) -> void:
 			entry.recoveries += 1
 			_choose(entry)
 	var bird: Node3D = entry.node
-	var height: float = entry.space.ground_height(next) if entry.kind == "hen" else -.25 - PROFILES[entry.kind].draft * bird.scale.x
-	if entry.kind != "hen": height += sin(_time * 1.3 + entry.phase) * .007
-	bird.position = Vector3(next.x, move_toward(bird.position.y, height, delta * .3), next.y)
+	bird.position.x=next.x
+	bird.position.z=next.y
 	bird.rotation.y = entry.heading + (PI if entry.kind == "goose" else 0.0)
+	var height: float = entry.pose.support_height() if entry.kind == "hen" else -.25 - PROFILES[entry.kind].draft * bird.scale.x
+	if entry.kind != "hen": height += sin(_time * 1.3 + entry.phase) * .007
+	bird.position.y=move_toward(bird.position.y,height,delta*(.8 if entry.kind=="hen" else .3))
 	entry.pose.update(delta, distance, velocity.length(), entry.state, _time + entry.phase)
 	if entry.wake != null:
 		entry.wake_strength = move_toward(entry.wake_strength, clampf(velocity.length() / entry.speed, 0, 1), delta * 1.4)

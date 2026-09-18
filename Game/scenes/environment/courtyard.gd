@@ -17,9 +17,6 @@ const BankGeometry = preload("res://layout/bank_geometry.gd")
 const Circulation = preload("res://layout/courtyard_circulation.gd")
 const FenceGeometry = preload("res://layout/fence_geometry.gd")
 const Space = preload("res://scenes/environment/animal_space.gd")
-# World heights of the two surfaces props actually stand on in this courtyard.
-const GROUND_LEVEL := 0.132
-const DECK_LEVEL := 0.41
 # Modules whose feet meet a visible surface and therefore need a contact pool.
 const CONTACT_MODULES := ["veranda", "side_wing", "stone_bridge", "climbing_trellis", "bamboo_fence"]
 const ROOT := "res://art/environment/"
@@ -81,17 +78,18 @@ func _ready() -> void:
 
 func _circulation_obstacles() -> Dictionary:
 	var result: Dictionary = {}
+	var rise: float=plan.ground_height-.13
 	for node: Node3D in get_children():
 		if node.name in ["WaterSurface","DistantLandscape","NeighborIslets","DecorationSlots","OsmanthusLeaves","LivingDetails"]: continue
 		if node.has_meta("bank_role") or String(node.name).begins_with("BankGrass"): continue
 		# Include shoreline rocks and flower clumps too: a route through them
 		# would look open in layout data but still be blocked to the actual hens.
 		var bottom: float = .05 if node.name in ["MainHouse","Kitchen","PorchDeck","EntranceTrellis"] else .23
-		var polygon: PackedVector2Array = Space.footprint(node,bottom,.75)
+		var polygon: PackedVector2Array = Space.footprint(node,bottom+rise,.75+rise)
 		if polygon.size()>=3: result[String(node.name)] = polygon
 	for prop: Node in _living.get_children():
-		if prop is Node3D and plan.props.has(String(prop.name)) and prop.position.y<.3:
-			var polygon: PackedVector2Array = Space.footprint(prop,.05,.70)
+		if prop is Node3D and plan.props.has(String(prop.name)) and prop.position.y<.3+rise:
+			var polygon: PackedVector2Array = Space.footprint(prop,.05+rise,.70+rise)
 			if polygon.size()>=3: result[String(prop.name)] = polygon
 	return result
 
@@ -152,6 +150,7 @@ func _apply_pigment(node: Node, module_id: String = "") -> void:
 			if original is StandardMaterial3D:
 				var painted := ShaderMaterial.new()
 				painted.shader=PIGMENT
+				painted.set_shader_parameter("ground_level",plan.ground_height)
 				painted.set_shader_parameter("base_color",original.albedo_color)
 				if module_id in ["island_bank_v2", "east_bank_v2"]:
 					painted.set_shader_parameter("base_color",Color("827452"))
@@ -237,7 +236,7 @@ func _build_architecture() -> void:
 	var kitchen: Node3D = _life_asset("kitchen","Kitchen",plan.anchors.kitchen,plan.angles.kitchen)
 	_contact_sources.append(kitchen.get_child(0))
 	for mesh: MeshInstance3D in kitchen.find_children("*","MeshInstance3D",true,false):
-		mesh.set_instance_shader_parameter("ground_contact",Vector2(.13,.14))
+		mesh.set_instance_shader_parameter("ground_contact",Vector2(plan.ground_height,.14))
 	var trellis: Node3D = _module("climbing_trellis",plan.anchors.trellis,plan.angles.trellis)
 	trellis.name = "EntranceTrellis"
 	_module("stone_bridge",plan.anchors.bridge,plan.angles.bridge)
@@ -260,6 +259,7 @@ func _build_plants() -> void:
 	var osmanthus: Node3D = get_node("WestTree")
 	_contact_sources.append(osmanthus.get_child(0))
 	var falling := FallingLeaves.new()
+	falling.ground_height=plan.ground_height+.02
 	falling.name = "OsmanthusLeaves"
 	add_child(falling)
 	falling.configure(osmanthus)
@@ -315,15 +315,16 @@ func _build_slots() -> void:
 		assert(DECORATIONS.SLOT_TYPES.has(id))
 		var marker:=Marker3D.new();marker.name=id;marker.position=plan.slots[id];_slots.add_child(marker)
 	# Every hanging position has a real cantilever / cord ending at its top ring.
+	var rise:=Vector3.UP*(plan.ground_height-.13)
 	for id in ["hanging_01","hanging_02"]:
 		var p:Vector3=plan.slots[id]
-		_support_line(Vector3(p.x,2.50,-2.72),Vector3(p.x,2.50,p.z),.037,Color("62543a"))
-		_support_line(Vector3(p.x,2.50,p.z),p,.012,Color("89794c"))
-	_support_line(Vector3(-5.4,2.09,2.13),Vector3(-5.08,2.09,2.13),.025,Color("89794c"))
-	_support_line(Vector3(-5.08,2.09,2.13),plan.slots.hanging_03,.012,Color("89794c"))
-	_support_line(Vector3(-4.85,2.55,-3.77),Vector3(-4.85,2.55,-2.95),.035,Color("62543a"))
-	_support_line(Vector3(-4.85,2.10,-3.77),Vector3(-4.85,2.55,-3.0),.025,Color("62543a"))
-	_support_line(Vector3(-4.85,2.55,-2.95),plan.slots.hanging_04,.012,Color("89794c"))
+		_support_line(Vector3(p.x,2.50,-2.72)+rise,Vector3(p.x,2.50,p.z)+rise,.037,Color("62543a"))
+		_support_line(Vector3(p.x,2.50,p.z)+rise,p,.012,Color("89794c"))
+	_support_line(Vector3(-5.4,2.09,2.13)+rise,Vector3(-5.08,2.09,2.13)+rise,.025,Color("89794c"))
+	_support_line(Vector3(-5.08,2.09,2.13)+rise,plan.slots.hanging_03,.012,Color("89794c"))
+	_support_line(Vector3(-4.85,2.55,-3.77)+rise,Vector3(-4.85,2.55,-2.95)+rise,.035,Color("62543a"))
+	_support_line(Vector3(-4.85,2.10,-3.77)+rise,Vector3(-4.85,2.55,-3.0)+rise,.025,Color("62543a"))
+	_support_line(Vector3(-4.85,2.55,-2.95)+rise,plan.slots.hanging_04,.012,Color("89794c"))
 
 func _support_line(a:Vector3,b:Vector3,radius:float,color:Color)->void:
 	var node:=MeshInstance3D.new();node.name="LanternSupport"
@@ -343,10 +344,12 @@ func _build_contact_shading() -> void:
 	shading.name = "ContactShading"
 	add_child(shading)
 	shading.configure_bounds(plan.land_bounds().grow(.6))
+	var ground: float=plan.ground_height+.002
+	var deck: float=plan.anchors.veranda.y+.28
 	for source: Node3D in _contact_sources:
-		shading.collect(source, [GROUND_LEVEL, DECK_LEVEL])
-	shading.collect(get_node("MainHouse"), [GROUND_LEVEL])
-	shading.collect(_living, [GROUND_LEVEL, DECK_LEVEL])
+		shading.collect(source, [ground, deck])
+	shading.collect(get_node("MainHouse"), [ground])
+	shading.collect(_living, [ground, deck])
 	shading.bake()
 
 

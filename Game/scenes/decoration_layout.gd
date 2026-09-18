@@ -263,8 +263,9 @@ func cancel_pointer_gesture() -> void:
 
 func ground_footprints() -> Dictionary:
 	var result: Dictionary = {}
+	var rise: float=environment.plan.ground_height-.13
 	for key: String in _instances:
-		var polygon: PackedVector2Array = preload("res://scenes/environment/animal_space.gd").footprint(_instances[key],.05,.75)
+		var polygon: PackedVector2Array = preload("res://scenes/environment/animal_space.gd").footprint(_instances[key],.05+rise,.75+rise)
 		if polygon.size()>=3: result["decoration_"+key]=polygon
 	return result
 

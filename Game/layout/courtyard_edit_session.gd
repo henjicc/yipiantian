@@ -23,7 +23,7 @@ func _ready() -> void:
 
 func begin(environment: Node3D, farm_state: FarmState, decorations: Dictionary, undo: Dictionary) -> void:
 	state=farm_state
-	_shore=environment.plan.snapshot().shore
+	_shore=environment.plan.snapshot().shore+environment.plan.snapshot().terrain
 	_blocks=environment.layout_obstacles.duplicate(true)
 	_decorations=decorations
 	var occupied: Dictionary={}
@@ -47,14 +47,14 @@ func _check(snapshot: Dictionary, revision: int) -> void:
 	if not editor.active or revision!=editor.revision:
 		editor.set_busy(false)
 		return
-	if _shore!=snapshot.shore:
+	if _shore!=snapshot.shore+snapshot.terrain:
 		var probe:=Courtyard.new()
 		probe.plan=plan
 		probe.layout_probe=true
 		probe.process_mode=Node.PROCESS_MODE_DISABLED
 		add_child(probe)
 		_blocks=probe.layout_obstacles.duplicate(true)
-		_shore=snapshot.shore.duplicate()
+		_shore=snapshot.shore+snapshot.terrain
 		remove_child(probe)
 		probe.free()
 	var obstacles: Dictionary=_blocks.duplicate(true)

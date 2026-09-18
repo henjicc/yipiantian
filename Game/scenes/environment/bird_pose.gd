@@ -106,6 +106,19 @@ func update(delta: float, distance: float, speed: float, behavior: String, time:
 func beak_world_position() -> Vector3:
 	return skeleton.to_global(_beak_position())
 
+func support_height() -> float:
+	# Lower the pelvis to the lower supporting foot on stone/grass boundaries.
+	# Sampling only under the body can leave a short leg reaching into thin air.
+	var height: float=ground.call(Vector2(root.global_position.x,root.global_position.z))
+	for i: int in legs.size():
+		var cycle: float=fposmod(phase+i*.5,1.0)
+		if cycle>=.55 and motion>.01: continue
+		var along: float=lerpf(.0605,-.0605,cycle/.55)*motion
+		var foot: Vector3=skeleton.to_global(rests[legs[i].foot].origin)
+		foot+=root.global_basis.orthonormalized()*Vector3(0,0,along)
+		height=minf(height,float(ground.call(Vector2(foot.x,foot.z))))
+	return height
+
 func _beak_position() -> Vector3:
 	var point := Vector3.ZERO
 	for binding: Dictionary in beak_bindings:

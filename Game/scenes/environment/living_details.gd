@@ -180,11 +180,12 @@ func _build_tools() -> void:
 	_beam(group,Vector3(.22,.075,.04),Vector3(.46,.075,.04),.05,iron)
 
 func _build_mooring() -> void:
-	_rope_origin = plan.anchors.mooring + Vector3.UP * .68
+	var rise: float=plan.ground_height-.13
+	_rope_origin = plan.anchors.mooring + Vector3.UP * (.68+rise)
 	for at: Vector3 in [plan.anchors.mooring,plan.anchors.mooring + Vector3(-.27,0,.63)]:
-		_beam(self,at,at+Vector3.UP*.82,.071,_wood)
-		_ring(self,at+Vector3.UP*.66,.075,.013,_rope)
-		_ring(self,at+Vector3.UP*.70,.075,.013,_rope)
+		_beam(self,at,at+Vector3.UP*(.82+rise),.071,_wood)
+		_ring(self,at+Vector3.UP*(.66+rise),.075,.013,_rope)
+		_ring(self,at+Vector3.UP*(.70+rise),.075,.013,_rope)
 	for i: int in 12:
 		_rope_segments.append(_beam(self,Vector3.ZERO,Vector3.UP*.1,.011,_rope))
 

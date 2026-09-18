@@ -16,10 +16,12 @@ static func arrange(current: RefCounted, id: String) -> RefCounted:
 		result.expand_shore(2.5,3)
 		positions[0]=Vector3(-8,.2,1)
 		positions[5]=Vector3(-3.3,.2,6.9)
+	result.set_terrain(current.ground_height,current.bank_width)
 	result.fields=current.fields.duplicate(true)
 	result.fence_style=current.fence_style
 	for i: int in mini(positions.size(),result.fields.size()):
 		result.fields[i].position=positions[i]
+		result.fields[i].position.y=current.ground_height+.07
 		result.fields[i].yaw=0.0
 	if id=="west": result.fields[0].yaw=90.0
 	elif id=="front": result.fields[0].yaw=10.0
