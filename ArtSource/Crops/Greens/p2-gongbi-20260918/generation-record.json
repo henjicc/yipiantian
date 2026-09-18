@@ -1,0 +1,24 @@
+{
+  "date": "2026-09-18",
+  "purpose": "P2 mature greens sample restoring the approved gongbi light-colour style",
+  "image_tool": "built-in image_gen",
+  "image_inputs_in_order": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+  ],
+  "image_prompt": "image-request.txt",
+  "image_output_original": "%USERPROFILE%/.codex/generated_images/01a0b37f-b6ca-70f0-9d96-da54c4d5cbf8/exec-23aefc46-ef51-406c-b7be-2d9b0d38605a.png",
+  "image_copy": "reference.png",
+  "image_model_seed_and_cost": "not returned",
+  "tripo_task": "ef0009ed-8503-45eb-ad0f-6f3cc2ac8116",
+  "tripo_result": "raw/task.json",
+  "tripo_credits": 120,
+  "geometry_reason": "P2 is required by the customer; simpler broad leaves and clear connections are used for this representative sample",
+  "texture_reason": "v3.5 detailed with original_image alignment and delight=false to retain intentional painted washes; no isolated delight comparison",
+  "processing": ["preserve raw FBX", "Blender 5.2.2 uniform scale and bottom pivot", "preserve complete high geometry and native 4K map", "65% low candidate inspected in four views", "matte material", "GLB export and clean reimport", "Godot mature-only legacy colour boost bypass"],
+  "not_used": ["semantic segmentation", "rigging", "paid retexturing", "paid retopology", "multiview", "video recording"],
+  "runtime_high": "Game/art/crops/greens/greens_mature.glb",
+  "auxiliary_low": "Game/art/crops/greens/greens_mature_low.glb",
+  "verification": ".local/verification/greens-gongbi/",
+  "acceptance": "Integrated into the development game; developer inspected, awaiting user aesthetic feedback"
+}

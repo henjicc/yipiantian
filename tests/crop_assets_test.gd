@@ -2,11 +2,13 @@ extends SceneTree
 
 const Visuals = preload("res://art/crops/crop_visual_catalog.gd")
 const Sample = preload("res://scenes/crop_sample/crop_sample.gd")
+const Wind = preload("res://presentation/plant_wind.gd")
 var failures: Array[String] = []
 var checks: int = 0
 var capture_dir: String = ""
 var scene: Node3D
 var planting_only: bool = false
+var crop_filter: String = ""
 
 
 func _initialize() -> void:
@@ -15,6 +17,8 @@ func _initialize() -> void:
 			capture_dir = argument.trim_prefix("--screenshots=")
 		if argument == "--planting-only":
 			planting_only = true
+		if argument.begins_with("--crop="):
+			crop_filter = argument.trim_prefix("--crop=")
 	_run.call_deferred()
 
 
@@ -29,7 +33,14 @@ func _run() -> void:
 		quit(0 if failures.is_empty() else 1)
 		return
 	var statistics: Dictionary = {}
+	if not crop_filter.is_empty() and not Visuals.CROP_IDS.has(crop_filter):
+		push_error("Unknown crop filter: " + crop_filter)
+		quit(1)
+		return
+	var greens_audit: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://../ArtSource/Crops/Greens/p2-gongbi-20260918/asset-audit.json"))
 	for crop_id: String in Visuals.CROP_IDS:
+		if not crop_filter.is_empty() and crop_id != crop_filter:
+			continue
 		var prior_height: float = 0.0
 		for stage: String in Visuals.STAGES:
 			var pair: Array[Dictionary] = []
@@ -46,10 +57,23 @@ func _run() -> void:
 				pair.append(report)
 				statistics[path] = {"triangles": report.triangles, "mesh_instances": report.mesh_instances,
 					"bounds_position": str(report.bounds.position), "bounds_size": str(report.bounds.size)}
-				_expect(report.triangles > 0 and report.triangles <= 3600, "Measured stage triangle budget: " + path)
+				if crop_id == "greens" and stage == "mature":
+					var tier: String = "greens_mature_low" if low else "greens_mature"
+					_expect(report.triangles == int(greens_audit.meshes[tier].triangles), "Imported P2 geometry matches audited export: " + path)
+					if not low:
+						_expect(report.triangles == int(greens_audit.source_topology.triangles), "High tier preserves full generated geometry")
+				else:
+					_expect(report.triangles > 0 and report.triangles <= 3600, "Measured stage triangle budget: " + path)
 				_expect(report.mesh_instances <= 2 and report.mesh_instances > 0, "No unexpected mesh fragments: " + path)
 				_expect(absf(report.bounds.position.y) <= 0.008, "Ground root remains at zero: " + path)
 				_expect(report.bounds.size.y > 0.04 and report.bounds.size.y < 0.65, "Metre-scale crop height: " + path)
+				if crop_id == "greens":
+					Wind.new().apply(crop, "greens", stage == "mature")
+					for mesh: MeshInstance3D in crop.find_children("*", "MeshInstance3D", true, false):
+						_expect(mesh.get_instance_shader_parameter("preserve_painted_color") == (1.0 if stage == "mature" else 0.0), "Only mature gongbi greens bypass legacy colour boost")
+						var original: StandardMaterial3D = mesh.mesh.surface_get_material(0)
+						var animated: ShaderMaterial = mesh.get_active_material(0)
+						_expect(animated.get_shader_parameter("color_texture") == original.albedo_texture, "Wind retains source brushwork texture")
 				crop.free()
 			if pair.size() == 2:
 				_expect(pair[1].triangles < pair[0].triangles, "Low mesh uses fewer triangles: " + crop_id + "/" + stage)

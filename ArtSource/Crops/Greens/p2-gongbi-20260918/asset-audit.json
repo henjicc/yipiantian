@@ -1,0 +1,77 @@
+{
+  "source": "raw/model.fbx",
+  "blender": "5.2.2 LTS",
+  "source_topology": {
+    "vertices": 6278,
+    "faces": 6776,
+    "quads": 5776,
+    "triangles": 12552,
+    "dimensions_godot_xyz": [
+      0.99951171875,
+      0.83837890625,
+      0.97998046875
+    ],
+    "materials": 1,
+    "uv_layers": 1,
+    "boundary_edges": 0,
+    "non_manifold_edges": 0,
+    "loose_vertices": 0,
+    "zero_area_faces": 0
+  },
+  "meshes": {
+    "greens_mature": {
+      "vertices": 6278,
+      "faces": 6776,
+      "quads": 5776,
+      "triangles": 12552,
+      "dimensions_godot_xyz": [
+        0.48000001907348633,
+        0.4026184678077698,
+        0.47062042355537415
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    },
+    "greens_mature_low": {
+      "vertices": 4081,
+      "faces": 5375,
+      "quads": 2783,
+      "triangles": 8158,
+      "dimensions_godot_xyz": [
+        0.48000001907348633,
+        0.40280666947364807,
+        0.4706866145133972
+      ],
+      "materials": 1,
+      "uv_layers": 1,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "loose_vertices": 0,
+      "zero_area_faces": 0,
+      "textures": [
+        {
+          "size": [
+            4096,
+            4096
+          ]
+        }
+      ],
+      "reimport_verified": true
+    }
+  },
+  "high_detail_policy": "Full generated geometry; no decimation or extra Godot LOD",
+  "wind": "Existing root-anchored bounds wind; no invented per-leaf segmentation"
+}

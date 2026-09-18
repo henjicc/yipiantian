@@ -21,17 +21,16 @@ const PROFILES := {
 # when an unrelated vertex colour layer exists.
 const AUTHORED_BEND := {
 	"osmanthus": 0.07,
-	"greens": 0.006,
 }
 var _materials: Dictionary = {}
 
 
-func apply(root: Node3D, kind: String) -> void:
+func apply(root: Node3D, kind: String, preserve_painted_color: bool = false) -> void:
 	assert(PROFILES.has(kind), "Unknown plant wind profile")
-	_apply_node(root, kind)
+	_apply_node(root, kind, preserve_painted_color)
 
 
-func _apply_node(node: Node, kind: String) -> void:
+func _apply_node(node: Node, kind: String, preserve_painted_color: bool) -> void:
 	if node is MeshInstance3D and node.mesh != null:
 		var mesh: MeshInstance3D = node
 		var bounds: AABB = mesh.mesh.get_aabb()
@@ -55,11 +54,12 @@ func _apply_node(node: Node, kind: String) -> void:
 		mesh.set_instance_shader_parameter("wind_authored", 1.0 if authored else 0.0)
 		mesh.set_instance_shader_parameter("wind_authored_bend", AUTHORED_BEND.get(kind, 0.07))
 		mesh.set_instance_shader_parameter("leaf_paint_strength", 0.0 if kind == "autumn_crop" else 1.0)
+		mesh.set_instance_shader_parameter("preserve_painted_color", 1.0 if preserve_painted_color else 0.0)
 		mesh.set_instance_shader_parameter("wind_leaf_texture_mask", 1.0 if kind == "trellis" else 0.0)
 		mesh.extra_cull_margin = maxf(mesh.extra_cull_margin, 0.22 if kind == "osmanthus" else motion.x + motion.w)
 		mesh.set_meta("plant_wind_kind", kind)
 	for child: Node in node.get_children():
-		_apply_node(child, kind)
+		_apply_node(child, kind, preserve_painted_color)
 
 
 func _has_vertex_colors(mesh: Mesh) -> bool:

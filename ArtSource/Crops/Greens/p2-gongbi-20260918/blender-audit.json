@@ -1,0 +1,129 @@
+{
+  "actions": [],
+  "armatures": [],
+  "blender_version": "5.2.2 LTS",
+  "failures": [],
+  "meshes": [
+    {
+      "dimensions": [
+        0.48,
+        0.47062,
+        0.402618
+      ],
+      "edges": 13052,
+      "faces": 6776,
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loose_vertices": 0,
+      "material_slots": 1,
+      "modifiers": [],
+      "name": "greens_mature",
+      "non_manifold_edges": 0,
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 12552,
+      "uv_layers": [
+        "ef0009ed_8503_45eb_ad0f_6f3cc2ac8116_NewUVMap"
+      ],
+      "vertices": 6278
+    },
+    {
+      "dimensions": [
+        0.48,
+        0.47062,
+        0.402618
+      ],
+      "edges": 13052,
+      "faces": 6776,
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loose_vertices": 0,
+      "material_slots": 1,
+      "modifiers": [],
+      "name": "greens_editable_quad",
+      "non_manifold_edges": 0,
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 12552,
+      "uv_layers": [
+        "ef0009ed_8503_45eb_ad0f_6f3cc2ac8116_NewUVMap"
+      ],
+      "vertices": 6278
+    },
+    {
+      "dimensions": [
+        0.48,
+        0.470687,
+        0.402807
+      ],
+      "edges": 9454,
+      "faces": 5375,
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loose_vertices": 0,
+      "material_slots": 1,
+      "modifiers": [],
+      "name": "greens_mature_low",
+      "non_manifold_edges": 0,
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 8158,
+      "uv_layers": [
+        "ef0009ed_8503_45eb_ad0f_6f3cc2ac8116_NewUVMap"
+      ],
+      "vertices": 4081
+    }
+  ],
+  "missing_files": [],
+  "passed": true,
+  "scene": "Scene",
+  "schema_version": 1,
+  "source_file": "D:\\VibeCode\\\u6211\u6709\u4e00\u7247\u7530\\ArtSource\\Crops\\Greens\\p2-gongbi-20260918\\greens_gongbi.blend",
+  "summary": {
+    "actions": 0,
+    "armatures": 0,
+    "images": 1,
+    "materials": 1,
+    "mesh_objects": 3,
+    "objects": 3,
+    "triangles": 33262
+  },
+  "units": {
+    "scale_length": 1.0,
+    "system": "METRIC"
+  },
+  "warnings": []
+}
