@@ -78,7 +78,7 @@ $build = Join-Path $source '.local/builds/windows'
 $packageName = '我有一片田 '+$Version+' Windows'
 $package = Join-Path $releaseRoot $packageName
 New-Item -ItemType Directory -Path (Join-Path $package 'notices') | Out-Null
-foreach ($filename in @('Farm.exe','Farm.pck')) { Copy-Item -LiteralPath (Join-Path $build $filename) -Destination $package }
+foreach ($filename in @('Farm.exe','Farm.pck','FarmDesktop.exe')) { Copy-Item -LiteralPath (Join-Path $build $filename) -Destination $package }
 foreach ($filename in @('使用说明.txt','来源与通知.txt','版本说明.txt')) { Copy-Item -LiteralPath (Join-Path $source ('发行材料/'+$filename)) -Destination $package }
 foreach ($filename in @('GODOT_LICENSE.txt','GODOT_COPYRIGHT.txt')) { Copy-Item -LiteralPath (Join-Path $source ('Game/legal/'+$filename)) -Destination (Join-Path $package 'notices') }
 Copy-Item -LiteralPath (Join-Path $source 'Game/art/ui/fonts/字体来源.txt') -Destination (Join-Path $package 'notices/字体来源.txt')

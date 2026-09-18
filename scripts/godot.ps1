@@ -46,6 +46,9 @@ switch ($Action) {
     }
 }
 $nativeArgs += $ExtraArgs
+if ($Action -eq 'ExportWindows') {
+    & (Join-Path $PSScriptRoot 'build-desktop.ps1')
+}
 if ($isPreview) {
     $screenIndex = [Array]::IndexOf($nativeArgs, '--screen')
     $previewScreen = [int]$nativeArgs[$screenIndex + 1]

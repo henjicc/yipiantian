@@ -5,6 +5,7 @@ signal settings_changed(value: Dictionary)
 signal save_requested
 signal close_requested
 signal quit_requested
+signal wallpaper_requested
 
 const FarmTheme = preload("res://ui/farm_theme.gd")
 var _root: Control
@@ -19,6 +20,7 @@ var _status: Label
 var _close: Button
 var _quit: Button
 var _save: Button
+var _wallpaper: Button
 var _values: Dictionary = {}
 var _populating: bool = false
 
@@ -113,6 +115,11 @@ func _ready() -> void:
 	_dof.toggled.connect(func(enabled: bool) -> void:
 		_change("dof_enabled", enabled)
 		_refresh_dof())
+	_wallpaper = _button(_row(settings, "桌面"), "设为桌面壁纸")
+	_wallpaper.name = "DesktopWallpaper"
+	_wallpaper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_wallpaper.tooltip_text = "在当前屏幕安静展示农场；双击系统托盘图标返回游戏。"
+	_wallpaper.pressed.connect(func() -> void: wallpaper_requested.emit())
 	var operations: RichTextLabel = _text_page(content, "操作说明")
 	operations.text = "[b]照料田地[/b]\n点击播种展开蔬菜，选好后移到土地上预览格子，左键点击即可播种，也可以连续种植。拿着种子时滚轮切换蔬菜；右键、Esc 或取消按钮放下工具并收起选项。点击工具展开浇水和收获，选好后同样点击目标格操作。每轮可浇水一次，不同作物节省的生长时间不同；成熟收获一篮。\n\n[b]观察院落[/b]\n放下种子后滚轮缩放。空手点击大田靠近；中键拖动转动视角，Shift＋中键平移。自由视角下左键绕点击处旋转，中键或右键平移，滚轮缩放。\n\n[b]返回与布置[/b]\n右键或 Esc 先放下工具，再清除选格、返回全景。布置时选装饰、点空位，再确认；旋转适用于地面装饰。\n\n作物按现实时间生长。离开后再次进入，会继续上次的农场。"
 	var sources: RichTextLabel = _text_page(content, "制作来源")
@@ -201,7 +208,7 @@ func _refresh_focus_chain(index: int) -> void:
 	if index == 0:
 		for key: String in ["master", "music", "effects"]:
 			controls.append(_sliders[key])
-		controls.append_array([_window, _quality, _dof])
+		controls.append_array([_window, _quality, _dof, _wallpaper])
 	else:
 		controls.append(_pages[index])
 	controls.append_array([_save, _close, _quit])

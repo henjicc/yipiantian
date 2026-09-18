@@ -15,6 +15,9 @@ const FocusDetail = preload("res://presentation/focus_detail.gd")
 const HUD = preload("res://scenes/farm_hud.gd")
 const SettingsStore = preload("res://settings/settings_store.gd")
 const GameMenu = preload("res://ui/game_menu.gd")
+const DesktopWallpaper = preload("res://platform/desktop_wallpaper.gd")
+var desktop_wallpaper: DesktopWallpaper
+var _wallpaper_issue: String = ""
 const CameraTuning = preload("res://ui/camera_tuning.gd")
 const CourtyardPlan = preload("res://layout/courtyard_plan.gd")
 const CourtyardEditSession = preload("res://layout/courtyard_edit_session.gd")
@@ -231,6 +234,18 @@ func _ready() -> void:
 	add_child(focus_detail)
 	focus_detail.configure(camera, farm.fields, courtyard, decoration_layout)
 	_setup_settings()
+	desktop_wallpaper = DesktopWallpaper.new()
+	desktop_wallpaper.name = "DesktopWallpaper"
+	add_child(desktop_wallpaper)
+	desktop_wallpaper.changed.connect(_wallpaper_changed)
+	desktop_wallpaper.visibility_changed.connect(window_activity.set_wallpaper_visible)
+	desktop_wallpaper.restoring.connect(window_activity.begin_wallpaper_restore)
+	desktop_wallpaper.quit_requested.connect(_request_exit)
+	desktop_wallpaper.failed.connect(func(message: String) -> void:
+		push_warning(message)
+		_wallpaper_issue = message
+		if not desktop_wallpaper.active and not desktop_wallpaper.busy:
+			game_menu.present(settings_values, message))
 	courtyard_edit=CourtyardEditSession.new()
 	courtyard_edit.name="CourtyardEditor"
 	add_child(courtyard_edit)
@@ -687,6 +702,7 @@ func _refresh_lanterns() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
 	if garden_album!=null and garden_album.active:
 		garden_album.cancel_key(event)
 		return
@@ -768,6 +784,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
 	if garden_album!=null and garden_album.active: return
 	if _animal_active(): return
 	if _basket_active(): return
@@ -813,6 +830,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
 	if garden_album!=null and garden_album.active:
 		_cancel_input()
 		return
@@ -1142,6 +1160,7 @@ func _setup_settings() -> void:
 	game_menu.save_requested.connect(_save_settings)
 	game_menu.close_requested.connect(_request_menu_close)
 	game_menu.quit_requested.connect(_request_exit)
+	game_menu.wallpaper_requested.connect(_enter_wallpaper)
 	_apply_settings()
 	hud.show_settings_issue(not _settings_issue.is_empty())
 
@@ -1151,7 +1170,7 @@ func _apply_settings() -> void:
 	focus_detail.set_quality(settings_values.quality)
 	focus_detail.set_depth_of_field(settings_values.dof_enabled, focus_detail.get_settings().dof_strength)
 	# Headless validation has no OS window; preference validation remains identical.
-	if DisplayServer.get_name() != "headless":
+	if DisplayServer.get_name() != "headless" and not (desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy)):
 		var window: Window = get_window()
 		var desired: Window.Mode = Window.MODE_FULLSCREEN if settings_values.fullscreen else Window.MODE_WINDOWED
 		if settings_values.fullscreen and OS.has_feature("editor") and OS.get_cmdline_user_args().has("--dev-preview"):
@@ -1180,6 +1199,37 @@ func _open_menu() -> void:
 	_refresh_hud()
 	game_menu.present(settings_values, _settings_issue)
 	farm_audio.play_ui()
+
+
+func _enter_wallpaper() -> void:
+	if desktop_wallpaper == null or desktop_wallpaper.active or desktop_wallpaper.busy: return
+	if not _loaded or _save_failed or _layout_active() or (garden_album != null and garden_album.active): return
+	if (_settings_dirty or not _settings_issue.is_empty()) and not _save_settings(): return
+	settle_farm()
+	if not _save_farm(): return
+	_wallpaper_issue = ""
+	_cancel_input()
+	_cancel_tool()
+	camera.cancel_free_gesture()
+	camera.cancel_zoom()
+	game_menu.set_status("正在进入桌面壁纸；双击托盘图标即可返回农场。")
+	desktop_wallpaper.enter()
+
+
+func _wallpaper_changed(enabled: bool) -> void:
+	_cancel_input()
+	window_activity.set_wallpaper(enabled)
+	camera.free_input_enabled = not enabled
+	get_viewport().gui_disable_input = enabled
+	if enabled:
+		game_menu.dismiss()
+		hud.hide()
+	else:
+		hud.show()
+		_refresh_hud()
+		settle_farm()
+		if not _wallpaper_issue.is_empty():
+			game_menu.present(settings_values, _wallpaper_issue)
 
 
 func _change_settings(value: Dictionary) -> void:

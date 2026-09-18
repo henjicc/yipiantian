@@ -56,6 +56,8 @@ foreach ($candidate in Get-CimInstance Win32_Process -Filter "Name LIKE 'Godot%w
     Write-Output "Closed this project's development game (PID $($candidate.ProcessId))."
 }
 
+# Rebuild only after the previous game has released its bundled desktop host.
+& (Join-Path $PSScriptRoot 'build-desktop.ps1')
 $output = Join-Path (Split-Path -Parent $project) '.local/dev-preview'
 New-Item -ItemType Directory -Path $output -Force | Out-Null
 $log = Join-Path $output ('game-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '.log')
