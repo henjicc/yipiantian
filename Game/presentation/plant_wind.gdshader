@@ -8,6 +8,12 @@ uniform bool textured = false;
 uniform float base_roughness = 0.95;
 uniform float base_specular = 0.08;
 uniform float base_metallic = 0.0;
+uniform bool normal_textured = false;
+uniform sampler2D normal_texture : hint_normal, filter_linear_mipmap_anisotropic;
+uniform float normal_strength = 1.0;
+uniform bool roughness_textured = false;
+uniform sampler2D roughness_texture : hint_default_white, filter_linear_mipmap_anisotropic;
+uniform vec4 roughness_channel = vec4(1.0,0.0,0.0,0.0);
 uniform vec3 uv_scale = vec3(1.0);
 uniform vec3 uv_offset = vec3(0.0);
 uniform bool pigment = false;
@@ -114,5 +120,12 @@ void fragment() {
 		ROUGHNESS = mix(ROUGHNESS, leaf_roughness, leaf_pigment * (1.0 - contact));
 	}
 	SPECULAR = base_specular;
+	if (roughness_textured) {
+		ROUGHNESS = mix(base_roughness * dot(texture(roughness_texture, UV), roughness_channel), .97, contact);
+	}
+	if (normal_textured) {
+		NORMAL_MAP = texture(normal_texture, UV).rgb;
+		NORMAL_MAP_DEPTH = normal_strength;
+	}
 	METALLIC = base_metallic;
 }

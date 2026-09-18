@@ -1,0 +1,231 @@
+extends Node3D
+## Isolated material review. No farm, player save, or gameplay state is loaded.
+
+const ORIGINAL = preload("res://art/crops/greens/greens_mature.glb")
+const Wind = preload("res://presentation/plant_wind.gd")
+const CANDIDATE := "res://development/greens_pbr/greens_pbr.glb"
+var plants: Array[Node3D] = []
+var sun: DirectionalLight3D
+var environment: Environment
+var camera: Camera3D
+var title_right: Label
+var candidate_materials: Array[ShaderMaterial] = []
+var yaw := 0.0
+var light_index := 0
+var normals_enabled := true
+var original_color: Texture2D
+var generated_colors: Array[Texture2D] = []
+var use_generated_color := false
+
+func _ready() -> void:
+	if OS.get_cmdline_user_args().has("--dev-preview"):
+		get_window().mode = Window.MODE_EXCLUSIVE_FULLSCREEN
+	get_viewport().mesh_lod_threshold = 0.0
+	environment = Environment.new()
+	environment.background_mode = Environment.BG_COLOR
+	environment.background_color = Color("d9dcd8")
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.ambient_light_color = Color("e7ece7")
+	environment.ambient_light_energy = .45
+	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	var world := WorldEnvironment.new()
+	world.environment = environment
+	add_child(world)
+	sun = DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-45,-35,0)
+	sun.light_energy = 1.0
+	sun.shadow_enabled = true
+	add_child(sun)
+	camera = Camera3D.new()
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.size = 1.00
+	add_child(camera)
+	camera.position = Vector3(0,.87,1.7)
+	camera.look_at(Vector3(0,.20,0))
+	camera.current = true
+	for side: int in 2:
+		var slot := Node3D.new()
+		slot.position.x = -.40 if side == 0 else .40
+		add_child(slot)
+		var floor_mesh := MeshInstance3D.new()
+		var plane := PlaneMesh.new()
+		plane.size = Vector2(.72,.72)
+		floor_mesh.mesh = plane
+		var floor_material := StandardMaterial3D.new()
+		floor_material.albedo_color = Color("b9bcb5")
+		floor_material.roughness = 1.0
+		floor_mesh.material_override = floor_material
+		slot.add_child(floor_mesh)
+		var available: bool = side == 1 and ResourceLoader.exists(CANDIDATE)
+		if side == 1 and not available:
+			continue
+		var plant: Node3D = (load(CANDIDATE) if available else ORIGINAL).instantiate()
+		slot.add_child(plant)
+		plants.append(plant)
+		if available:
+			_prepare_candidate(plant)
+		else:
+			original_color = _find_color(plant)
+			Wind.new().apply(plant,"greens",true)
+			_freeze(plant)
+	_build_ui()
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	print("DEV_PREVIEW_READY screen=%d mode=%d size=%s" % [DisplayServer.window_get_current_screen(),get_window().mode,DisplayServer.window_get_size()])
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--capture="):
+			await _capture(arg.trim_prefix("--capture="))
+
+func _freeze(node: Node) -> void:
+	if node is MeshInstance3D:
+		node.set_instance_shader_parameter("wind_motion",Vector4.ZERO)
+		node.set_instance_shader_parameter("haze_exempt",1.0)
+	for child: Node in node.get_children():
+		_freeze(child)
+
+func _prepare_candidate(node: Node) -> void:
+	if node is MeshInstance3D:
+		for surface: int in node.mesh.get_surface_count():
+			var source: StandardMaterial3D = node.get_active_material(surface)
+			assert(source.normal_texture != null and source.roughness_texture != null,"PBR candidate must include both maps")
+			var material := ShaderMaterial.new()
+			material.shader = Wind.WIND_SHADER
+			material.set_shader_parameter("base_color",source.albedo_color)
+			generated_colors.append(source.albedo_texture)
+			material.set_shader_parameter("color_texture",original_color)
+			material.set_shader_parameter("textured",source.albedo_texture != null)
+			material.set_shader_parameter("base_roughness",source.roughness)
+			material.set_shader_parameter("base_specular",.08)
+			material.set_shader_parameter("normal_textured",source.normal_texture != null)
+			material.set_shader_parameter("normal_texture",source.normal_texture)
+			material.set_shader_parameter("normal_strength",.45)
+			material.set_shader_parameter("roughness_textured",source.roughness_texture != null)
+			material.set_shader_parameter("roughness_texture",source.roughness_texture)
+			var channels: Array[Vector4] = [Vector4(1,0,0,0),Vector4(0,1,0,0),Vector4(0,0,1,0),Vector4(0,0,0,1),Vector4(1.0/3,1.0/3,1.0/3,0)]
+			material.set_shader_parameter("roughness_channel",channels[source.roughness_texture_channel])
+			node.set_surface_override_material(surface,material)
+			candidate_materials.append(material)
+		node.set_instance_shader_parameter("preserve_painted_color",1.0)
+		node.set_instance_shader_parameter("wind_motion",Vector4.ZERO)
+		node.set_instance_shader_parameter("haze_exempt",1.0)
+	for child: Node in node.get_children():
+		_prepare_candidate(child)
+
+func _find_color(node: Node) -> Texture2D:
+	if node is MeshInstance3D:
+		return (node.get_active_material(0) as StandardMaterial3D).albedo_texture
+	for child: Node in node.get_children():
+		var texture: Texture2D = _find_color(child)
+		if texture != null: return texture
+	return null
+
+func _build_ui() -> void:
+	var layer := CanvasLayer.new()
+	add_child(layer)
+	var layout := Control.new()
+	layout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(layout)
+	for side: int in 2:
+		var label := Label.new()
+		label.text = "原版 · 当前游戏材质" if side == 0 else ("候选 · 原配色＋PBR细节" if not candidate_materials.is_empty() else "候选 · 资源尚未导入")
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.add_theme_color_override("font_color",Color("303b32"))
+		label.add_theme_font_size_override("font_size",30)
+		layout.add_child(label)
+		label.anchor_left = side * .5
+		label.anchor_right = (side + 1) * .5
+		label.position.y = 45
+		if side == 1: title_right = label
+	var controls := HBoxContainer.new()
+	controls.add_theme_constant_override("separation",18)
+	layout.add_child(controls)
+	controls.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	controls.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	controls.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	controls.position.y -= 38
+	_button(controls,"向左转",func() -> void: _rotate(-PI/6.0))
+	_button(controls,"向右转",func() -> void: _rotate(PI/6.0))
+	_button(controls,"切换光照",_cycle_light)
+	var normal_button: Button = _button(controls,"法线开／关",_toggle_normals)
+	normal_button.disabled = candidate_materials.is_empty()
+	var color_button: Button = _button(controls,"切换配色",_toggle_color)
+	color_button.disabled = candidate_materials.is_empty()
+	_button(controls,"复位",_reset)
+	_button(controls,"返回农场",func() -> void: get_tree().change_scene_to_file("res://scenes/main.tscn"))
+
+func _button(parent: Control, caption: String, action: Callable) -> Button:
+	var button := Button.new()
+	button.text = caption
+	button.custom_minimum_size = Vector2(142,48)
+	button.add_theme_font_size_override("font_size",23)
+	button.pressed.connect(action)
+	parent.add_child(button)
+	return button
+
+func _rotate(amount: float) -> void:
+	yaw += amount
+	for plant: Node3D in plants: plant.rotation.y = yaw
+
+func _cycle_light() -> void:
+	light_index = (light_index + 1) % 3
+	sun.rotation_degrees = [Vector3(-45,-35,0),Vector3(-22,65,0),Vector3(-30,160,0)][light_index]
+
+func _toggle_normals() -> void:
+	normals_enabled = not normals_enabled
+	for material: ShaderMaterial in candidate_materials:
+		material.set_shader_parameter("normal_textured",normals_enabled and material.get_shader_parameter("normal_texture") != null)
+	_update_title()
+
+func _toggle_color() -> void:
+	use_generated_color = not use_generated_color
+	for index: int in candidate_materials.size():
+		candidate_materials[index].set_shader_parameter("color_texture",generated_colors[index] if use_generated_color else original_color)
+	_update_title()
+
+func _update_title() -> void:
+	title_right.text = "候选 · " + ("新配色＋PBR细节" if use_generated_color else "原配色＋PBR细节") + ("" if normals_enabled else "（关闭法线）")
+
+func _reset() -> void:
+	_rotate(-yaw)
+	light_index = 2
+	_cycle_light()
+	if not normals_enabled: _toggle_normals()
+	if use_generated_color: _toggle_color()
+
+func _capture(directory: String) -> void:
+	DirAccess.make_dir_recursive_absolute(directory)
+	var normal_on: Image
+	for view: int in 3:
+		await get_tree().create_timer(.4).timeout
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png(directory.path_join("comparison-%d.png" % view))
+		if view == 0: normal_on = get_viewport().get_texture().get_image()
+		_rotate(PI/2.0)
+		_cycle_light()
+	_reset()
+	_toggle_normals()
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(directory.path_join("normals-off.png"))
+	var normal_off: Image = get_viewport().get_texture().get_image()
+	var changed := 0
+	var peak := 0.0
+	for y: int in range(int(normal_on.get_height()*.25),int(normal_on.get_height()*.73),3):
+		for x: int in range(int(normal_on.get_width()*.55),int(normal_on.get_width()*.94),3):
+			var difference: Color = normal_on.get_pixel(x,y)-normal_off.get_pixel(x,y)
+			var delta: float = maxf(absf(difference.r),maxf(absf(difference.g),absf(difference.b)))
+			peak = maxf(peak,delta)
+			if delta > .003: changed += 1
+	assert(changed > 30,"Normal map must visibly affect the candidate under fixed lighting")
+	var report := FileAccess.open(directory.path_join("normal-check.json"),FileAccess.WRITE)
+	report.store_string(JSON.stringify({"changed_sample_pixels":changed,"max_channel_delta":peak,"normal_strength":.45,"maps":candidate_materials.size()},"  "))
+	report.close()
+	_toggle_normals()
+	_toggle_color()
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(directory.path_join("new-color.png"))
+	_reset()
+	print("MATERIAL_COMPARISON_CAPTURED ",directory)
+	get_tree().quit()

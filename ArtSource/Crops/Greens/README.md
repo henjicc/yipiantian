@@ -14,6 +14,18 @@
 - 验证：青菜阶段资产、实际纹理传递及调色接线定向测试通过；四向高低档、实景正反近景、全景／聚焦与昼夜已查看。截图和可重现检查脚本在 `.local/verification/greens-gongbi/`。12田384株全部为新青菜，RTX4090、3840×2160，三组60帧均前台：高档全景GPU中位10.710ms、低档对照10.594ms、高档聚焦10.622ms。只支持本机短样本，本轮没有证据需要为性能强减高档，不作低配或长期帧率承诺。
 - 制作节点 `20260918-greens-gongbi-p2`：参考→原始模型预览→Blender源→游戏近景均已留档，无新录像，可按保存源补拍；本地索引 `制作留档/03_处理与验证/20260918_青菜P2工笔重制/README.md`。
 
+## PBR 材质对照小样，2026-09-18
+
+用户指出当前叶片像橡胶，授权单株材质测试与左右对照。现役农场仍使用上文工笔版，不把测试成功等同审美通过。
+
+- 同一 P2 几何单独重贴图：`v3.5-20260815`、detailed、pbr=true、bake=false、delight=true、geometry 对齐；文字＋原工笔单体参考。任务 `5621e642-cbcb-4fdc-875f-11b1a3e5f6b3`，20积分，余额变化已核验，冻结状态未公开。完整请求、原件、可编辑源与重建在 [pbr-study-20260918](pbr-study-20260918/request.json)。本轮没有重新生成几何。
+- Tripo 将模型居中并统一到1米宽；Blender恢复原尺寸与原点后仍12552三角，顶点最大位置偏差3.33e-8米，UV偏差0，因此可以保留原色图、只换新法线和粗糙度。输出三张4K图（颜色、法线、金属／粗糙度打包）；菜叶金属度仍强制0。见 [审计](pbr-study-20260918/audit.json)。
+- Godot隔离对比场景：`Game/development/greens_material_comparison.tscn`。正交固定镜头、相同尺寸朝向、共享方向光／环境光／中性地面，无风动、雾、景深和额外LOD。左侧当前游戏材质，右侧默认原色图＋Tripo法线（强度.45）／粗糙度，共用植物shader与specular .08。可以同步转动、切换三种光向、关闭法线、切换Tripo新配色及复位。无农场存档读写；点返回农场才进入正常游戏。
+- 启动：仓库根目录 PowerShell 7 执行 `./scripts/godot.ps1 -Action Run -ExtraArgs @('res://development/greens_material_comparison.tscn')`，复用静音第二屏独占全屏入口；`development/` 沿用发行排除规则。
+- 观察：新PBR能产生浅表面变化，但不足以明显消除厚实、光滑的橡胶观感。新颜色削弱原水墨斑驳，更趋平滑，不自动采用。保留原色的组合也只是候选；法线不能修薄轮廓。下一步若继续应优先检查薄叶形态、浅褶皱和结构化叶脉，而非仅提高贴图分辨率。
+- 验证：现役青菜76项检查通过；Blender几何／UV／贴图审计通过；Godot三光向、正侧背截图与法线开关对照在 `.local/verification/greens-pbr-study-checked/`。法线开关固定画面采样中19719个像素变化超过.003，确认实际参与渲染，不能据此宣称审美改善。未录屏、未替换农场或导出旧独立包。
+- 方法参考：[Substance Painter材质视口](https://experienceleague.adobe.com/en/docs/substance-3d-painter/using/interface/viewport/3d-view)、[Tripo重贴图](https://developers.tripo3d.ai/en/docs/models-texture)。隔离材质与光照是常见制作检查方法；最终仍须在目标游戏镜头评价。
+
 ## 历史 P2 首轮：用户否定外观，2026-09-18
 
 - 模型 `P2-20260801`、原生四边面输出、请求 4500 面；纹理 `v3.5-20260815`、`detailed`、`delight=true`、`pbr=false`；几何与纹理种子 202609191。任务 `6fe88ddf-d938-461a-a262-c724c28bb2bf`，实际成功费用 **120 积分**。原始 FBX 与服务回显保存在 [p2-20260918/raw/](p2-20260918/raw/task.json)。

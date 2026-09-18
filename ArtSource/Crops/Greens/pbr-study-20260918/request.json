@@ -1,0 +1,16 @@
+{
+  "model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "delight": true,
+  "pbr": true,
+  "bake": false,
+  "texture_alignment": "geometry",
+  "texture_seed": 202609183,
+  "texture_prompt": {
+    "text": "Fresh living bok choy leaves, Chinese gongbi light-colour hand-painted game asset. Preserve muted jade green ink washes and ivory stalks from the reference. Delicate branching leaf veins and shallow soft wrinkles following the leaf growth direction, subtle natural leaf surface, gently varied satin-matte roughness. Very restrained normal relief. Nonmetallic. No rubber, plastic, leather, stone, coarse pores, cracks, dirt or exaggerated bumps. No painted specular highlights or directional shadows. Maintain broad clean colour washes and selective fine contours; not photorealistic.",
+    "style_image": {
+      "path": "../p2-gongbi-20260918/reference.png"
+    }
+  },
+  "input": "Game/art/crops/greens/greens_mature.glb"
+}
