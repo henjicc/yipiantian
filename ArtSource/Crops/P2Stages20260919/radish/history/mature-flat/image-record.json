@@ -1,0 +1,13 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "inputs": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    ".local/crop-research-20260919/radish-growing.webp",
+    ".local/crop-research-20260919/radish-mature.webp"
+  ],
+  "prompt": "Use case: stylized-concept. ONE whole harvest-ready white DAIKON RADISH plant, standing upright with its long tapering white storage root pointing vertically down and a full fresh radial crown of eight to ten lobed leaves above. Input 1 approved gongbi style; input 2 university real daikon foliage photo defines pinnately lobed leaves; input 3 real harvested daikon defines its long cylindrical tapered white root. Root length about half of total plant height, thick softly rounded shoulder with slight pale green tint, taper gradually to one small tip, only a few short secondary rootlets. Leaf blades must be thin and naturally folded, elongated terminal lobe with two to four smaller rounded lateral lobes and soft tooth edges; readable thin pale midrib and sparse branching veins, slender ivory-green petioles from one crown. Broad spread of outer leaves, smaller upright center leaves, no flowers and no fruit. Strong fine selective moss-green and tea-brown contour lines and structured veins, soft irregular muted fresh sage/celadon watercolour washes like input 1, matte dimensional volume, retain brushwork at game texture scale. No photographic surface noise, no shiny or rubber leaves, no embossed uniform veins. Entire connected plant including root and all leaf tips visible with clean margin, three-quarter view from 15 degree elevation, balanced yet naturally asymmetric crown. Plain light neutral-gray background, soft neutral diffuse light, no cast shadow, soil, pot, ground slab, landscape, text, numbers, collage or watermarks. Show the full root for 3D creation; it will later be mostly buried by the game soil.",
+  "output_original": "%USERPROFILE%/.codex/generated_images/01a0b678-f598-7d00-915f-051f5aa8efc6/exec-b25fc266-f0f7-457c-94c2-5ac6e46c3005.png",
+  "review": "Full long white storage root and radial lobed crown match studied morphology; preserve full root and author soil anchor after model generation.",
+  "model_seed_cost": "not returned"
+}

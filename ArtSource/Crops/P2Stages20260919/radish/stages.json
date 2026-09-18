@@ -1,0 +1,91 @@
+{
+  "species": "Raphanus sativus Longipinnatus Group",
+  "stages": {
+    "sprout": {
+      "task_id": "005dbe94-61ad-486c-a9f0-a0d1bf2ab1e1",
+      "height": 0.085,
+      "max_width": 0.14,
+      "face_request": 1800,
+      "seed": 2026091904,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    },
+    "young": {
+      "task_id": "8457f2ed-785b-4e9b-8f3a-602e3902f82d",
+      "height": 0.27,
+      "max_width": 0.29,
+      "face_request": 3500,
+      "seed": 2026091905,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "collar_fraction": 0.46,
+      "remove_loose_vertices": 1,
+      "credits": 120
+    },
+    "mature": {
+      "task_id": "59e1e8bd-e4ba-47e9-8ad8-280817cc152d",
+      "height": 0.52,
+      "max_width": 0.45,
+      "face_request": 6500,
+      "seed": 2026091907,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "collar_fraction": 0.52,
+      "credits": 120,
+      "collar_center_xy": [
+        -0.08,
+        0.015
+      ],
+      "remove_degenerate_triangles": 2,
+      "remove_loose_vertices": 2,
+      "leaf_repose": {
+        "rotation_degrees": [
+          0,
+          70,
+          0
+        ],
+        "min_z_below": 0.2,
+        "max_x": -0.085,
+        "max_z": 0.25,
+        "pivot": [
+          -0.093,
+          0.022,
+          0.235
+        ],
+        "root_min_x": -0.16,
+        "root_min_y": -0.07,
+        "root_max_y": 0.1
+      },
+      "soil_radius": [
+        0.028,
+        0.029
+      ]
+    }
+  },
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "quad": true,
+  "delight": false,
+  "pbr": false,
+  "texture_alignment": "original_image",
+  "enable_image_autofix": false,
+  "not_used": [
+    "semantic segmentation",
+    "rigging",
+    "paid retopology",
+    "paid retexturing",
+    "decimation"
+  ],
+  "adoption": "installed and technically checked; user aesthetic acceptance pending"
+}

@@ -1,0 +1,113 @@
+{
+  "crop": "radish",
+  "stage": "mature",
+  "task": "59e1e8bd-e4ba-47e9-8ad8-280817cc152d",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 7011,
+      "polygons": 5831,
+      "quads": 3281,
+      "triangles": 9112,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 4792,
+      "non_manifold_edges": 4800,
+      "loose_vertices": 0,
+      "zero_area_faces": 2
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "removed_degenerate_triangles": 2,
+  "removed_loose_vertices": 2,
+  "reposed_leaf_positions": 2059,
+  "leaf_repose": {
+    "rotation_degrees": [
+      0,
+      70,
+      0
+    ],
+    "min_z_below": 0.2,
+    "max_x": -0.085,
+    "max_z": 0.25,
+    "pivot": [
+      -0.093,
+      0.022,
+      0.235
+    ],
+    "root_min_x": -0.16,
+    "root_min_y": -0.07,
+    "root_max_y": 0.1
+  },
+  "min_godot": [
+    -0.2492000311613083,
+    -0.18629133701324463,
+    -0.16184896230697632
+  ],
+  "max_godot": [
+    0.20079994201660156,
+    0.17196124792099,
+    0.17260178923606873
+  ],
+  "root_transform": [
+    [
+      0.35842758417129517,
+      0.0,
+      0.0,
+      0.028674205765128136
+    ],
+    [
+      0.0,
+      0.35842758417129517,
+      0.0,
+      -0.005376413464546204
+    ],
+    [
+      0.0,
+      0.0,
+      0.35842758417129517,
+      -0.007165051065385342
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 7009,
+      "polygons": 5829,
+      "quads": 3281,
+      "triangles": 9110,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 4790,
+      "non_manifold_edges": 4798,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.028,
+    0.029
+  ],
+  "whole_mesh_soil_slice_radius": [
+    0.028936725109815598,
+    0.026990577578544617
+  ],
+  "triangles": 9110,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/radish/radish_mature.glb"
+}

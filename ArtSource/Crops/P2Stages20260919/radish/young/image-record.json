@@ -1,0 +1,12 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "inputs": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    ".local/crop-research-20260919/radish-growing.webp"
+  ],
+  "prompt": "Use case: stylized-concept. Create ONE complete juvenile white daikon radish plant (Raphanus sativus Longipinnatus group), intermediate vegetative stage after cotyledons, distinctly not a shrunken mature radish. Input 1 is approved gongbi style, input 2 is real daikon foliage anatomy. Five thin true leaves form an open low radial rosette, each leaf has an elongated terminal rounded lobe and two smaller pairs of irregular rounded lateral lobes, toothed edges, pale fine central vein. Short slender light-green petioles converge at a narrow upright pale root collar. Root is only beginning to thicken, pencil-width, show one short taper below collar for planting, no mature bulky white storage root. Keep the rosette sparse with visible space between its five leaves, no flowers. Strong selective fine moss-green contour ink and a few structured vein lines, fresh muted sage and celadon pigment washes, visible soft hand-painted variation, matte dimensional volume, thin gently folded leaf edges. No photography, no plastic, no uniform embossed ribs. Whole plant fully visible, three-quarter perspective from 20 degrees elevation, upright growth axis, central base, all connected. Centered on plain light neutral gray, soft neutral diffuse light, no cast shadow, no soil, pot, scene, label, text, watermark or collage.",
+  "output_original": "%USERPROFILE%/.codex/generated_images/01a0b678-f598-7d00-915f-051f5aa8efc6/exec-37e795ef-d25b-45fe-b6ce-2e640208d164.png",
+  "review": "Botanical reference reviewed; adopted for P2 trial. Not user aesthetic signoff.",
+  "model_seed_cost": "not returned"
+}

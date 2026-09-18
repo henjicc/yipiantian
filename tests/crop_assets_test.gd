@@ -62,6 +62,9 @@ func _run() -> void:
 					var audit: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(audit_path))
 					_expect(report.triangles == int(audit.triangles), "P2 stage matches audited export: " + path)
 					_expect(bool(audit.reimport_verified), "P2 stage roundtrip was verified: " + path)
+					var expected_min := Vector3(float(audit.min_godot[0]),float(audit.min_godot[1]),float(audit.min_godot[2]))
+					var expected_max := Vector3(float(audit.max_godot[0]),float(audit.max_godot[1]),float(audit.max_godot[2]))
+					_expect((report.bounds.position-expected_min).length() < .0001 and (report.bounds.end-expected_max).length() < .0001,"P2 soil anchor and size match authored export")
 				elif crop_id == "greens" and stage == "mature":
 					var tier: String = "greens_mature_low" if low else "greens_mature"
 					_expect(report.triangles == int(greens_audit.meshes[tier].triangles), "Imported P2 geometry matches audited export: " + path)
@@ -70,7 +73,8 @@ func _run() -> void:
 				else:
 					_expect(report.triangles > 0 and report.triangles <= 3600, "Measured stage triangle budget: " + path)
 				_expect(report.mesh_instances <= 2 and report.mesh_instances > 0, "No unexpected mesh fragments: " + path)
-				_expect(absf(report.bounds.position.y) <= 0.008, "Ground root remains at zero: " + path)
+				if not Visuals.P2_STAGE_CROPS.has(crop_id):
+					_expect(absf(report.bounds.position.y) <= 0.008, "Ground root remains at zero: " + path)
 				_expect(report.bounds.size.y > 0.04 and report.bounds.size.y < 0.65, "Metre-scale crop height: " + path)
 				if crop_id == "greens" or Visuals.P2_STAGE_CROPS.has(crop_id):
 					var painted: bool = Visuals.preserves_painted_color(crop_id, stage)
@@ -82,6 +86,7 @@ func _run() -> void:
 						_expect(animated.get_shader_parameter("color_texture") == original.albedo_texture, "Wind retains source brushwork texture")
 						var motion: Vector4 = mesh.get_instance_shader_parameter("wind_motion")
 						_expect(motion.x <= report.bounds.size.y * .025 + .00001 and motion.y > 0.0, "Wind is stage-scaled and root anchored")
+						_expect(report.bounds.position.y+report.bounds.size.y*motion.y >= -.0001,"Buried root is below the moving region")
 				crop.free()
 			if pair.size() == 2:
 				if Visuals.scene_path(crop_id, stage, true) != Visuals.scene_path(crop_id, stage, false):
@@ -89,8 +94,8 @@ func _run() -> void:
 				else:
 					_expect(pair[1].triangles == pair[0].triangles, "Single-tier crop remains full geometry: " + crop_id + "/" + stage)
 				_expect((pair[1].bounds.size - pair[0].bounds.size).length() < 0.03, "LOD retains silhouette bounds: " + crop_id + "/" + stage)
-				_expect(pair[0].bounds.size.y > prior_height, "Growth increases height: " + crop_id + "/" + stage)
-				prior_height = pair[0].bounds.size.y
+				_expect(pair[0].bounds.end.y > prior_height, "Growth increases above-soil height: " + crop_id + "/" + stage)
+				prior_height = pair[0].bounds.end.y
 	if not capture_dir.is_empty() and failures.is_empty():
 		scene = Sample.new()
 		root.add_child(scene)

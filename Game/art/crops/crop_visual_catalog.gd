@@ -15,7 +15,7 @@ const ROOT_RADII := {
 	"garlic": Vector2(0.04260, 0.03028),
 }
 const STAGES: Array[String] = ["sprout", "young", "mature"]
-const P2_STAGE_CROPS: Array[String] = ["spinach"]
+const P2_STAGE_CROPS: Array[String] = ["spinach", "radish"]
 
 
 static func preserves_painted_color(crop_id: String, stage: String) -> bool:
@@ -29,7 +29,7 @@ static func wind_profile(crop_id: String) -> String:
 static func scene_path(crop_id: String, stage: String, low_detail: bool = false) -> String:
 	if not CROP_IDS.has(crop_id) or not STAGES.has(stage):
 		return ""
-	return "res://art/crops/%s/%s_%s%s.glb" % [crop_id, crop_id, stage, "_low" if low_detail and crop_id in ["greens", "radish"] else ""]
+	return "res://art/crops/%s/%s_%s%s.glb" % [crop_id, crop_id, stage, "_low" if low_detail and crop_id in ["greens", "radish"] and not P2_STAGE_CROPS.has(crop_id) else ""]
 
 
 static func instantiate(crop_id: String, stage: String, low_detail: bool = false) -> Node3D:
@@ -43,6 +43,9 @@ static func instantiate(crop_id: String, stage: String, low_detail: bool = false
 
 
 static func planting_depth(crop_id: String, stage: String) -> float:
+	# New P2 stages are authored around the soil slice; storage roots extend below it.
+	if P2_STAGE_CROPS.has(crop_id):
+		return 0.0
 	# Source origin remains at the root tip; the field owns the soil-surface anchor.
 	if crop_id == "greens":
 		return {"sprout": .001, "young": .009, "mature": .021}.get(stage, 0.0)
@@ -59,6 +62,8 @@ static func planting_depth(crop_id: String, stage: String) -> float:
 
 
 static func soil_radius(crop_id: String, stage: String) -> Vector2:
+	if crop_id == "radish" and P2_STAGE_CROPS.has(crop_id):
+		return {"sprout": Vector2(.009,.009), "young": Vector2(.009,.010), "mature": Vector2(.028,.029)}.get(stage, Vector2(.028,.029))
 	if crop_id == "spinach":
 		return {"sprout": Vector2(.009,.009), "young": Vector2(.0114,.0106), "mature": Vector2(.0263,.0219)}.get(stage, Vector2(.0263,.0219))
 	if ROOT_RADII.has(crop_id):

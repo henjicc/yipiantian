@@ -54,6 +54,67 @@ for obj in objects:
     obj.matrix_world.identity()
 report = dict(crop=crop, stage=stage, task=config['task_id'], blender=bpy.app.version_string,
               source=[inspect(o) for o in objects], rotation_degrees=config['rotation_degrees'])
+if config.get('remove_degenerate_triangles', 0):
+    removed = 0
+    for obj in objects:
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        degenerate = [f for f in bm.faces if len(f.verts) == 3 and f.calc_area() == 0.0]
+        removed += len(degenerate)
+        bmesh.ops.delete(bm, geom=degenerate, context='FACES_ONLY')
+        bm.to_mesh(obj.data)
+        bm.free()
+    assert removed == config['remove_degenerate_triangles'], 'Reviewed degenerate face count changed'
+    report['removed_degenerate_triangles'] = removed
+if config.get('remove_loose_vertices', 0):
+    removed = 0
+    for obj in objects:
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        loose = [v for v in bm.verts if not v.link_faces]
+        removed += len(loose)
+        bmesh.ops.delete(bm, geom=loose, context='VERTS')
+        bm.to_mesh(obj.data)
+        bm.free()
+    assert removed == config['remove_loose_vertices'], 'Source cleanup no longer matches reviewed defect'
+    report['removed_loose_vertices'] = removed
+if 'leaf_repose' in config:
+    pose = config['leaf_repose']
+    pivot = Vector(pose['pivot'])
+    leaf_rotation = Euler(tuple(math.radians(v) for v in pose['rotation_degrees']), 'XYZ').to_matrix()
+    selected_positions = set()
+    for obj in objects:
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-5)
+        remaining = set(bm.verts)
+        # P2 stores the reviewed outer leaves and petioles as separate components.
+        # Move each complete component rigidly; preserve its UVs and thin-leaf shape.
+        while remaining:
+            component = {remaining.pop()}
+            pending = list(component)
+            while pending:
+                vertex = pending.pop()
+                for edge in vertex.link_edges:
+                    neighbour = edge.other_vert(vertex)
+                    if neighbour in remaining:
+                        remaining.remove(neighbour)
+                        component.add(neighbour)
+                        pending.append(neighbour)
+            root_section = (min(v.co.x for v in component) > pose['root_min_x']
+                            and min(v.co.y for v in component) > pose['root_min_y']
+                            and max(v.co.y for v in component) < pose['root_max_y'])
+            if (not root_section and max(v.co.x for v in component) < pose['max_x']
+                    and min(v.co.z for v in component) < pose['min_z_below']
+                    and max(v.co.z for v in component) < pose['max_z']):
+                selected_positions.update(tuple(v.co) for v in component)
+        bm.free()
+        for vertex in obj.data.vertices:
+            if tuple(vertex.co) in selected_positions:
+                vertex.co = pivot + leaf_rotation @ (vertex.co - pivot)
+        obj.data.update()
+    report['reposed_leaf_positions'] = len(selected_positions)
+    report['leaf_repose'] = pose
 rotation = Euler(tuple(math.radians(v) for v in config['rotation_degrees']), 'XYZ').to_matrix().to_4x4()
 for obj in objects:
     obj.data.transform(rotation)
@@ -65,6 +126,10 @@ root_points = [v.co for o in objects for v in o.data.vertices if abs(v.co.z - co
 assert root_points, 'No root collar points; author the correct collar fraction'
 center = Vector(((min(p.x for p in root_points) + max(p.x for p in root_points)) / 2,
                  (min(p.y for p in root_points) + max(p.y for p in root_points)) / 2, collar))
+# Drooping outer leaves can cross the soil slice: use the reviewed root section,
+# rather than letting those leaves shift the plant's anchor off its storage root.
+if 'collar_center_xy' in config:
+    center.x, center.y = config['collar_center_xy']
 transform = Matrix.Scale(scale, 4) @ Matrix.Translation(-center)
 for index, obj in enumerate(objects):
     obj.data.transform(transform)
@@ -87,10 +152,13 @@ report.update(min_godot=[lo.x, lo.z, -hi.y], max_godot=[hi.x, hi.z, -lo.y],
               root_transform=[list(row) for row in transform @ rotation], meshes=[inspect(o) for o in objects])
 contact = [v.co for o in objects for v in o.data.vertices if abs(v.co.z) < .012]
 report['soil_radius'] = [max(.009, min(.11, max(abs(v[i]) for v in contact))) for i in range(2)]
+if 'soil_radius' in config:
+    report['whole_mesh_soil_slice_radius'] = report['soil_radius']
+    report['soil_radius'] = config['soil_radius']
 print('P2_STAGE_GEOMETRY ' + json.dumps(report), flush=True)
 assert all(m['zero_area_faces'] == 0 and m['loose_vertices'] == 0 and m['uv_layers'] > 0 for m in report['meshes'])
 report['triangles'] = sum(m['triangles'] for m in report['meshes'])
-assert report['triangles'] == sum(m['triangles'] for m in report['source']), 'Full high geometry must survive'
+assert report['triangles'] == sum(m['triangles'] for m in report['source']) - report.get('removed_degenerate_triangles', 0), 'All non-degenerate high geometry must survive'
 bpy.context.scene.unit_settings.system = 'METRIC'
 bpy.ops.object.select_all(action='DESELECT')
 for obj in objects:

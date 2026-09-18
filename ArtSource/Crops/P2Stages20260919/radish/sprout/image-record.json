@@ -1,0 +1,13 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "inputs": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png",
+    ".local/crop-research-20260919/radish-seedling.webp"
+  ],
+  "prompt": "Use case: stylized-concept. One complete WHITE DAIKON RADISH seedling (Raphanus sativus Longipinnatus group), at cotyledon plus first true leaf stage. Botanical anatomy from input 3: exactly two opposed smooth rounded KIDNEY / B-SHAPED cotyledons, shallow notch at each outer edge, on delicate green stalks; one small emerging upright true leaf in center with a gently toothed edge. Thin short pale-green main stem joins one root collar. NO swollen white radish yet, NO miniature mature radish, no thick white bok choy stalks. Input 1 and 2 are approved gongbi light-colour Jiangnan farm STYLE only, input 3 is university seedling photograph for structural study only, do not reproduce its pots, soil, panels or labels. Preserve rounded dimensional matte volume, fine selective dark moss-green/tea-brown contour strokes, gentle restrained sage-green pigment washes, some readable midrib strokes on true leaf, no photographic microtexture, no plastic or inflated leaves. Exactly one single connected seedling, full silhouette and base, weak-perspective front three-quarter view with 20-degree elevation, centered occupying 75 percent of a square canvas. Plain neutral light-gray backdrop, neutral soft diffuse light, no shadows, no pedestal, no roots, no pot, no soil, no scene, no text or collage. Clearly distinguish radish kidney cotyledons from spinach's narrow straps.",
+  "output_original": "%USERPROFILE%/.codex/generated_images/01a0b678-f598-7d00-915f-051f5aa8efc6/exec-cd7cdcdf-22ca-40ac-a29c-5e9962e18ca2.png",
+  "review": "Botanical reference reviewed; adopted for P2 trial. Not user aesthetic signoff.",
+  "model_seed_cost": "not returned"
+}

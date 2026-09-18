@@ -13,7 +13,7 @@ const PROFILES := {
 	"greens": Vector4(0.0035, 0.45, 0.0, 0.0006),
 	"spinach": Vector4(0.006, 0.18, 0.0, 0.0016),
 	"autumn_crop": Vector4(0.005, 0.20, 0.0, 0.0015),
-	"radish": Vector4(0.005, 0.42, 0.0, 0.0015),
+	"radish": Vector4(0.005, 0.75, 0.0, 0.0015),
 	"trellis": Vector4(0.010, 0.08, 0.0, 0.003),
 	"flowerpot": Vector4(0.010, 0.42, 0.0, 0.003),
 }
@@ -41,6 +41,8 @@ func _apply_node(node: Node, kind: String, preserve_painted_color: bool) -> void
 		if kind in ["greens", "radish", "spinach", "autumn_crop"]:
 			motion.x = minf(motion.x, bounds.size.y * 0.025)
 			motion.w = minf(motion.w, bounds.size.y * 0.008)
+			# A buried storage root belongs to the fixed portion of the plant.
+			motion.y = maxf(motion.y, clampf((.008-bounds.position.y)/bounds.size.y,0.0,1.0))
 		for surface: int in mesh.mesh.get_surface_count():
 			var source: Material = mesh.get_active_material(surface)
 			var painted: ShaderMaterial = _convert(source)

@@ -1,0 +1,18 @@
+{
+  "task_id": "064418f8-421f-4aef-a3d4-ecaa6f3703fe",
+  "height": 0.52,
+  "max_width": 0.45,
+  "face_request": 6500,
+  "seed": 2026091906,
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "collar_fraction": 0.35,
+  "collar_center_xy": [
+    0.0166,
+    0.0147
+  ],
+  "credits": 120
+}

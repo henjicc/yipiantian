@@ -1,0 +1,89 @@
+{
+  "crop": "radish",
+  "stage": "young",
+  "task": "8457f2ed-785b-4e9b-8f3a-602e3902f82d",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 3890,
+      "polygons": 3660,
+      "quads": 1304,
+      "triangles": 4964,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 2794,
+      "non_manifold_edges": 2807,
+      "loose_vertices": 1,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "removed_loose_vertices": 1,
+  "min_godot": [
+    -0.08923057466745377,
+    -0.1241999939084053,
+    -0.11633609235286713
+  ],
+  "max_godot": [
+    0.08342695981264114,
+    0.14579999446868896,
+    0.0974743515253067
+  ],
+  "root_transform": [
+    [
+      0.2701318860054016,
+      0.0,
+      0.0,
+      -0.002901807427406311
+    ],
+    [
+      0.0,
+      0.2701318860054016,
+      0.0,
+      0.00943087413907051
+    ],
+    [
+      0.0,
+      0.0,
+      0.2701318860054016,
+      0.010799999348819256
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 3889,
+      "polygons": 3660,
+      "quads": 1304,
+      "triangles": 4964,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 2794,
+      "non_manifold_edges": 2807,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.009,
+    0.009
+  ],
+  "triangles": 4964,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/radish/radish_young.glb"
+}
