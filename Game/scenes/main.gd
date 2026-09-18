@@ -20,6 +20,9 @@ const CourtyardPlan = preload("res://layout/courtyard_plan.gd")
 const CourtyardEditSession = preload("res://layout/courtyard_edit_session.gd")
 const HarvestBook = preload("res://ui/harvest_book.gd")
 const KitchenDisplay=preload("res://presentation/kitchen_display.gd")
+const AnimalPanel=preload("res://ui/animal_panel.gd")
+var animal_panel: AnimalPanel
+var _pressed_animal: String=""
 var kitchen_display: KitchenDisplay
 var harvest_book: HarvestBook
 var courtyard_plan := CourtyardPlan.new()
@@ -143,6 +146,15 @@ func _ready() -> void:
 		camera.leave_neighbor()
 		hud.show())
 	tool_cursor = ToolCursor.new()
+	animal_panel=AnimalPanel.new()
+	animal_panel.name="AnimalPanel"
+	add_child(animal_panel)
+	animal_panel.action_requested.connect(_animal_action)
+	animal_panel.closed.connect(func() -> void:
+		camera.leave_neighbor()
+		hud.show()
+		_cancel_input()
+		_refresh_hud())
 	add_child(tool_cursor)
 	hud.overview_requested.connect(_return_overview)
 	hud.reset_requested.connect(_reset_view)
@@ -262,6 +274,7 @@ func _load_game(initial: Dictionary = {}) -> void:
 		decoration_state = DecorationState.new()
 		decoration_state.restore_snapshot(result.decorations)
 	decoration_state.unlock(farm_state.snapshot().harvested)
+	$Environment/CourtyardAnimals.interaction.profiles=farm_state.snapshot().animals
 	if decoration_layout != null:
 		decoration_layout.bind_state(decoration_state)
 		decoration_layout.update_life(farm_state.snapshot().kitchen)
@@ -304,6 +317,7 @@ func _save_farm() -> bool:
 	_save_failed = not result.ok
 	if _save_failed:
 		if harvest_book!=null: harvest_book.dismiss()
+		if animal_panel!=null: animal_panel.dismiss()
 		if game_menu != null:
 			game_menu.dismiss()
 		if decoration_layout != null:
@@ -399,6 +413,61 @@ func _refresh_hud() -> void:
 
 func _basket_active() -> bool:
 	return harvest_book!=null and harvest_book.active
+
+func _animal_active() -> bool:
+	return animal_panel!=null and animal_panel.active
+
+func _animal_at(point: Vector2) -> String:
+	var animals: Node=$Environment/CourtyardAnimals
+	var chosen: String=""
+	var depth: float=INF
+	for bird: Dictionary in animals.birds:
+		var center: Vector3=bird.node.global_position+Vector3.UP*(.24 if bird.kind=="hen" else (.48 if bird.kind=="duck" else .67))*bird.node.scale.x
+		if camera.is_position_behind(center): continue
+		var projected: Vector2=camera.unproject_position(center)
+		var edge: Vector2=camera.unproject_position(center+camera.global_basis.x*bird.radius)
+		var radius: float=clampf(projected.distance_to(edge),12,42)
+		if point.distance_to(projected)>radius: continue
+		var distance: float=camera.global_position.distance_to(center)
+		if distance<depth and decoration_layout.world_point_visible(center,animals):
+			chosen=bird.node.name;depth=distance
+	return chosen
+
+func _open_animal(id: String) -> void:
+	if not _tools_available(): return
+	var bird: Dictionary=$Environment/CourtyardAnimals.interaction.find(id)
+	if bird.is_empty(): return
+	_cancel_tool();hud.hide_time_preview();camera.cancel_zoom()
+	var data: Dictionary=farm_state.snapshot()
+	animal_panel.present(id,data.animals[id],data.inventory)
+	focus_detail.protect_neighbor(bird.node)
+	camera.view_neighbor(bird.node.global_position+Vector3.UP*.25,Vector3(27.5,24,5.8))
+	hud.hide()
+	_refresh_hud()
+
+func _animal_action(id: String,action: String,value: Variant,revision: int) -> void:
+	if not _animal_active() or animal_panel.animal_id!=id or not _loaded or _save_failed: return
+	var interaction: RefCounted=$Environment/CourtyardAnimals.interaction
+	var approach: Dictionary={}
+	if action in ["feed","call"]:
+		approach=interaction.prepare(id,camera,decoration_layout.world_point_visible)
+		if approach.is_empty(): animal_panel.show_issue("这会儿没有能靠近的空位");return
+	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var result: Dictionary=candidate.animal_action(id,action,value,revision)
+	if not result.ok:
+		animal_panel.show_issue("名字请用一到十二个字" if result.reason=="invalid_name" else "这次操作未完成")
+		return
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok:
+		_save_failed=true;animal_panel.dismiss();hud.show_storage_issue(saved.kind,true);_refresh_hud();return
+	farm_state.restore_snapshot(candidate.snapshot())
+	var data: Dictionary=farm_state.snapshot()
+	interaction.profiles=data.animals
+	if not approach.is_empty(): interaction.begin(id,approach,action=="feed")
+	animal_panel.refresh(data.animals[id],data.inventory)
+	animal_panel.set_activity(interaction.status(id))
+	farm_audio.play_ui()
+	_refresh_hud()
 
 func _open_basket() -> void:
 	if not _tools_available(): return
@@ -547,6 +616,10 @@ func _refresh_lanterns() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if _animal_active():
+		if (event is InputEventKey and event.pressed and not event.echo and event.keycode==KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_RIGHT):
+			animal_panel.dismiss();get_viewport().set_input_as_handled()
+		return
 	if _basket_active():
 		if (event is InputEventKey and event.pressed and not event.echo and event.keycode==KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_RIGHT):
 			if harvest_book.viewing: harvest_book.end_view()
@@ -621,6 +694,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _animal_active(): return
 	if _basket_active(): return
 	if _layout_active(): return
 	if camera_tuning != null and camera_tuning.visible:
@@ -664,6 +738,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if _animal_active():
+		animal_panel.set_activity($Environment/CourtyardAnimals.interaction.status(animal_panel.animal_id))
+		_cancel_input()
+		return
 	_update_hover()
 	if _layout_active() or _basket_active() or camera.free_view or (game_menu != null and game_menu.visible):
 		_cancel_input()
@@ -673,6 +751,15 @@ func _physics_process(_delta: float) -> void:
 	var picks: Array[Dictionary] = _picks
 	_picks = []
 	for pick: Dictionary in picks:
+		if selected_tool.is_empty():
+			var animal: String=_animal_at(pick.position)
+			if pick.down: _pressed_animal=animal
+			elif not _pressed_animal.is_empty():
+				var same: bool=animal==_pressed_animal
+				_pressed_animal=""
+				if same and not pick.dragged and pick.action_allowed and _press_context.get("action_allowed",false): _open_animal(animal)
+				_pressed_field=-1;_pressed_cell="";_press_context={}
+				continue
 		var hit: Dictionary = _farm_hit(pick.position)
 		var index: int = hit.get("field", -1)
 		var cell_id: String = hit.get("cell", "")
@@ -702,6 +789,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
 		_request_exit()
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_WM_MOUSE_EXIT:
+		if what==NOTIFICATION_WM_WINDOW_FOCUS_OUT and animal_panel!=null: animal_panel.dismiss()
 		_pointer_position = Vector2(-100, -100)
 		_cancel_input()
 		if _layout_active(): courtyard_edit.editor.chart.cancel_drag()
@@ -771,7 +859,7 @@ func _select_cell(cell_id: String) -> void:
 
 
 func _tools_available() -> bool:
-	return _loaded and not _save_failed and not _exiting and not _layout_active() and not _basket_active() and not (camera_tuning != null and camera_tuning.visible) and not camera.free_view and not camera.is_transitioning() and not (game_menu != null and game_menu.visible) and not (decoration_layout != null and decoration_layout.active)
+	return _loaded and not _save_failed and not _exiting and not _layout_active() and not _basket_active() and not _animal_active() and not (camera_tuning != null and camera_tuning.visible) and not camera.free_view and not camera.is_transitioning() and not (game_menu != null and game_menu.visible) and not (decoration_layout != null and decoration_layout.active)
 
 
 func _start_tool_press(tool: String) -> void:
@@ -923,6 +1011,7 @@ func _toggle_camera_tuning() -> void:
 
 
 func _cancel_input(cancel_tool_press: bool = true) -> void:
+	_pressed_animal=""
 	if cancel_tool_press:
 		_tool_press = {}
 	_dragging = false

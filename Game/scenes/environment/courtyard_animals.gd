@@ -3,6 +3,8 @@ extends Node3D
 const Assets = preload("res://scenes/environment/courtyard_assets.gd")
 const Space = preload("res://scenes/environment/animal_space.gd")
 const Pose = preload("res://scenes/environment/bird_pose.gd")
+const Interaction=preload("res://scenes/environment/bird_interaction.gd")
+var interaction:=Interaction.new()
 const PROFILES := {
 	"duck": {"speed": .32, "radius": .30, "draft": .20, "turn": 1.8, "pause": Vector2(2.5, 7.0), "range": 6.0},
 	"goose": {"speed": .27, "radius": .38, "draft": .29, "turn": 1.5, "pause": Vector2(3.0, 8.0), "range": 6.5},
@@ -24,6 +26,7 @@ func set_decorations(instances: Dictionary) -> void:
 	if ready_for_motion: rebuild_spaces(false)
 
 func _ready() -> void:
+	interaction.owner=self
 	_rng.randomize()
 	_build.call_deferred()
 
@@ -95,6 +98,7 @@ func rebuild_spaces(update_water: bool=true) -> void:
 	for p: Vector2 in environment.plan.animal_rest.yard: yard.resting.append(yard.nearest(p))
 	for entry: Dictionary in birds:
 		if not update_water and entry.kind!="hen": continue
+		interaction.cancel(entry.node.name)
 		entry.space = yard if entry.kind == "hen" else water
 		entry.pose.ground = entry.space.ground_height
 		entry.route = PackedVector2Array()
@@ -123,6 +127,8 @@ func _spawn(kind: String, label: String, start: Vector2, size: float) -> void:
 	else: _swimmers.append(entry)
 
 func _choose(entry: Dictionary) -> void:
+	if interaction.retry(entry): return
+	interaction.cancel(entry.node.name)
 	var space: RefCounted = entry.space
 	var start: Vector2 = entry.position
 	for attempt: int in 16:
@@ -130,11 +136,13 @@ func _choose(entry: Dictionary) -> void:
 		entry.interest=Vector2.INF
 		var target: Vector2
 		var pick: float = _rng.randf()
-		if entry.kind=="hen" and pick<.32 and not decoration_rest.is_empty():
+		var familiar: int=interaction.profiles[String(entry.node.name)].visits
+		if pick < .22+minf(familiar,5)*.025:
+			target=interaction.rest_target(entry)
+			entry.interest=target
+		elif entry.kind=="hen" and pick<.50 and not decoration_rest.is_empty():
 			target=decoration_rest[_rng.randi_range(0,decoration_rest.size()-1)]
 			entry.interest=target
-		elif pick < .16:
-			target = space.resting[_rng.randi_range(0, space.resting.size() - 1)]
 		elif pick < .40 and entry.kind != "hen":
 			var companion: Dictionary = _swimmers[_rng.randi_range(0, _swimmers.size() - 1)]
 			if companion == entry: continue
@@ -157,6 +165,7 @@ func _choose(entry: Dictionary) -> void:
 	_idle(entry)
 
 func _idle(entry: Dictionary) -> void:
+	if interaction.arrive(entry): return
 	var choices: Array = ["rest", "observe", "peck", "preen"] if entry.kind == "hen" else ["rest", "probe", "preen", "observe"]
 	entry.state = choices[_rng.randi_range(0, choices.size() - 1)]
 	var pause: Vector2 = PROFILES[entry.kind].pause
@@ -200,6 +209,7 @@ func _process(delta: float) -> void:
 		remaining -= step
 
 func _advance(entry: Dictionary, delta: float) -> void:
+	interaction.advance(entry,delta)
 	var p: Vector2 = entry.position
 	var desired := Vector2.ZERO
 	var route_velocity := Vector2.ZERO

@@ -81,7 +81,7 @@ pwsh -NoProfile -File scripts/package-release.ps1 -Commit <完整提交哈希> -
 - 临时试验放 `.local/experiments/<名称>/`，需要 Godot 时在其中建独立工程。正式工程不得引用 `.local/` 或 `docs/ref/` 中的必要资源。
 - 采用试验成果时迁入选定源文件、导出物和必要依赖，重新导入检查；不复制整个试验工程或缓存。
 - **正式回归测试代码入库**；临时脚本、报告、测试存档排除。不使用 `*test*`、`Tests/` 或全局 `*.json` 之类过宽忽略规则。
-- 当前开发存档使用 `%APPDATA%/Godot/app_userdata/我有一片田/farm-v10/`，偏好使用同级 `preferences/`。主农场为 v10 `farm.json`，包含田块布局、地面高度／岸坡、围栏样式、作物、食材库存、邻里往来、厨房制作／食记及六种可布置物件，上一有效副本为 `farm.backup.json`。早期开发不维护旧版兼容：旧 `farm/`、`farm-v4/`、`farm-v5/`、`farm-v6/`、`farm-v7/`、`farm-v8/`、`farm-v9/` 和留存版保持原件，不迁移历史数据。坏件、未知版本与写入失败不会被静默重置。测试同时注入隔离 farm 与 settings；普通发行验证使用 `tests/start-isolated-game.ps1` 的进程级 APPDATA / LOCALAPPDATA，不能覆盖玩家数据。
+- 当前开发存档使用 `%APPDATA%/Godot/app_userdata/我有一片田/farm-v11/`，偏好使用同级 `preferences/`。主农场为 v11 `farm.json`，包含田块布局、地面高度／岸坡、围栏样式、作物、食材库存、邻里往来、厨房制作／食记、六种可布置物件及七只动物的名字／休息偏好／互动记录，上一有效副本为 `farm.backup.json`。早期开发不维护旧版兼容：旧 `farm/`、`farm-v4/`、`farm-v5/`、`farm-v6/`、`farm-v7/`、`farm-v8/`、`farm-v9/`、`farm-v10/` 和留存版保持原件，不迁移历史数据。坏件、未知版本与写入失败不会被静默重置。测试同时注入隔离 farm 与 settings；普通发行验证使用 `tests/start-isolated-game.ps1` 的进程级 APPDATA / LOCALAPPDATA，不能覆盖玩家数据。
 - 换电脑前安装 Git LFS；克隆后执行 `git lfs install --local`、`git lfs pull`，安装固定引擎和 Windows x86_64 模板，再执行 `Import`。`.uid`、`.import`、`export_presets.cfg` 应随源文件提交；`.godot/`、导出凭据和构建产物排除。
 - 当前远端尚未指定。连接后核验托管平台 LFS 支持、额度、对象上传和独立克隆；本地提交不等于云端备份，不擅自创建公开仓库。
 

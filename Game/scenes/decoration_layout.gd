@@ -264,16 +264,19 @@ func _collect_environment_meshes(node: Node) -> void:
 
 func _slot_visible(slot_id: String) -> bool:
 	var target: Vector3 = _rings[slot_id].global_position
+	var replaced: Node=environment.get_node_or_null("LivingDetails/"+SITE_SCENERY.get(slot_id,"")) if SITE_SCENERY.has(slot_id) else null
+	return world_point_visible(target,replaced)
+
+func world_point_visible(target: Vector3,excluded: Node=null) -> bool:
 	if camera.is_position_behind(target):
 		return false
 	# Stop just before the marker to avoid treating its own hook/support as a wall.
 	var endpoint: Vector3 = target.move_toward(camera.global_position, 0.06)
-	var replaced: Node=environment.get_node_or_null("LivingDetails/"+SITE_SCENERY.get(slot_id,"")) if SITE_SCENERY.has(slot_id) else null
 	for instance: MeshInstance3D in _environment_meshes:
 		if not instance.is_visible_in_tree():
 			continue
 		# The selectable site replaces this object; it must not occlude its own marker.
-		if replaced!=null and (instance==replaced or replaced.is_ancestor_of(instance)): continue
+		if excluded!=null and (instance==excluded or excluded.is_ancestor_of(instance)): continue
 		var inverse: Transform3D = instance.global_transform.affine_inverse()
 		var start: Vector3 = inverse * camera.global_position
 		var end: Vector3 = inverse * endpoint

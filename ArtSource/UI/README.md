@@ -38,6 +38,10 @@ Create a single polished Windows indie farming game application icon for 我有�
 
 ## 界面贡献
 
+### 动物互动图标 · 20260918
+
+鸡、鸭、鹅三张独立透明 imagegen 图，正式原件在 `Game/art/ui/animals/`，完整提示词和原始生成路径在 [animal-icons.json](animal-icons.json)。保留1254方图原始字节，Godot导入512像素。用于主动点击动物后的肖像与“招呼一下”图标，投喂复用已有四种叶菜参考图；选择食材、招呼、撒菜叶均沿用上图下字组件。实际选择／扣菜与最小窗口画面见 `.local/verification/animal-food-cards-1631331/`，来源及接触证据见[动物亲近节点](../../docs/design-baseline/动物行为与轻松玩法候选.md#九动物亲近互动实现节点--20260918)。图像工具未提供费用，未调用Tripo或生成新三维动物。现有动物模型、骨架与动作来源仍见院落生活资产节点。
+
 ### 布置图标与统一选择卡片 · 20260918
 
 - 新增粗陶罐、花盆、灯笼、竹长凳、小晒架、茶桌六张独立 imagegen 透明 PNG，原图 1254×1254，保存在 `Game/art/ui/decorations/`。完整实际提示词、原始生成文件名和落点见 [decoration-icons.json](decoration-icons.json)。PNG 原始字节保留，Godot 导入限为512像素；实际检查六张均有 alpha。工具未返回费用，不能记为免费或臆测金额；没有调用 Tripo。

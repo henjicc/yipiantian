@@ -1,0 +1,25 @@
+{
+  "tool": "Built-in image_gen",
+  "date": "2026-09-18",
+  "billing": "Not returned by tool",
+  "assets": [
+    {
+      "id": "duck",
+      "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-9076ab42-a6a2-4b3f-8502-dfeef1e5ed48.png",
+      "prompt": "A single item portrait icon for a cozy Jiangnan farming game, one plump brown-gray domestic duck with a soft ochre bill, standing in a gentle three-quarter view. Full body centered, entire silhouette including feet, fill 80% of square, fine warm brown lines, soft gongbi watercolor, muted sage/ochre/cream palette, crafted painted art, readable at 80px. Genuine transparent PNG background, no ground plane, no cast shadow outside silhouette, no scenery, no frame, no UI, no text, no checkerboard. Gentle diffuse light, no glossy plastic.",
+      "path": "Game/art/ui/animals/duck.png"
+    },
+    {
+      "id": "goose",
+      "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-975a081d-1301-4de2-838b-68482590120b.png",
+      "prompt": "A single item portrait icon for a cozy Jiangnan farming game, one elegant ivory white domestic goose with long curved neck and muted orange bill and feet, three-quarter view. Full body centered, entire silhouette including feet, fill 80% of square, fine warm brown lines, soft gongbi watercolor, muted sage/ochre/cream palette, crafted painted art, readable at 80px. Genuine transparent PNG background, no ground plane, no cast shadow outside silhouette, no scenery, no frame, no UI, no text, no checkerboard. Gentle diffuse light, no glossy plastic.",
+      "path": "Game/art/ui/animals/goose.png"
+    },
+    {
+      "id": "hen",
+      "source": "%USERPROFILE%\\.codex\\generated_images\\01a0ae6e-de63-7993-a518-c7a1957240cb\\exec-dfa33e51-96f8-4fb2-802b-4793d83bd17b.png",
+      "prompt": "A single item portrait icon for a cozy Jiangnan farming game, one small warm russet-brown hen with restrained red comb and yellow feet, three-quarter view. Full body centered, entire silhouette including feet, fill 80% of square, fine warm brown lines, soft gongbi watercolor, muted sage/ochre/cream palette, crafted painted art, readable at 80px. Genuine transparent PNG background, no ground plane, no cast shadow outside silhouette, no scenery, no frame, no UI, no text, no checkerboard. Gentle diffuse light, no glossy plastic.",
+      "path": "Game/art/ui/animals/hen.png"
+    }
+  ]
+}
