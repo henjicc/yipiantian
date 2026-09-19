@@ -28,6 +28,9 @@ var _soil: ShaderMaterial
 var _ridge: ShaderMaterial
 var _coping: ShaderMaterial
 var _plant_wind := PlantWind.new()
+var _preview_source: FarmLayout
+var _borrowed: Dictionary = {}
+var _originals: Dictionary = {}
 
 
 func _ready() -> void:
@@ -197,28 +200,47 @@ func _mesh(parent: Node3D, resource: Mesh, point: Vector3, material: Material) -
 	return instance
 
 
-func copy_from(source: FarmLayout) -> void:
-	# Reuse already-built soil/coping meshes when entering construction. Only a
-	# resized/new field needs to generate geometry; crops remain state-derived.
+func preview_from(source: FarmLayout) -> void:
+	# Unchanged fields stay live under their original owner. Duplicate a field
+	# only when its draft changes; cancellation never rebuilds the source crops.
+	_preview_source=source
 	plan=Plan.from_snapshot(source.plan.snapshot())
-	_visual_keys=source._visual_keys.duplicate();_planted=source._planted.duplicate()
-	for index: int in source.fields.size():
-		var original: StaticBody3D=source.fields[index]
-		# External crop observers belong to the authoritative farm only.
-		var body: StaticBody3D=original.duplicate(0)
-		add_child(body);fields.append(body)
-		var id: String=plan.fields[index].id
-		_definitions[id]=plan.fields[index]
-		_crop_roots[id]=body.get_node("Crops");_soil_meshes[id]={};_cell_crops[id]={}
-		for cell: String in plan.fields[index].cells:
-			var identity: String=id+"/"+cell
-			var patch: MeshInstance3D=body.get_node("Soil_"+cell)
-			_soil_meshes[id][cell]=patch
-			patch.set_instance_shader_parameter("planted",1.0 if _planted.get(identity,false) else 0.0)
-			if source._cell_crops[id].has(cell): _cell_crops[id][cell]=body.get_node("Crops/"+cell)
-			if source._untended.has(identity):
-				var entry: Dictionary=source._untended[identity]
-				_untended[identity]={"ground":entry.ground,"mesh":body.get_node("Crops").get_child(entry.mesh.get_index()) if is_instance_valid(entry.mesh) else null}
+	fields=source.fields.duplicate()
+	_definitions=source._definitions.duplicate()
+	for body: StaticBody3D in fields:
+		var id: String=body.get_meta("field_id")
+		_borrowed[id]=true
+		_originals[id]={"node":body,"visible":body.visible,"layer":body.collision_layer}
+		body.collision_layer=0
+
+func _remember_field(source: FarmLayout, id: String, body: StaticBody3D) -> void:
+	_crop_roots[id]=body.get_node("Crops");_soil_meshes[id]={};_cell_crops[id]={}
+	for cell: String in source._definitions[id].cells:
+		var identity: String=id+"/"+cell
+		if source._visual_keys.has(identity): _visual_keys[identity]=source._visual_keys[identity]
+		if source._planted.has(identity): _planted[identity]=source._planted[identity]
+		var patch: MeshInstance3D=body.get_node("Soil_"+cell)
+		_soil_meshes[id][cell]=patch
+		patch.set_instance_shader_parameter("planted",1.0 if _planted.get(identity,false) else 0.0)
+		if source._cell_crops[id].has(cell): _cell_crops[id][cell]=body.get_node("Crops/"+cell)
+		if source._untended.has(identity):
+			var entry: Dictionary=source._untended[identity]
+			_untended[identity]={"ground":entry.ground,"mesh":body.get_node("Crops").get_child(entry.mesh.get_index()) if is_instance_valid(entry.mesh) else null}
+
+func accept_preview() -> void:
+	for body: StaticBody3D in fields:
+		var id: String=body.get_meta("field_id")
+		if not _borrowed.has(id): continue
+		# Capture the latest living crop state, including growth during editing.
+		_remember_field(_preview_source,id,body)
+		body.reparent(self)
+	_borrowed.clear();_originals.clear();_preview_source=null
+
+func restore_preview() -> void:
+	for entry: Dictionary in _originals.values():
+		if is_instance_valid(entry.node):
+			entry.node.visible=entry.visible;entry.node.collision_layer=entry.layer
+	_borrowed.clear();_originals.clear();_preview_source=null
 
 func sync_plan(next: RefCounted, state: FarmState) -> void:
 	var old: Dictionary = {}
@@ -232,6 +254,15 @@ func sync_plan(next: RefCounted, state: FarmState) -> void:
 		var shape: Dictionary = definition.duplicate(true)
 		for key: String in ["position", "yaw"]: before.erase(key); shape.erase(key)
 		var body: StaticBody3D = old.get(id)
+		if _borrowed.has(id):
+			if definition==_definitions[id] and body.get_meta("field_index")==index:
+				reordered.append(body);old.erase(id);continue
+			_borrowed.erase(id);body.hide()
+			if before==shape:
+				# Observers remain on the original until the preview is accepted.
+				body=body.duplicate(0);add_child(body);body.visible=_originals[id].visible
+				_remember_field(_preview_source,id,body)
+			else: body=null
 		if body != null and before != shape:
 			_drop_field(body); body = null
 		if body == null: body = _make_field(index, definition)
@@ -241,7 +272,11 @@ func sync_plan(next: RefCounted, state: FarmState) -> void:
 		reordered.append(body); old.erase(id)
 		var cells: Dictionary = state.get_field(id).cells if id in state.field_ids() else {}
 		show_field({"id":id, "cells":cells})
-	for body: StaticBody3D in old.values(): _drop_field(body)
+	for body: StaticBody3D in old.values():
+		var id: String=body.get_meta("field_id")
+		if _borrowed.has(id):
+			body.hide();_borrowed.erase(id);_definitions.erase(id)
+		else: _drop_field(body)
 	fields = reordered
 
 func _drop_field(body: StaticBody3D) -> void:

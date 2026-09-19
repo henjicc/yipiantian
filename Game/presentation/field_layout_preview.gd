@@ -31,14 +31,12 @@ var _grass_paths: Array[PackedVector3Array]=[]
 
 func configure(scene: Node3D) -> void:
 	main=scene
-	farm=FarmLayout.new();farm.plan.fields.clear();add_child(farm);farm.copy_from(main.farm)
+	farm=FarmLayout.new();farm.plan.fields.clear();add_child(farm);farm.preview_from(main.farm)
 	for body: StaticBody3D in farm.fields: body.collision_layer=0
 	core=Cover.new();add_child(core)
 	core.preview_tiles(main.get_node("Environment/GroundCover/CoreGrass"))
 	expansion=Cover.new();add_child(expansion)
 	expansion.preview_tiles(main.get_node("Environment/ExpansionGrass"))
-	for node: Node3D in [main.farm]:
-		if node.visible: _hidden.append(node);node.hide()
 	# Opening the tool has not changed any land, paths or fence contacts.
 	# Keep the existing ground dressing until a validated edit changes it.
 	validated=main.courtyard_plan;routes=main.get_node("Environment").circulation
@@ -142,6 +140,7 @@ func accept(plan: RefCounted) -> void:
 	_accepted=true
 	var environment: Node3D=main.get_node("Environment")
 	var old_farm: FarmLayout=main.farm
+	farm.accept_preview()
 	main.focus_detail.replace_fields(farm.fields+[main.trellis_crops.body])
 	main.remove_child(old_farm);old_farm.queue_free()
 	for body: StaticBody3D in farm.fields: body.collision_layer=1
@@ -163,6 +162,7 @@ func retire() -> void:
 	# Cancelling must not wait for an obsolete path search. Keep the private
 	# worker owner alive, hidden, until it can join without blocking a frame.
 	_retiring=true;pending=false;hide()
+	farm.restore_preview()
 	core.restore_tiles();expansion.restore_tiles()
 	for node: Node3D in _hidden:
 		if is_instance_valid(node): node.show()
@@ -172,6 +172,7 @@ func retire() -> void:
 func _exit_tree() -> void:
 	if _worker!=null and _worker.is_started(): _worker.wait_to_finish()
 	if not _accepted:
+		farm.restore_preview()
 		core.restore_tiles();expansion.restore_tiles()
 		for node: Node3D in _hidden:
 			if is_instance_valid(node): node.show()

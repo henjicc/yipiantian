@@ -121,7 +121,8 @@ func run() -> void:
 	check(neighbors.get_node("WillowNeighbor").scale==Vector3.ONE,"Neighbor keeps its real authored size")
 	if construction_mode:
 		RenderingServer.frame_post_draw.connect(_collect_frame)
-		await construction_checks()
+		if OS.get_cmdline_user_args().has("--field-save-only"): await field_save_check()
+		else: await construction_checks()
 		check(construction_completed,"All capacity construction stages reached their final checks")
 		RenderingServer.frame_post_draw.disconnect(_collect_frame);_sample={}
 	else:
@@ -219,6 +220,32 @@ func paint_capacity_plants() -> bool:
 	check(scene.courtyard_plan.plants.size()==160,"Capacity planting commits in the same scene")
 	return scene.courtyard_plan.plants.size()==160
 
+func field_save_check() -> void:
+	check(preplanted,"Field-save capacity check includes established plants")
+	scene.atmosphere.set_preview_hour(11)
+	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout;await choose("fields")
+	scene.camera._move_to(Vector3(18,.4,-2),Vector3(24,65,25));await create_timer(1).timeout
+	var builder: Node=scene.island_builder
+	var originals: Array=scene.farm.fields.duplicate()
+	var saved: Dictionary=scene.farm_state.snapshot()
+	var center: Vector3=scene.courtyard_plan.fields[-1].position
+	await stroke(center,center+Vector3(0,0,.5),12)
+	var started: int=Time.get_ticks_msec()
+	while builder.field_preview.pending:
+		await process_frame
+		if Time.get_ticks_msec()-started>60000: check(false,"Capacity field-save validation finishes");return
+	if builder.draft==saved.layout or not builder.issue().is_empty(): check(false,"Capacity field-save draft is valid: "+builder.issue());return
+	var expected: Dictionary=builder.candidate.snapshot()
+	begin_sample("capacity-field-finish");await click(builder._panel.find_child("Finish",true,false));end_sample()
+	check(not builder.active and scene.farm_state.snapshot().layout==expected,"Full planted field saves and exits immediately after validation")
+	check(scene.farm.fields.slice(0,11)==originals.slice(0,11),"Capacity save retains the eleven untouched field instances")
+	check(scene.farm_state.snapshot().fields==saved.fields and scene.farm_state.snapshot().inventory==saved.inventory,"Capacity save preserves all planting records and inventory")
+	await settle()
+	check(scene.get_node("Environment/CourtyardAnimals").ready_for_motion,"Capacity animals resume after field save")
+	for field: Node3D in scene.farm.fields: check(field.is_visible_in_tree() and field.collision_layer==1 and field.get_node("Crops").get_child_count()==32,"Saved full fields remain visible, planted and pickable")
+	await shot("capacity-field-saved")
+	construction_completed=true
+
 func construction_checks() -> void:
 	scene.atmosphere.set_preview_hour(11)
 	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
@@ -282,8 +309,8 @@ func construction_checks() -> void:
 		if id=="fields" and OS.get_cmdline_user_args().has("--profile"):
 			var timings: Dictionary={}
 			var started: int=Time.get_ticks_usec()
-			var copy:=FarmLayout.new();copy.plan.fields.clear();root.add_child(copy);copy.hide();copy.copy_from(scene.farm)
-			timings.copy_farm_ms=(Time.get_ticks_usec()-started)/1000.0;copy.free()
+			var copy:=FarmLayout.new();copy.plan.fields.clear();root.add_child(copy);copy.hide();copy.preview_from(scene.farm)
+			timings.preview_farm_ms=(Time.get_ticks_usec()-started)/1000.0;copy.restore_preview();copy.free()
 			started=Time.get_ticks_usec();builder.field_preview.core.update_tiles(builder.candidate,false);timings.core_grass_ms=(Time.get_ticks_usec()-started)/1000.0
 			started=Time.get_ticks_usec();builder.field_preview.expansion.update_expansion(builder.candidate);timings.expansion_grass_ms=(Time.get_ticks_usec()-started)/1000.0
 			started=Time.get_ticks_usec();builder.field_preview.show_ground(builder.candidate);timings.ground_ms=(Time.get_ticks_usec()-started)/1000.0

@@ -2,6 +2,14 @@
 
 ## 场景内建设验证 · 20260919-island-construction
 
+2026-09-20 田块与作物按改动生成预览：`FarmLayout.preview_from`暂时借用原田块引用、暂停其正常种植命中，未改田块仍留在原拥有者下显示并接收实际生长更新。移动／重排时只复制对应田块，缩放或新田只生成相应几何，原实例隐藏并保留。取消恢复原可见性和命中层；保存前仍独立验证／写入，成功后`accept_preview`将未改田块接入新拥有者，采集最新作物和土面记录，再由`focus_detail.replace_fields`重新登记观察者。原全组`copy_from`入口已移除，性能诊断改测实际`preview_from`，不保留只为对照的旧生产分支。
+
+实景`island_fields_test.gd`69项通过（`field-borrowed-crops.log`，目录1789859502），覆盖新增、移转、缩小作物保护、取消／失焦、真实保存失败重试、撤销、生长和重开，新增未改田实例保持及仅改田替换检查；已查看移动旋转画面。`-- --borrowed-only`专项11项通过（`field-borrowed-lifecycle-fixed.log`，目录1789859730）：移除空田后取消恢复原实例／索引／命中层，编辑中经真实播种和UTC结算显示成熟，在新增其他田块后保存并收获，确认接管最新显示记录。专项分支有到达最终收获检查的完成断言，初版错误入口日志`field-borrowed-lifecycle.log`不作通过证据。以上两个最终批次均无退出资源提示。
+
+满额`life_capacity_scene_test.gd -- --construction --dev-preview --profile`通过（`construction-borrowed-fields.log`，目录3122052），384株地栽、10株架上作物、实时笔刷160簇水草、28只活动动物，RTX4090／3840×2160／标准画质，全部操作样本前台。田块进入最长28.1ms、取消28.1ms，上轮83.6／95.2ms；拖动58.3ms与上轮57.2ms基本一致。独立预览准备3.3ms，原整组复制49.1ms；实际密集笔刷中位30.0ms，地形完成101.6ms／撤销131.1ms，没有把未修改操作的波动归因为本轮收益。
+
+新增满田保存定向入口`life_capacity_scene_test.gd -- --construction --dev-preview --preplanted --field-save-only`通过（`capacity-borrowed-field-save.log`，目录2971939）。它采用预先布置的160簇植物，专门检查田块移动后一次完成，不作为实时笔刷证明：完成手势145.7ms／5帧，最长99.1ms，保存接管74ms，动物地面后台更新1095ms；保留11块未改田的原实例、全部作物／库存、正常命中与真实存档内容，已查看满田保存画面。第15项及完整15项目标继续整体验收核对，尚未宣布全部目标完成，终极目标文档未改动。
+
 2026-09-20 田块草地采用已有的局部预览接管：`field_layout_preview`通过`preview_tiles`引用原地未变化草格，只隐藏受田块／道路改动替换的原格；取消及直接退出恢复原可见性，保存通过`accept_tiles`把新格接回原草地拥有者。草地父节点不替换，实际变化范围仍使用原田块／道路局部差异；通路后台结果只更新当前草稿。拖动时通过`FarmState.copy()`检查候选，作物缩小保护不变。
 
 田块实景`island_fields_test.gd`62项通过（`field-borrowed-grass-render-exit.log`，目录1789858990），含新田／缩放／移转、可见草格恰好一次、与完整生成几何一致、原草地拥有者保持、取消／失焦、保存失败重试、撤销保留生长和重开；已查看移动旋转画面。首批`field-borrowed-grass.log`功能62项通过但退出报告12对象／6资源仍在使用；随后的无界面`field-borrowed-grass-exit.log`及详细实景复核均未复现，未找到可确认的持续泄漏，不把未复现称为修复。详细渲染日志另含本机第三方Vulkan层失效路径和现有RGB纹理转换提示，不用该批作性能结论。

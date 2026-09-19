@@ -71,6 +71,38 @@ func grass_reuse_checks() -> void:
 		expect(complete,"Field grass preview shows each final tile once with no stale original grass")
 		reference.free()
 
+func borrowed_field_checks() -> bool:
+	var originals: Array=scene.farm.fields.duplicate()
+	var layout: Dictionary=scene.farm_state.snapshot().layout
+	scene._begin_construction("fields");await create_timer(1).timeout
+	var builder: Node=scene.island_builder
+	builder.selected_field=0;builder._field_action("remove");await frames()
+	expect(is_instance_valid(originals[0]) and not originals[0].visible,"Removing a borrowed empty field retains its original for cancellation")
+	var indices: bool=true
+	for i: int in builder.field_preview.farm.fields.size():
+		indices=indices and builder.field_preview.farm.fields[i].get_meta("field_index")==i
+	expect(indices,"Removing a field gives remaining preview fields their actual picking indices")
+	builder.cancel_draft();await frames();builder.finish();await frames()
+	var restored: bool=scene.farm.fields==originals and scene.farm_state.snapshot().layout==layout
+	for i: int in originals.size():
+		restored=restored and originals[i].is_visible_in_tree() and originals[i].collision_layer==1 and originals[i].get_meta("field_index")==i
+	expect(restored,"Cancel restores the exact original fields, visibility and picking after a removal")
+	scene._begin_construction("fields");await create_timer(1).timeout
+	expect(scene.farm_state.sow("field_01","cell_01","greens",2000000.0).ok,"Live borrowed-field fixture plants through the farming rules")
+	scene.refresh_farm()
+	expect(originals[0].get_node("Crops/cell_01").get_meta("stage_key")=="greens/sprout","An unchanged borrowed field displays later planting")
+	scene.clock=func() -> float: return 2003600.0
+	scene.settle_farm();await frames()
+	expect(originals[0].get_node("Crops/cell_01").get_meta("stage_key")=="greens/mature" and originals[0].is_visible_in_tree(),"An unchanged borrowed crop keeps growing visibly during construction")
+	await click(builder._field_actions.get_node("AddField"));await drag(Vector3(-1.5,.13,7),Vector3(1,.13,9))
+	if not await ready_draft(): return false
+	await click(builder._panel.find_child("Finish",true,false))
+	expect(not builder.active and scene.farm.fields[0]==originals[0] and originals[0].get_node("Crops/cell_01").get_meta("stage_key")=="greens/mature","Saving another field adopts the current grown crop without replacing it")
+	expect(scene.farm_state.harvest("field_01","cell_01",2003600.0).ok,"Adopted living field can still be harvested")
+	scene.refresh_farm();await frames()
+	expect(not originals[0].has_node("Crops/cell_01"),"The adopted field removes a harvested crop using its current visual records")
+	return true
+
 func _run() -> void:
 	if OS.get_cmdline_user_args().has("--paths-only"):
 		scene=Node3D.new()
@@ -87,11 +119,16 @@ func _run() -> void:
 	scene.store=Store.new(folder.path_join("farm"));scene.settings_store=Settings.new(folder.path_join("settings"))
 	scene.clock=func() -> float: return 2000000.0
 	root.add_child(scene);current_scene=scene;await frames(8)
+	if OS.get_cmdline_user_args().has("--borrowed-only"):
+		var completed: Variant=await borrowed_field_checks()
+		expect(completed==true,"Borrowed-field lifecycle reaches its final harvest check")
+		await finish();return
 	path_reuse_checks()
 	scene.atmosphere.set_preview_hour(11)
 	var house_id: int=scene.get_node("Environment/MainHouse").get_instance_id()
 	var water_id: int=scene.get_node("Environment/CourtyardAnimals").water.get_instance_id()
 	var original: Dictionary=scene.farm_state.snapshot()
+	var original_fields: Array=scene.farm.fields.duplicate()
 	var original_paths: Node3D=scene.get_node("Environment/GardenPaths")
 	var original_core: Node3D=scene.get_node("Environment/GroundCover/CoreGrass")
 	var original_expansion: Node3D=scene.get_node("Environment/ExpansionGrass")
@@ -104,13 +141,15 @@ func _run() -> void:
 	expect(original_paths.is_visible_in_tree(),"Opening field tools retains the existing visible paths")
 	for node: Node3D in original_fences: expect(node.is_visible_in_tree(),"Opening field tools retains existing fence and contact shadows")
 	expect(not scene.island_builder.field_preview.pending,"Unchanged field layout needs no repeated navigation build")
+	expect(scene.island_builder.field_preview.farm.fields==original_fields,"Opening fields reuses the actual existing field and crop instances")
 	expect(scene.island_builder.field_preview.core._tiles==opening_tiles and original_core.is_visible_in_tree(),"Opening fields retains the actual unchanged grass tiles")
 	await click(scene.island_builder._field_actions.get_node("AddField"))
 	await drag(Vector3(-1.5,.13,7),Vector3(1,.13,9))
 	var builder: Node=scene.island_builder
 	expect(builder.draft.fields.size()==7,"Real drag creates a seventh field on painted land")
 	expect(scene.farm_state.snapshot()==original,"Field preview cannot alter authoritative planting state")
-	expect(builder.field_preview.farm.fields.size()==7 and not scene.farm.visible,"New soil appears before save")
+	expect(builder.field_preview.farm.fields.size()==7 and builder.field_preview.farm.fields[6].is_visible_in_tree(),"New soil appears before save")
+	expect(builder.field_preview.farm.fields.slice(0,6)==original_fields and original_fields[0].is_visible_in_tree(),"Adding a field leaves existing living fields visible in place")
 	if not await ready_draft(): await shot("failure-new-field");await finish();return
 	var definition: Dictionary=builder.candidate.fields[6]
 	var pose: Transform3D=builder.candidate.field_transform(6)
@@ -130,6 +169,7 @@ func _run() -> void:
 	expect(not builder.active and scene.farm_state.snapshot().layout==wanted,"Finish commits the visible field and exits")
 	expect(scene.get_node("Environment/MainHouse").get_instance_id()==house_id,"Field completion retains the island scene")
 	expect(scene.farm.fields.size()==7,"New field joins normal farming")
+	expect(scene.farm.fields.slice(0,6)==original_fields,"Accepting the new field retains all six original field instances")
 	expect(scene.get_node("Environment/GroundCover/CoreGrass")==original_core and scene.get_node("Environment/ExpansionGrass")==original_expansion,"Saving field edits keeps the original grass owners")
 	for node: Node3D in original_fences: expect(is_instance_valid(node) and node.is_visible_in_tree(),"Field-only save preserves unchanged fence instances and shadows")
 	var id: String=scene.farm.field_id(6)
@@ -168,11 +208,15 @@ func _run() -> void:
 		expect(preview_body.collision_layer==0,"Preview fields cannot intercept normal farm picking")
 	var before: Dictionary=scene.farm_state.snapshot()
 	var center: Vector3=scene.courtyard_plan.fields[6].position
+	var moved_original: Node3D=scene.farm.fields[6]
+	var unmoved_original: Node3D=scene.farm.fields[0]
 	await drag(center,center+Vector3(-.5,0,0))
 	if not await ready_draft(): await shot("failure-move");await finish();return
 	await click(builder._field_actions.get_node("RotateField"))
 	if not await ready_draft(): await shot("failure-rotate");await finish();return
 	expect(builder.draft.fields[6].yaw==15,"Rotate button updates the selected field")
+	expect(not moved_original.is_visible_in_tree() and builder.field_preview.farm.fields[6]!=moved_original and builder.field_preview.farm.fields[6].is_visible_in_tree(),"Only the moved field uses a private visible replacement")
+	expect(builder.field_preview.farm.fields[0]==unmoved_original and unmoved_original.is_visible_in_tree(),"Moving and rotating one field does not duplicate the untouched field")
 	grass_reuse_checks()
 	await shot("03-moved-rotated")
 	var normal_path: String=scene.store.directory
@@ -181,9 +225,11 @@ func _run() -> void:
 	await click(builder._panel.find_child("Finish",true,false))
 	expect(builder.active and not builder.busy and builder._status.text.contains("未能保存"),"Failed save keeps the field draft retryable")
 	expect(scene.farm_state.snapshot()==before,"Failed field save leaves authoritative crops and layout unchanged")
+	expect(is_instance_valid(moved_original) and not moved_original.visible,"Failed save retains the original field for cancellation")
 	scene.store.directory=normal_path
 	await click(builder._panel.find_child("Finish",true,false))
 	expect(not builder.active,"Retry completes in place")
+	expect(scene.farm.fields[0]==unmoved_original and unmoved_original.collision_layer==1,"Successful save retains the untouched field and restores ordinary picking")
 	expect(scene.farm_state.snapshot().fields==before.fields,"Moving and rotating retain every crop record")
 	expect(scene.farm_state.snapshot().inventory==before.inventory,"Construction does not change inventory")
 	scene.clock=func() -> float: return 2003600.0
