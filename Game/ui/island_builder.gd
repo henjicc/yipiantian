@@ -8,6 +8,7 @@ const Structures = preload("res://layout/garden_structures.gd")
 const ThemeFactory = preload("res://ui/farm_theme.gd")
 const Assets = preload("res://scenes/environment/courtyard_assets.gd")
 const ShorePreview=preload("res://presentation/island_shore_preview.gd")
+const IslandSpace=preload("res://layout/island_space.gd")
 var main: Node3D
 var active: bool = false
 var busy: bool = false
@@ -158,7 +159,7 @@ func _flush_land() -> void:
 	var flock: Dictionary=draft.construction.ducks
 	for i: int in steps+1:
 		var sample: Vector2=from.lerp(point,float(i)/steps)
-		var cell: Vector2=(sample/Construction.CELL).floor()*Construction.CELL
+		var cell: Vector2=Vector2(IslandSpace.cell_at(sample))*Construction.CELL
 		var area: PackedVector2Array=Construction.rectangle([cell.x-.5,cell.y-.5,1.5,1.5])
 		if not Geometry2D.intersect_polygons(area,east).is_empty(): continue
 		if flock.count>0 and not flock.area.is_empty() and not Geometry2D.intersect_polygons(area,Construction.rectangle(flock.area)).is_empty(): continue
@@ -235,12 +236,12 @@ func _drag(screen: Vector2) -> void:
 	if tool=="land":
 		_pending_land=point
 		return
-	point=point.snapped(Vector2.ONE*Construction.CELL) if tool in ["land","ducks"] else point.snapped(Vector2.ONE*.1)
+	point=IslandSpace.snap(point) if tool in ["land","ducks"] else point.snapped(Vector2.ONE*.1)
 	if point==_last_cell: return
 	_last_cell=point;draft=_drag_snapshot.duplicate(true)
 	match tool:
 		"ducks":
-			var start: Vector2=_start.snapped(Vector2.ONE*Construction.CELL)
+			var start: Vector2=IslandSpace.snap(_start)
 			var low: Vector2=start.min(point);var size: Vector2=(start-point).abs()
 			var rect: Array=[low.x,low.y,maxf(.5,size.x),maxf(.5,size.y)]
 			draft.construction.ducks.area=rect
@@ -265,17 +266,19 @@ func issue() -> String:
 		return "从现有岸边涂抹，让新土地保持连通。"
 	var bridge: String=Construction.bridge_issue(candidate)
 	if not bridge.is_empty(): return bridge
+	var water_issue: String=Construction.water_area_issue(candidate)
+	if not water_issue.is_empty(): return water_issue
 	if not candidate.construction.trellis.is_empty():
 		var size: Vector3=Construction.trellis_size(candidate)
 		var at: Vector3=candidate.anchors.trellis
 		var footprint: PackedVector2Array=Construction.rectangle([at.x-size.y*.5-.1,at.z-size.x*.5-.044,size.y+.2,size.x+.088])
-		if not Geometry2D.clip_polygons(footprint,candidate.plateau()).is_empty(): return "菜架的立柱需要全部落在平地上。"
+		if not IslandSpace.supported(footprint,candidate.plateau()): return "菜架的立柱需要全部落在平地上。"
 		var obstacles: Dictionary=main.get_node("Environment").layout_obstacles.duplicate()
 		obstacles.merge(main.decoration_layout.ground_footprints())
 		for key: String in obstacles:
 			# This generated flower clump follows the candidate bed on commit.
 			if key=="EntranceTrellis" or key.begins_with("Flowers0_") or key.begins_with("stone") or key.begins_with("@Node"): continue
-			if not Geometry2D.intersect_polygons(footprint,obstacles[key]).is_empty(): return "菜架碰到了树木或旁边物件，请缩小长宽。"
+			if IslandSpace.overlaps(footprint,obstacles[key]): return "菜架碰到了树木或旁边物件，请缩小长宽。"
 	var area: Array=candidate.construction.ducks.area
 	if not area.is_empty() and int(candidate.construction.ducks.count)>0:
 		var rect:=Rect2(area[0],area[1],area[2],area[3])
@@ -283,7 +286,6 @@ func issue() -> String:
 		for y: int in 7:
 			for x: int in 7:
 				var p: Vector2=rect.position+Vector2((x+.5)/7.0,(y+.5)/7.0)*rect.size
-				if Geometry2D.is_point_in_polygon(p,candidate.rim): return "鸭群活动区域需要留在水面上"
 				if main.get_node("Environment/CourtyardAnimals").water.contains(p): clear+=1
 		if clear<35: return "这里的水面太拥挤，请避开岛岸、桥头和密集荷花"
 	return ""

@@ -21,6 +21,9 @@ func configure(courtyard: Node3D) -> void:
 	_grass=preload("res://scenes/environment/ground_cover.gd").new();_grass.name="ExpansionGrass";add_child(_grass)
 
 func update(plan: RefCounted) -> void:
+	# Terrain-only preview keeps the existing paths until a structure edit
+	# derives new ones. Grass must obey these same routes before and after save.
+	plan.paths=environment.plan.paths.duplicate()
 	_surface.mesh=Bank.build(plan.rim,plan.ground_height,plan.bank_width,not plan.construction.land.is_empty())
 	var wanted: Dictionary={}
 	for entry: Dictionary in Dressing.stones(plan):

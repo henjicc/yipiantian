@@ -28,6 +28,7 @@ var _night_weight: float=0
 var _kitchen: Dictionary={}
 const LivingDecoration=preload("res://presentation/living_decoration.gd")
 const Space=preload("res://scenes/environment/animal_space.gd")
+const IslandSpace=preload("res://layout/island_space.gd")
 const SITE_SCENERY=preload("res://layout/courtyard_plan.gd").DECORATION_SCENERY
 
 
@@ -346,16 +347,18 @@ func placement_issue(prop: Node3D, item: String, slot: String) -> String:
 	var rise: float=environment.plan.ground_height-.13
 	var polygon: PackedVector2Array=Space.footprint(prop,.05+rise,1.3+rise,false)
 	if polygon.size()<3: return "摆件没有可用的落地轮廓"
-	if not Geometry2D.clip_polygons(polygon,environment.plan.plateau()).is_empty(): return "这里超出了平地"
+	if not IslandSpace.supported(polygon,environment.plan.plateau()): return "这里超出了平地"
+	var occupied:=IslandSpace.new()
 	for key: String in environment.layout_obstacles:
 		if key==SITE_SCENERY.get(slot,""): continue
-		if not Geometry2D.intersect_polygons(polygon,environment.layout_obstacles[key]).is_empty(): return "这里会碰到院中景物"
+		occupied.add(key,environment.layout_obstacles[key])
+	if not occupied.collisions(polygon).is_empty(): return "这里会碰到院中景物"
 	for index: int in environment.plan.fields.size():
-		if not Geometry2D.intersect_polygons(polygon,environment.plan.field_polygon(index,.12)).is_empty(): return "这里需要留给田地"
+		if IslandSpace.overlaps(polygon,environment.plan.field_polygon(index,.12)): return "这里需要留给田地"
 	for other: String in _instances:
 		if other==item or state.snapshot()[other].slot_id==slot: continue
 		var obstacle: PackedVector2Array=Space.footprint(_instances[other],.05+rise,1.3+rise,false)
-		if obstacle.size()>=3 and not Geometry2D.intersect_polygons(polygon,obstacle).is_empty(): return "这里会碰到其他摆件"
+		if IslandSpace.overlaps(polygon,obstacle): return "这里会碰到其他摆件"
 	return _animal_issue(polygon)
 
 func _animal_issue(polygon: PackedVector2Array) -> String:

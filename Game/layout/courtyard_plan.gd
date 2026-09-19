@@ -5,6 +5,7 @@ const FIELD_IDS: Array[String] = ["field_01", "field_02", "field_03", "field_04"
 const FENCE_STYLES: Array[String] = ["bamboo", "crossed", "picket"]
 const BankGeometry = preload("res://layout/bank_geometry.gd")
 const Construction = preload("res://layout/island_construction.gd")
+const IslandSpace = preload("res://layout/island_space.gd")
 var construction: Dictionary = Construction.initial()
 var scenery_expansion := Vector2.ZERO
 const DECORATION_SCENERY={"ground_01":"YardWaterVats","ground_02":"YardMelonPile","ground_03":"YardGroundTrays","ground_04":"YardBasketStack"}
@@ -113,12 +114,7 @@ func set_terrain(height: float, width: float) -> void:
 	fences.clear()
 
 func field_polygon(index: int, margin: float = 0.0) -> PackedVector2Array:
-	var half: Vector2 = fields[index].size*.5+Vector2.ONE*margin
-	var polygon := PackedVector2Array()
-	for p: Vector2 in [Vector2(-half.x,-half.y),Vector2(half.x,-half.y),Vector2(half.x,half.y),Vector2(-half.x,half.y)]:
-		var point: Vector3 = field_transform(index)*Vector3(p.x,0,p.y)
-		polygon.append(Vector2(point.x,point.z))
-	return polygon
+	return IslandSpace.footprint(fields[index].size, field_transform(index), margin)
 
 func unpainted() -> RefCounted:
 	var data: Dictionary=snapshot()
@@ -268,6 +264,18 @@ static func resized_field(field: Dictionary, columns: int, rows: int, size: Vect
 func plateau() -> PackedVector2Array:
 	var painted: bool=not construction.land.is_empty()
 	return BankGeometry.ring(BankGeometry.contour(rim,painted), .96, bank_width,painted)
+
+func water_banks() -> Array[PackedVector2Array]:
+	# The waterline lies outside the flat buildable plateau. The slope is neither
+	# usable farmland nor clear water; use the same ring as the rendered bank.
+	var painted: bool = not construction.land.is_empty()
+	var main: PackedVector2Array = BankGeometry.ring(BankGeometry.contour(rim, painted), 1.055, bank_width, painted)
+	var east := PackedVector2Array()
+	var pose := Transform3D(Basis(Vector3.UP, deg_to_rad(angles.east_bank)), anchors.east_bank)
+	for point: Vector2 in BankGeometry.ring(BankGeometry.contour(east_rim), 1.055, bank_width):
+		var world: Vector3 = pose * Vector3(point.x, 0, point.y)
+		east.append(Vector2(world.x, world.z))
+	return [main, east]
 
 func land_bounds() -> Rect2:
 	var result := Rect2(rim[0],Vector2.ZERO)

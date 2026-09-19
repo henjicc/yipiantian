@@ -698,6 +698,7 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 		island_builder.set_busy(false,"范围或尺寸不合适，请调整后再试。")
 		return
 	var message: String=preload("res://layout/island_construction.gd").bridge_issue(plan)
+	if message.is_empty(): message=preload("res://layout/island_construction.gd").water_area_issue(plan)
 	if message.is_empty():
 		var probe:=preload("res://scenes/environment/courtyard.gd").new()
 		probe.plan=plan;probe.layout_probe=true;probe.process_mode=Node.PROCESS_MODE_DISABLED
@@ -707,15 +708,12 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 		var space=preload("res://scenes/environment/animal_space.gd")
 		if not plan.construction.trellis.is_empty():
 			var trellis: PackedVector2Array=space.footprint(probe.get_node("EntranceTrellis"),plan.ground_height-.02,plan.ground_height+3.2)
-			if not Geometry2D.clip_polygons(trellis,plan.plateau()).is_empty(): message="菜架的立柱需要全部落在平地上。"
+			if not preload("res://layout/island_space.gd").supported(trellis,plan.plateau()): message="菜架的立柱需要全部落在平地上。"
 			for key: String in obstacles:
 				if key=="EntranceTrellis" or key.begins_with("stone") or key.begins_with("@Node"): continue
 				if not Geometry2D.intersect_polygons(trellis,obstacles[key]).is_empty():
 					print("CONSTRUCTION_REJECT stage=trellis object="+key)
 					message="菜架碰到了旁边的物件，请调整长宽。";break
-		var area: Array=plan.construction.ducks.area
-		if not area.is_empty() and int(plan.construction.ducks.count)>0:
-			if not Geometry2D.intersect_polygons(preload("res://layout/island_construction.gd").rectangle(area),plan.rim).is_empty(): message="请为鸭群保留水面，或先调整它们的活动区域。"
 		var east: PackedVector2Array=space.footprint(probe.get_node("EastBank"),plan.ground_height-.04,plan.ground_height+.02)
 		if not Geometry2D.intersect_polygons(plan.plateau(),east).is_empty(): message="添地碰到了对岸，请留出水道。"
 		var issues: Array[String]=preload("res://layout/courtyard_circulation.gd").field_placement_issues(plan,obstacles)
@@ -745,8 +743,7 @@ func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 	if plan==null: return
 	var construction=preload("res://layout/island_construction.gd")
 	var message: String=construction.bridge_issue(plan)
-	var area: Array=plan.construction.ducks.area
-	if not area.is_empty() and int(plan.construction.ducks.count)>0 and not Geometry2D.intersect_polygons(construction.rectangle(area),plan.rim).is_empty(): message="请为鸭群保留水面。"
+	if message.is_empty(): message=construction.water_area_issue(plan)
 	if not Geometry2D.intersect_polygons(plan.plateau(),construction.bridge_support(plan,1)).is_empty(): message="请为对岸留出水道。"
 	# Only the brush changed. Existing fields, buildings and routes are retained;
 	# do not instantiate a second courtyard to validate unchanged architecture.

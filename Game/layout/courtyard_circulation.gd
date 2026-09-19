@@ -1,6 +1,7 @@
 extends RefCounted
 ## Derived paths and fence spans. No saved nodes, crops or per-frame navigation.
 const Space = preload("res://scenes/environment/animal_space.gd")
+const IslandSpace = preload("res://layout/island_space.gd")
 var road := Space.new()
 var endpoints: Dictionary = {}
 var issues: Array[String] = []
@@ -10,14 +11,14 @@ var _plan: RefCounted
 static func field_placement_issues(plan: RefCounted, obstacles: Dictionary) -> Array[String]:
 	var result: Array[String] = []
 	var plateau: PackedVector2Array = plan.plateau()
+	var occupied := IslandSpace.new()
+	for key: String in obstacles: occupied.add(key, obstacles[key])
 	for i: int in plan.fields.size():
 		var field: Dictionary = plan.fields[i]
 		var polygon: PackedVector2Array = plan.field_polygon(i,.14)
-		if not Geometry2D.clip_polygons(polygon,plateau).is_empty(): result.append(field.id+":outside_ground")
-		for j: int in i:
-			if not Geometry2D.intersect_polygons(polygon,plan.field_polygon(j,.14)).is_empty(): result.append(field.id+":overlaps:"+plan.fields[j].id)
-		for key: String in obstacles:
-			if not Geometry2D.intersect_polygons(polygon,obstacles[key]).is_empty(): result.append(field.id+":overlaps:"+key)
+		if not IslandSpace.supported(polygon, plateau): result.append(field.id+":outside_ground")
+		for key: String in occupied.collisions(polygon): result.append(field.id+":overlaps:"+key)
+		occupied.add(field.id, polygon)
 	return result
 
 func build(plan: RefCounted, obstacles: Dictionary) -> void:

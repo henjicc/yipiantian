@@ -2,6 +2,7 @@ extends Node3D
 ## Low clustered grass joins roots, paths and soil. No gameplay or collision ownership.
 const SHADER = preload("res://scenes/environment/meadow.gdshader")
 const Space = preload("res://scenes/environment/animal_space.gd")
+const IslandSpace = preload("res://layout/island_space.gd")
 var _rim: PackedVector2Array
 var _exclusions: Array[PackedVector2Array] = []
 var _rng := RandomNumberGenerator.new()
@@ -82,6 +83,8 @@ func update_expansion(plan: RefCounted) -> void:
 	var base: PackedVector2Array=plan.unpainted().plateau()
 	var plateau: PackedVector2Array=plan.plateau()
 	var bounds: Rect2=plan.land_bounds()
+	var fields: Array[PackedVector2Array]=[]
+	for index: int in plan.fields.size(): fields.append(plan.field_polygon(index,.07))
 	var wanted: Dictionary={}
 	for z: int in range(floori(bounds.position.y),ceili(bounds.end.y)):
 		for x: int in range(floori(bounds.position.x),ceili(bounds.end.x)):
@@ -92,18 +95,31 @@ func update_expansion(plan: RefCounted) -> void:
 			var shape: Array[PackedVector2Array]=[]
 			for piece: PackedVector2Array in pieces: shape.append_array(Geometry2D.intersect_polygons(piece,plateau))
 			if shape.is_empty(): continue
+			var blocked: Array[PackedVector2Array]=[]
+			for field: PackedVector2Array in fields:
+				if IslandSpace.overlaps(rect,field): blocked.append(field)
+			var routes: Array[PackedVector2Array]=[]
+			var tile_bounds:=Rect2(Vector2(x,z),Vector2.ONE).grow(.23)
+			for route: PackedVector3Array in plan.paths:
+				for i: int in range(route.size()-1):
+					var a:=Vector2(route[i].x,route[i].z);var b:=Vector2(route[i+1].x,route[i+1].z)
+					if tile_bounds.intersects(Rect2(a,Vector2.ZERO).expand(b),true): routes.append(PackedVector2Array([a,b]))
+			var signature: Array=[shape,blocked,routes,plan.ground_height]
 			wanted[cell]=true
-			if _tile_shapes.get(cell)==shape: continue
+			if _tile_shapes.get(cell)==signature: continue
 			if _tiles.has(cell): _tiles[cell].free();_tiles.erase(cell)
-			_tile_shapes[cell]=shape
+			_tile_shapes[cell]=signature
 			var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-			_rng.seed=hash(cell)+943172
 			var count: int=0
 			for attempt: int in 80:
+				# Independent tuft seeds keep untouched blades fixed when a field or
+				# path clips a different part of this same tile.
+				_rng.seed=hash(Vector3i(x,z,attempt))+943172
 				var p:=Vector2(x+_rng.randf(),z+_rng.randf())
 				var density: float=_rng.randf();var height: float=_rng.randf_range(.045,.13)
 				var patch: float=(sin(p.x*2.7+p.y*.6)+sin(p.y*3.2-p.x*.8))*.25+.5
 				if density>lerpf(.12,.7,patch): continue
+				if not _clear_planting(p,blocked,routes): continue
 				for polygon: PackedVector2Array in shape:
 					if Geometry2D.is_point_in_polygon(p,polygon):
 						_tuft(surface,Vector3(p.x,plan.ground_height-.002,p.y),height,4);count+=1;break
@@ -116,6 +132,13 @@ func update_expansion(plan: RefCounted) -> void:
 		if not wanted.has(cell):
 			if _tiles.has(cell): _tiles[cell].free();_tiles.erase(cell)
 			_tile_shapes.erase(cell)
+
+static func _clear_planting(point: Vector2, fields: Array[PackedVector2Array], routes: Array[PackedVector2Array]) -> bool:
+	for field: PackedVector2Array in fields:
+		if Geometry2D.is_point_in_polygon(point,field): return false
+	for segment: PackedVector2Array in routes:
+		if Geometry2D.get_closest_point_to_segment(point,segment[0],segment[1]).distance_to(point)<.23: return false
+	return true
 
 func _build_foundation_contacts(plan: RefCounted) -> void:
 	# Aprons follow building anchors, with dimensions in each building's local space.
