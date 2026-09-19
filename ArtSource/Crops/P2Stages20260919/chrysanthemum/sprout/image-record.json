@@ -1,0 +1,14 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "inputs": [
+    "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "<REPO_ROOT>/.local/crop-research-20260919/chrysanthemum-sprout.jpg"
+  ],
+  "prompt": "Use case: stylized-concept. Create ONE isolated living Glebionis coronaria edible crown daisy / shungiku / 茼蒿 plant, medium narrow deeply lobed leaf type, as image-to-3D reference for a Jiangnan miniature farm. Image 1 is STYLE ONLY, approved Chinese gongbi light-colour painting: fresh muted sage/jade greens, layered watercolor pigment mottling, deliberate fine moss-green contours and structural midrib lines. Do not copy bok choy anatomy, white thick stems or inflated leaves. Other images are botanical shape references only. A convincing volumetric plant with ROUND slender green stems and THIN softly cupped leaves facing varied directions; camera elevated 35 degrees downward in three-quarter view, clear front/back overlap and depth, not a flat herbarium fan. Plain uniform neutral light-gray background. Full silhouette with generous margins. Matte diffuse even light; no cast shadow, no pots, soil, loose balls, base disk, roots, flowers, text or other objects. All stems connected to ONE short basal planting anchor, all leaves visibly above anchor. Preserve clear delicate ink-and-wash brushwork, not glossy photorealism or neon green. Seedling stage: ONE short thin green stem with TWO opposite smooth-edged small oval spoon-shaped cotyledons (about twice as long as wide, rounded tips), then TWO emerging longer narrow true leaves above them; true leaves have several shallow triangular side lobes along a continuous narrow central blade, with a larger rounded terminal lobe. One true leaf longer, the other younger and smaller. Four leaves total, true leaves only about twice cotyledon length. This is not mature foliage scaled down. No broad scalloped cilantro fan leaves, no fern fronds, no white fleshy stalk.",
+  "revision_prompt": null,
+  "original_first": "%USERPROFILE%/.codex/generated_images/01a0b678-f598-7d00-915f-051f5aa8efc6/exec-85d58de4-77a7-4307-9a92-31d0b286ab2e.png",
+  "output_original": "%USERPROFILE%/.codex/generated_images/01a0b678-f598-7d00-915f-051f5aa8efc6/exec-85d58de4-77a7-4307-9a92-31d0b286ab2e.png",
+  "review": "Reviewed against Plantersaien photographs of germination, young and harvest plants; side volume and leaf connections require P2 model review.",
+  "model_seed_cost": "not returned"
+}

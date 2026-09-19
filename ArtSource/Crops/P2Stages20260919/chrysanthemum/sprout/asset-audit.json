@@ -1,0 +1,88 @@
+{
+  "crop": "chrysanthemum",
+  "stage": "sprout",
+  "task": "f340f4e4-53c9-4552-b0ed-f8b2aba29f3e",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 2086,
+      "polygons": 2408,
+      "quads": 1720,
+      "triangles": 4128,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 39,
+      "non_manifold_edges": 42,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "min_godot": [
+    -0.043988242745399475,
+    0.0,
+    -0.03448474407196045
+  ],
+  "max_godot": [
+    0.010991746559739113,
+    0.08500000089406967,
+    0.05255627632141113
+  ],
+  "root_transform": [
+    [
+      0.08708354085683823,
+      0.0,
+      0.0,
+      -0.016498249024152756
+    ],
+    [
+      0.0,
+      0.08708354085683823,
+      0.0,
+      -0.009035767987370491
+    ],
+    [
+      0.0,
+      0.0,
+      0.08708354085683823,
+      0.042500000447034836
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 2086,
+      "polygons": 2408,
+      "quads": 1720,
+      "triangles": 4128,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 39,
+      "non_manifold_edges": 42,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.009,
+    0.009
+  ],
+  "triangles": 4128,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/chrysanthemum/chrysanthemum_sprout.glb"
+}

@@ -1,0 +1,77 @@
+{
+  "species": "Glebionis coronaria, medium deeply lobed edible leaf type before flowering",
+  "stages": {
+    "sprout": {
+      "task_id": "f340f4e4-53c9-4552-b0ed-f8b2aba29f3e",
+      "height": 0.085,
+      "max_width": 0.13,
+      "face_request": 2000,
+      "seed": 2026091916,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    },
+    "young": {
+      "task_id": "49523441-112f-4a3b-9e59-5cda06334b7a",
+      "height": 0.18,
+      "max_width": 0.28,
+      "face_request": 4000,
+      "seed": 2026091917,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120,
+      "remove_degenerate_triangles": 6,
+      "soil_radius": [
+        0.012,
+        0.01
+      ],
+      "anchor_note": "Soil slice intersects low outer leaves; use basal stem footprint.",
+      "remove_loose_vertices": 1
+    },
+    "mature": {
+      "task_id": "d7dc8acc-d7fe-44a3-aa8c-a0977b8c20b8",
+      "height": 0.32,
+      "max_width": 0.42,
+      "face_request": 8500,
+      "seed": 2026091918,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120,
+      "remove_loose_vertices": 1,
+      "collar_center_xy": [
+        0.0093,
+        0.0039
+      ],
+      "soil_radius": [
+        0.013,
+        0.013
+      ],
+      "anchor_note": "Lowest 0.006 raw-unit slice isolates central stem; the default 1.2% root slice also includes low outer leaves, so use reviewed basal center and footprint."
+    }
+  },
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "quad": true,
+  "delight": false,
+  "pbr": false,
+  "texture_alignment": "original_image",
+  "enable_image_autofix": false,
+  "adoption": "installed; 93 targeted asset checks, four-view and farm day/night review, wind on/off passed; user aesthetic feedback pending",
+  "not_used": [
+    "semantic segmentation",
+    "rigging",
+    "paid retopology",
+    "paid retexturing",
+    "decimation"
+  ]
+}

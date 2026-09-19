@@ -1,0 +1,94 @@
+{
+  "crop": "chrysanthemum",
+  "stage": "young",
+  "task": "49523441-112f-4a3b-9e59-5cda06334b7a",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 4842,
+      "polygons": 4296,
+      "quads": 2600,
+      "triangles": 6896,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 2824,
+      "non_manifold_edges": 2853,
+      "loose_vertices": 0,
+      "zero_area_faces": 6
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "removed_degenerate_triangles": 6,
+  "removed_loose_vertices": 1,
+  "min_godot": [
+    -0.08097704499959946,
+    0.0,
+    -0.12693698704242706
+  ],
+  "max_godot": [
+    0.13281875848770142,
+    0.160723015666008,
+    0.15306301414966583
+  ],
+  "root_transform": [
+    [
+      0.2801367938518524,
+      0.0,
+      0.0,
+      0.025920860469341278
+    ],
+    [
+      0.0,
+      0.2801367938518524,
+      0.0,
+      -0.013063019141554832
+    ],
+    [
+      0.0,
+      0.0,
+      0.2801367938518524,
+      0.080361507833004
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 4841,
+      "polygons": 4290,
+      "quads": 2600,
+      "triangles": 6890,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 2834,
+      "non_manifold_edges": 2865,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.012,
+    0.01
+  ],
+  "whole_mesh_soil_slice_radius": [
+    0.11,
+    0.04418173059821129
+  ],
+  "triangles": 6890,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/chrysanthemum/chrysanthemum_young.glb"
+}
