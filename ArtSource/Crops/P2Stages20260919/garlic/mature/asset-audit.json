@@ -1,0 +1,89 @@
+{
+  "crop": "garlic",
+  "stage": "mature",
+  "task": "63746eb8-453e-4bad-baba-83cadd0579c3",
+  "blender": "5.2.2 LTS",
+  "source_format": "fbx",
+  "source": [
+    {
+      "vertices": 6674,
+      "polygons": 7029,
+      "quads": 5893,
+      "triangles": 12922,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 559,
+      "non_manifold_edges": 650,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "min_godot": [
+    -0.17070834338665009,
+    0.0,
+    -0.17375671863555908
+  ],
+  "max_godot": [
+    0.10307277739048004,
+    0.38999998569488525,
+    0.17699560523033142
+  ],
+  "root_transform": [
+    [
+      0.3901905119419098,
+      0.0,
+      0.0,
+      -0.03381778299808502
+    ],
+    [
+      0.0,
+      0.3901905119419098,
+      0.0,
+      -0.0016194430645555258
+    ],
+    [
+      0.0,
+      0.0,
+      0.3901905119419098,
+      0.19499999284744263
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 6674,
+      "polygons": 7029,
+      "quads": 5893,
+      "triangles": 12922,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 559,
+      "non_manifold_edges": 650,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.016003910452127457,
+    0.016003906726837158
+  ],
+  "triangles": 12922,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/garlic/garlic_mature.glb"
+}

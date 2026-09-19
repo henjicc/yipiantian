@@ -1,0 +1,15 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "research": "../../README.md#青蒜-allium-sativum",
+  "inputs": [
+    "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png",
+    "<REPO_ROOT>/.local/crop-research-20260919/garlic-growing.jpg",
+    "<REPO_ROOT>/.local/crop-research-20260919/garlic-green-harvest.jpg"
+  ],
+  "prompt": "Use case: stylized-concept. Create one isolated complete Chinese green garlic plant (Allium sativum grown for tender leaves, 青蒜), for our 3D miniature Jiangnan farm game. Input 1 is ONLY the approved gongbi style master, NOT cabbage anatomy. Input 2 is ONLY the world art style, NOT a composition to copy. Input 3 is a real photo for morphology ONLY, ignore its background and other plants. Strong selective fine moss-green/tea-brown structure lines, longitudinal brushstrokes and leaf folds, pale layered jade/sage pigment washes with subtle ink mottling and matte volume. Fine structural linework must survive texture transfer. GARLIC has long FLAT strap-shaped leaves with shallow V folds, NOT round tubular scallion leaves, not broad cabbage leaves, not a lotus rosette. Render the entire above-ground plant, basal pseudostem ending cleanly at one soil plane. No root mass, no visible seed clove, no soil, pot, label, text, scene, human hands, flower, scape, cut leaf ends, dry leaves, or large multi-clove bulb. Gentle three-quarter elevated view, 30 degrees down, coherent three-dimensional form with near/far overlap, all tips visible with 12% margin on plain pale neutral-gray background. Gongbi painting adapted to a solid 3D object, not flat paper silhouette, not glossy plastic or photorealism. STAGE: harvest-ready green garlic before bulbing or scapes, about 38cm tall. ONE upright layered ivory-green pseudostem, SIX long healthy flat ribbon leaves of unequal lengths emerging alternately up the stem in a naturally two-ranked arrangement, but with different bends and axial twists producing visible front/back volume. Longest leaves upright, outer leaves gently arch outward and down near the tips. Pale ivory sheath below, transitioning gradually into jade-green folded blades; no thick round onion stalks. Slim plant, not broad leek fan, no clump of separate shoots. Input 4 shows young harvested garlic: use the leaf/sheath transition only, omit enlarged harvested bulbs, string ties and nearby beets.",
+  "selected_output": "exec-5fc0118d-03d1-4697-bd8e-e6784c6459e2.png",
+  "model_seed_cost": "not returned",
+  "review": "Clove-grown garlic, flat V-fold leaves with longitudinal brushwork; no round scallion tubes, onion bulb or scape. 3D review pending."
+}

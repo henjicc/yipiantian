@@ -9,6 +9,7 @@ var capture_dir: String = ""
 var scene: Node3D
 var planting_only: bool = false
 var crop_filter: String = ""
+var stage_filter: String = ""
 
 
 func _initialize() -> void:
@@ -19,6 +20,8 @@ func _initialize() -> void:
 			planting_only = true
 		if argument.begins_with("--crop="):
 			crop_filter = argument.trim_prefix("--crop=")
+		if argument.begins_with("--stage="):
+			stage_filter = argument.trim_prefix("--stage=")
 	_run.call_deferred()
 
 
@@ -33,6 +36,10 @@ func _run() -> void:
 		quit(0 if failures.is_empty() else 1)
 		return
 	var statistics: Dictionary = {}
+	if not stage_filter.is_empty() and not Visuals.STAGES.has(stage_filter):
+		push_error("Unknown stage filter: " + stage_filter)
+		quit(1)
+		return
 	if not crop_filter.is_empty() and not Visuals.CROP_IDS.has(crop_filter):
 		push_error("Unknown crop filter: " + crop_filter)
 		quit(1)
@@ -43,6 +50,13 @@ func _run() -> void:
 			continue
 		var prior_height: float = 0.0
 		for stage: String in Visuals.STAGES:
+			if not stage_filter.is_empty() and stage != stage_filter:
+				# Retain the preceding stage's height for the growth comparison.
+				var prior: Node3D = Visuals.instantiate(crop_id, stage, false)
+				if prior != null:
+					prior_height = _bounds(prior, Transform3D.IDENTITY).end.y
+					prior.free()
+				continue
 			var pair: Array[Dictionary] = []
 			for low: bool in [false, true]:
 				var path: String = Visuals.scene_path(crop_id, stage, low)
@@ -133,6 +147,17 @@ func _inspect(crop: Node3D) -> Dictionary:
 	var report: Dictionary = {"triangles": 0, "mesh_instances": 0, "bounds": AABB()}
 	_collect(crop, Transform3D.IDENTITY, report)
 	return report
+
+
+func _bounds(node: Node3D, parent_transform: Transform3D) -> AABB:
+	var transform: Transform3D = parent_transform * node.transform
+	var result: AABB = transform * node.get_aabb() if node is MeshInstance3D else AABB()
+	for child: Node in node.get_children():
+		if child is Node3D:
+			var child_bounds: AABB = _bounds(child, transform)
+			if child_bounds.has_volume():
+				result = child_bounds if not result.has_volume() else result.merge(child_bounds)
+	return result
 
 
 func _collect(node: Node, parent_transform: Transform3D, report: Dictionary) -> void:

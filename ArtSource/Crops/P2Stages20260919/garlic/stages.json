@@ -1,0 +1,60 @@
+{
+  "species": "Allium sativum, green garlic harvested for tender leaves before bulbing",
+  "stages": {
+    "sprout": {
+      "task_id": null,
+      "height": 0.075,
+      "max_width": 0.1,
+      "face_request": 1800,
+      "seed": 2026091936,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 0
+    },
+    "young": {
+      "task_id": null,
+      "height": 0.19,
+      "max_width": 0.24,
+      "face_request": 4000,
+      "seed": 2026091937,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 0
+    },
+    "mature": {
+      "task_id": "63746eb8-453e-4bad-baba-83cadd0579c3",
+      "height": 0.39,
+      "max_width": 0.36,
+      "face_request": 6500,
+      "seed": 2026091938,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    }
+  },
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "quad": true,
+  "delight": false,
+  "pbr": false,
+  "texture_alignment": "original_image",
+  "enable_image_autofix": false,
+  "adoption": "Mature installed and verified in Godot: four views, day/night farm contact, 31 targeted asset checks, wind on/off. Sprout and young references prepared; their P2 tasks remain unsubmitted because Tripo balance was insufficient. Existing young stages are not approved replacements.",
+  "not_used": [
+    "semantic segmentation",
+    "rigging",
+    "paid retopology",
+    "paid retexturing",
+    "decimation"
+  ]
+}

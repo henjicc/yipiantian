@@ -13,6 +13,12 @@
 
 ## 形态研究
 
+### 青蒜 Allium sativum
+
+- 查询：`green garlic young sprout leaves Allium sativum grow extension photo`、`青蒜 幼苗 生长 叶片 实拍`。采用 [Wisconsin Horticulture 大蒜资料](https://hort.extension.wisc.edu/articles/garlic-allium-sativum/)中直接展示的[初生叶苗与根部](https://hort.extension.wisc.edu/files/2016/09/garlic-youngshoot-300x222.jpg)、[田间叶丛](https://hort.extension.wisc.edu/files/2016/09/20160627_173719.jpg)、[未干燥采收株](https://hort.extension.wisc.edu/files/2016/09/garlic-young.jpg)和[蒜瓣萌发序列](https://hort.extension.wisc.edu/files/2016/09/garlic-plantingbulbs.jpg)，四张均已查看。照片由该大学推广页面发布，仅作形态研究，不作为游戏贴图；本地副本为`.local/crop-research-20260919/garlic-*`。
+- 青蒜从蒜瓣抽叶，苗应是长短不同的尖形叶，不是两片圆子叶；叶片为有浅V形折面的扁平带状叶，与小葱圆管叶区别。中期为少量互生带叶和细假茎，采收阶段为更高的健康叶株；游戏已有品类是青蒜，因此最终阶段不做成干蒜头，不出现蒜薹／花序。收获实拍的膨大球茎、绑绳与旁边甜菜不纳入形态。
+- 三张工笔参考独立生成，分别为两片初生叶、三长一短幼叶、六片自然弯折带叶，原图及提示词保存于`garlic/<stage>/`。国外播期不作为江南播期依据。
+
 ### 小葱 Allium fistulosum
 
 - 查询：`Allium fistulosum seedling young harvested plant`、`scallion seedlings tubular leaves`。以 [UMN Extension 小葱资料](https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/growing-scallions-in-home-gardens)（Marissa Schuh／Jill MacKenzie，2024复核）确认葱白与绿色叶，不形成洋葱式膨大球茎；不混用同页另述的楼葱，也不将明尼苏达播期套用江南。
@@ -96,7 +102,7 @@
 - 菠菜三个阶段已完成独立参考／P2生成、Blender整理及游戏接入，见下方节点；用户审美反馈待收集。
 - 白萝卜三个阶段已独立生成并接入；成熟首版因侧面过扁弃用，第二版经外叶姿态和根部接地整理后采用，见下方节点。
 - 青菜幼苗与中期已独立生成并接入，成熟株原文件与材质保留。
-- 生菜、香菜、茼蒿、芹菜、雪里蕻、乌塌菜、胡萝卜、小葱各三个阶段已独立生成并接入，通过定向与实景／风动检查；当前累计32／35个新阶段。青蒜共3阶段未完成；藤蔓玩法与整体光照未开始实现。
+- 生菜、香菜、茼蒿、芹菜、雪里蕻、乌塌菜、胡萝卜、小葱各三个阶段已独立生成并接入，通过定向与实景／风动检查；青蒜成熟株也已接入，当前累计33／35个新阶段。青蒜苗／中期参考已生成，模型待生成；Tripo额度不足两次P2 detailed生成，未购买积分。藤蔓玩法与整体光照未开始实现。
 - 本批工作前存在模型目录／检查页及开发说明等其他改动，不属于本批，不覆盖或混入提交。当前仓库未配置远端。
 
 ## 菠菜接入节点 · 20260919-spinach-p2-stages
@@ -302,3 +308,17 @@ Blender 5.2.2整理时保留原始四边面FBX，按底部假茎切片居中、�
 验证：Blender导出重导入、93项定向资产检查通过；三阶段四向在 `.local/verification/p2-stages/scallion/initial-views/`，实景正反面昼夜与全景／聚焦在 `farm/`，风动开关在 `wind/`。实际两帧风动9898像素变化，关闭后0；已查看所有单体方向、日间三阶段正反面、夜间各阶段代表和聚焦，根部贴合土面。近景画面以接地处为中心，成熟顶部全貌结合单体四向检查。夜景仍暗，后续照明任务未完成。未录新视频、未更新独立包，待用户审美反馈。
 
 重建：Blender运行 `prepare.py -- scallion <sprout|young|mature>`，检查后加 `--install`，再运行项目Godot Import。源图、不可变原模、脱敏任务、blend、GLB与审计按阶段保留；正式落点为 `Game/art/crops/scallion/`。本地索引 `制作留档/03_处理与验证/20260919_小葱三阶段P2重制/README.md`。
+
+## 青蒜成熟株接入节点 · 20260919-garlic-mature-p2
+
+以本页Wisconsin Horticulture四张实拍为形态依据，三阶段工笔参考已独立生成。成熟株P2任务`63746eb8-453e-4bad-baba-83cadd0579c3`成功，120积分，本批累计4560积分；余额未公开，幼苗／中期各需120积分，尚未提交，游戏中仍为旧模型。授权不限生成数量不等于已有账户积分充足，本轮没有购买积分。完整参数见[garlic/stages.json](garlic/stages.json)，各阶段image-record.json保留原图、完整提示词与输入顺序。
+
+成熟株为六片自然弯折的扁平带叶、浅V形叶折与短假茎，无蒜薹、花序或干蒜头。Blender 5.2.2保留全部12922三角、4K工笔色图和单材质；原生7029面中5893四边面。按底部假茎切片居中、等比缩放至高.39米，宽.2738／深.3508米，原点接土；没有额外旋转、减面、拆叶或改UV。诊断开边559／非流形边650，零面积面及孤点均0，保留原生薄叶开口，不宣称水密。源与导出重导入审计在`garlic/mature/asset-audit.json`。
+
+青蒜独立微风主摆最多5.5毫米、叶缘1.4毫米，下部30%固定，继续按株高2.5%／.8%限制幼株幅度；成熟株保留原画颜色，不套青菜色温。土面接触半径.016米。两个画质路径使用同一完整模型、禁用额外自动LOD。未使用语义分件、骨骼或付费后处理。
+
+验证：Godot 4.7.2中`tests/crop_assets_test.gd -- --crop=garlic --stage=mature`通过31项，核对真实导入网格、纹理、尺度、与前一阶段的高度关系及风动接线。此次为既有测试增加可选`--stage`，默认仍检查全部阶段；小葱默认全三阶段93项回归通过。青蒜不带阶段筛选时仍有14项既有失败，来自未替换的苗缺色图／多网格，以及旧中期超旧预算／原点低于土面；这些旧资源本轮未修改，不能将成熟通过当作青蒜三阶段通过。
+
+最终单体四向位于`.local/verification/p2-stages/garlic/mature-views/`，实际农场正反面昼夜、全景和聚焦在`mature-farm/`；已查看四向、日间正反面、夜间代表和聚焦，未见大片缺叶，根部接土。近景以根部为中心，顶部全貌结合单体图检查。风动开关在`wind/`，两帧11449像素变化，关闭后0。夜间仍偏暗，灯笼与整体光照任务尚未完成；本轮无新录像或独立包更新，用户审美反馈待收集。
+
+重建：Blender执行`prepare.py -- garlic mature`，检查后加`--install`，再执行项目Godot Import。幼苗／中期任务ID为空，不能假装已具备可重建模型。正式资源位于`Game/art/crops/garlic/`；本地制作索引为`制作留档/03_处理与验证/20260919_青蒜成熟株P2重制/README.md`。
