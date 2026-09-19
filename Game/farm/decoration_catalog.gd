@@ -27,8 +27,16 @@ static func allowed_turns(slot_id: String) -> Array[int]:
 
 static func requirement(item_id: String) -> String:
 	var item: Dictionary = ITEMS[item_id]
-	if item.has("shared_meals"): return "向邻居分享1份做好的菜 · 摆放后多一处晾晒位置"
+	if item.has("shared_meals"): return "菜篮 → 厨房：分享1份做好的菜"
 	return "累计收获 %d 篮 · %d 种菜" % [item.total,item.varieties]
+
+static func progress(item_id: String,harvested: Dictionary,kitchen: Dictionary) -> String:
+	var rule: Dictionary=ITEMS[item_id]
+	if rule.has("shared_meals"):
+		var shared: int=0
+		for record: Dictionary in kitchen.records.values(): shared+=int(record.shared)
+		return "分享成品 %d/%d 份"%[mini(shared,rule.shared_meals),rule.shared_meals]
+	return "累计收获 %d/%d 篮 · %d/%d 种菜"%[mini(Crops.total_harvested(harvested),rule.total),rule.total,mini(Crops.varieties(harvested),rule.varieties),rule.varieties]
 
 static func earned(item_id: String,harvested: Dictionary,kitchen: Dictionary={}) -> bool:
 	var rule: Dictionary=ITEMS[item_id]

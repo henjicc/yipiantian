@@ -16,9 +16,10 @@ func render(book: Node, data: Dictionary, journal: bool, now: float) -> void:
 	var state: Dictionary=data.kitchen
 	if journal:
 		_journal(book,page,state)
-		_construction(book,page)
+		_construction(book,page,data)
+		tick(now)
 		return
-	_construction(book,page)
+	_construction(book,page,data)
 	var stations:=HBoxContainer.new()
 	page.add_child(stations)
 	for station: String in Kitchen.STATIONS:
@@ -70,7 +71,7 @@ func render(book: Node, data: Dictionary, journal: bool, now: float) -> void:
 	var eligible: Array[String]=[]
 	for id: String in Crops.crop_ids():
 		if Kitchen.accepts(recipe,id): eligible.append(id)
-	if crop not in eligible:
+	if crop not in eligible or data.inventory[crop]<=0:
 		crop=eligible[0]
 		for id: String in eligible:
 			if data.inventory[id]>0: crop=id; break
@@ -111,10 +112,49 @@ func render(book: Node, data: Dictionary, journal: bool, now: float) -> void:
 	_stock(book,page,state)
 	tick(now)
 
-func _construction(book: Node,page: VBoxContainer) -> void:
+func _construction(book: Node,page: VBoxContainer,data: Dictionary) -> void:
 	var item: Dictionary=book.decorations.get("drying_rack",{})
 	if not item.get("unlocked",false):
-		book._label(page,"分享一份做好的菜，邻居会送来小晒架；摆好后可多晾晒一份。",19)
+		var state: Dictionary=data.kitchen
+		var progress: String="小晒架 · "+book.Decorations.progress("drying_rack",data.harvested,state)
+		var status: Label=book._label(page,progress,19)
+		status.name="RackProgress"
+		for id: String in Kitchen.RECIPES:
+			if state.stock[id]==0: continue
+			var share: Button=book._button(page,"分享%s给%s"%[Kitchen.RECIPES[id].name,Neighbors.HOMES[recipient].name])
+			share.name="FirstMealShare"
+			share.pressed.connect(func() -> void: book.kitchen_requested.emit("share",{"recipe":id,"neighbor":recipient},int(state.revision)))
+			return
+		var pending: String=""
+		for station: String in Kitchen.STATIONS:
+			if state.jobs[station].is_empty(): continue
+			if pending.is_empty() or state.jobs[station].finish_utc<state.jobs[pending].finish_utc: pending=station
+		if not pending.is_empty():
+			var collect: Button=book._button(page,"收起"+Kitchen.RECIPES[state.jobs[pending].recipe].name)
+			collect.name="FirstMealCollect"
+			collect.pressed.connect(func() -> void: book.kitchen_requested.emit("collect",{"station":pending},int(state.revision)))
+			_timers.append({"label":status,"button":collect,"job":state.jobs[pending],"prefix":progress+" · "})
+			return
+		var available_recipe: String=""
+		var available_crop: String=""
+		for id: String in Kitchen.RECIPES:
+			if not available_recipe.is_empty() and Kitchen.RECIPES[id].seconds>=Kitchen.RECIPES[available_recipe].seconds: continue
+			for ingredient: String in Crops.crop_ids():
+				if Kitchen.accepts(id,ingredient) and data.inventory[ingredient]>0:
+					available_recipe=id;available_crop=ingredient;break
+		if not available_recipe.is_empty():
+			var prepare: Button=book._button(page,"%s1篮 → %s · %d秒"%[Crops.definition(available_crop).name,Kitchen.RECIPES[available_recipe].name,Kitchen.RECIPES[available_recipe].seconds])
+			prepare.name="FirstMealCook"
+			prepare.pressed.connect(func() -> void: book.kitchen_requested.emit("start",{"recipe":available_recipe,"crop":available_crop},int(state.revision)))
+			return
+		for neighbor: String in Neighbors.IDS:
+			if not data.neighbors[neighbor].pending: continue
+			var gift: Button=book._button(page,"领取"+Neighbors.HOMES[neighbor].name+"的回礼")
+			gift.name="FirstMealGift"
+			gift.pressed.connect(func() -> void: book.tab="neighbors";book.neighbor=neighbor;book._history_open=false;book._render())
+			return
+		var harvest: Button=book._button(page,"回到田里收获食材");harvest.name="FirstMealHarvest"
+		harvest.pressed.connect(book.dismiss)
 	elif not Kitchen.extra_rack_placed(book.decorations):
 		var place: Button=book._button(page,"摆放小晒架 · 多一处晾晒位置");place.name="BuildDryingRack"
 		place.pressed.connect(func() -> void: book.construction_requested.emit("drying_rack"))
@@ -123,7 +163,7 @@ func tick(now: float) -> void:
 	for entry: Dictionary in _timers:
 		if not is_instance_valid(entry.label): continue
 		var done: bool=Kitchen.ready(entry.job,now)
-		entry.label.text=Kitchen.RECIPES[entry.job.recipe].name+ (" · 可收起" if done else " · 制作中 %d秒"%ceili(maxf(0,entry.job.finish_utc-now)))
+		entry.label.text=entry.get("prefix","")+Kitchen.RECIPES[entry.job.recipe].name+ (" · 可收起" if done else " · 制作中 %d秒"%ceili(maxf(0,entry.job.finish_utc-now)))
 		entry.button.disabled=not done
 
 func _stock(book: Node, page: VBoxContainer, state: Dictionary) -> void:
@@ -134,7 +174,7 @@ func _stock(book: Node, page: VBoxContainer, state: Dictionary) -> void:
 	page.add_child(to)
 	for id: String in Neighbors.IDS: to.add_item("送给 "+Neighbors.HOMES[id].name)
 	to.select(Neighbors.IDS.find(recipient))
-	to.item_selected.connect(func(index: int) -> void: recipient=Neighbors.IDS[index])
+	to.item_selected.connect(func(index: int) -> void: recipient=Neighbors.IDS[index];book._render())
 	var any: bool=false
 	for id: String in Kitchen.RECIPES:
 		if state.stock[id]==0: continue

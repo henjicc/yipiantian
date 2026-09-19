@@ -148,7 +148,7 @@ func begin_memory_view(id: String) -> void:
 
 func update_time(now: float) -> void:
 	now_utc=now
-	if active and tab=="kitchen": kitchen_page.tick(now)
+	if active and tab in ["kitchen","journal"]: kitchen_page.tick(now)
 
 func end_view() -> void:
 	if not viewing: return
@@ -226,7 +226,7 @@ func _food() -> void:
 	for id: String in Decorations.IDS:
 		var rule: Dictionary=Decorations.ITEMS[id]
 		var earned: bool=decorations.get(id,{}).get("unlocked",Decorations.earned(id,_data.harvested,_data.kitchen))
-		_label(_content,"%s　%s"%[rule.name,"已解锁" if earned else Decorations.requirement(id)],18)
+		_label(_content,"%s　%s"%[rule.name,"已解锁" if earned else Decorations.progress(id,_data.harvested,_data.kitchen)],18)
 
 func _neighbors() -> void:
 	var houses:=HBoxContainer.new()

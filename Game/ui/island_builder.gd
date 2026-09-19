@@ -367,6 +367,10 @@ func _decoration_changed() -> void:
 	if not active or not _is_decoration(): return
 	var layout: Node=main.decoration_layout
 	_status.text=layout._message
+	if not main.decoration_state.snapshot()[tool].unlocked:
+		var farm: Dictionary=main.farm_state.snapshot()
+		_status.text=Catalog.Decorations.progress(tool,farm.harvested,farm.kitchen)
+		if tool=="drying_rack": _status.text+="\n菜篮 → 厨房"
 	_confirm.disabled=busy or not layout.has_preview() or main.camera.is_transitioning()
 	_decoration_rotate.disabled=busy or not layout.has_preview() or (not layout.preview_slot.is_empty() and Catalog.Decorations.allowed_turns(layout.preview_slot).size()<2)
 	_decoration_remove.disabled=busy or layout.selected_item.is_empty() or not preload("res://farm/decoration_state.gd").is_placed(main.decoration_state.snapshot().get(tool,{}))
