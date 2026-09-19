@@ -13,6 +13,7 @@ const PROFILES := {
 }
 var water := Space.new()
 var yard := Space.new()
+var duck_space: RefCounted
 var birds: Array[Dictionary] = []
 var _swimmers: Array[Dictionary] = []
 var _hens: Array[Node3D] = []
@@ -33,7 +34,12 @@ func _ready() -> void:
 
 func _build() -> void:
 	rebuild_spaces()
-	for i: int in 3: _spawn("duck", "LakeDuck%d" % (i + 1), Vector2(-10.7 + i * .8, 1.7 + i * .6), .88 if i == 2 else 1.0)
+	var flock: Dictionary=get_parent().plan.construction.ducks
+	for i: int in int(flock.count):
+		var point:=Vector2(-10.7 + i * .8,1.7 + i * .6)
+		if not flock.area.is_empty():
+			point=Vector2(flock.area[0],flock.area[1])+Vector2(flock.area[2],flock.area[3])*.5+Vector2.from_angle(i*2.4)*sqrt(i)*.6
+		_spawn("duck", "LakeDuck%d" % (i + 1), point, .88 if i == 2 else 1.0)
 	for i: int in 2: _spawn("goose", "LakeGoose%d" % (i + 1), Vector2(1.5 + i * 1.4, 9.3), 1.0)
 	for i: int in 2: _spawn("hen", "YardHen%d" % (i + 1), Vector2(-.7 + i * .8, 4.62), .88 + i * .12)
 	ready_for_motion = true
@@ -51,6 +57,9 @@ func rebuild_spaces(update_water: bool=true) -> void:
 		if not child is Node3D or child == self: continue
 		var path: String = child.scene_file_path
 		var bank_role: String = child.get_meta("bank_role", "")
+		if update_water and child.has_meta("bridge_supports"):
+			for p: Vector2 in child.get_meta("bridge_supports"):
+				water.block(PackedVector2Array([p+Vector2(-.055,-.055),p+Vector2(.055,-.055),p+Vector2(.055,.055),p+Vector2(-.055,.055)]))
 		if child.has_meta("fence_spans"):
 			for span: Dictionary in child.get_meta("fence_spans"):
 				var a := Vector2(span.a.x,span.a.z)
@@ -97,10 +106,20 @@ func rebuild_spaces(update_water: bool=true) -> void:
 	if update_water:
 		for p: Vector2 in environment.plan.animal_rest.water: water.resting.append(water.nearest(p))
 	for p: Vector2 in environment.plan.animal_rest.yard: yard.resting.append(yard.nearest(p))
+	duck_space=water
+	var area: Array=environment.plan.construction.ducks.area
+	if not area.is_empty():
+		duck_space=Space.new()
+		var rect:=Rect2(area[0],area[1],area[2],area[3])
+		duck_space.configure(rect,.46)
+		duck_space.obstacles=water.obstacles.duplicate()
+		duck_space._obstacle_cells=water._obstacle_cells.duplicate(true)
+		duck_space.bake()
+		for p: Vector2 in [rect.position,rect.end,Vector2(rect.position.x,rect.end.y),Vector2(rect.end.x,rect.position.y)]: duck_space.resting.append(duck_space.nearest(p))
 	for entry: Dictionary in birds:
 		if not update_water and entry.kind!="hen": continue
 		interaction.cancel(entry.node.name)
-		entry.space = yard if entry.kind == "hen" else water
+		entry.space = yard if entry.kind == "hen" else (duck_space if entry.kind=="duck" else water)
 		entry.pose.ground = entry.space.ground_height
 		entry.route = PackedVector2Array()
 		entry.state = "observe"
@@ -109,7 +128,7 @@ func rebuild_spaces(update_water: bool=true) -> void:
 		entry.interest=Vector2.INF
 
 func _spawn(kind: String, label: String, start: Vector2, size: float) -> void:
-	var space: RefCounted = yard if kind == "hen" else water
+	var space: RefCounted = yard if kind == "hen" else (duck_space if kind=="duck" else water)
 	var p: Vector2 = space.nearest(start)
 	var bird: Node3D = Assets.place(self, kind, Vector3(p.x, space.ground_height(p) if kind == "hen" else -.25 - (.20 if kind == "duck" else .29), p.y), 0, size)
 	bird.name = label

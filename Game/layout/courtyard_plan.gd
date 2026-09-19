@@ -4,6 +4,9 @@ extends RefCounted
 const FIELD_IDS: Array[String] = ["field_01", "field_02", "field_03", "field_04", "field_05", "field_06"]
 const FENCE_STYLES: Array[String] = ["bamboo", "crossed", "picket"]
 const BankGeometry = preload("res://layout/bank_geometry.gd")
+const Construction = preload("res://layout/island_construction.gd")
+var construction: Dictionary = Construction.initial()
+var scenery_expansion := Vector2.ZERO
 const DECORATION_SCENERY={"ground_01":"YardWaterVats","ground_02":"YardMelonPile","ground_03":"YardGroundTrays","ground_04":"YardBasketStack"}
 var ground_height: float = .13
 var bank_width: float = 1.0
@@ -121,12 +124,13 @@ func snapshot() -> Dictionary:
 	for field: Dictionary in fields:
 		encoded.append({"id":field.id,"position":[field.position.x,field.position.y,field.position.z],"yaw":field.yaw,
 			"size":[field.size.x,field.size.y],"columns":field.columns,"rows":field.rows,"cells":field.cells.duplicate(),"seed":field.seed})
-	return {"shore":[shore_expansion.x,shore_expansion.y],"terrain":[ground_height,bank_width],"fields":encoded,"fence_style":fence_style}
+	return {"shore":[shore_expansion.x,shore_expansion.y],"terrain":[ground_height,bank_width],"fields":encoded,"fence_style":fence_style,"construction":construction.duplicate(true)}
 
 static func from_snapshot(data: Dictionary) -> RefCounted:
 	# This is the disk/edit admission boundary. Reject malformed layouts before any
 	# geometry or crop state is rebuilt; JSON must never allocate unbounded meshes.
-	if data.size()!=4 or not _numbers(data.get("shore"),2) or not data.get("fields") is Array: return null
+	if data.size()!=5 or not _numbers(data.get("shore"),2) or not data.get("fields") is Array: return null
+	if not Construction.valid(data.get("construction")): return null
 	if not _numbers(data.get("terrain"),2): return null
 	if data.terrain[0]<.08 or data.terrain[0]>.38 or data.terrain[1]<.8 or data.terrain[1]>1.2: return null
 	if not data.get("fence_style") in FENCE_STYLES: return null
@@ -162,7 +166,43 @@ static func from_snapshot(data: Dictionary) -> RefCounted:
 	plan.set_terrain(data.terrain[0],data.terrain[1])
 	plan.fields = decoded
 	plan.fence_style=data.fence_style
+	if not plan.apply_construction(data.construction): return null
 	return plan
+
+func apply_construction(value: Dictionary) -> bool:
+	construction=value.duplicate(true)
+	construction.ducks.count=int(construction.ducks.count)
+	for values: Array in construction.land+[construction.trellis,construction.bridge,construction.ducks.area]:
+		for i: int in values.size(): values[i]=float(values[i])
+	var combined: PackedVector2Array=Construction.land_outline(rim,construction.land)
+	if combined.is_empty(): return false
+	rim=combined
+	var bounds: Rect2=land_bounds()
+	scenery_expansion=Vector2(maxf(shore_expansion.x,-7.6-bounds.position.x),maxf(shore_expansion.y,bounds.end.y-6.7))
+	animal_areas.yard=bounds
+	animal_areas.water=bounds.grow(5.5)
+	# Only water plants submerged by added land move to the nearest new bank.
+	for i: int in lily_coves.size():
+		var p:=Vector2(lily_coves[i].x,lily_coves[i].z)
+		if not Geometry2D.is_point_in_polygon(p,rim): continue
+		var nearest:=Vector2.INF;var distance: float=INF
+		for j: int in rim.size():
+			var edge: Vector2=Geometry2D.get_closest_point_to_segment(p,rim[j],rim[(j+1)%rim.size()])
+			if p.distance_squared_to(edge)<distance: nearest=edge;distance=p.distance_squared_to(edge)
+		var outward: Vector2=(nearest-p).normalized()
+		p=nearest+outward*1.8
+		lily_coves[i]=Vector3(p.x,lily_coves[i].y,p.y)
+	if not construction.trellis.is_empty():
+		var size: Vector3=Construction.trellis_size(self)
+		slots.hanging_03=anchors.trellis+Vector3(size.y*.5,size.z-.3,size.x*.5-.2)
+		# This is generated scenery, not a player placement. Keep the flower clump
+		# beside the enlarged bed, away from its poles and the front tree trunk.
+		flower_centres[0]=anchors.trellis+Vector3(-size.y*.5-.5,0,minf(1.55,size.x*.5-.65))
+	if not construction.land.is_empty():
+		camera_distance+=maxf(0,bounds.size.length()-Vector2(14.4,15.1).length())*.7
+		var center: Vector2=bounds.get_center()
+		haze_region=Vector4(center.x,center.y,bounds.size.x*.5+3.5,bounds.size.y*.5+3.0)
+	return true
 
 static func _number(value: Variant) -> bool:
 	return (value is int or value is float) and is_finite(float(value))

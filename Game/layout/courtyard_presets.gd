@@ -25,6 +25,7 @@ static func arrange(current: RefCounted, id: String) -> RefCounted:
 		result.fields[i].yaw=0.0
 	if id=="west": result.fields[0].yaw=90.0
 	elif id=="front": result.fields[0].yaw=10.0
+	result.apply_construction(current.construction)
 	# Extra or enlarged beds are intentionally retained, then spatially validated.
 	# An arrangement is not permission to delete crops or secretly shrink their beds.
 	return result

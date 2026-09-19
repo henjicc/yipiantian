@@ -22,6 +22,7 @@ func _init(now_utc_seconds: float = 0.0, layout: Dictionary = {}) -> void:
 	var plan: RefCounted = Plan.new() if layout.is_empty() else Plan.from_snapshot(layout)
 	assert(plan != null, "Farm initialization requires a valid layout")
 	_data = {"fields": {}, "harvested": {}, "inventory":{}, "neighbors":Neighbors.initial_state(), "layout":plan.snapshot(), "kitchen":Kitchen.initial_state(),"animals":Companions.initial_state(),"memories":Memories.initial_state(),"season":"daily"}
+	Companions.include_ducks(_data.animals,int(plan.construction.ducks.count))
 	for crop_id: String in Crops.crop_ids():
 		_data.harvested[crop_id] = 0
 		_data.inventory[crop_id] = 0
@@ -79,6 +80,7 @@ func apply_layout(layout: Dictionary, now_utc_seconds: float) -> Dictionary:
 				return _result(false,"occupied_cell_removed")
 	candidate.fields = fields
 	candidate.layout = plan.snapshot()
+	Companions.include_ducks(candidate.animals,int(plan.construction.ducks.count))
 	if candidate.layout!=_data.layout: Memories.mark(candidate.memories,"arrange",now_utc_seconds)
 	var changed: Array[String] = _settle_data(candidate,now_utc_seconds)
 	_data = candidate
@@ -92,7 +94,7 @@ func restore_snapshot(data: Dictionary) -> bool:
 		return false
 	_data = data.duplicate(true)
 	_data.layout = Plan.from_snapshot(data.layout).snapshot()
-	for id: String in Companions.IDS:
+	for id: String in _data.animals:
 		for field: String in ["preference","visits","shared","revision"]: _data.animals[id][field]=int(_data.animals[id][field])
 	for crop_id: String in Crops.crop_ids():
 		_data.harvested[crop_id] = int(_data.harvested[crop_id])
@@ -303,6 +305,8 @@ static func _valid_snapshot(data: Dictionary) -> bool:
 	if data.inventory.size()!=Crops.crop_ids().size() or not Neighbors.valid(data.neighbors): return false
 	var plan: RefCounted = Plan.from_snapshot(data.layout)
 	if plan == null: return false
+	for i: int in int(plan.construction.ducks.count):
+		if not data.animals.has("LakeDuck%d"%(i+1)): return false
 	var fields: Dictionary = data.fields
 	var harvested: Dictionary = data.harvested
 	if fields.size() != plan.fields.size() or harvested.size() != Crops.crop_ids().size():

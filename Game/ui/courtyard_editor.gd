@@ -222,6 +222,7 @@ func _change(key: String, value: float) -> void:
 			var span: Vector2=Plan.cell_span(field)
 			draft.fields[selected]=Plan.resized_field(field,columns,rows,span*Vector2(columns,rows)+Vector2(.2,.29))
 		"west","south":
+			var construction: Dictionary=draft.construction.duplicate(true)
 			var fields: Array[Dictionary]=draft.fields
 			var fence_style: String=draft.fence_style
 			var height: float=draft.ground_height
@@ -231,6 +232,7 @@ func _change(key: String, value: float) -> void:
 			draft.set_terrain(height,width)
 			draft.fields=fields
 			draft.fence_style=fence_style
+			draft.apply_construction(construction)
 	_changed()
 
 func _rotate(amount: float) -> void:

@@ -12,7 +12,7 @@ func configure(scene: Node3D, courtyard: Node3D, environment: Environment) -> vo
 	# These structures are immutable within a scene. Courtyard layout changes
 	# replace the entire scene and its Environment, rebuilding the GI volume too.
 	for part: Node in courtyard.get_children():
-		if part.name in ["MainBank", "EastBank", "MainHouse", "PorchDeck", "Kitchen", "EntranceTrellis"] or part.scene_file_path.ends_with("/stone_bridge.glb"):
+		if part.name in ["MainBank", "EastBank", "MainHouse", "PorchDeck", "Kitchen", "EntranceTrellis", "AdaptiveBridge"] or part.scene_file_path.ends_with("/stone_bridge.glb"):
 			_occluders.append(part)
 	for node: Node in scene.find_children("*", "GeometryInstance3D", true, false):
 		_classify(node)

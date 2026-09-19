@@ -7,6 +7,7 @@ const DEFAULT_POINT := Vector3(0.25, 0.75, 0.0)
 const DEFAULT_VIEW := Vector3(27.5, 16.5, 28.6)
 const FOCUS_DISTANCE: float = 10.4
 const ARRANGEMENT_DISTANCE: float = 31.0
+var construction_framing: bool = false
 const ZOOM_RESPONSE: float = 16.0
 const SurfacePick = preload("res://scenes/camera_surface_pick.gd")
 
@@ -202,7 +203,16 @@ func _advance_zoom(delta: float) -> void:
 
 
 func _maximum_distance() -> float:
+	if construction_framing: return maxf(34.0,overview_view.z+2.4)
 	return _focus_distance if focused else maxf(ARRANGEMENT_DISTANCE,overview_view.z+2.4) if _decoration_framing else overview_view.z
+
+func set_construction_framing(enabled: bool) -> void:
+	_stop_transition()
+	set_free_view(false)
+	construction_framing=enabled
+	focused=false
+	_anchor=overview_point
+	if not enabled: reset_view()
 
 
 func overview_parameters() -> Dictionary:

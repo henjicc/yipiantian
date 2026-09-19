@@ -18,6 +18,7 @@ signal camera_tuning_requested
 signal preview_hour_requested(hour: float)
 signal time_preview_opened
 signal basket_requested
+signal construction_requested
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const FarmTheme = preload("res://ui/farm_theme.gd")
@@ -58,6 +59,10 @@ func _ready() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	root.theme = FarmTheme.create()
+	var build:=Button.new();build.name="BuildIsland";build.text="布置小岛";root.add_child(build)
+	build.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	build.offset_left=-532;build.offset_right=-410;build.offset_top=88;build.offset_bottom=130
+	build.pressed.connect(func() -> void: construction_requested.emit())
 	var left_plate := _status_plate(root)
 	left_plate.position = Vector2(18, 18)
 	left_plate.size = Vector2(300, 74)

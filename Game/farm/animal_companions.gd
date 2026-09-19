@@ -12,14 +12,24 @@ static func initial_state() -> Dictionary:
 	var result: Dictionary={}
 	for i: int in IDS.size(): result[IDS[i]]={"name":NAMES[i],"preference":-1,"visits":0,"shared":0,"revision":0}
 	return result
+
+static func include_ducks(data: Dictionary, count: int) -> void:
+	for i: int in count:
+		var id: String="LakeDuck%d"%(i+1)
+		if not data.has(id): data[id]={"name":"小鸭%d"%(i+1),"preference":-1,"visits":0,"shared":0,"revision":0}
 static func valid_name(value: Variant) -> bool:
 	if not value is String or value.length()<1 or value.length()>12 or value!=value.strip_edges(): return false
 	for i: int in value.length():
 		if value.unicode_at(i)<32 or value.unicode_at(i)==127: return false
 	return true
 static func valid(data: Dictionary) -> bool:
-	if data.size()!=IDS.size(): return false
+	if data.size()<IDS.size() or data.size()>16: return false
 	for id: String in IDS:
+		if not data.has(id): return false
+	for id: String in data:
+		if id not in IDS:
+			var suffix: String=id.trim_prefix("LakeDuck")
+			if not suffix.is_valid_int() or int(suffix)<4 or int(suffix)>12 or id!="LakeDuck%d"%int(suffix): return false
 		var entry: Variant=data.get(id)
 		if not entry is Dictionary or entry.size()!=5 or not valid_name(entry.get("name")): return false
 		for field: String in ["preference","visits","shared","revision"]:
@@ -29,7 +39,7 @@ static func valid(data: Dictionary) -> bool:
 		if entry.shared>entry.visits or entry.visits>entry.revision: return false
 	return true
 static func act(data: Dictionary,inventory: Dictionary,id: String,action: String,value: Variant,revision: int) -> Dictionary:
-	if id not in IDS: return {"ok":false,"reason":"invalid_animal"}
+	if not data.has(id): return {"ok":false,"reason":"invalid_animal"}
 	var entry: Dictionary=data[id]
 	if entry.revision!=revision: return {"ok":false,"reason":"stale_action"}
 	if entry.revision>=LIMIT: return {"ok":false,"reason":"limit"}

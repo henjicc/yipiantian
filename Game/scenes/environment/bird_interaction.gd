@@ -90,7 +90,7 @@ func cancel(id: String) -> void:
 func rest_target(entry: Dictionary) -> Vector2:
 	var id: String=entry.node.name
 	var profile: Dictionary=profiles[id]
-	var index: int=profile.preference if profile.preference>=0 else Companions.IDS.find(id)%entry.space.resting.size()
+	var index: int=profile.preference if profile.preference>=0 else posmod(id.hash(),entry.space.resting.size())
 	return entry.space.resting[index]
 func _leaves(point: Vector2,entry: Dictionary) -> Node3D:
 	var cluster:=MeshInstance3D.new()

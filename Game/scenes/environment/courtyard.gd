@@ -18,6 +18,8 @@ const Circulation = preload("res://layout/courtyard_circulation.gd")
 const FenceGeometry = preload("res://layout/fence_geometry.gd")
 const Space = preload("res://scenes/environment/animal_space.gd")
 const DoorTools = preload("res://scenes/environment/door_tools.gd")
+const Structures = preload("res://layout/garden_structures.gd")
+const Construction = preload("res://layout/island_construction.gd")
 # Modules whose feet meet a visible surface and therefore need a contact pool.
 const CONTACT_MODULES := ["veranda", "side_wing", "stone_bridge", "climbing_trellis", "bamboo_fence"]
 const ROOT := "res://art/environment/"
@@ -51,7 +53,7 @@ func _ready() -> void:
 		return
 	var neighbors := NeighborIslets.new()
 	neighbors.name = "NeighborIslets"
-	neighbors.shore_expansion=plan.shore_expansion
+	neighbors.shore_expansion=plan.scenery_expansion.max(plan.shore_expansion)
 	add_child(neighbors)
 	_shore_sources.append_array(neighbors.waterline_sources())
 	_build_plants()
@@ -190,24 +192,12 @@ func _build_ground() -> void:
 	var plane:=PlaneMesh.new();plane.size=Vector2(180,180);_water.mesh=plane
 	var water_material:=ShaderMaterial.new();water_material.shader=load("res://atmosphere/quiet_water.gdshader")
 	_water.material_override=water_material;_water.position.y=-0.25;add_child(_water)
-	# Nonuniform stone groups follow the bank, leaving visible grassy lobes and gaps.
-	var rim: PackedVector2Array = plan.rim
-	for i in rim.size():
-		var a:Vector2=rim[i];var b:Vector2=rim[(i+1)%rim.size()]
-		var count:int=ceili(a.distance_to(b)/.88)
-		for j in count:
-			if _rng.randf()<.24:continue
-			var p:Vector2=a.lerp(b,float(j)/count)+Vector2(_rng.randf_range(-.14,.14),_rng.randf_range(-.14,.14))
-			var rock := _module("stone_%d"%_rng.randi_range(0,4),Vector3(p.x,-.43,p.y),_rng.randf_range(0,360),Vector3(_rng.randf_range(.85,1.45),_rng.randf_range(2.5,4.3),_rng.randf_range(.8,1.45)))
-			# Open a root bay for the west osmanthus; keep the seeded draws stable.
-			if i == 12 and j == 1:
-				rock.position = plan.root_bay
-			_tint_stone(rock,Color("7d887d")*_rng.randf_range(.88,1.12))
-	# Broken shelves at the visible waterline interrupt the former even bead border.
-	var shelves: Array[Vector3] = plan.shelves
-	for i in shelves.size():
-		_tint_stone(_module("stone_%d" % (i%5),shelves[i],17+i*47,Vector3(1.45,4.8 if i%2==0 else 3.5,1.18)),Color("79867e"))
-		_tint_stone(_module("stone_%d" % ((i+2)%5),shelves[i]+Vector3(.35,-.05,.37),-25+i*33,Vector3(.88,2.0,.9)),Color("929784"))
+	for entry: Dictionary in preload("res://presentation/shore_dressing.gd").stones(plan):
+		var rock: Node3D=_module(entry.asset,entry.at,entry.yaw,entry.size)
+		rock.set_meta("shore_stone",true)
+		_tint_stone(rock,entry.color)
+	if not plan.construction.land.is_empty(): add_child(preload("res://presentation/shore_dressing.gd").plants(plan))
+
 func _build_paths() -> void:
 	# A separate seed makes a route change independent of all surrounding foliage.
 	var road_rng := RandomNumberGenerator.new()
@@ -246,9 +236,14 @@ func _build_architecture() -> void:
 	_contact_sources.append(kitchen.get_child(0))
 	for mesh: MeshInstance3D in kitchen.find_children("*","MeshInstance3D",true,false):
 		mesh.set_instance_shader_parameter("ground_contact",Vector2(plan.ground_height,.14))
-	var trellis: Node3D = _module("climbing_trellis",plan.anchors.trellis,plan.angles.trellis)
+	var trellis: Node3D
+	if plan.construction.trellis.is_empty(): trellis=_module("climbing_trellis",plan.anchors.trellis,plan.angles.trellis)
+	else:
+		trellis=Structures.trellis(plan);add_child(trellis);_contact_sources.append(trellis)
 	trellis.name = "EntranceTrellis"
-	_module("stone_bridge",plan.anchors.bridge,plan.angles.bridge)
+	if plan.construction.bridge.is_empty(): _module("stone_bridge",plan.anchors.bridge,plan.angles.bridge)
+	else:
+		var bridge: Node3D=Structures.bridge(plan);add_child(bridge);_contact_sources.append(bridge)
 	_boat=_asset("boat","CoveredBoat",plan.anchors.boat,plan.angles.boat,.85)
 	# Opposite landing is a small bank, with irregular rock margins, not a floating bridge end.
 	_bank("east", plan.east_rim, plan.anchors.east_bank, plan.angles.east_bank)
@@ -330,7 +325,7 @@ func _build_slots() -> void:
 		_support_line(Vector3(p.x,2.50,-2.72)+rise,Vector3(p.x,2.50,p.z)+rise,.037,Color("62543a"))
 		_support_line(Vector3(p.x,2.50,p.z)+rise,p,.012,Color("89794c"))
 	_support_line(Vector3(-5.4,2.09,2.13)+rise,Vector3(-5.08,2.09,2.13)+rise,.025,Color("89794c"))
-	_support_line(Vector3(-5.08,2.09,2.13)+rise,plan.slots.hanging_03,.012,Color("89794c"))
+	_support_line(Vector3(-5.08,2.09,2.13)+rise if plan.construction.trellis.is_empty() else plan.slots.hanging_03+Vector3.UP*.24,plan.slots.hanging_03,.012,Color("89794c"))
 	_support_line(Vector3(-4.85,2.55,-3.77)+rise,Vector3(-4.85,2.55,-2.95)+rise,.035,Color("62543a"))
 	_support_line(Vector3(-4.85,2.10,-3.77)+rise,Vector3(-4.85,2.55,-3.0)+rise,.025,Color("62543a"))
 	_support_line(Vector3(-4.85,2.55,-2.95)+rise,plan.slots.hanging_04,.012,Color("89794c"))

@@ -38,6 +38,9 @@ var kitchen_display: KitchenDisplay
 var harvest_book: HarvestBook
 var courtyard_plan := CourtyardPlan.new()
 var courtyard_edit: CourtyardEditSession
+const IslandBuilder=preload("res://ui/island_builder.gd")
+var island_builder: IslandBuilder
+var _construction_resume: Dictionary = {}
 # One-step undo is session history, carried across a spatial scene rebuild.
 # It reverses layout only, never harvests, elapsed growth or subsequent planting.
 var previous_layout: Dictionary = {}
@@ -262,6 +265,14 @@ func _ready() -> void:
 	courtyard_edit.apply_requested.connect(_apply_courtyard)
 	courtyard_edit.closed.connect(_refresh_hud)
 	decoration_layout.hud.courtyard_requested.connect(_begin_courtyard_edit)
+	island_builder=IslandBuilder.new();island_builder.name="IslandBuilder";add_child(island_builder)
+	island_builder.commit_requested.connect(_apply_construction)
+	island_builder.closed.connect(func() -> void:
+		camera.set_construction_framing(false);hud.show();_cancel_input();_refresh_hud())
+	hud.construction_requested.connect(_begin_construction)
+	if not _construction_resume.is_empty():
+		camera.focus_point=_construction_resume.point;camera.view=_construction_resume.view
+		_begin_construction.call_deferred(_construction_resume.tool)
 	if not _presentation_resume.is_empty():
 		focus_detail.set_depth_of_field(_presentation_resume.dof_enabled,_presentation_resume.dof_strength)
 		focus_detail.set_fog_strength(_presentation_resume.fog_strength)
@@ -336,6 +347,8 @@ func _reload_saved_scene() -> void:
 	replacement.settings_store = settings_store
 	replacement.clock = clock
 	replacement.previous_layout=previous_layout.duplicate(true)
+	if island_builder!=null and island_builder.active:
+		replacement._construction_resume={"tool":island_builder.tool,"point":camera.focus_point,"view":camera.view}
 	if focus_detail!=null:
 		replacement._presentation_resume=focus_detail.get_settings()
 		replacement._presentation_resume.hour=atmosphere.get_preview_hour()
@@ -659,7 +672,68 @@ func _view_neighbor(id: String) -> void:
 	hud.hide()
 
 func _layout_active() -> bool:
-	return courtyard_edit!=null and courtyard_edit.editor.active
+	return (courtyard_edit!=null and courtyard_edit.editor.active) or (island_builder!=null and island_builder.active)
+
+func _begin_construction(tool: String = "land") -> void:
+	if not _loaded or _save_failed: return
+	if decoration_layout.active: decoration_layout.finish_mode()
+	_cancel_tool();_cancel_input();field_menu.dismiss();hud.hide_time_preview()
+	camera.cancel_zoom()
+	camera.set_construction_framing(true)
+	if _construction_resume.is_empty():
+		camera.focus_point=Vector3(0,.4,1);camera.view=Vector3(24,42,34)
+		camera.focused=false
+	island_builder.begin(self,tool);hud.hide()
+
+func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
+	if not island_builder.active or island_builder.busy: return
+	island_builder.set_busy(true,"正在检查岸边、支承和通路…")
+	await get_tree().process_frame
+	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
+	if plan==null:
+		island_builder.set_busy(false,"范围或尺寸不合适，请调整后再试。")
+		return
+	var message: String=preload("res://layout/island_construction.gd").bridge_issue(plan)
+	if message.is_empty():
+		var probe:=preload("res://scenes/environment/courtyard.gd").new()
+		probe.plan=plan;probe.layout_probe=true;probe.process_mode=Node.PROCESS_MODE_DISABLED
+		add_child(probe)
+		var obstacles: Dictionary=probe.layout_obstacles.duplicate(true)
+		obstacles.merge(decoration_layout.ground_footprints())
+		var space=preload("res://scenes/environment/animal_space.gd")
+		if not plan.construction.trellis.is_empty():
+			var trellis: PackedVector2Array=space.footprint(probe.get_node("EntranceTrellis"),plan.ground_height-.02,plan.ground_height+3.2)
+			if not Geometry2D.clip_polygons(trellis,plan.plateau()).is_empty(): message="菜架的立柱需要全部落在平地上。"
+			for key: String in obstacles:
+				if key=="EntranceTrellis" or key.begins_with("stone") or key.begins_with("@Node"): continue
+				if not Geometry2D.intersect_polygons(trellis,obstacles[key]).is_empty():
+					print("CONSTRUCTION_REJECT stage=trellis object="+key)
+					message="菜架碰到了旁边的物件，请调整长宽。";break
+		var area: Array=plan.construction.ducks.area
+		if not area.is_empty() and int(plan.construction.ducks.count)>0:
+			if not Geometry2D.intersect_polygons(preload("res://layout/island_construction.gd").rectangle(area),plan.rim).is_empty(): message="请为鸭群保留水面，或先调整它们的活动区域。"
+		var east: PackedVector2Array=space.footprint(probe.get_node("EastBank"),plan.ground_height-.04,plan.ground_height+.02)
+		if not Geometry2D.intersect_polygons(plan.plateau(),east).is_empty(): message="添地碰到了对岸，请留出水道。"
+		var issues: Array[String]=preload("res://layout/courtyard_circulation.gd").field_placement_issues(plan,obstacles)
+		if not issues.is_empty(): message="这里会碰到田地，请缩小范围或调整位置。"
+		if message.is_empty():
+			var routes:=preload("res://layout/courtyard_circulation.gd").new()
+			routes.build(plan,obstacles)
+			if not routes.issues.is_empty(): message="这里会挡住通路，请为屋前、田边和桥头留出空间。"
+		remove_child(probe);probe.free()
+	if not message.is_empty():
+		island_builder.set_busy(false,message);return
+	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var result: Dictionary=candidate.apply_layout(snapshot,clock.call())
+	if not result.ok:
+		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok:
+		island_builder.set_busy(false,"未能保存，岛屿保持原样。可再次确认重试，或取消调整。");return
+	previous_layout={} if undo else farm_state.snapshot().layout
+	farm_state=candidate
+	island_builder.set_busy(true,"已保存，正在更新小岛…")
+	_reload_saved_scene()
 
 func _begin_courtyard_edit() -> void:
 	if not _loaded or _save_failed or _layout_active(): return
@@ -724,6 +798,8 @@ func _refresh_lanterns() -> void:
 
 func _input(event: InputEvent) -> void:
 	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
+	if island_builder!=null and island_builder.active:
+		island_builder.observe(event);return
 	if field_menu != null and field_menu.active:
 		if (event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index!=MOUSE_BUTTON_LEFT):
 			field_menu.dismiss()
@@ -812,6 +888,8 @@ func _input(event: InputEvent) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
+	if island_builder!=null and island_builder.active:
+		island_builder.handle(event);return
 	if field_menu != null and field_menu.active: return
 	if garden_album!=null and garden_album.active: return
 	if _animal_active(): return

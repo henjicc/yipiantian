@@ -31,18 +31,21 @@ func build(courtyard: Node3D) -> void:
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var grass_bounds := Rect2(_rim[0], Vector2.ZERO)
 	for p: Vector2 in _rim: grass_bounds = grass_bounds.expand(p)
-	# Density follows actual land area; grass does not float above the sloping shore.
-	for attempt: int in ceili(grass_bounds.get_area() * 80):
-		var p := Vector2(_rng.randf_range(grass_bounds.position.x,grass_bounds.end.x), _rng.randf_range(grass_bounds.position.y,grass_bounds.end.y))
-		if not _allowed(p, courtyard): continue
-		var patch: float = (sin(p.x*2.7+p.y*.6)+sin(p.y*3.2-p.x*.8))*.25+.5
-		if _rng.randf() > lerpf(.12,.7,patch): continue
-		_tuft(surface, Vector3(p.x,courtyard.plan.ground_height-.002,p.y), _rng.randf_range(.045,.13), 4)
+	# Each world cell has its own seed: extending one bank never reshuffles old grass.
+	for z: int in range(floori(grass_bounds.position.y),ceili(grass_bounds.end.y)):
+		for x: int in range(floori(grass_bounds.position.x),ceili(grass_bounds.end.x)):
+			_rng.seed=hash(Vector2i(x,z))+943172
+			for attempt: int in 80:
+				var p:=Vector2(x+_rng.randf(),z+_rng.randf())
+				var patch: float=(sin(p.x*2.7+p.y*.6)+sin(p.y*3.2-p.x*.8))*.25+.5
+				var density: float=_rng.randf();var height: float=_rng.randf_range(.045,.13)
+				if _allowed(p,courtyard) and density<=lerpf(.12,.7,patch): _tuft(surface,Vector3(p.x,courtyard.plan.ground_height-.002,p.y),height,4)
 	# Dense short collars hide the generated meshes' abrupt root/ground seam.
 	for child: Node in courtyard.get_children():
 		if not child is Node3D or not (str(child.name).begins_with("Bamboo") or str(child.name).begins_with("Flowers") or str(child.name).ends_with("Tree")): continue
 		var centre: Vector3 = child.position
 		if centre.x > 8.0: continue
+		_rng.seed=hash(String(child.name))+943172
 		var soil := Decal.new()
 		soil.name = "RootSoil"
 		soil.texture_albedo = root_soil
@@ -111,6 +114,8 @@ func _build_trellis_bed(plan: RefCounted) -> void:
 	var bed := MeshInstance3D.new()
 	bed.name = "ClimbingBed"
 	bed.mesh = surface.commit()
+	var size: Vector3=preload("res://layout/island_construction.gd").trellis_size(plan)
+	bed.scale=Vector3(size.y/1.25,1,size.x/4.65)
 	bed.position = plan.anchors.trellis
 	bed.rotation.y = deg_to_rad(plan.angles.trellis-90.0)
 	var soil := ShaderMaterial.new()
