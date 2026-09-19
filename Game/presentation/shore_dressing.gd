@@ -13,17 +13,29 @@ static func _distance(point: Vector2, outline: PackedVector2Array) -> float:
 	for i: int in outline.size(): result=minf(result,point.distance_to(Geometry2D.get_closest_point_to_segment(point,outline[i],outline[(i+1)%outline.size()])))
 	return result
 
+static func _retained_stone(point: Vector2,plan: RefCounted,plateau: PackedVector2Array) -> bool:
+	if not _new_land(point,plan): return true
+	return not Geometry2D.is_point_in_polygon(point,plateau) and _distance(point,plan.rim)<.6
+
 static func added_points(plan: RefCounted) -> PackedVector2Array:
 	var result:=PackedVector2Array()
 	if plan.construction.land.is_empty(): return result
 	var base: RefCounted=load("res://layout/courtyard_plan.gd").new()
 	if plan.shore_expansion!=Vector2.ZERO: base.expand_shore(plan.shore_expansion.x,plan.shore_expansion.y)
+	var original: PackedVector2Array=preload("res://layout/bank_geometry.gd").contour(base.rim)
+	var original_vertices: Dictionary={}
+	for i: int in original.size(): original_vertices[Vector2i((original[i]*1000).round())]=i
 	for i: int in plan.rim.size():
 		var a: Vector2=plan.rim[i];var b: Vector2=plan.rim[(i+1)%plan.rim.size()]
+		var old_a: int=original_vertices.get(Vector2i((a*1000).round()),-1)
+		var old_b: int=original_vertices.get(Vector2i((b*1000).round()),-1)
+		# Most vertices belong to the unchanged sampled shore. Only new edges
+		# need distance queries and additional dressing candidates.
+		if old_a>=0 and old_b==(old_a+1)%original.size(): continue
 		var count: int=ceili(a.distance_to(b)/.8)
 		for j: int in count:
 			var point: Vector2=a.lerp(b,(j+.5)/count)
-			if _distance(point,base.rim)>.28: result.append(point)
+			if _distance(point,original)>.28: result.append(point)
 	return result
 
 static func stones(plan: RefCounted) -> Array[Dictionary]:
@@ -42,10 +54,10 @@ static func stones(plan: RefCounted) -> Array[Dictionary]:
 			if i==12 and j==1: entry.at=base.root_bay
 			entry.color=Color("7d887d")*rng.randf_range(.88,1.12)
 			var at:=Vector2(entry.at.x,entry.at.z)
-			if not _new_land(at,plan) or not Geometry2D.is_point_in_polygon(at,plateau): result.append(entry)
+			if _retained_stone(at,plan,plateau): result.append(entry)
 	for i: int in base.shelves.size():
 		var point: Vector3=base.shelves[i]
-		if _new_land(Vector2(point.x,point.z),plan) and Geometry2D.is_point_in_polygon(Vector2(point.x,point.z),plateau): continue
+		if not _retained_stone(Vector2(point.x,point.z),plan,plateau): continue
 		result.append({"asset":"stone_%d"%(i%5),"at":point,"yaw":17+i*47,"size":Vector3(1.45,4.8 if i%2==0 else 3.5,1.18),"color":Color("79867e")})
 		result.append({"asset":"stone_%d"%((i+2)%5),"at":point+Vector3(.35,-.05,.37),"yaw":-25+i*33,"size":Vector3(.88,2,.9),"color":Color("929784")})
 	for p: Vector2 in added_points(plan):

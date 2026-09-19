@@ -2,6 +2,7 @@ extends Node3D
 ## A reusable live shore: only changed rocks are instantiated during a stroke.
 const Bank=preload("res://layout/bank_geometry.gd")
 const Dressing=preload("res://presentation/shore_dressing.gd")
+const Cover=preload("res://scenes/environment/ground_cover.gd")
 var environment: Node3D
 var _surface: MeshInstance3D
 var _rocks: Dictionary={}
@@ -9,10 +10,14 @@ var _plants: Node3D
 var _hidden: Array[Node3D]=[]
 var _originals: Array[Node3D]=[]
 var _grass: Node3D
+var _core: Node3D
 var _fence: Node3D
+var _held_hens: bool=false
+var _last_land: Array=[]
 
 func configure(courtyard: Node3D) -> void:
 	environment=courtyard
+	_last_land=environment.plan.construction.land.duplicate(true)
 	for child: Node in environment.get_children():
 		if child is Node3D and (child.name=="MainBank" or child.has_meta("shore_stone") or child.name in ["NewShorePlants","ExpansionGrass"] or child.has_meta("fence_spans")):
 			_originals.append(child)
@@ -23,8 +28,15 @@ func configure(courtyard: Node3D) -> void:
 	_grass=preload("res://scenes/environment/ground_cover.gd").new();_grass.name="ExpansionGrass";add_child(_grass)
 	_grass.object_footprints=environment.get_node("ExpansionGrass").object_footprints.duplicate()
 	_grass._exclusions=environment.get_node("ExpansionGrass")._exclusions.duplicate()
+	_core=preload("res://scenes/environment/ground_cover.gd").new();add_child(_core)
+	_core.copy_tiles(environment.get_node("GroundCover/CoreGrass"))
+	var original_core: Node3D=environment.get_node("GroundCover/CoreGrass")
+	if original_core.visible: _hidden.append(original_core);original_core.hide()
 
 func update(plan: RefCounted) -> void:
+	for stamp: Array in plan.construction.land:
+		if stamp.size()==5 and stamp not in environment.plan.construction.land:
+			environment.get_node("CourtyardAnimals").preview_kind="hen";_held_hens=true;break
 	# Terrain-only preview keeps the existing paths until a structure edit
 	# derives new ones. Grass must obey these same routes before and after save.
 	plan.paths=environment.plan.paths.duplicate()
@@ -45,6 +57,14 @@ func update(plan: RefCounted) -> void:
 	if is_instance_valid(_plants): _plants.free()
 	_plants=Dressing.plants(plan);add_child(_plants)
 	_grass.update_expansion(plan)
+	var changes: Array=[]
+	for stamp: Array in plan.construction.land+_last_land:
+		if stamp in plan.construction.land and stamp in _last_land: continue
+		var bounds:=Rect2(stamp[0]*.96,stamp[1]*.96,stamp[2]*.96,stamp[3]*.96).grow(.4)
+		changes.append(preload("res://layout/island_space.gd").rectangle(bounds.position,bounds.size))
+	var changed: Dictionary=Cover.grass_cells(changes)
+	if not changed.is_empty(): _core.update_tiles(plan,false,changed)
+	_last_land=plan.construction.land.duplicate(true)
 	if is_instance_valid(_fence): _fence.free()
 	# Keep only the original garden fences, opening spans touched by the brush.
 	var spans: Array[Dictionary]=[]
@@ -73,14 +93,18 @@ func accept(plan: RefCounted) -> void:
 		if rock.visible: environment._shore_sources.append(rock)
 	_rocks.clear()
 	_plants.reparent(environment);_grass.reparent(environment);_fence.reparent(environment)
+	environment.get_node("GroundCover/CoreGrass").free()
+	_core.reparent(environment.get_node("GroundCover"));_core.name="CoreGrass"
 	environment._contact_sources.append(_fence)
 	plan.fences.assign(_fence.get_meta("fence_spans"))
 	environment.plan=plan
 	environment.preview_shore_plants(plan,true)
 	environment.fit_player_dressing(plan,true)
+	if _held_hens: environment.get_node("CourtyardAnimals").preview_kind="";_held_hens=false
 	environment.refresh_terrain.call_deferred()
 
 func restore() -> void:
+	if _held_hens and is_instance_valid(environment): environment.get_node("CourtyardAnimals").preview_kind="";_held_hens=false
 	for node: Node3D in _hidden:
 		if is_instance_valid(node): node.show()
 	_hidden.clear()

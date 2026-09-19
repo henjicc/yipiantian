@@ -202,7 +202,10 @@ func apply_construction(value: Dictionary) -> bool:
 		for i: int in values.size(): values[i]=float("%.4f"%values[i])
 	if not construction.trellis.is_empty(): construction.trellis[5]=wrapf(construction.trellis[5],-180,180)
 	Construction.Buildings.apply(self)
-	var combined: PackedVector2Array=Construction.land_outline(rim,construction.land)
+	# Boolean edits start from the displayed original curve, so the first
+	# brush stroke does not pull every untouched bank corner inward.
+	var source: PackedVector2Array=rim if construction.land.is_empty() else BankGeometry.contour(rim)
+	var combined: PackedVector2Array=Construction.land_outline(source,construction.land)
 	if combined.is_empty(): return false
 	rim=combined
 	var bounds: Rect2=land_bounds()

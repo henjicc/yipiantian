@@ -962,6 +962,9 @@ func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 	var message: String=construction.bridge_issue(plan)
 	if message.is_empty(): message=construction.Flocks.terrain_issue(plan)
 	if message.is_empty(): message=preload("res://layout/bridge_passage.gd").plan_water_issue(plan,$Environment.layout_obstacles)
+	if message.is_empty():
+		var support=preload("res://layout/land_support.gd")
+		message=support.issue(plan.plateau(),support.capture(self))
 	if not Geometry2D.intersect_polygons(plan.plateau(),construction.bridge_support(plan,1)).is_empty(): message="请为对岸留出水道。"
 	# Only the brush changed. Existing fields, buildings and routes are retained;
 	# do not instantiate a second courtyard to validate unchanged architecture.

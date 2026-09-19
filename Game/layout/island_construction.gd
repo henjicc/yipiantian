@@ -21,7 +21,7 @@ static func valid(data: Variant) -> bool:
 	if not data is Dictionary or data.size()!=5 or not Buildings.valid(data.get("buildings")): return false
 	if not data.get("land") is Array or data.land.size()>MAX_PATCHES: return false
 	for patch: Variant in data.land:
-		if not numbers(patch,4): return false
+		if not numbers(patch,4) and not (numbers(patch,5) and patch[4]==-1): return false
 		if absf(patch[0])>18 or absf(patch[1])>18 or patch[2]<CELL or patch[3]<CELL or patch[2]>5 or patch[3]>5: return false
 		for n: float in patch:
 			if absf(n/CELL-roundf(n/CELL))>.0001: return false
@@ -43,12 +43,19 @@ static func valid(data: Variant) -> bool:
 static func rectangle(values: Array) -> PackedVector2Array:
 	return IslandSpace.rectangle(Vector2(values[0],values[1]), Vector2(values[2],values[3]))
 
-static func paint(land: Array, outline: PackedVector2Array, point: Vector2) -> PackedVector2Array:
-	var cell: Vector2=Vector2(IslandSpace.cell_at(point))*CELL
+static func brush_cell(point: Vector2) -> Vector2:
+	# Ray/plane round trips must not switch cells at a numerical grid boundary.
+	return Vector2(IslandSpace.cell_at(point.snapped(Vector2.ONE*.0001)))*CELL
+
+static func paint(land: Array, outline: PackedVector2Array, point: Vector2, erase: bool=false) -> PackedVector2Array:
+	var cell: Vector2=brush_cell(point)
 	var stamp: Array=[cell.x-CELL,cell.y-CELL,BRUSH_SIZE,BRUSH_SIZE]
+	if erase: stamp.append(-1)
 	if absf(stamp[0])>18 or absf(stamp[1])>18 or land.size()>=MAX_PATCHES: return outline
 	var polygon: PackedVector2Array=rectangle(stamp)
-	if IslandSpace.supported(polygon,outline): return outline
+	if erase:
+		if not IslandSpace.overlaps(polygon,outline): return outline
+	elif IslandSpace.supported(polygon,outline): return outline
 	var merged: PackedVector2Array=land_outline(outline,[stamp])
 	if not merged.is_empty():
 		land.append(stamp)
@@ -78,7 +85,10 @@ static func land_outline(original: PackedVector2Array, patches: Array) -> Packed
 		var patch: PackedVector2Array=rectangle(values)
 		# Require area overlap, not a point/edge touch which leaves a fragile neck.
 		if Geometry2D.intersect_polygons(outline,patch).is_empty(): return PackedVector2Array()
-		var merged: Array[PackedVector2Array]=Geometry2D.merge_polygons(outline,patch)
+		# Ordered subtractive stamps can trim the authored island, and later
+		# additive stamps can fill the same shore again. Holes and split islands
+		# return multiple contours and are outside this land tool's contract.
+		var merged: Array[PackedVector2Array]=Geometry2D.clip_polygons(outline,patch) if values.size()==5 else Geometry2D.merge_polygons(outline,patch)
 		if merged.size()!=1: return PackedVector2Array()
 		outline=merged[0]
 	if Geometry2D.is_polygon_clockwise(outline): outline.reverse()

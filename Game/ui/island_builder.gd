@@ -8,6 +8,11 @@ const Construction = preload("res://layout/island_construction.gd")
 const ThemeFactory = preload("res://ui/farm_theme.gd")
 const ShorePreview=preload("res://presentation/island_shore_preview.gd")
 const IslandSpace=preload("res://layout/island_space.gd")
+const LandSupport=preload("res://layout/land_support.gd")
+var _land_actions: HBoxContainer
+var _land_buttons: Dictionary={}
+var _land_erase: bool=false
+var _land_support: Dictionary={}
 const FieldPreview=preload("res://presentation/field_layout_preview.gd")
 const TrellisPreview=preload("res://presentation/trellis_layout_preview.gd")
 const BuildingPreview=preload("res://presentation/building_layout_preview.gd")
@@ -111,6 +116,10 @@ func _ready() -> void:
 		row.add_child(spin);_values[entry[0]]=spin
 		spin.value_changed.connect(_parameter_changed)
 	_values.radius.set_value_no_signal(1.5);_values.density.set_value_no_signal(2)
+	_land_actions=HBoxContainer.new();content.add_child(_land_actions)
+	for mode: String in ["add","erase"]:
+		var button: Button=_button(_land_actions,"添地" if mode=="add" else "缩地",_select_land_mode.bind(mode=="erase"))
+		button.name="Land"+mode.capitalize();button.toggle_mode=true;button.button_pressed=mode=="add";_land_buttons[mode]=button
 	_plant_actions=HBoxContainer.new();content.add_child(_plant_actions)
 	for mode: String in ["point","brush","move","erase"]:
 		var button: Button=_button(_plant_actions,{"point":"点放","brush":"涂刷","move":"移动","erase":"擦除"}[mode],_select_plant_mode.bind(mode))
@@ -187,6 +196,8 @@ func choose(id: String) -> void:
 	tool=id;draft=main.farm_state.snapshot().layout;_start=Vector2.INF;_drag_snapshot={};_last_cell=Vector2.INF
 	_pending_land=Vector2.INF;_brush_last=Vector2.INF;_brush_message="";_plant_message="";_plant_last=Vector2.INF;_plant_selected.clear()
 	choices.select_item(id);choices.present(main.decoration_state.snapshot(),busy)
+	_land_actions.visible=id=="land"
+	if id=="land": _land_support=LandSupport.capture(main)
 	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id in Flocks.TOOLS and key=="count") or (id=="fields" and key in ["columns","rows"]) or (id in Plants.KINDS and key in ["radius","density"])
 	_route_actions.visible=id in Routes.KINDS;_route_buttons.gate.visible=id=="fence"
 	_route_index=-1;_route_message=""
@@ -216,6 +227,11 @@ func choose(id: String) -> void:
 		main.decoration_layout.begin_mode();main.decoration_layout.hud.hide()
 		main.decoration_layout.select_item(id)
 		_decoration_changed();return
+	_refresh()
+
+func _select_land_mode(erase: bool) -> void:
+	_focus_lost();_land_erase=erase;_brush_message=""
+	_land_buttons["add"].button_pressed=not erase;_land_buttons["erase"].button_pressed=erase
 	_refresh()
 
 func _select_route_mode(mode: String) -> void:
@@ -541,23 +557,36 @@ func _flush_land() -> void:
 	var point: Vector2=_pending_land;_pending_land=Vector2.INF
 	var before: int=draft.construction.land.size()
 	var outline: PackedVector2Array=candidate.rim if candidate!=null else main.courtyard_plan.rim
+	if draft.construction.land.is_empty(): outline=preload("res://layout/bank_geometry.gd").contour(outline)
 	var from: Vector2=point if not _brush_last.is_finite() else _brush_last
 	var steps: int=mini(100,maxi(1,ceili(from.distance_to(point)/.25)))
 	var east: PackedVector2Array=Construction.bridge_support(main.courtyard_plan,1)
+	_brush_message=""
+	var visited: Dictionary={}
 	for i: int in steps+1:
 		var sample: Vector2=from.lerp(point,float(i)/steps)
-		var cell: Vector2=Vector2(IslandSpace.cell_at(sample))*Construction.CELL
+		var cell: Vector2=Construction.brush_cell(sample)
+		if visited.has(cell): continue
+		visited[cell]=true
 		var area: PackedVector2Array=Construction.rectangle([cell.x-.5,cell.y-.5,1.5,1.5])
 		if not Geometry2D.intersect_polygons(area,east).is_empty(): continue
 		var protected: bool=false
-		for kind: String in ["duck","goose"]:
+		for kind: String in ([] if _land_erase else ["duck","goose"]):
 			var flock: Dictionary=draft.construction.flocks[kind]
 			if flock.count>0 and not flock.area.is_empty() and IslandSpace.overlaps(area,Construction.rectangle(flock.area)): protected=true;break
 		if protected: continue
-		outline=Construction.paint(draft.construction.land,outline,sample)
+		var count: int=draft.construction.land.size()
+		var next: PackedVector2Array=Construction.paint(draft.construction.land,outline,sample,_land_erase)
+		if _land_erase and draft.construction.land.size()>count:
+			var reason: String=LandSupport.issue(LandSupport.plateau(next,main.courtyard_plan),_land_support)
+			if reason.is_empty() and not main.decoration_layout._animal_issue(area).is_empty(): reason="小鸡在这里，请等它走开再缩地。"
+			if not reason.is_empty():
+				draft.construction.land.pop_back();_brush_message=reason;continue
+		outline=next
 	_brush_last=point;_last_cell=point
-	_brush_message="从现有岸边开始涂抹；对岸和水禽活动区域会保留。" if draft==main.farm_state.snapshot().layout and draft.construction.land.size()==before else ""
-	if draft.construction.land.size()>=Construction.MAX_PATCHES: _brush_message="本岛添地范围已达到本轮上限。可取消当前调整。"
+	if _brush_message.is_empty() and draft.construction.land.size()==before:
+		_brush_message="请沿岸缩地，保留完整相连的岛屿。" if _land_erase else ("从现有岸边开始涂抹；对岸和水禽活动区域会保留。" if draft==main.farm_state.snapshot().layout else "")
+	if draft.construction.land.size()>=Construction.MAX_PATCHES: _brush_message="本岛地形笔迹已达到上限。可取消当前调整。"
 	if draft.construction.land.size()!=before: _refresh()
 	elif is_instance_valid(_preview):
 		for child: Node in _preview.get_children(): child.free()
@@ -768,6 +797,8 @@ func issue() -> String:
 	if not bridge.is_empty(): return bridge
 	if tool=="land":
 		var passage: String=preload("res://layout/bridge_passage.gd").plan_water_issue(candidate,main.get_node("Environment").layout_obstacles)
+		var support_issue: String=LandSupport.issue(candidate.plateau(),_land_support) if _land_erase else ""
+		if not support_issue.is_empty(): return support_issue
 		if not passage.is_empty(): return passage
 	var flock_issue: String=Construction.Flocks.terrain_issue(candidate)
 	if not flock_issue.is_empty(): return flock_issue
@@ -954,6 +985,9 @@ func _trellis_checked() -> void:
 	_render_preview(message.is_empty())
 
 func _draw_brush(tint: Color) -> void:
+	if _land_erase:
+		tint=Color("d77d62") if not _brush_message.is_empty() else Color("d5b979")
+		_outline(PackedVector2Array([_last_cell+Vector2(-.28,0),_last_cell+Vector2(.28,0)]),main.courtyard_plan.ground_height+.06,tint,false)
 	var circle:=PackedVector2Array()
 	for i: int in 32: circle.append(_last_cell+Vector2.from_angle(i*TAU/32)*.8)
 	_outline(circle,main.courtyard_plan.ground_height+.06,tint,false)

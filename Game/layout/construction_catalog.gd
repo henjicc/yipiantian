@@ -6,7 +6,7 @@ const CATEGORIES: Dictionary = {
 	"plants": "植物", "lights": "灯具", "objects": "摆件", "animals": "动物",
 }
 const ITEMS: Dictionary = {
-	"land": {"name":"添地", "category":"land", "editor":"layout", "placement":"brush", "capabilities":["terrain"], "icon":"res://art/ui/actions/arrange.svg"},
+	"land": {"name":"岛形", "category":"land", "editor":"layout", "placement":"brush", "capabilities":["terrain"], "icon":"res://art/ui/actions/arrange.svg"},
 	"house": {"name":"民居", "category":"buildings", "editor":"layout", "placement":"free", "capabilities":["entrance","attachments"], "icon":"res://art/ui/construction/house.png"},
 	"kitchen": {"name":"厨房", "category":"buildings", "editor":"layout", "placement":"free", "capabilities":["entrance","attachments","production"], "icon":"res://art/ui/construction/kitchen.png"},
 	"road": {"name":"石板路", "category":"routes", "editor":"layout", "placement":"line", "capabilities":["passage"], "icon":"res://art/ui/construction/road.png"},

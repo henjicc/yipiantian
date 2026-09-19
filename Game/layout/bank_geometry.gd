@@ -12,6 +12,11 @@ static func contour(points: PackedVector2Array, painted: bool=false) -> PackedVe
 			var next:=PackedVector2Array()
 			for i: int in smooth.size():
 				var a: Vector2=smooth[i];var b: Vector2=smooth[(i+1)%smooth.size()]
+				var incoming: Vector2=(a-smooth[posmod(i-1,smooth.size())]).normalized()
+				var outgoing: Vector2=(b-a).normalized()
+				# Preserve the already sampled authored curve away from new corners.
+				if incoming.dot(outgoing)>.99:
+					next.append(a);continue
 				var fraction: float=minf(.25,.18/maxf(.001,a.distance_to(b)))
 				next.append(a.lerp(b,fraction));next.append(a.lerp(b,1-fraction))
 			smooth=next
