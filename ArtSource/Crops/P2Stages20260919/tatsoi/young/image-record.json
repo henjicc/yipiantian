@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "research": "../../README.md#乌塌菜-brassica-rapa-subsp-narinosa照片调查",
+  "inputs": [
+    "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "<REPO_ROOT>/.local/crop-research-20260919/tatsoi-young.jpg",
+    "<REPO_ROOT>/.local/crop-research-20260919/tatsoi-seedlings-starr.jpg"
+  ],
+  "prompt": "Using the first input ONLY as painting style, create a new isolated botanical single-plant game-asset reference of a juvenile tatsoi (乌塌菜, Brassica rapa var. rosularis/narinosa) before mature dense rosette stage. Inputs 2 and 3 are real botanical morphology references only. A loose low three-dimensional rosette of seven round-spoon dark-jade true leaves, gently puckered along branching veins, with slightly cupped blades, broad rounded tips and smooth softly undulating edges (NO serrations), slender light-green petioles clearly converging at one compact short basal crown. Outer blades extend radially near horizontal while inner smaller leaves rise, different heights and clear front/back overlap. Leave gaps between leaves, do not make a mature cabbage head or a flat fan. Short green stems, never thick white bok-choy stalks. Handpainted Chinese gongbi: clearly drawn fine moss-green structural vein lines and selective fine outline, restrained layered fresh jade/sage pigment washes and subtle ink mottling, detailed but matte not glossy rubber, no yellow antique filter. Whole plant at three-quarter view 35 degrees from above, 15% margins, centered. Flat pale neutral-gray background, no soil, roots, pot, labels, pedestal, cast shadow or other objects. Root crown is the lowest point, leaf tips above it, blades intact, no holes, no extreme rolled arcs.",
+  "output_original": "exec-29a428f9-802b-4a46-a258-f1aede302ac0.png",
+  "review": "Initial painting retained for provenance; leaf morphology suitable, composition too planar/fan-like for reliable 3D volume; not submitted to Tripo.",
+  "model_seed_cost": "not returned",
+  "revision_prompt": "Recompose this juvenile tatsoi into a physically convincing ROUND THREE-DIMENSIONAL ROSETTE viewed from 50 degrees above and obliquely from the right, keeping the same seven round-spoon leaves and detailed gongbi vein linework/pigment washes. Current image is a flat fan with every blade facing camera: replace that arrangement. Three outer leaves project toward the viewer with strong foreshortening and overlap the root center, two project left and behind, and two smaller cupped leaves rise at center. Different surfaces face different directions. The crown is located at the CENTER of the radial rosette, not at the front edge of a fan. Leaf stems are narrow fresh green, much slimmer than bok choy; no big white cabbage stalks. Low loose spreading form with visible air gaps, rounded smooth gently wavy blades and shallow puckering, not a mature dense cabbage. Full plant, root base lowest, all leaf tips above it. Neutral solid light gray background, no transparent/black backdrop, no soil/roots/pot/cast shadow/text.",
+  "revision_inputs": [
+    "reference-initial.png"
+  ],
+  "selected_output": "exec-f29949c6-dadd-4252-a9c7-3fb3960da0eb.png",
+  "selected_review": "Four-leaf seedling, loose juvenile and layered mature rosette distinguished; revised front/back overlap and green petioles inspected. Geometry volume and basal anchor still require 3D checks."
+}

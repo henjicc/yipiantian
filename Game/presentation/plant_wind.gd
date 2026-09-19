@@ -14,6 +14,7 @@ const PROFILES := {
 	"spinach": Vector4(0.006, 0.18, 0.0, 0.0016),
 	"chrysanthemum": Vector4(0.0055, 0.30, 0.0, 0.0015),
 	"celery": Vector4(0.0045, 0.35, 0.0, 0.0014),
+	"tatsoi": Vector4(0.0035, 0.35, 0.0, 0.001),
 	"autumn_crop": Vector4(0.005, 0.20, 0.0, 0.0015),
 	"radish": Vector4(0.005, 0.75, 0.0, 0.0015),
 	"trellis": Vector4(0.010, 0.08, 0.0, 0.003),
@@ -40,7 +41,7 @@ func _apply_node(node: Node, kind: String, preserve_painted_color: bool) -> void
 		var centre: Vector3 = bounds.get_center()
 		var motion: Vector4 = PROFILES[kind]
 		# Sprouts receive the same relative restraint as the larger mature plants.
-		if kind in ["greens", "radish", "spinach", "chrysanthemum", "celery", "autumn_crop"]:
+		if kind in ["greens", "radish", "spinach", "chrysanthemum", "celery", "tatsoi", "autumn_crop"]:
 			motion.x = minf(motion.x, bounds.size.y * 0.025)
 			motion.w = minf(motion.w, bounds.size.y * 0.008)
 			# A buried storage root belongs to the fixed portion of the plant.
@@ -56,7 +57,7 @@ func _apply_node(node: Node, kind: String, preserve_painted_color: bool) -> void
 		mesh.set_instance_shader_parameter("wind_bounds", Vector4(bounds.position.y, bounds.size.y, centre.x, centre.z))
 		mesh.set_instance_shader_parameter("wind_motion", motion)
 		# Thick greens leaves move slowly; preserve the existing pace of other kinds.
-		mesh.set_instance_shader_parameter("wind_rate", 0.65 if kind == "greens" else (0.82 if kind == "spinach" else 1.0))
+		mesh.set_instance_shader_parameter("wind_rate", 0.65 if kind in ["greens", "tatsoi"] else (0.82 if kind == "spinach" else 1.0))
 		var authored := AUTHORED_BEND.has(kind) and _has_vertex_colors(mesh.mesh)
 		mesh.set_instance_shader_parameter("wind_authored", 1.0 if authored else 0.0)
 		mesh.set_instance_shader_parameter("wind_authored_bend", AUTHORED_BEND.get(kind, 0.07))

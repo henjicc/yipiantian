@@ -58,6 +58,20 @@ for obj in objects:
 report = dict(crop=crop, stage=stage, task=config['task_id'], blender=bpy.app.version_string,
               source_format=raw_files[0].suffix[1:], source=[inspect(o) for o in objects],
               rotation_degrees=config['rotation_degrees'])
+if config.get('basal_shortening'):
+    # Tatsoi's generated basal petioles are too tall for its photographed low
+    # rosette. Shorten this reviewed stem region; translate the crown intact.
+    correction = config['basal_shortening']
+    lo, hi = bounds(objects)
+    stem_height = (hi.z-lo.z) * correction['height_fraction']
+    retained = correction['retained_fraction']
+    assert stem_height > 0 and .25 < retained <= 1
+    for obj in objects:
+        for vertex in obj.data.vertices:
+            t = max(0.0, min(1.0, (vertex.co.z-lo.z)/stem_height))
+            vertex.co.z -= stem_height * (1-retained) * (t+t*t-t*t*t)
+        obj.data.update()
+    report['basal_shortening'] = correction
 if config.get('leaf_unroll'):
     # Selected outer blades are intact but curl back toward the soil. Ease their
     # distal portions toward an inclined blade plane, preserving root and UVs.

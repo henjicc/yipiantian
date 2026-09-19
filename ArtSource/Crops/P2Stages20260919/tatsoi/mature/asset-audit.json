@@ -1,0 +1,93 @@
+{
+  "crop": "tatsoi",
+  "stage": "mature",
+  "task": "c5503106-af14-4669-b0f4-c2b3739ed57e",
+  "blender": "5.2.2 LTS",
+  "source_format": "fbx",
+  "source": [
+    {
+      "vertices": 8986,
+      "polygons": 10624,
+      "quads": 7627,
+      "triangles": 18251,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 321,
+      "non_manifold_edges": 692,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "basal_shortening": {
+    "retained_fraction": 0.4,
+    "height_fraction": 0.42
+  },
+  "min_godot": [
+    -0.20730635523796082,
+    0.0,
+    -0.1839832365512848
+  ],
+  "max_godot": [
+    0.17311149835586548,
+    0.1599999964237213,
+    0.1964346170425415
+  ],
+  "root_transform": [
+    [
+      0.38060370087623596,
+      0.0,
+      0.0,
+      -0.017097432166337967
+    ],
+    [
+      0.0,
+      0.38060370087623596,
+      0.0,
+      -0.006225695367902517
+    ],
+    [
+      0.0,
+      0.0,
+      0.38060370087623596,
+      0.10695187002420425
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 8986,
+      "polygons": 10624,
+      "quads": 7627,
+      "triangles": 18251,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 321,
+      "non_manifold_edges": 692,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.037261251360177994,
+    0.03233644738793373
+  ],
+  "triangles": 18251,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/tatsoi/tatsoi_mature.glb"
+}

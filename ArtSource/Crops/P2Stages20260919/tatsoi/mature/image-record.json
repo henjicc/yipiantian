@@ -1,0 +1,21 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "research": "../../README.md#乌塌菜-brassica-rapa-subsp-narinosa照片调查",
+  "inputs": [
+    "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "<REPO_ROOT>/.local/crop-research-20260919/tatsoi-bed.jpg",
+    "<REPO_ROOT>/.local/crop-research-20260919/tatsoi-mature.jpg"
+  ],
+  "prompt": "Using the first input ONLY as painting style, create a new isolated botanical single-plant game-asset reference of mature harvest-ready tatsoi (乌塌菜, Brassica rapa var. rosularis/narinosa). Inputs 2 and 3 show real mature morphology, use for form only. A broad low dense radial rosette, height approximately 40 percent of its spread, with 18-22 overlapping rounded spoon-shaped dark-jade leaves in several irregular concentric layers. Outer leaves spread gently outward near horizontal, center has smaller cupped upright leaves, no tall cabbage stem, no head or flower stalk. Shallow puckering between branching veins, smooth softly wavy edges, NOT serrated mustard leaves. Light-green narrow petioles unite into one compact basal crown partially visible below the lowest outer leaves. Preserve rounded blade volumes and rosette depth, not a flat top-view disc or fan. Fine Chinese gongbi botanical painting: strong delicate structured vein linework and selective outline, layered muted fresh jade/sage ink-and-pigment washes, subtle mottling, matte not waxy photographic shine. Avoid all-over yellow tint, coarse black outlines, plastic balloon thickness. Full isolated plant at three-quarter view from 35 degrees above, entire silhouette with 15% margins, neutral light-gray background. No soil, roots, pot, stand, cast shadow, lettering or watermark. Basal crown is lowest point; leaves intact without holes or insect bites. Do not copy the five-leaf bok-choy anatomy of the style image.",
+  "output_original": "exec-6a21fa06-36f4-4587-8b89-96d75ac96204.png",
+  "review": "Initial painting retained for provenance; leaf morphology suitable, composition too planar/fan-like for reliable 3D volume; not submitted to Tripo.",
+  "model_seed_cost": "not returned",
+  "revision_prompt": "Recompose this mature tatsoi as a PHYSICALLY THREE-DIMENSIONAL LOW RADIAL ROSETTE, viewed obliquely from 45 degrees above. Preserve its beautiful gongbi pigment washes, subtle fine contour and prominent structural vein lines, dark jade rounded spoon leaves with softly puckered surfaces. Crucial structural change: this is a circular rosette with leaves arranged ALL AROUND one CENTRAL crown, not a fan opening toward the camera. Broad outer leaves point toward, away, left and right; foreground leaves strongly foreshorten and overlap the hidden central crown, rear leaves partly occlude each other, middle layers form a gentle low dome. Vertical height about 40 percent of spread; no upright bouquet/cabbage stalk, no flat top-view disk. 18-22 rounded intact leaves, smooth edges, no saw teeth. A very short central green basal stub is visible underneath the rosette as its lowest point; no giant white stems. Use the second photograph for spatial habit, not photography style or soil. Matte thin leaves with restrained volume, not plastic inflated pads. Whole plant with 15% margin on solid pale neutral gray; no transparent/black backdrop, no cast shadow, soil, pot, roots, text or watermark.",
+  "revision_inputs": [
+    "reference-initial.png",
+    ".local/crop-research-20260919/tatsoi-bed.jpg"
+  ],
+  "selected_output": "exec-efbd4124-b2b5-40f1-aa1f-428112f38838.png",
+  "selected_review": "Four-leaf seedling, loose juvenile and layered mature rosette distinguished; revised front/back overlap and green petioles inspected. Geometry volume and basal anchor still require 3D checks."
+}

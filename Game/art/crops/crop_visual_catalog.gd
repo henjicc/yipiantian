@@ -15,7 +15,7 @@ const ROOT_RADII := {
 	"garlic": Vector2(0.04260, 0.03028),
 }
 const STAGES: Array[String] = ["sprout", "young", "mature"]
-const P2_STAGE_CROPS: Array[String] = ["spinach", "radish", "lettuce", "coriander", "chrysanthemum", "celery", "mustard"]
+const P2_STAGE_CROPS: Array[String] = ["spinach", "radish", "lettuce", "coriander", "chrysanthemum", "celery", "mustard", "tatsoi"]
 
 
 static func is_p2_stage(crop_id: String, stage: String) -> bool:
@@ -27,7 +27,7 @@ static func preserves_painted_color(crop_id: String, stage: String) -> bool:
 
 
 static func wind_profile(crop_id: String) -> String:
-	return crop_id if crop_id in ["greens", "radish", "spinach", "chrysanthemum", "celery"] else "autumn_crop"
+	return crop_id if crop_id in ["greens", "radish", "spinach", "chrysanthemum", "celery", "tatsoi"] else "autumn_crop"
 
 
 static func scene_path(crop_id: String, stage: String, low_detail: bool = false) -> String:
@@ -66,6 +66,8 @@ static func planting_depth(crop_id: String, stage: String) -> float:
 
 
 static func soil_radius(crop_id: String, stage: String) -> Vector2:
+	if crop_id == "tatsoi":
+		return {"sprout": Vector2(.009,.009), "young": Vector2(.03221,.03132), "mature": Vector2(.03726,.03234)}.get(stage, Vector2(.03726,.03234))
 	if crop_id == "mustard":
 		return {"sprout": Vector2(.009,.0098), "young": Vector2(.012,.012), "mature": Vector2(.0259,.0229)}.get(stage, Vector2(.0259,.0229))
 	if crop_id == "celery":

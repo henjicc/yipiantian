@@ -1,0 +1,73 @@
+{
+  "species": "Brassica rapa var. rosularis / narinosa, low-rosette tatsoi before flowering",
+  "stages": {
+    "sprout": {
+      "task_id": "921a815b-ba30-4e1a-a178-c61cecae538c",
+      "height": 0.075,
+      "max_width": 0.12,
+      "face_request": 2200,
+      "seed": 2026091927,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120,
+      "collar_center_xy": [
+        0.08,
+        -0.024
+      ],
+      "soil_radius": [
+        0.009,
+        0.009
+      ],
+      "anchor_note": "Lower cotyledon enters the bottom slice; anchor XY uses the narrow basal stem rather than the full leaf slice."
+    },
+    "young": {
+      "task_id": "af1e41bf-b6cd-41dd-be01-f1852b7a71bd",
+      "height": 0.13,
+      "max_width": 0.28,
+      "face_request": 4200,
+      "seed": 2026091928,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    },
+    "mature": {
+      "task_id": "c5503106-af14-4669-b0f4-c2b3739ed57e",
+      "height": 0.16,
+      "max_width": 0.46,
+      "face_request": 8500,
+      "seed": 2026091929,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120,
+      "basal_shortening": {
+        "retained_fraction": 0.4,
+        "height_fraction": 0.42
+      }
+    }
+  },
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "quad": true,
+  "delight": false,
+  "pbr": false,
+  "texture_alignment": "original_image",
+  "enable_image_autofix": false,
+  "adoption": "Adopted in development: independent three stages; Blender roundtrip, 93 asset checks, four-view/farm inspection and wind on/off passed. User visual feedback pending.",
+  "not_used": [
+    "semantic segmentation",
+    "rigging",
+    "paid retopology",
+    "paid retexturing",
+    "decimation"
+  ]
+}

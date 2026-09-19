@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "research": "../../README.md#乌塌菜-brassica-rapa-subsp-narinosa照片调查",
+  "inputs": [
+    "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "<REPO_ROOT>/.local/crop-research-20260919/tatsoi-seedling.jpg",
+    "<REPO_ROOT>/.local/crop-research-20260919/tatsoi-seedlings-starr.jpg"
+  ],
+  "prompt": "Using the first input ONLY as painting style, create a new isolated botanical single-plant game-asset reference of one very young tatsoi seedling (乌塌菜, Brassica rapa var. rosularis/narinosa), just developing its first true leaves. Inputs 2 and 3 are real botanical morphology references only, not texture to copy. Two small opposite round kidney/heart-shaped cotyledons with shallow tip notches, plus two unequal emerging round-spoon true leaves, one slightly larger and gently cupped with visible branching fine veins, the other a small folded center leaf. Slender short light-green stems join at one tiny basal crown. Four leaves only, much simpler than a juvenile rosette. Not a scaled mature cabbage, no broad fleshy white bok choy stalks. Handpainted Chinese gongbi: crisp fine moss-green structural vein lines and selective fine outline, restrained layered jade/sage pigment washes with subtle darker ink mottling; botanical volume, not photographic lighting or glossy plastic. Fresh green leaves, no yellow antique filter. Three-quarter view 30 degrees from above showing front/back depth and every attachment; full plant centered with 15% breathing margin. Isolated against flat pale neutral gray, no soil, roots, pot, tray, pedestal, cast shadow, writing, watermark, collage or other objects. Root base is lowest point; all leaf blades intact, no holes or insect bites.",
+  "output_original": "exec-1a57d1c4-3bac-48a4-85e3-d64e52d1813d.png",
+  "review": "Initial painting retained for provenance; leaf morphology suitable, composition too planar/fan-like for reliable 3D volume; not submitted to Tripo.",
+  "model_seed_cost": "not returned",
+  "revision_prompt": "Recompose this tatsoi seedling into a convincing THREE-DIMENSIONAL plant seen from 45 degrees above and obliquely from its right side, maintaining the exact handpainted gongbi colors, fine vein lines and four-leaf early stage. It must NOT be a flat botanical fan facing camera. The two small kidney-shaped cotyledons project in opposite front/back directions and are foreshortened; one small rounded true leaf points left and backward and the smaller center leaf points diagonally toward the viewer, with visible depth overlap. Reduce all stem thickness to slender green petioles, no fleshy white stalks. One compact basal root crown at lowest point. Individual true leaves are not vastly larger than cotyledons. Crisp thin matte blades with gentle cupping. Whole single plant centered, 15% margins, SOLID light neutral gray background (not transparent, not black), no shadow, soil, root hairs, text, or extra items. Keep all blades intact and above the crown.",
+  "revision_inputs": [
+    "reference-initial.png"
+  ],
+  "selected_output": "exec-7a856397-2750-4a52-8e4f-bd258a5d6475.png",
+  "selected_review": "Four-leaf seedling, loose juvenile and layered mature rosette distinguished; revised front/back overlap and green petioles inspected. Geometry volume and basal anchor still require 3D checks."
+}

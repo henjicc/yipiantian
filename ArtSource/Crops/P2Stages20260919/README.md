@@ -68,21 +68,22 @@
 - 幼株依据 [央广网2024-11-20镇远雪里蕻补苗报道](https://gz.cnr.cn/dishizhibo/20241120/t20241120_526982134.shtml)中镇远县融媒体中心两张现场照片，查看前景少叶、细叶柄的低矮开展株型。图片说明用了“丰收”，但画面和正文实为移栽幼株，不能当成熟株依据。仅采用形态，不新增移栽玩法。
 - 长叶轮廓核对 [Seeds of Scotland Green in Snow](https://www.seedsofscotland.com/products/mustard-green-green-in-snow)的[六片采下叶照片](https://www.seedsofscotland.com/cdn/shop/files/mustard-green-in-snow-new-2024-25-salad-222.webp?v=1723991956&width=1000)：长椭圆至披针形、浅裂与不规则锯齿、浅色主脉。研究副本名为 `mustard-young.webp`，实际是离体叶片，不能声称是独立幼株实拍。
 - 成熟叶丛参考种子生产者 [Meraki Seeds](https://merakiseeds.com/green-in-snow-mustard)的[植株照片](https://merakiseeds.com/images/thumbs/0003979_green-in-snow-mustard_510.jpeg)，保留绿色、多层叶丛与锯齿叶缘，排除花薹。以上实拍均已查看，本地 `.local/crop-research-20260919/mustard-*` 只作研究，不作为游戏贴图发布。
-- [Shu Suehiro雪里红生长序列](https://www.botanic.jp/plants-sa/seturi.htm)文字可读，但本机图片下载累计五次连接失败后停止，未将其照片写成已查看证据。三个阶段工笔参考独立生成，首版偏平，图片工具修订杯状弯曲、叶背和侧向朝向；提示词与输入在 `mustard/<stage>/image-record.json`。P2及运行验收进行中。
+- [Shu Suehiro雪里红生长序列](https://www.botanic.jp/plants-sa/seturi.htm)文字可读，但本机图片下载累计五次连接失败后停止，未将其照片写成已查看证据。三个阶段工笔参考独立生成，首版偏平，图片工具修订杯状弯曲、叶背和侧向朝向；提示词与输入在 `mustard/<stage>/image-record.json`，最终采用与验收见下方雪里蕻节点。
 
 ### 乌塌菜 Brassica rapa subsp. narinosa，照片调查
 
 - 查询 `tatsoi seedling cotyledons young plant photo grow`、`乌塌菜 幼苗 莲座 生长 图片`。已查看种植者Todd Marsh的[育苗过程](https://homemicrogreens.com/how-to-grow-tatsoi-mustard-microgreens/)及[子叶实拍](https://homemicrogreens.com/wp-content/uploads/2023/06/tatsoi-mustard-microgreens-tray-side-view.jpg)：成对心肾形子叶带浅缺口、细绿茎；育苗盘密播的徒长高度不直接复制到农田苗。
 - 已查看 [Plantura幼株照片](https://plantura.garden/uk/wp-content/uploads/sites/2/2022/03/young-tatsoi-plant-1024x683.jpg)（Pengejar Senja／Shutterstock，来源[文章](https://plantura.garden/uk/vegetables/tatsoi/tatsoi-overview)）：圆匙形深绿真叶、细长浅绿叶柄从短茎基部放射展开；盆栽图只用于形态，不复制土袋。
-- 已查看 [Botanical Interests产品实拍](https://shop.epicgardening.com/products/rosette-tatsoi-bok-choy-seeds)（Kelly Roy）：成熟叶丛匙形叶、皱缩表面、密集放射排列；现有图较近，正式生成前还需补看完整成熟株轮廓。页面的手绘苗图未冒充实拍。
-- 本地照片与原图URL在 `.local/crop-research-20260919/tatsoi-*`；只作研究，未作为游戏贴图发布。三个阶段参考及模型尚未生成；此处不采纳国外播期作为江南9月依据。
+- 已查看 [Botanical Interests产品实拍](https://shop.epicgardening.com/products/rosette-tatsoi-bok-choy-seeds)（Kelly Roy）：成熟叶丛匙形叶、皱缩表面、密集放射排列；该近照只提供叶面特征，页面的手绘苗图未冒充实拍。
+- 补看 [Plantura在田整株照片](https://plantura.garden/uk/wp-content/uploads/sites/2/2022/03/growing-tatsoi-1024x681.jpg)（homi／Shutterstock）：中间完整植株为低矮放射莲座，外叶近水平、内叶立起；[成熟近照](https://plantura.garden/uk/wp-content/uploads/sites/2/2022/03/tatsoi-plant-leaves-1024x683.jpg)（SPBShutter／Shutterstock）用于皱褶。另查看[NC State资料](https://plants.ces.ncsu.edu/plants/brassica-rapa-var-rosularis/)所载Forest & Kim Starr的株型、叶丛和育苗实拍（页面标CC BY 2.0）。其“Seedlings”图已有数片真叶，归作幼株依据，不能当刚萌发子叶图。
+- 本地照片与原图URL在 `.local/crop-research-20260919/tatsoi-*`；只作研究，未作为游戏贴图发布。三个阶段工笔参考各自生成，首图偏扇形，已修订近远叶片遮挡与细绿叶柄，完整提示词及输入见 `tatsoi/<stage>/image-record.json`；P2模型已接入并通过下方节点验证。此处不采纳国外播期作为江南9月依据。
 
 ## 制作状态
 
 - 菠菜三个阶段已完成独立参考／P2生成、Blender整理及游戏接入，见下方节点；用户审美反馈待收集。
 - 白萝卜三个阶段已独立生成并接入；成熟首版因侧面过扁弃用，第二版经外叶姿态和根部接地整理后采用，见下方节点。
 - 青菜幼苗与中期已独立生成并接入，成熟株原文件与材质保留。
-- 生菜、香菜、茼蒿、芹菜、雪里蕻各三个阶段已独立生成并接入，通过定向与实景／风动检查；当前累计23／35个新阶段。乌塌菜、胡萝卜、小葱、青蒜共12阶段未完成；藤蔓玩法与整体光照未开始实现。
+- 生菜、香菜、茼蒿、芹菜、雪里蕻、乌塌菜各三个阶段已独立生成并接入，通过定向与实景／风动检查；当前累计26／35个新阶段。胡萝卜、小葱、青蒜共9阶段未完成；藤蔓玩法与整体光照未开始实现。
 - 本批工作前存在模型目录／检查页及开发说明等其他改动，不属于本批，不覆盖或混入提交。当前仓库未配置远端。
 
 ## 菠菜接入节点 · 20260919-spinach-p2-stages
@@ -230,3 +231,23 @@
 验证：93项定向资产检查及Blender导出重导入通过。最终四向单体在 `.local/verification/p2-stages/mustard/relaxed-views/`，14张农场昼夜／正反面／全景聚焦在 `relaxed-farm/`，最终风动在 `relaxed-wind/`；已查看各阶段日间正反面、全部中期／成熟四向、夜间代表和聚焦。近景检查基部，成熟顶部全貌结合单体／聚焦判断。`young-part-angles.png`、`mature-part-angles.png` 是原生成单叶诊断，`final-farm/` 名称虽含final，实际是舒展前候选，不作最终采用证据。夜景仍偏暗，灯笼与整体光照优化尚未完成。
 
 重建：Blender运行 `prepare.py -- mustard <sprout|young|mature> --install` 后Godot Import。源参考／提示词、原始模型、任务费用、可编辑blend、GLB及审计均已保存。本地节点 `制作留档/03_处理与验证/20260919_雪里蕻三阶段P2重制/README.md`；无新录像或独立包更新，用户审美反馈待收集。
+
+## 乌塌菜接入节点 · 20260919-tatsoi-p2-stages
+
+以子叶实拍、幼株和在田莲座照片分别制作参考，三个P2任务各120积分，共360，本批累计3720积分；没有用缩小成熟株替代幼苗／中期。版本、任务、请求面数、种子及重建参数见 [tatsoi/stages.json](tatsoi/stages.json)，原始与修订图片及完整提示词分阶段保存。
+
+| 阶段 | 实际三角形 | 实际高／宽／深（米） | 形态和处理 |
+|---|---:|---|---|
+| 苗 | 4308 | .0621／.1200／.0706 | 两片带浅缺口子叶、两片初生真叶；根部切片混入低垂子叶，改按真正细茎基部定位 |
+| 中期 | 8682 | .1205／.2800／.2800 | 少量圆匙形、轻皱真叶，放射排列的细绿叶柄 |
+| 成熟 | 18251 | .1600／.3804／.3804 | 多层低矮莲座；原生成下部叶柄过高，局部缩短基部，保留上部叶片 |
+
+Blender只在副本整理。成熟株对下部42%高度作平滑缩短，该区域终点高度保留40%，以上部分整体下移；没有整株压扁、删叶、补洞或改变UV。该参数只用于此株，不作为全部植物默认。幼苗根部XY为原生坐标(.08,−.024)，接土半径9毫米；中期接土半径.03221／.03132米，成熟.03726／.03234米。三阶段没有套用青菜−20°或色温校正。
+
+各阶段保存不可变四边面FBX、服务回显、预览、4K色图、可编辑blend、GLB及审计。源与整理后三角数相同；苗／中期／成熟诊断开边264／0／321，非流形边264／0／692，零面积面与孤点均0。保留双面薄叶，四向检查未见影响目标镜头的大片缺面，不宣称全部水密。原有自动LOD禁用保持，当前不减面。
+
+乌塌菜使用独立轻风：主摆最多3.5毫米、叶缘1毫米、下部35%固定、节奏.65，苗继续按高度2.5%／.8%限幅；保留原工笔色图，未作语义拆叶、骨骼或额外粒子。真实两帧风动5171像素变化，关闭后0。
+
+验证：Blender导出重导入及93项乌塌菜定向资源检查通过。`.local/verification/p2-stages/tatsoi/final-views/` 为最终四向，`final-farm/` 为14张实际农场昼夜、正反面和全景／聚焦，`final-wind/` 为风动开关。已查看三阶段日间正反面、成熟四向、夜间代表与聚焦，基部接土、阶段体量和叶冠轮廓可辨。`initial-views/` 是根部修正／基部缩短前，不能作最终证据。夜景偏暗仍列入后续整体光照任务。用户审美反馈待收集，没有新增录屏或更新独立发布包。
+
+重建：Blender 5.2运行 `prepare.py -- tatsoi <sprout|young|mature>`，检查后加 `--install`，再执行项目Godot Import；运行引用 `Game/art/crops/tatsoi/`。本地制作索引为 `制作留档/03_处理与验证/20260919_乌塌菜三阶段P2重制/README.md`。
