@@ -36,6 +36,14 @@
 
 已接入三盏高挂路灯：`day_night.gd::_apply_lanterns`取消白天最低亮度，`living_details.gd::set_night_weight`统一控制门廊／路灯照明和纸灯笼发光，室内材质仍由`set_window_warmth`独立控制。标准画质保留三盏路灯投影，低画质关闭局部投影但保留照明，日间灯光不可见且能量为0。真实昼夜、通行及画质往返验证见`tests/night_lighting_test.gd`，来源与素材见[院落灯笼节点](../ArtSource/Environment/CourtyardLife/README.md#田边高挂灯笼--20260919-path-lanterns)。整体色调已完成中性高光／适度夜光与接触阴影调整，晨昏和季节连续性及十二菜混植实景通过，见同页色调节点。额外画质效果仍待接入，未接入硬件光追。
 
+### SDFGI小样与湖面边界
+
+2026-09-19在同一Godot 4.7.2／Forward+／RTX4090实景比较：SDFGI四级、最小格.12m、能量.50、反馈.20、遮蔽与天空开启；只让主屋、廊台、厨房、架子、主／东岸和石桥参与静态遮蔽，作物、动物、船与可移动摆件仅接收间接光。[官方说明](https://docs.godotengine.org/en/4.7/tutorials/3d/global_illumination/using_sdfgi.html)确认SDFGI不支持动态遮蔽物；正式接入必须处理新播种、成长、摆放与地形重建，不能只设置启动时的网格。
+
+小样能改善屋檐与菜地反射光，但原湖面出现环岛浅色亮带及水中物体边缘亮线，未接入正式画质选项。`.local/verification/lighting-20260919/gi-probe/`保留12张四时段／聚焦对照。第二轮仅令水面RADIANCE归零不能解决，见`gi-water-probe/`；`gi_debug.gd`及`gi-debug/`六张固定夜景进一步确认：关SSIL、关MSAA、关水下透射都不能消除，水面加`ambient_light_disabled`则消失，但湖面整体会变暗，需要保留原有艺术水色／波光并单独验证，不能直接发布该诊断改法。正式`quiet_water.gdshader`未改变，所有试验均在局部材质副本执行。
+
+[4.7.2渲染源码](https://github.com/godotengine/godot/blob/4.7.2-stable/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl)在custom_irradiance／custom_radiance混合之后才进行GI计算；因此写IRRADIANCE／RADIANCE不能当作关闭SDFGI的等价办法。`AMBIENT_LIGHT_DISABLED`明确包住GI区段，与本机消除亮圈的观察一致。另有[官方仓库水面深度／颜色采样问题113540](https://github.com/godotengine/godot/issues/113540)，报告4.5.1／4.6.dev5的相关透明水异常；它仅作为排查线索，尚未证明与本例同一根因。当前下一步是验证隔离水面环境光后的昼夜、近远水衔接及移动镜头，并完成动态网格排除、画质菜单／设置往返及开销对照；不能把本次小样记为高画质功能完成或硬件光追。
+
 ## 当前接入方式
 
 采用 **Godot 原生 CLI + 文本场景 / 资源 + 项目技能**。CLI 已能完成导入、运行和 Windows 导出；不需要让游戏接入大模型 API，也不需要在游戏中放通用远程执行服务器。需要读画面、调试运行时对象或模拟输入时，再按具体任务选择引擎调试接口或经过核验的工具。
