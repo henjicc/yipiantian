@@ -25,8 +25,9 @@ static func valid(data: Variant) -> bool:
 			if absf(n/CELL-roundf(n/CELL))>.0001: return false
 	if not data.get("trellis") is Array or not data.get("bridge") is Array: return false
 	if not data.trellis.is_empty():
-		if not numbers(data.trellis,3): return false
+		if not numbers(data.trellis,6): return false
 		if data.trellis[0]<2 or data.trellis[0]>6 or data.trellis[1]<.8 or data.trellis[1]>2 or data.trellis[2]<1.6 or data.trellis[2]>3: return false
+		if absf(data.trellis[3])>24 or absf(data.trellis[4])>24 or data.trellis[5]<-180 or data.trellis[5]>=180: return false
 	if not data.bridge.is_empty():
 		if not numbers(data.bridge,5): return false
 		for i: int in 4:
@@ -90,6 +91,37 @@ static func land_outline(original: PackedVector2Array, patches: Array) -> Packed
 static func trellis_size(plan: RefCounted) -> Vector3:
 	var v: Array=plan.construction.trellis
 	return Vector3(4.65,1.25,2.2) if v.is_empty() else Vector3(v[0],v[1],v[2])
+
+static func trellis_yaw(plan: RefCounted) -> float:
+	return 0.0 if plan.construction.trellis.is_empty() else float(plan.construction.trellis[5])
+
+static func trellis_pose(plan: RefCounted) -> Transform3D:
+	return Transform3D(Basis(Vector3.UP,deg_to_rad(trellis_yaw(plan))),plan.anchors.trellis)
+
+static func trellis_parameters(plan: RefCounted) -> Array:
+	var size: Vector3=trellis_size(plan)
+	return [size.x,size.y,size.z,plan.anchors.trellis.x,plan.anchors.trellis.z,trellis_yaw(plan)]
+
+static func trellis_footprint(plan: RefCounted) -> PackedVector2Array:
+	var size: Vector3=trellis_size(plan)
+	return IslandSpace.footprint(Vector2(size.y+.2,size.x+.088),trellis_pose(plan))
+
+static func trellis_flower_center(plan: RefCounted) -> Vector3:
+	var size: Vector3=trellis_size(plan)
+	var pose: Transform3D=trellis_pose(plan)
+	var candidates: Array[Vector3]=[]
+	for side: float in [-1.0,1.0]:
+		for end: float in [1.0,-1.0,0.0]:
+			candidates.append(pose*Vector3(side*(size.y*.5+.55),0,end*minf(1.55,size.x*.5-.65)))
+	for end: float in [1.0,-1.0]: candidates.append(pose*Vector3(0,0,end*(size.x*.5+.6)))
+	for at: Vector3 in candidates:
+		var roots: PackedVector2Array=IslandSpace.rectangle(Vector2(at.x,at.z)-Vector2.ONE*.36,Vector2.ONE*.72)
+		if not IslandSpace.supported(roots,plan.plateau()): continue
+		var occupied: bool=false
+		for i: int in plan.fields.size():
+			if IslandSpace.overlaps(roots,plan.field_polygon(i,.12)): occupied=true;break
+		if not occupied: return at
+	return candidates[0]
 
 static func bridge_points(plan: RefCounted) -> Array[Vector3]:
 	var v: Array=plan.construction.bridge

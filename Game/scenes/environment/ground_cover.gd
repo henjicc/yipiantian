@@ -31,11 +31,14 @@ func build(courtyard: Node3D) -> void:
 	root_soil.fill_from = Vector2(.5,.5); root_soil.fill_to = Vector2(.98,.5)
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var trellis_roots:=Node3D.new();trellis_roots.name="TrellisRoots";add_child(trellis_roots)
+	var trellis_surface:=SurfaceTool.new();trellis_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	# Dense short collars hide the generated meshes' abrupt root/ground seam.
 	for child: Node in courtyard.get_children():
 		if not child is Node3D or not (str(child.name).begins_with("Bamboo") or str(child.name).begins_with("Flowers") or str(child.name).ends_with("Tree")): continue
 		var centre: Vector3 = child.position
-		if centre.x > 8.0: continue
+		var follows_trellis: bool=String(child.name).begins_with("Flowers0_")
+		if centre.x > 8.0 and not follows_trellis: continue
 		_rng.seed=hash(String(child.name))+943172
 		var soil := Decal.new()
 		soil.name = "RootSoil"
@@ -43,14 +46,15 @@ func build(courtyard: Node3D) -> void:
 		soil.size = Vector3(1.1,.25,1.1)
 		soil.position = Vector3(centre.x,.19,centre.z)
 		soil.cull_mask = 2
-		add_child(soil)
+		if follows_trellis: trellis_roots.add_child(soil)
+		else: add_child(soil)
 		for i: int in 55:
 			var angle: float = _rng.randf()*TAU
 			var radius: float = sqrt(_rng.randf())*.48
 			var p: Vector3 = centre + Vector3(cos(angle)*radius,0,sin(angle)*radius)
 			p.y = courtyard.plan.ground_height+.001
-			if Geometry2D.is_point_in_polygon(Vector2(p.x,p.z),_rim):
-				_tuft(surface,p,_rng.randf_range(.06,.18),4)
+			if Geometry2D.is_point_in_polygon(Vector2(p.x,p.z),courtyard.plan.plateau() if follows_trellis else _rim):
+				_tuft(trellis_surface if follows_trellis else surface,p,_rng.randf_range(.06,.18),4)
 	var grass := MeshInstance3D.new()
 	grass.name = "RootedMeadow"
 	grass.mesh = surface.commit()
@@ -59,6 +63,8 @@ func build(courtyard: Node3D) -> void:
 	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	grass.extra_cull_margin = .04
 	add_child(grass)
+	var rooted:=MeshInstance3D.new();rooted.mesh=trellis_surface.commit();rooted.material_override=grass.material_override
+	rooted.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;rooted.extra_cull_margin=.04;trellis_roots.add_child(rooted)
 	var core:=get_script().new() as Node3D
 	core.name="CoreGrass";add_child(core)
 	core._exclusions=_exclusions.duplicate()
@@ -85,12 +91,21 @@ func update_expansion(plan: RefCounted) -> void:
 
 func update_objects(plan: RefCounted, polygons: Array, expansion_only: bool) -> void:
 	if object_footprints==polygons: return
-	var changed: Dictionary={}
+	var changes: Array=[]
 	for polygon: PackedVector2Array in object_footprints+polygons:
 		if object_footprints.has(polygon) and polygons.has(polygon): continue
-		for cell: Vector2i in IslandSpace.covered_cells(polygon): changed[cell]=true
+		changes.append(polygon)
 	object_footprints.assign(polygons)
+	var changed: Dictionary=grass_cells(changes)
 	if not changed.is_empty(): update_tiles(plan,expansion_only,changed)
+
+static func grass_cells(polygons: Array) -> Dictionary:
+	# Grass caches use one metre cells, independently of the half metre placement grid.
+	var result: Dictionary={}
+	for polygon: PackedVector2Array in polygons:
+		for cell: Vector2i in IslandSpace.covered_cells(polygon):
+			result[Vector2i(floori(cell.x*IslandSpace.CELL),floori(cell.y*IslandSpace.CELL))]=true
+	return result
 
 func update_tiles(plan: RefCounted, expansion_only: bool, changed: Dictionary={}) -> void:
 	if expansion_only and plan.construction.land.is_empty():
@@ -102,6 +117,7 @@ func update_tiles(plan: RefCounted, expansion_only: bool, changed: Dictionary={}
 	var fields: Array[PackedVector2Array]=[]
 	for index: int in plan.fields.size(): fields.append(plan.field_polygon(index,.07))
 	fields.append_array(_exclusions)
+	if not plan.construction.trellis.is_empty(): fields.append(preload("res://layout/island_construction.gd").trellis_footprint(plan))
 	fields.append_array(object_footprints)
 	for id: String in plan.slots:
 		if not id.begins_with("ground"): continue

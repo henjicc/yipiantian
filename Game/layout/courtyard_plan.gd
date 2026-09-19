@@ -176,6 +176,10 @@ func apply_construction(value: Dictionary) -> bool:
 	construction.ducks.count=int(construction.ducks.count)
 	for values: Array in construction.land+[construction.trellis,construction.bridge,construction.ducks.area]:
 		for i: int in values.size(): values[i]=float(values[i])
+	# Canonical decimal precision survives JSON without retaining float32 noise
+	# from the scene's Vector3 anchors and dimension handles.
+	for i: int in construction.trellis.size(): construction.trellis[i]=float("%.4f"%construction.trellis[i])
+	if not construction.trellis.is_empty(): construction.trellis[5]=wrapf(construction.trellis[5],-180,180)
 	var combined: PackedVector2Array=Construction.land_outline(rim,construction.land)
 	if combined.is_empty(): return false
 	rim=combined
@@ -202,11 +206,14 @@ func apply_construction(value: Dictionary) -> bool:
 				reeds[i]=Vector3(p.x,reeds[i].y,p.y)
 				break
 	if not construction.trellis.is_empty():
+		anchors.trellis=Vector3(construction.trellis[3],ground_height,construction.trellis[4])
+		angles.trellis=90.0+Construction.trellis_yaw(self)
 		var size: Vector3=Construction.trellis_size(self)
-		slots.hanging_03=anchors.trellis+Vector3(size.y*.5,size.z-.3,size.x*.5-.2)
+		var pose: Transform3D=Construction.trellis_pose(self)
+		slots.hanging_03=pose*Vector3(size.y*.5,size.z-.3,size.x*.5-.2)
 		# This is generated scenery, not a player placement. Keep the flower clump
 		# beside the enlarged bed, away from its poles and the front tree trunk.
-		flower_centres[0]=anchors.trellis+Vector3(-size.y*.5-.5,0,minf(1.55,size.x*.5-.65))
+		flower_centres[0]=Construction.trellis_flower_center(self)
 	if not construction.land.is_empty():
 		camera_distance+=maxf(0,bounds.size.length()-Vector2(14.4,15.1).length())*.7
 		var center: Vector2=bounds.get_center()

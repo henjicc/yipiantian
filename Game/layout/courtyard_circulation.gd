@@ -67,7 +67,8 @@ func build(plan: RefCounted, obstacles: Dictionary) -> void:
 	_connect(Vector2(kitchen.x,kitchen.z),"kitchen",.8)
 	var mooring: Vector3 = plan.anchors.mooring
 	_connect(Vector2(mooring.x,mooring.z),"mooring",1.5)
-	var trellis: Vector3 = plan.anchors.trellis+Vector3(.9,0,0)
+	var construction=preload("res://layout/island_construction.gd")
+	var trellis: Vector3 = construction.trellis_pose(plan)*Vector3(.9 if plan.construction.trellis.is_empty() else construction.trellis_size(plan).y*.5+.35,0,0)
 	_connect(Vector2(trellis.x,trellis.z),"trellis",.65)
 	for i: int in plan.fields.size():
 		var field: Dictionary = plan.fields[i]

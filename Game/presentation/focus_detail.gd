@@ -29,6 +29,9 @@ var _neighbor: Node3D
 var _neighbor_clear: float = 0.0
 var _neighbor_center: Vector2 = Vector2.ZERO
 
+func replace_structure(previous: Node, replacement: Node) -> void:
+	_indirect_lighting.replace_structure(previous,replacement)
+
 func protect_neighbor(island: Node3D) -> void:
 	_neighbor=island
 	if is_instance_valid(island): _neighbor_center=Vector2(island.global_position.x,island.global_position.z)

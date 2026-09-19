@@ -81,6 +81,17 @@ func _run() -> void:
 	plan.fields[0]=Plan.new().fields[0];plan.paths=[]
 	cover.update_expansion(plan)
 	expect(meshes(cover)==initial,"Moving the field away restores the original grass without reshuffling")
+	var prop: PackedVector2Array=Space.rectangle(Vector2(-1,7),Vector2(1.5,2))
+	var prop_inner: PackedVector2Array=Space.rectangle(Vector2(-.85,7.15),Vector2(1.2,1.7))
+	cover.update_objects(plan,[prop],true)
+	inside=0
+	for vertices: PackedVector3Array in meshes(cover).values():
+		for vertex: Vector3 in vertices:
+			if Geometry2D.is_point_in_polygon(Vector2(vertex.x,vertex.z),prop_inner): inside+=1
+	expect(meshes(cover)!=initial and inside==0,"Local prop updates remove actual grass at its world coordinates")
+	expect(cover._tiles[far_cell].get_instance_id()==far_id,"Prop updates preserve unrelated grass nodes")
+	cover.update_objects(plan,[],true)
+	expect(meshes(cover)==initial,"Removing the prop restores exactly the same blades")
 	cover.free();reopened.free()
 	print("Island space: %d checks, %d failures"%[checks,failures.size()])
 	quit(0 if failures.is_empty() else 1)

@@ -25,6 +25,7 @@ var snap_to_grid: bool = true
 var _grab_offset := Vector2.ZERO
 var _outline: MeshInstance3D
 var _instances: Dictionary = {}
+var _attachment_previews: Dictionary = {}
 var _rings: Dictionary = {}
 var _preview: Node3D
 var _press_position := Vector2.INF
@@ -268,7 +269,35 @@ func lantern_anchors() -> Array[Node3D]:
 	for id: String in _instances:
 		if ConstructionCatalog.has_capability(id,"light") and _instances[id].visible: anchors.append(_instances[id])
 	if has_preview() and ConstructionCatalog.has_capability(selected_item,"light"): anchors.append(_preview)
+	for id: String in _attachment_previews:
+		if ConstructionCatalog.has_capability(id,"light"): anchors.append(_attachment_previews[id])
 	return anchors
+
+func preview_attachment(slot: String, plan: RefCounted) -> void:
+	for id: String in _instances:
+		var entry: Dictionary=state.snapshot()[id]
+		if entry.slot_id!=slot: continue
+		var created: bool=not _attachment_previews.has(id)
+		if created:
+			var node: Node3D=Geometry.build(environment,id);add_child(node);_attachment_previews[id]=node
+		Geometry.pose(_attachment_previews[id],entry,plan)
+		_instances[id].hide()
+		if created: illumination_changed.emit()
+
+func clear_attachment_preview() -> void:
+	if _attachment_previews.is_empty(): return
+	for id: String in _attachment_previews:
+		_attachment_previews[id].free()
+		if _instances.has(id): _instances[id].show()
+	_attachment_previews.clear();illumination_changed.emit()
+
+func accept_attachment_plan(plan: RefCounted) -> void:
+	for id: String in _instances:
+		var entry: Dictionary=state.snapshot()[id]
+		if not entry.slot_id.is_empty(): Geometry.pose(_instances[id],entry,plan)
+	for slot: String in _rings:
+		_rings[slot].global_position=plan.slots[slot]+Vector3.UP*(.035 if slot.begins_with("ground") else -.22)
+	clear_attachment_preview()
 
 func show_save_issue() -> void:
 	_message="未能保存，可重试或取消调整。"
@@ -395,7 +424,7 @@ func world_point_visible(target: Vector3,excluded: Node=null) -> bool:
 	return true
 
 
-func environment_surface_at(screen_point: Vector2) -> MeshInstance3D:
+func environment_surface_at(screen_point: Vector2, extra: Node3D=null) -> MeshInstance3D:
 	# Reuse the existing visibility mesh cache. A scene entrance must be the
 	# actual frontmost surface, not an invisible screen rectangle behind a tree.
 	var origin: Vector3=camera.project_ray_origin(screen_point)
@@ -403,6 +432,7 @@ func environment_surface_at(screen_point: Vector2) -> MeshInstance3D:
 	var nearest: MeshInstance3D=null
 	var nearest_distance: float=INF
 	var surfaces: Array[Node]=environment.find_children("*","MeshInstance3D",true,false)
+	if is_instance_valid(extra): surfaces.append_array(extra.find_children("*","MeshInstance3D",true,false))
 	for item: Node3D in _instances.values():
 		surfaces.append_array(item.find_children("*","MeshInstance3D",true,false))
 	if has_preview(): surfaces.append_array(_preview.find_children("*","MeshInstance3D",true,false))

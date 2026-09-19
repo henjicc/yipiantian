@@ -168,6 +168,8 @@ func _circulation_obstacles() -> Dictionary:
 	for node: Node3D in get_children():
 		if node.name in ["WaterSurface","DistantLandscape","NeighborIslets","DecorationSlots","OsmanthusLeaves","LivingDetails","GardenPaths"]: continue
 		if node.has_meta("bank_role") or String(node.name).begins_with("BankGrass"): continue
+		if node.name=="EntranceTrellis" and not plan.construction.trellis.is_empty():
+			result.EntranceTrellis=Construction.trellis_footprint(plan);continue
 		# Include shoreline rocks and flower clumps too: a route through them
 		# would look open in layout data but still be blocked to the actual hens.
 		var bottom: float = .05 if node.name in ["MainHouse","Kitchen","PorchDeck","EntranceTrellis"] else .23
@@ -424,8 +426,7 @@ func _build_slots() -> void:
 		var p:Vector3=plan.slots[id]
 		_support_line(Vector3(p.x,2.50,-2.72)+rise,Vector3(p.x,2.50,p.z)+rise,.037,Color("62543a"))
 		_support_line(Vector3(p.x,2.50,p.z)+rise,p,.012,Color("89794c"))
-	_support_line(Vector3(-5.4,2.09,2.13)+rise,Vector3(-5.08,2.09,2.13)+rise,.025,Color("89794c"))
-	_support_line(Vector3(-5.08,2.09,2.13)+rise if plan.construction.trellis.is_empty() else plan.slots.hanging_03+Vector3.UP*.24,plan.slots.hanging_03,.012,Color("89794c"))
+	add_child(Structures.trellis_support(plan))
 	_support_line(Vector3(-4.85,2.55,-3.77)+rise,Vector3(-4.85,2.55,-2.95)+rise,.035,Color("62543a"))
 	_support_line(Vector3(-4.85,2.10,-3.77)+rise,Vector3(-4.85,2.55,-3.0)+rise,.025,Color("62543a"))
 	_support_line(Vector3(-4.85,2.55,-2.95)+rise,plan.slots.hanging_04,.012,Color("89794c"))
@@ -451,10 +452,14 @@ func _build_contact_shading() -> void:
 	var ground: float=plan.ground_height+.002
 	var deck: float=plan.anchors.veranda.y+.28
 	for source: Node3D in _contact_sources:
+		if source.name=="EntranceTrellis": continue
 		shading.collect(source, [ground, deck])
 	shading.collect(get_node("MainHouse"), [ground])
 	shading.collect(_living, [ground, deck])
 	shading.bake()
+	var trellis_contacts:=ContactShading.new();trellis_contacts.name="TrellisContacts";add_child(trellis_contacts)
+	trellis_contacts.configure_bounds(plan.land_bounds().grow(.6))
+	trellis_contacts.collect(get_node("EntranceTrellis"),[ground]);trellis_contacts.bake()
 
 
 func _life_asset(id: String, key: String, at: Vector3, yaw: float = 0.0, size: float = 1.0, wind: String = "") -> Node3D:

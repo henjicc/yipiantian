@@ -18,7 +18,7 @@ static func _finish(parent: Node3D, surface: SurfaceTool, tint: Color) -> void:
 
 static func trellis(plan: RefCounted) -> Node3D:
 	var root:=Node3D.new();root.name="EntranceTrellis"
-	root.position=plan.anchors.trellis
+	root.transform=Construction.trellis_pose(plan)
 	var size: Vector3=Construction.trellis_size(plan)
 	var bamboo: SurfaceTool=_surface();var joints: SurfaceTool=_surface()
 	var bays: int=ceili(size.x/1.2)
@@ -77,4 +77,17 @@ static func bridge(plan: RefCounted) -> Node3D:
 	root.set_meta("bridge_supports",supports)
 	root.set_meta("deck_sections",pieces)
 	_finish(root,deck,Color("867354"));_finish(root,rails,Color("61543c"))
+	return root
+
+static func trellis_support(plan: RefCounted) -> Node3D:
+	var root:=Node3D.new();root.name="TrellisSupport";root.transform=Construction.trellis_pose(plan)
+	var surface:=_surface()
+	var hook: Vector3=root.transform.affine_inverse()*plan.slots.hanging_03
+	if plan.construction.trellis.is_empty():
+		var rise: Vector3=Vector3.UP*(plan.ground_height-.13)
+		var a: Vector3=root.transform.affine_inverse()*(Vector3(-5.4,2.09,2.13)+rise)
+		var b: Vector3=root.transform.affine_inverse()*(Vector3(-5.08,2.09,2.13)+rise)
+		Poles._pole(surface,a,b,.025);Poles._pole(surface,b,hook,.012)
+	else: Poles._pole(surface,hook+Vector3.UP*.3,hook,.012)
+	_finish(root,surface,Color("89794c"))
 	return root

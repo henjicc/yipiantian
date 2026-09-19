@@ -11,6 +11,7 @@ const Assets = preload("res://scenes/environment/courtyard_assets.gd")
 const ShorePreview=preload("res://presentation/island_shore_preview.gd")
 const IslandSpace=preload("res://layout/island_space.gd")
 const FieldPreview=preload("res://presentation/field_layout_preview.gd")
+const TrellisPreview=preload("res://presentation/trellis_layout_preview.gd")
 const Catalog=preload("res://layout/construction_catalog.gd")
 const Choices=preload("res://ui/construction_choices.gd")
 var choices: Choices
@@ -19,6 +20,10 @@ var _decoration_rotate: Button
 var _decoration_remove: Button
 var _decoration_snap: CheckButton
 var field_preview: FieldPreview
+var trellis_preview: TrellisPreview
+var _trellis_actions: HBoxContainer
+var _trellis_snap: CheckButton
+var _trellis_gesture: String=""
 var selected_field: int=0
 var _new_field: bool=false
 var _field_gesture: String=""
@@ -76,6 +81,9 @@ func _ready() -> void:
 	_button(_field_actions,"添田",func() -> void: _field_action("new")).name="AddField"
 	_button(_field_actions,"旋转",func() -> void: _field_action("rotate")).name="RotateField"
 	_button(_field_actions,"移除",func() -> void: _field_action("remove")).name="RemoveField"
+	_trellis_actions=HBoxContainer.new();content.add_child(_trellis_actions)
+	_button(_trellis_actions,"旋转",_rotate_trellis).name="RotateTrellis"
+	_trellis_snap=CheckButton.new();_trellis_snap.text="吸附格子";_trellis_snap.button_pressed=true;_trellis_actions.add_child(_trellis_snap)
 	_decoration_actions=HBoxContainer.new();content.add_child(_decoration_actions)
 	_decoration_rotate=_button(_decoration_actions,"旋转",func() -> void: main.decoration_layout.rotate_preview())
 	_decoration_remove=_button(_decoration_actions,"收起摆件",func() -> void: main.decoration_layout.remove_selected())
@@ -119,6 +127,7 @@ func choose(id: String) -> void:
 	choices.select_item(id);choices.present(main.decoration_state.snapshot(),busy)
 	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id=="ducks" and key=="count") or (id=="fields" and key in ["columns","rows"])
 	_field_actions.visible=id=="fields"
+	_trellis_actions.visible=id=="trellis"
 	_decoration_actions.visible=_is_decoration()
 	_decoration_snap.visible=_is_decoration() and Catalog.Decorations.ITEMS[tool].type=="ground"
 	selected_field=mini(selected_field,draft.fields.size()-1)
@@ -158,7 +167,11 @@ func _parameter_changed(_value: float) -> void:
 		var columns: int=int(_values.columns.value);var rows: int=int(_values.rows.value)
 		plan.fields[selected_field]=Plan.resized_field(field,columns,rows,Plan.cell_span(field)*Vector2(columns,rows)+Vector2(.2,.29))
 		draft=plan.snapshot()
-	elif tool=="trellis": draft.construction.trellis=[_values.length.value,_values.width.value,_values.height.value]
+	elif tool=="trellis":
+		var plan: RefCounted=Plan.from_snapshot(draft)
+		var parameters: Array=Construction.trellis_parameters(plan if plan!=null else main.courtyard_plan)
+		parameters[0]=_values.length.value;parameters[1]=_values.width.value;parameters[2]=_values.height.value
+		draft.construction.trellis=parameters
 	elif tool=="bridge":
 		var points: Array[Vector3]=Construction.bridge_points(main.courtyard_plan) if draft.construction.bridge.is_empty() else Construction.bridge_points(candidate if candidate!=null else main.courtyard_plan)
 		draft.construction.bridge=[points[0].x,points[0].z,points[1].x,points[1].z,_values.bridge_width.value]
@@ -178,8 +191,11 @@ func _undo_last() -> void:
 func _commit() -> void:
 	if _is_decoration():
 		main.decoration_layout.confirm_preview();return
-	if busy or candidate==null or not issue().is_empty() or draft==main.farm_state.snapshot().layout: return
+	if busy or candidate==null or (not issue().is_empty() and not _trellis_check_pending()) or draft==main.farm_state.snapshot().layout: return
 	commit_requested.emit(draft.duplicate(true),false)
+
+func _trellis_check_pending() -> bool:
+	return tool=="trellis" and is_instance_valid(trellis_preview) and trellis_preview.pending and trellis_preview.message.is_empty()
 
 func set_busy(value: bool, message: String = "") -> void:
 	busy=value
@@ -201,7 +217,7 @@ func finish() -> void:
 		tool="";layout.finish_mode()
 	_flush_land()
 	if draft!=main.farm_state.snapshot().layout:
-		if candidate==null or not issue().is_empty(): return
+		if candidate==null or (not issue().is_empty() and not _trellis_check_pending()): return
 		close_after_commit=true
 		_commit()
 		return
@@ -227,6 +243,15 @@ func accept_fields(plan: RefCounted) -> void:
 	if close_now:
 		_clear_preview();active=false;_start=Vector2.INF;hide();closed.emit()
 	else: choose("fields")
+
+func accept_trellis(plan: RefCounted) -> void:
+	trellis_preview.accept(plan);trellis_preview.free();trellis_preview=null
+	var close_now: bool=close_after_commit
+	set_busy(false);previous=main.previous_layout.duplicate(true)
+	draft=plan.snapshot();candidate=plan
+	if close_now:
+		_clear_preview();active=false;_start=Vector2.INF;hide();closed.emit()
+	else: choose(tool)
 
 func _focus_lost() -> void:
 	if active and not busy:
@@ -322,8 +347,17 @@ func _press(screen: Vector2) -> void:
 			if distance<nearest: nearest=distance;_bridge_end=i
 		if _bridge_end<0: return
 	elif tool=="trellis":
-		var p: Vector3=main.courtyard_plan.anchors.trellis
-		if absf(point.x-p.x)>2 or absf(point.y-p.z)>4: return
+		var plan: RefCounted=Plan.from_snapshot(draft)
+		if plan==null: return
+		var pose: Transform3D=Construction.trellis_pose(plan)
+		var size: Vector3=Construction.trellis_size(plan)
+		_trellis_gesture="move"
+		if main.camera.unproject_position(pose*Vector3(0,.08,size.x*.5)).distance_to(screen)<18: _trellis_gesture="resize"
+		elif main.camera.unproject_position(pose*Vector3(size.y*.5+.65,.08,0)).distance_to(screen)<18: _trellis_gesture="rotate"
+		elif not Geometry2D.is_point_in_polygon(point,Construction.trellis_footprint(plan)):
+			var structure: Node3D=trellis_preview.structure if is_instance_valid(trellis_preview) else main.get_node("Environment/EntranceTrellis")
+			var hit: MeshInstance3D=main.decoration_layout.environment_surface_at(screen,structure)
+			if hit==null or not structure.is_ancestor_of(hit): return
 	_start=point;_drag_snapshot=draft.duplicate(true);_last_cell=Vector2.INF
 	if tool=="land":
 		_brush_last=point;_pending_land=point;_flush_land()
@@ -337,7 +371,7 @@ func _drag(screen: Vector2) -> void:
 	if tool=="land":
 		_pending_land=point
 		return
-	point=IslandSpace.snap(point) if tool in ["land","ducks"] else point.snapped(Vector2.ONE*.1)
+	point=IslandSpace.snap(point) if tool in ["land","ducks"] else point
 	if point==_last_cell: return
 	_last_cell=point;draft=_drag_snapshot.duplicate(true)
 	match tool:
@@ -347,8 +381,19 @@ func _drag(screen: Vector2) -> void:
 			var rect: Array=[low.x,low.y,maxf(.5,size.x),maxf(.5,size.y)]
 			draft.construction.ducks.area=rect
 		"trellis":
-			var size: Vector3=Construction.trellis_size(main.courtyard_plan)
-			draft.construction.trellis=[clampf(size.x+(point.y-_start.y)*2,2,6),_values.width.value,_values.height.value]
+			var plan: RefCounted=Plan.from_snapshot(_drag_snapshot)
+			var parameters: Array=Construction.trellis_parameters(plan)
+			var delta: Vector2=point-_start
+			if _trellis_gesture=="move":
+				delta=delta.snapped(Vector2.ONE*(.5 if _trellis_snap.button_pressed else .05))
+				parameters[3]+=delta.x;parameters[4]+=delta.y
+			elif _trellis_gesture=="resize":
+				var local: Vector3=Construction.trellis_pose(plan).basis.inverse()*Vector3(delta.x,0,delta.y)
+				parameters[0]=clampf(snappedf(parameters[0]+local.z*2,.1),2,6)
+			else:
+				var center:=Vector2(parameters[3],parameters[4])
+				parameters[5]=wrapf(parameters[5]+snappedf(rad_to_deg((_start-center).angle()-(point-center).angle()),15),-180,180)
+			draft.construction.trellis=parameters
 			_values.length.set_value_no_signal(draft.construction.trellis[0])
 		"bridge":
 			var ends: Array[Vector3]=Construction.bridge_points(main.courtyard_plan)
@@ -373,17 +418,9 @@ func issue() -> String:
 	if not bridge.is_empty(): return bridge
 	var water_issue: String=Construction.water_area_issue(candidate)
 	if not water_issue.is_empty(): return water_issue
-	if not candidate.construction.trellis.is_empty():
-		var size: Vector3=Construction.trellis_size(candidate)
-		var at: Vector3=candidate.anchors.trellis
-		var footprint: PackedVector2Array=Construction.rectangle([at.x-size.y*.5-.1,at.z-size.x*.5-.044,size.y+.2,size.x+.088])
-		if not IslandSpace.supported(footprint,candidate.plateau()): return "菜架的立柱需要全部落在平地上。"
-		var obstacles: Dictionary=main.get_node("Environment").layout_obstacles.duplicate()
-		obstacles.merge(main.decoration_layout.ground_footprints())
-		for key: String in obstacles:
-			# This generated flower clump follows the candidate bed on commit.
-			if key=="EntranceTrellis" or key.begins_with("Flowers0_") or key.begins_with("stone") or key.begins_with("@Node"): continue
-			if IslandSpace.overlaps(footprint,obstacles[key]): return "菜架碰到了树木或旁边物件，请缩小长宽。"
+	if tool=="trellis" and is_instance_valid(trellis_preview):
+		if not trellis_preview.message.is_empty(): return trellis_preview.message
+		if trellis_preview.pending: return "正在校对架旁通路…"
 	var area: Array=candidate.construction.ducks.area
 	if not area.is_empty() and int(candidate.construction.ducks.count)>0:
 		var rect:=Rect2(area[0],area[1],area[2],area[3])
@@ -398,6 +435,7 @@ func issue() -> String:
 func _refresh() -> void:
 	if _is_decoration(): _decoration_changed();return
 	candidate=Plan.from_snapshot(draft)
+	if tool=="trellis" and candidate!=null: draft=candidate.snapshot()
 	if tool.is_empty():
 		_status.text="";_confirm.disabled=true;_undo.disabled=not _has_undo();return
 	if tool=="fields" and candidate!=null:
@@ -405,14 +443,21 @@ func _refresh() -> void:
 			field_preview=FieldPreview.new();main.add_child(field_preview);field_preview.configure(main)
 			field_preview.checked.connect(_field_checked)
 		field_preview.update(candidate)
+	if tool=="trellis" and candidate!=null and draft!=main.farm_state.snapshot().layout:
+		if not is_instance_valid(trellis_preview):
+			trellis_preview=TrellisPreview.new();main.add_child(trellis_preview);trellis_preview.configure(main)
+			trellis_preview.checked.connect(_trellis_checked)
+		trellis_preview.update(candidate)
 	var message: String=issue()
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
 	_undo.disabled=busy or not _has_undo()
-	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架调整长度，也可调节长宽高。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}[tool]
+	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架移动；圆点调长度和方向。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}[tool]
 	if tool=="land" and not _brush_message.is_empty(): _status.text=_brush_message
 	_render_preview(message.is_empty())
 
-func _clear_preview(keep_shore: bool=false, keep_fields: bool=false) -> void:
+func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trellis: bool=false) -> void:
+	if not keep_trellis and is_instance_valid(trellis_preview):
+		trellis_preview.retire();trellis_preview=null
 	if not keep_fields and is_instance_valid(field_preview):
 		field_preview.retire();field_preview=null
 	if not keep_shore and is_instance_valid(_shore):
@@ -426,7 +471,7 @@ func _hide_node(node: Node3D) -> void:
 	if node!=null and node.visible: node.hide();_hidden.append(node)
 
 func _render_preview(valid: bool) -> void:
-	_clear_preview(tool=="land" and candidate!=null and draft!=main.farm_state.snapshot().layout,tool=="fields")
+	_clear_preview(tool=="land" and candidate!=null and draft!=main.farm_state.snapshot().layout,tool=="fields",tool=="trellis" and candidate!=null and draft!=main.farm_state.snapshot().layout)
 	_preview=Node3D.new();_preview.name="ConstructionPreview";main.add_child(_preview)
 	var tint:=Color("88b779") if valid else Color("d77d62")
 	var plan: RefCounted=candidate if candidate!=null else main.courtyard_plan
@@ -435,8 +480,6 @@ func _render_preview(valid: bool) -> void:
 			if not is_instance_valid(_shore):
 				_shore=ShorePreview.new();main.add_child(_shore);_shore.configure(main.get_node("Environment"))
 			_shore.update(plan)
-		elif tool=="trellis":
-			_hide_node(main.get_node("Environment/EntranceTrellis"));_preview.add_child(Structures.trellis(plan))
 		elif tool=="bridge" and not plan.construction.bridge.is_empty():
 			for child: Node in main.get_node("Environment").get_children():
 				if child is Node3D and (child.name=="AdaptiveBridge" or child.scene_file_path.ends_with("stone_bridge.glb")): _hide_node(child)
@@ -465,7 +508,26 @@ func _render_preview(valid: bool) -> void:
 	elif tool=="bridge":
 		for point: Vector3 in Construction.bridge_points(plan): _handle(point+Vector3.UP*.12,tint)
 	elif tool=="trellis":
-		_handle(plan.anchors.trellis+Vector3(0,.08,Construction.trellis_size(plan).x*.5),tint)
+		var pose: Transform3D=Construction.trellis_pose(plan)
+		var size: Vector3=Construction.trellis_size(plan)
+		_outline(Construction.trellis_footprint(plan),plan.ground_height+.06,tint,false)
+		_handle(pose*Vector3(0,.08,size.x*.5),tint)
+		_handle(pose*Vector3(size.y*.5+.65,.08,0),tint)
+
+func _rotate_trellis() -> void:
+	if busy: return
+	var plan: RefCounted=Plan.from_snapshot(draft)
+	if plan==null: return
+	var parameters: Array=Construction.trellis_parameters(plan)
+	parameters[5]=wrapf(parameters[5]+15,-180,180)
+	draft.construction.trellis=parameters;_refresh()
+
+func _trellis_checked() -> void:
+	if not active or tool!="trellis": return
+	var message: String=issue()
+	_status.text=message if not message.is_empty() else "拖动菜架移动，圆点调整长度和方向。"
+	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
+	_render_preview(message.is_empty())
 
 func _draw_brush(tint: Color) -> void:
 	var circle:=PackedVector2Array()

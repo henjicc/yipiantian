@@ -9,8 +9,7 @@ var _occluders: Array[Node] = []
 func configure(scene: Node3D, courtyard: Node3D, environment: Environment) -> void:
 	_scene = scene
 	_environment = environment
-	# Brush edits retain MainBank and swap its mesh; architectural edits reload
-	# the scene. Keeping the bank node preserves its static GI classification.
+	# Committed architecture participates in GI; disposable previews do not.
 	for part: Node in courtyard.get_children():
 		if part.name in ["MainBank", "EastBank", "MainHouse", "PorchDeck", "Kitchen", "EntranceTrellis", "AdaptiveBridge"] or part.scene_file_path.ends_with("/stone_bridge.glb"):
 			_occluders.append(part)
@@ -30,12 +29,18 @@ func configure(scene: Node3D, courtyard: Node3D, environment: Environment) -> vo
 func set_enabled(enabled: bool) -> void:
 	_environment.sdfgi_enabled = enabled
 
+func replace_structure(previous: Node, replacement: Node) -> void:
+	_occluders.erase(previous)
+	_occluders.append(replacement)
+	for node: Node in replacement.find_children("*","GeometryInstance3D",true,false): _classify(node)
+
 
 func _classify(node: Node) -> void:
 	if not node is GeometryInstance3D or not _scene.is_ancestor_of(node):
 		return
 	node.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	for structure: Node in _occluders:
+		if not is_instance_valid(structure): continue
 		if structure == node or structure.is_ancestor_of(node):
 			node.gi_mode = GeometryInstance3D.GI_MODE_STATIC
 			return

@@ -714,6 +714,11 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 		_apply_fields(snapshot,undo)
 		return
 	unchanged=snapshot.duplicate(true)
+	unchanged.construction.trellis=current.construction.trellis.duplicate(true)
+	if unchanged==current:
+		_apply_trellis(snapshot,undo)
+		return
+	unchanged=snapshot.duplicate(true)
 	unchanged.construction.land=current.construction.land.duplicate(true)
 	if unchanged==current:
 		_apply_land(snapshot,undo)
@@ -733,14 +738,6 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 		var obstacles: Dictionary=probe.layout_obstacles.duplicate(true)
 		obstacles.merge(decoration_layout.ground_footprints())
 		var space=preload("res://scenes/environment/animal_space.gd")
-		if not plan.construction.trellis.is_empty():
-			var trellis: PackedVector2Array=space.footprint(probe.get_node("EntranceTrellis"),plan.ground_height-.02,plan.ground_height+3.2)
-			if not preload("res://layout/island_space.gd").supported(trellis,plan.plateau()): message="菜架的立柱需要全部落在平地上。"
-			for key: String in obstacles:
-				if key=="EntranceTrellis" or key.begins_with("stone") or key.begins_with("@Node"): continue
-				if not Geometry2D.intersect_polygons(trellis,obstacles[key]).is_empty():
-					print("CONSTRUCTION_REJECT stage=trellis object="+key)
-					message="菜架碰到了旁边的物件，请调整长宽。";break
 		var east: PackedVector2Array=space.footprint(probe.get_node("EastBank"),plan.ground_height-.04,plan.ground_height+.02)
 		if not Geometry2D.intersect_polygons(plan.plateau(),east).is_empty(): message="添地碰到了对岸，请留出水道。"
 		var issues: Array[String]=preload("res://layout/courtyard_circulation.gd").field_placement_issues(plan,obstacles)
@@ -829,6 +826,39 @@ func _apply_fields(snapshot: Dictionary, undo: bool) -> void:
 	seasonal_courtyard.refresh_paths($Environment)
 	$Environment.refresh_terrain.call_deferred(false)
 	print("FIELD_COMMIT_MS ",Time.get_ticks_msec()-started)
+
+func _apply_trellis(snapshot: Dictionary, undo: bool) -> void:
+	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
+	if plan==null: return
+	island_builder.set_busy(true,"正在校对架旁通路…")
+	if not is_instance_valid(island_builder.trellis_preview):
+		island_builder._clear_preview()
+		island_builder.trellis_preview=preload("res://presentation/trellis_layout_preview.gd").new()
+		add_child(island_builder.trellis_preview);island_builder.trellis_preview.configure(self)
+	var preview: Node3D=island_builder.trellis_preview
+	preview.update(plan)
+	while preview.pending:
+		await get_tree().process_frame
+		if _exiting: return
+	if preview.validated==null:
+		island_builder.set_busy(false,preview.message);return
+	var animal_issue: String=preview.animal_issue(plan)
+	if not animal_issue.is_empty(): island_builder.set_busy(false,animal_issue);return
+	var started: int=Time.get_ticks_msec()
+	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	if not candidate.apply_layout(snapshot,clock.call()).ok:
+		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok:
+		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
+	previous_layout={} if undo else farm_state.snapshot().layout
+	previous_decorations={};farm_state=candidate
+	plan=preview.validated
+	island_builder.accept_trellis(plan)
+	decoration_layout.refresh_path_geometry()
+	refresh_farm();seasonal_courtyard.refresh_paths($Environment)
+	$Environment.refresh_terrain.call_deferred(false)
+	print("TRELLIS_COMMIT_MS ",Time.get_ticks_msec()-started)
 
 func _begin_courtyard_edit() -> void:
 	if not _loaded or _save_failed or _layout_active(): return
