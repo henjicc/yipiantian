@@ -122,7 +122,7 @@ static func trellis_flower_center(plan: RefCounted) -> Vector3:
 	for end: float in [1.0,-1.0]: candidates.append(pose*Vector3(0,0,end*(size.x*.5+.6)))
 	for at: Vector3 in candidates:
 		var roots: PackedVector2Array=IslandSpace.rectangle(Vector2(at.x,at.z)-Vector2.ONE*.36,Vector2.ONE*.72)
-		if not IslandSpace.supported(roots,plan.plateau()): continue
+		if plan.supporting_island(roots)<0: continue
 		var occupied: bool=false
 		for i: int in plan.fields.size():
 			if IslandSpace.overlaps(roots,plan.field_polygon(i,.12)): occupied=true;break
@@ -181,14 +181,7 @@ static func bridge_issue(plan: RefCounted) -> String:
 	return ""
 
 static func bridge_support(plan: RefCounted, end: int) -> PackedVector2Array:
-	if end==0: return plan.plateau()
-	var result:=PackedVector2Array()
-	var geometry=preload("res://layout/bank_geometry.gd")
-	var pose:=Transform3D(Basis(Vector3.UP,deg_to_rad(plan.angles.east_bank)),plan.anchors.east_bank)
-	for p: Vector2 in geometry.ring(geometry.contour(plan.east_rim),.96,plan.bank_width):
-		var world: Vector3=pose*Vector3(p.x,0,p.y)
-		result.append(Vector2(world.x,world.z))
-	return result
+	return plan.plateau(end)
 
 static func snap_bridge_end(plan: RefCounted, point: Vector2, end: int, width: float) -> Vector2:
 	var inset: Array[PackedVector2Array]=Geometry2D.offset_polygon(bridge_support(plan,end),-width*.5-.12)

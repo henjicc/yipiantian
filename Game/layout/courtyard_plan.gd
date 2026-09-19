@@ -17,6 +17,8 @@ var scenery_expansion := Vector2.ZERO
 const DECORATION_SCENERY={"ground_01":"YardWaterVats","ground_02":"YardMelonPile","ground_03":"YardGroundTrays","ground_04":"YardBasketStack"}
 var ground_height: float = .13
 var bank_width: float = 1.0
+var _east_ground_source: Array=[]
+var _east_ground:=PackedVector2Array()
 var east_rim := PackedVector2Array([Vector2(-2.9,-1.1),Vector2(-1.9,-3.5),Vector2(1.3,-3.8),Vector2(3.5,-2.1),Vector2(4.2,.7),Vector2(3.2,3.8),Vector2(.5,4.4),Vector2(-2.8,3.9),Vector2(-3.05,2.5)])
 var shelves: Array[Vector3] = [Vector3(-7.1,-.48,2.7),Vector3(-6.2,-.48,4.7),Vector3(-4.0,-.48,6.0),Vector3(-1.1,-.50,6.5),Vector3(2.0,-.46,6.4),Vector3(5.7,-.45,5.55),Vector3(6.5,-.43,2.5)]
 var bamboo_positions: Array[Vector3] = [Vector3(-7,.13,-5.2),Vector3(-7.1,.13,-.5),Vector3(5.4,.13,-5.7),Vector3(6.3,.13,2.0),Vector3(13.8,.10,-.8),Vector3(-6.6,.13,-6.6),Vector3(4.7,.13,-7.0),Vector3(5.9,.13,-3.5)]
@@ -165,7 +167,7 @@ static func from_snapshot(data: Dictionary) -> RefCounted:
 		if not _number(field.get("yaw")) or absf(field.yaw)>180: return null
 		if not _integer(field.get("columns"),2,8) or not _integer(field.get("rows"),2,8): return null
 		if not _integer(field.get("seed"),0,2147483647): return null
-		if absf(field.position[0])>30 or absf(field.position[2])>30 or absf(field.position[1]-data.terrain[0]-.07)>.001: return null
+		if absf(field.position[0])>30 or absf(field.position[2])>30: return null
 		var size := Vector2(field.size[0],field.size[1])
 		var span: Vector2 = (size-Vector2(.20,.29))/Vector2(field.columns,field.rows)
 		if span.x<.5999 or span.y<.4399 or span.x>1.2001 or span.y>1.0001: return null
@@ -186,6 +188,8 @@ static func from_snapshot(data: Dictionary) -> RefCounted:
 	plan.plants=Plants.canonical(data.plants)
 	plan.routes=Routes.canonical(data.routes)
 	if not plan.apply_construction(data.construction): return null
+	for field: Dictionary in plan.fields:
+		if absf(field.position.y-plan.ground_height_at(Vector2(field.position.x,field.position.z))-.07)>.001: return null
 	return plan
 
 func apply_construction(value: Dictionary) -> bool:
@@ -231,7 +235,7 @@ func apply_construction(value: Dictionary) -> bool:
 				reeds[i]=Vector3(p.x,reeds[i].y,p.y)
 				break
 	if not construction.trellis.is_empty():
-		anchors.trellis=Vector3(construction.trellis[3],ground_height,construction.trellis[4])
+		anchors.trellis=Vector3(construction.trellis[3],ground_height_at(Vector2(construction.trellis[3],construction.trellis[4])),construction.trellis[4])
 		angles.trellis=90.0+Construction.trellis_yaw(self)
 		var size: Vector3=Construction.trellis_size(self)
 		var pose: Transform3D=Construction.trellis_pose(self)
@@ -293,9 +297,48 @@ static func resized_field(field: Dictionary, columns: int, rows: int, size: Vect
 	candidate.cells = cells
 	return candidate
 
-func plateau() -> PackedVector2Array:
+func plateau(island: int=0) -> PackedVector2Array:
+	if island==1:
+		var source: Array=[east_rim,angles.east_bank,anchors.east_bank,bank_width]
+		if source!=_east_ground_source:
+			_east_ground_source=source.duplicate(true);_east_ground.clear()
+			var pose:=Transform3D(Basis(Vector3.UP,deg_to_rad(angles.east_bank)),anchors.east_bank)
+			for p: Vector2 in BankGeometry.ring(BankGeometry.contour(east_rim),.96,bank_width):
+				var world: Vector3=pose*Vector3(p.x,0,p.y)
+				_east_ground.append(Vector2(world.x,world.z))
+		return _east_ground
 	var painted: bool=not construction.land.is_empty()
 	return BankGeometry.ring(BankGeometry.contour(rim,painted), .96, bank_width,painted)
+
+func supporting_island(polygon: PackedVector2Array) -> int:
+	# An object must stand on one complete plateau, never on a union across water.
+	if polygon.size()<3: return -1
+	for island: int in 2:
+		if IslandSpace.supported(polygon,plateau(island)): return island
+	return -1
+
+func ground_height_at(point: Vector2) -> float:
+	return ground_height+anchors.east_bank.y if Geometry2D.is_point_in_polygon(point,plateau(1)) else ground_height
+
+func ground_ray(origin: Vector3, direction: Vector3) -> Vector3:
+	if direction.y>=-.001: return Vector3.INF
+	var fallback: Vector3=Vector3.INF
+	var nearest: Vector3=Vector3.INF
+	var nearest_distance: float=INF
+	for island: int in 2:
+		var height: float=ground_height+(anchors.east_bank.y if island==1 else 0.0)
+		var distance: float=(height-origin.y)/direction.y
+		if distance<0 or distance>200: continue
+		var point: Vector3=origin+direction*distance
+		if island==0: fallback=point
+		if distance<nearest_distance and Geometry2D.is_point_in_polygon(Vector2(point.x,point.z),plateau(island)):
+			nearest=point;nearest_distance=distance
+	return nearest if nearest.is_finite() else fallback
+
+func buildable_bounds() -> Rect2:
+	var result: Rect2=land_bounds()
+	for p: Vector2 in plateau(1): result=result.expand(p)
+	return result
 
 func water_banks() -> Array[PackedVector2Array]:
 	# The waterline lies outside the flat buildable plateau. The slope is neither

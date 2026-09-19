@@ -534,12 +534,14 @@ func _build_contact_shading() -> void:
 	shading.bake()
 	for id: String in Buildings.BASE:
 		var contacts:=ContactShading.new();contacts.name=id.capitalize()+"Contacts";add_child(contacts)
-		contacts.configure_bounds(plan.land_bounds().grow(.6))
-		for source: Node3D in building_contact_sources(id): contacts.collect(source,[ground,deck])
+		contacts.configure_bounds(plan.buildable_bounds().grow(.6))
+		var anchor: Vector3=plan.anchors[id]
+		var building_ground: float=plan.ground_height_at(Vector2(anchor.x,anchor.z))+.002
+		for source: Node3D in building_contact_sources(id): contacts.collect(source,[building_ground,deck])
 		contacts.bake()
 	var trellis_contacts:=ContactShading.new();trellis_contacts.name="TrellisContacts";add_child(trellis_contacts)
-	trellis_contacts.configure_bounds(plan.land_bounds().grow(.6))
-	trellis_contacts.collect(get_node("EntranceTrellis"),[ground]);trellis_contacts.bake()
+	trellis_contacts.configure_bounds(plan.buildable_bounds().grow(.6))
+	trellis_contacts.collect(get_node("EntranceTrellis"),[plan.anchors.trellis.y+.002]);trellis_contacts.bake()
 	var bridge_contacts:=ContactShading.new();bridge_contacts.name="BridgeContacts";add_child(bridge_contacts)
 	var bridge_end: Vector3=Construction.bridge_points(plan)[1]
 	bridge_contacts.configure_bounds(plan.land_bounds().expand(Vector2(bridge_end.x,bridge_end.z)).grow(.6))

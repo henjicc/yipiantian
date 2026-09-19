@@ -28,6 +28,7 @@ var _bounds_dirty: bool = true
 var _neighbor: Node3D
 var _neighbor_clear: float = 0.0
 var _neighbor_center: Vector2 = Vector2.ZERO
+var _construction_clear: float=0.0
 
 func replace_structure(previous: Node, replacement: Node) -> void:
 	_indirect_lighting.replace_structure(previous,replacement)
@@ -192,6 +193,10 @@ func protected_depth_range() -> Vector2:
 		var depths: Vector2=depth_range(_camera,_neighbor.global_transform,AABB(Vector3(-5,-.2,-5),Vector3(10,6.2,10)))
 		result.x=minf(result.x,depths.x)
 		result.y=maxf(result.y,depths.y)
+	if _construction_clear>0:
+		var bounds: Rect2=_camera.construction_bounds.grow(.5)
+		var depth: Vector2=depth_range(_camera,Transform3D.IDENTITY,AABB(Vector3(bounds.position.x,-.3,bounds.position.y),Vector3(bounds.size.x,6.5,bounds.size.y)))
+		result=result.lerp(Vector2(minf(result.x,depth.x),maxf(result.y,depth.y)),_construction_clear)
 	return result
 
 
@@ -220,7 +225,9 @@ func _process(delta: float) -> void:
 	# Global buffer colors are consumed directly by spatial shaders in linear space.
 	RenderingServer.global_shader_parameter_set("courtyard_haze_color", environment.fog_light_color.srgb_to_linear())
 	var inspecting: bool = _camera.get("free_view") == true
-	var framing: bool = not inspecting and not is_instance_valid(_neighbor) and not is_instance_valid(_target) and not _decorations.active and _quality != "low"
+	var constructing: bool=_camera.get("construction_framing")==true
+	_construction_clear=move_toward(_construction_clear,1.0 if constructing else 0.0,delta/.7)
+	var framing: bool = not inspecting and not constructing and not is_instance_valid(_neighbor) and not is_instance_valid(_target) and not _decorations.active and _quality != "low"
 	_foreground.set_overview_visible(framing, inspecting)
 	var allowed: bool = not inspecting and _dof_enabled and _quality != "low" and _dof_strength > 0.0
 	var effect_active: bool = allowed and not _decorations.active

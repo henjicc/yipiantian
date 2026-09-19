@@ -76,8 +76,8 @@ func update(plan: RefCounted) -> void:
 		var cover:=Cover.new();add_child(cover);cover._build_trellis_bed(plan)
 		bed=cover.get_node("ClimbingBed");bed.reparent(self);cover.free()
 		support=Structures.trellis_support(plan);add_child(support)
-		contacts=Contacts.new();add_child(contacts);contacts.configure_bounds(plan.land_bounds().grow(.6))
-		contacts.collect(structure,[plan.ground_height+.002]);contacts.bake()
+		contacts=Contacts.new();add_child(contacts);contacts.configure_bounds(plan.buildable_bounds().grow(.6))
+		contacts.collect(structure,[plan.anchors.trellis.y+.002]);contacts.bake()
 		_contact_pose=Construction.trellis_pose(plan);_dimensions=dimensions;_original_geometry=original
 	var pose: Transform3D=Construction.trellis_pose(plan)
 	structure.transform=pose*Transform3D(Basis(Vector3.UP,PI/2),Vector3.ZERO) if original else pose
@@ -111,7 +111,7 @@ func update(plan: RefCounted) -> void:
 func _placement_issue(plan: RefCounted) -> String:
 	if not main.farm_state.trellis_retains_crops(plan): return "架上还有作物，请保留种植位或先收获。"
 	var footprint: PackedVector2Array=_footprint(plan)
-	if not IslandSpace.supported(footprint,plan.plateau()): return "菜架需要完整落在平地上。"
+	if plan.supporting_island(footprint)<0: return "菜架需要完整落在平地上。"
 	for key: String in _obstacles:
 		if IslandSpace.overlaps(footprint,_obstacles[key]): return "菜架碰到了景物或摆件，请调整位置或大小。"
 	for i: int in plan.fields.size():
@@ -121,7 +121,7 @@ func _placement_issue(plan: RefCounted) -> String:
 		var polygon: PackedVector2Array=_flower_footprint(pair)
 		# Leaves may overhang the bank; the planted root must remain supported.
 		var root_at:=Vector2(pair.copy.global_position.x,pair.copy.global_position.z)
-		if not IslandSpace.supported(IslandSpace.rectangle(root_at-Vector2.ONE*.10,Vector2.ONE*.20),plan.plateau()): return "架旁花草需要留在陆地上。"
+		if plan.supporting_island(IslandSpace.rectangle(root_at-Vector2.ONE*.10,Vector2.ONE*.20))<0: return "架旁花草需要留在陆地上。"
 		for other: PackedVector2Array in main.decoration_layout.ground_footprints().values():
 			if IslandSpace.overlaps(polygon,other): return "架旁花草会碰到摆件，请留出一些空间。"
 		for i: int in plan.fields.size():

@@ -58,7 +58,7 @@ static func nearest_bank(point: Vector2, banks: Array[PackedVector2Array]) -> fl
 	return distance
 
 static func habitat_issue(entry: Dictionary, plan: RefCounted, banks: Array[PackedVector2Array]) -> String:
-	if not plan.land_bounds().grow(7).has_point(position(entry)): return "请在小岛附近布置植物。"
+	if not plan.buildable_bounds().grow(7).has_point(position(entry)): return "请在小岛附近布置植物。"
 	if not Space.water_clear(footprint(entry),banks): return "水生植物需要放在水面上，请避开岛岸。"
 	if entry.kind in ["reed","cattail"] and nearest_bank(position(entry),banks)>1.4: return "芦苇和香蒲需要靠近岸边。"
 	return ""

@@ -38,6 +38,7 @@ func build(courtyard: Node3D) -> void:
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var trellis_roots:=Node3D.new();trellis_roots.name="TrellisRoots";add_child(trellis_roots)
 	var trellis_surface:=SurfaceTool.new();trellis_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var trellis_ground: PackedVector2Array=courtyard.plan.plateau(courtyard.plan.supporting_island(preload("res://layout/island_construction.gd").trellis_footprint(courtyard.plan)))
 	# Dense short collars hide the generated meshes' abrupt root/ground seam.
 	for child: Node in courtyard.get_children():
 		if not child is Node3D or not (str(child.name).begins_with("Bamboo") or str(child.name).begins_with("Flowers") or str(child.name).ends_with("Tree")): continue
@@ -49,7 +50,7 @@ func build(courtyard: Node3D) -> void:
 		soil.name = "RootSoil"
 		soil.texture_albedo = root_soil
 		soil.size = Vector3(1.1,.25,1.1)
-		soil.position = Vector3(centre.x,.19,centre.z)
+		soil.position = Vector3(centre.x,courtyard.plan.ground_height_at(Vector2(centre.x,centre.z))+.06,centre.z)
 		soil.cull_mask = 2
 		if follows_trellis: trellis_roots.add_child(soil)
 		else: add_child(soil)
@@ -57,8 +58,8 @@ func build(courtyard: Node3D) -> void:
 			var angle: float = _rng.randf()*TAU
 			var radius: float = sqrt(_rng.randf())*.48
 			var p: Vector3 = centre + Vector3(cos(angle)*radius,0,sin(angle)*radius)
-			p.y = courtyard.plan.ground_height+.001
-			if Geometry2D.is_point_in_polygon(Vector2(p.x,p.z),courtyard.plan.plateau() if follows_trellis else _rim):
+			p.y = courtyard.plan.anchors.trellis.y+.001 if follows_trellis else courtyard.plan.ground_height+.001
+			if Geometry2D.is_point_in_polygon(Vector2(p.x,p.z),trellis_ground if follows_trellis else _rim):
 				_tuft(trellis_surface if follows_trellis else surface,p,_rng.randf_range(.06,.18),4)
 	var grass := MeshInstance3D.new()
 	grass.name = "RootedMeadow"
@@ -210,7 +211,8 @@ func _build_foundation_contacts(plan: RefCounted) -> void:
 		decal.texture_albedo = ImageTexture.create_from_image(image)
 		decal.size = Vector3(extent.x,.18,extent.y)
 		decal.transform = pose
-		decal.position = pose * Vector3(footprint.get_center().x,plan.ground_height+.04-plan.anchors[item.anchor].y,footprint.get_center().y)
+		var anchor: Vector3=plan.anchors[item.anchor]
+		decal.position = pose * Vector3(footprint.get_center().x,plan.ground_height_at(Vector2(anchor.x,anchor.z))+.04-anchor.y,footprint.get_center().y)
 		decal.cull_mask = 2
 		add_child(decal)
 

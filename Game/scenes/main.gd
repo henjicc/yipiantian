@@ -745,7 +745,7 @@ func _begin_construction(tool: String = "land") -> void:
 	selected_field=-1;selected_cell="";hover_field=-1;hover_cell=""
 	_select_field_visual(-1);_select_cell_visual(-1,"");focus_detail.set_focus()
 	camera.cancel_zoom()
-	camera.construction_bounds=courtyard_plan.land_bounds()
+	camera.construction_bounds=courtyard_plan.buildable_bounds()
 	camera.set_construction_framing(true,_construction_resume.is_empty())
 	_construction_resume={}
 	island_builder.begin(self,tool);hud.hide()
@@ -985,7 +985,7 @@ func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 		island_builder._clear_preview();island_builder.draft=snapshot.duplicate(true);island_builder.candidate=plan
 	courtyard_plan=plan;farm.plan=plan
 	camera.overview_point=plan.camera_point;camera.overview_view.z=plan.camera_distance
-	camera.construction_bounds=plan.land_bounds()
+	camera.construction_bounds=plan.buildable_bounds()
 	RenderingServer.global_shader_parameter_set("courtyard_haze_region",plan.haze_region)
 	island_builder.accept_land(plan)
 	_refresh_hud()

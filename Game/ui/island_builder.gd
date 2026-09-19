@@ -632,6 +632,9 @@ func handle(event: InputEvent) -> void:
 func world_point(screen: Vector2) -> Vector2:
 	var from: Vector3=main.camera.project_ray_origin(screen);var direction: Vector3=main.camera.project_ray_normal(screen)
 	if direction.y>=-.001: return Vector2.INF
+	if tool not in Plants.KINDS and tool not in ["ducks","goose","land"]:
+		var hit: Vector3=main.courtyard_plan.ground_ray(from,direction)
+		return Vector2(hit.x,hit.z)
 	var level: float=-.25 if tool in Plants.KINDS or tool in ["ducks","goose"] else main.courtyard_plan.ground_height
 	var distance: float=(level-from.y)/direction.y
 	if distance<0 or distance>200: return Vector2.INF
@@ -890,7 +893,7 @@ func _render_preview(valid: bool) -> void:
 				_shore=ShorePreview.new();main.add_child(_shore);_shore.configure(main.get_node("Environment"))
 			_shore.update(plan)
 	if tool in Routes.KINDS:
-		for polygon: PackedVector2Array in plan.route_footprints().values(): _outline(polygon,plan.ground_height+.06,tint,false)
+		for polygon: PackedVector2Array in plan.route_footprints().values(): _outline(polygon,plan.ground_height_at(polygon[0])+.06,tint,false)
 	elif tool in Plants.KINDS and _plant_last.is_finite():
 		var circle:=PackedVector2Array()
 		var radius: float=.35 if _plant_mode=="point" else _values.radius.value
@@ -900,7 +903,7 @@ func _render_preview(valid: bool) -> void:
 			if entry.id in _plant_selected: _outline(Plants.footprint(entry),-.20,tint,false)
 	elif tool=="fields" and candidate!=null:
 		for index: int in candidate.fields.size():
-			_outline(candidate.field_polygon(index),candidate.ground_height+.16,tint if index==selected_field else Color("b8b293"),false)
+			_outline(candidate.field_polygon(index),candidate.fields[index].position.y+.09,tint if index==selected_field else Color("b8b293"),false)
 		var field: Dictionary=candidate.fields[selected_field]
 		var pose: Transform3D=candidate.field_transform(selected_field)
 		_handle(pose*Vector3(field.size.x*.5,.12,field.size.y*.5),tint)
@@ -921,12 +924,12 @@ func _render_preview(valid: bool) -> void:
 		for key: String in Buildings.STRUCTURES[tool]+Buildings.PROPS[tool]:
 			if main.get_node("Environment").layout_obstacles.has(key): parts[key]=main.get_node("Environment").layout_obstacles[key]
 		var polygon: PackedVector2Array=building_preview.footprint if is_instance_valid(building_preview) else BuildingPreview._outline(parts)
-		_outline(polygon,plan.ground_height+.06,tint,false)
+		_outline(polygon,plan.anchors[tool].y+.06,tint,false)
 		_handle(_building_handle(plan),tint)
 	elif tool=="trellis":
 		var pose: Transform3D=Construction.trellis_pose(plan)
 		var size: Vector3=Construction.trellis_size(plan)
-		_outline(Construction.trellis_footprint(plan),plan.ground_height+.06,tint,false)
+		_outline(Construction.trellis_footprint(plan),plan.anchors.trellis.y+.06,tint,false)
 		_handle(pose*Vector3(0,.08,size.x*.5),tint)
 		_handle(pose*Vector3(size.y*.5+.65,.08,0),tint)
 
@@ -1045,7 +1048,7 @@ func _press_field(point: Vector2, screen: Vector2) -> void:
 		var next_id: int=_next_field_id
 		_next_field_id+=1
 		field.id="field_%02d"%next_id;field.seed=91744+next_id*7919
-		field.position=Vector3(point.x,plan.ground_height+.07,point.y)
+		field.position=Vector3(point.x,plan.ground_height_at(point)+.07,point.y)
 		plan.fields.append(field);selected_field=plan.fields.size()-1
 		draft=plan.snapshot();_field_gesture="new";_new_field=false
 		_drag_field(point);return
@@ -1073,6 +1076,7 @@ func _drag_field(point: Vector2) -> void:
 	if _field_gesture=="move":
 		var delta: Vector2=IslandSpace.snap(point-_start)
 		field.position+=Vector3(delta.x,0,delta.y)
+		field.position.y=plan.ground_height_at(Vector2(field.position.x,field.position.z))+.07
 	elif _field_gesture in ["new","resize"]:
 		var size: Vector2=(point-_start).abs() if _field_gesture=="new" else Vector2.ZERO
 		if _field_gesture=="resize":
@@ -1083,7 +1087,7 @@ func _drag_field(point: Vector2) -> void:
 		field=Plan.resized_field(field,columns,rows,span*Vector2(columns,rows)+Vector2(.2,.29))
 		if _field_gesture=="new":
 			var center: Vector2=_start+field.size*.5*Vector2(1 if point.x>=_start.x else -1,1 if point.y>=_start.y else -1)
-			field.position=Vector3(center.x,plan.ground_height+.07,center.y)
+			field.position=Vector3(center.x,plan.ground_height_at(center)+.07,center.y)
 		plan.fields[selected_field]=field
 	elif _field_gesture=="rotate":
 		var center:=Vector2(field.position.x,field.position.z)

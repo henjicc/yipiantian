@@ -102,9 +102,12 @@ static func _transform_parts(parts: Dictionary, pose: Transform3D, height: float
 	return result
 
 func _placement_issue(plan: RefCounted, parts: Dictionary) -> String:
+	var island: int=-1
 	for key: String in parts:
 		var polygon: PackedVector2Array=parts[key]
-		if not Space.supported(polygon,plan.plateau()): return "建筑及附属物需要完整落在陆地上。"
+		var support: int=plan.supporting_island(polygon)
+		if support<0 or (island>=0 and support!=island): return "建筑及附属物需要完整落在同一座岛的陆地上。"
+		island=support
 		for other: String in _obstacles:
 			var overlaps: Array[PackedVector2Array]=Geometry2D.intersect_polygons(polygon,_obstacles[other])
 			for overlap: PackedVector2Array in overlaps:

@@ -36,6 +36,7 @@ static func apply(plan: RefCounted) -> void:
 		for i: int in 3: values[i]=float("%.4f"%values[i])
 		values[2]=wrapf(values[2],-180,180)
 		plan.anchors[id].x=values[0];plan.anchors[id].z=values[1];plan.angles[id]=values[2]
+		plan.anchors[id].y=plan.ground_height_at(Vector2(values[0],values[1]))+BASE[id].y-.13
 		var transform: Transform3D=delta(plan,id)
 		if id=="house":
 			plan.anchors.veranda=transform*plan.anchors.veranda

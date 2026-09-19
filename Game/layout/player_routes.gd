@@ -163,9 +163,8 @@ static func replace_obstacles(obstacles: Dictionary, plan: RefCounted) -> Dictio
 	return result
 
 static func terrain_issue(plan: RefCounted) -> String:
-	var ground: PackedVector2Array=plan.plateau()
 	for polygon: PackedVector2Array in plan.route_footprints().values():
-		if not Space.supported(polygon,ground): return "道路和围栏需要完整落在岛上，请为岸边留出空间。"
+		if plan.supporting_island(polygon)<0: return "道路和围栏需要完整落在岛上，请为岸边留出空间。"
 	return ""
 
 static func placement_issue(plan: RefCounted, obstacles: Dictionary) -> String:

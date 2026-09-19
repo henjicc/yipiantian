@@ -186,7 +186,7 @@ func _update_preview_feedback() -> void:
 		var polygon: PackedVector2Array=Space.cached_footprint(_preview,environment.plan.ground_height-.08,environment.plan.ground_height+1.17)
 		var mesh:=ImmediateMesh.new();mesh.surface_begin(Mesh.PRIMITIVE_LINES)
 		for i: int in polygon.size():
-			for p: Vector2 in [polygon[i],polygon[(i+1)%polygon.size()]]: mesh.surface_add_vertex(Vector3(p.x,environment.plan.ground_height+.025,p.y))
+			for p: Vector2 in [polygon[i],polygon[(i+1)%polygon.size()]]: mesh.surface_add_vertex(Vector3(p.x,_preview.global_position.y+.02,p.y))
 		mesh.surface_end()
 		_outline=MeshInstance3D.new();_outline.mesh=mesh
 		var material:=StandardMaterial3D.new();material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -340,10 +340,7 @@ func handle_input(event: InputEvent) -> void:
 func _ground_point(screen: Vector2) -> Vector2:
 	var origin: Vector3=camera.project_ray_origin(screen)
 	var direction: Vector3=camera.project_ray_normal(screen)
-	if direction.y>=-.001: return Vector2.INF
-	var distance: float=(environment.plan.ground_height-origin.y)/direction.y
-	if distance<0 or distance>200: return Vector2.INF
-	var point: Vector3=origin+direction*distance
+	var point: Vector3=environment.plan.ground_ray(origin,direction)
 	return Vector2(point.x,point.z)
 
 func _preview_pointer(screen: Vector2) -> void:
@@ -482,7 +479,7 @@ func placement_issue(prop: Node3D, item: String, slot: String) -> String:
 	var rise: float=environment.plan.ground_height-.13
 	var polygon: PackedVector2Array=Space.cached_footprint(prop,.05+rise,1.3+rise)
 	if polygon.size()<3: return "摆件没有可用的落地轮廓"
-	if not IslandSpace.supported(polygon,environment.plan.plateau()): return "这里超出了平地"
+	if environment.plan.supporting_island(polygon)<0: return "这里超出了平地"
 	var approach: String=preload("res://layout/bridge_passage.gd").approach_issue(environment.plan,{"candidate_decoration":polygon})
 	if not approach.is_empty(): return approach
 	var occupied:=IslandSpace.new()

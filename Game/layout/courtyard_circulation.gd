@@ -14,13 +14,12 @@ var _plan: RefCounted
 static func field_placement_issues(plan: RefCounted, obstacles: Dictionary) -> Array[String]:
 	obstacles=Routes.replace_obstacles(obstacles,plan)
 	var result: Array[String] = []
-	var plateau: PackedVector2Array = plan.plateau()
 	var occupied := IslandSpace.new()
 	for key: String in obstacles: occupied.add(key, obstacles[key])
 	for i: int in plan.fields.size():
 		var field: Dictionary = plan.fields[i]
 		var polygon: PackedVector2Array = plan.field_polygon(i,.14)
-		if not IslandSpace.supported(polygon, plateau): result.append(field.id+":outside_ground")
+		if plan.supporting_island(polygon)<0: result.append(field.id+":outside_ground")
 		for key: String in occupied.collisions(polygon): result.append(field.id+":overlaps:"+key)
 		occupied.add(field.id, polygon)
 	return result
@@ -109,10 +108,22 @@ func _bridge_connection() -> void:
 	var end:=Vector2(ends[1].x,ends[1].z)
 	var landing: Vector2=road.nearest(end)
 	var target:=Vector2(_plan.anchors.east_bank.x,_plan.anchors.east_bank.z)
-	var destination: Vector2=road.nearest(target)
-	if landing.distance_to(end)>.2 or destination.distance_to(target)>.6 or road.path(endpoints.house,landing).is_empty():
+	if landing.distance_to(end)>.2 or road.path(endpoints.house,landing).is_empty():
 		issues.append("桥梁没有接通两岸，请调整桥头出口。");return
-	var route: PackedVector2Array=road.path(landing,destination)
+	# The island centre is a preferred destination, not a reserved building
+	# plot. Relocated structures can leave its nearest sample in a blocked
+	# pocket; choose the nearest reachable interior sample on the same island.
+	var destination: Vector2=road.nearest(target)
+	var plateau: PackedVector2Array=_plan.plateau(1)
+	var route: PackedVector2Array=road.path(landing,destination) if Geometry2D.is_point_in_polygon(destination,plateau) else PackedVector2Array()
+	if route.is_empty():
+		var candidates: Array[Vector2]=[]
+		for p: Vector2 in road.points:
+			if Geometry2D.is_point_in_polygon(p,plateau): candidates.append(p)
+		candidates.sort_custom(func(a: Vector2,b: Vector2) -> bool: return a.distance_squared_to(target)<b.distance_squared_to(target))
+		for point: Vector2 in candidates:
+			route=road.path(landing,point)
+			if not route.is_empty(): destination=point;break
 	if route.is_empty(): issues.append("对岸的通路被挡住了，请调整桥头出口。");return
 	endpoints.bridge_east=landing;endpoints.east_bank=destination
 	var world:=PackedVector3Array()
@@ -154,9 +165,14 @@ func _route_to(target: Vector2) -> PackedVector2Array:
 	return route
 
 func _add_route(route: PackedVector2Array) -> void:
-	var world := PackedVector3Array()
-	for point: Vector2 in route: world.append(Vector3(point.x,_plan.ground_height-.015,point.y))
-	if world.size()>1: _plan.paths.append(world)
+	# Navigation crosses the bridge; paving stops at each shore rather than
+	# drawing a second strip of stones through the bridge deck or the water.
+	for island: int in 2:
+		var height: float=_plan.ground_height+(_plan.anchors.east_bank.y if island==1 else 0.0)
+		for section: PackedVector2Array in Geometry2D.intersect_polyline_with_polygon(route,_plan.plateau(island)):
+			var world:=PackedVector3Array()
+			for point: Vector2 in section: world.append(Vector3(point.x,height-.015,point.y))
+			if world.size()>1: _plan.paths.append(world)
 	for i: int in maxi(1,route.size()-1):
 		var a: Vector2 = route[i]
 		var b: Vector2 = route[mini(i+1,route.size()-1)]
