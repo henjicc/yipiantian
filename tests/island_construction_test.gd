@@ -48,6 +48,10 @@ func shot(name: String) -> void:
 func apply() -> bool:
 	var old: Node=scene
 	var expected: Dictionary=scene.island_builder.candidate.snapshot()
+	var checking_since: int=Time.get_ticks_msec()
+	while scene.island_builder._layout_check_pending():
+		await process_frame
+		if Time.get_ticks_msec()-checking_since>20000: expect(false,"Construction check timeout");return false
 	await click(scene.island_builder._confirm)
 	var start: int=Time.get_ticks_msec()
 	while is_instance_valid(old) and root.get_node_or_null("FarmExperience")==old:
@@ -165,6 +169,7 @@ func _run() -> void:
 	var start: int=Time.get_ticks_msec()
 	while is_instance_valid(old) and root.get_node_or_null("FarmExperience")==old:
 		await frames()
+		if not old.island_builder.busy and old.farm_state.snapshot().layout.construction.ducks.count==6: break
 		if Time.get_ticks_msec()-start>45000: expect(false,"Undo timeout");await finish();return
 	scene=root.get_node("FarmExperience");await frames(5)
 	expect(scene.farm_state.snapshot().layout.construction.ducks.count==6,"Undo restores previous duck count")
@@ -194,7 +199,7 @@ func flock_preview_checks() -> void:
 	var builder: Node=scene.island_builder
 	expect(builder._preview.get_child_count()==1,"Unchanged flock shows only live ducks and area outline")
 	builder._values.count.value=7;await frames()
-	expect(builder._preview.get_child_count()==8,"Seven-duck draft has seven preview models and outline")
+	expect(is_instance_valid(builder.duck_preview) and builder.duck_preview.models.size()==7,"Seven-duck draft has seven preview models")
 	for bird: Dictionary in scene.get_node("Environment/CourtyardAnimals").birds:
 		if bird.kind=="duck": expect(not bird.node.visible,"Draft hides live duck to avoid doubled count")
 	builder.cancel_draft();await frames()

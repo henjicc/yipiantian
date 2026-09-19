@@ -55,6 +55,7 @@ func refresh_terrain(water_changed: bool=true) -> void:
 	_water_pending=_water_pending or water_changed
 	var animals: Node3D=get_node("CourtyardAnimals")
 	animals.ready_for_motion=false
+	if water_changed: animals.water_ready=false
 	if _terrain_refreshing: return
 	_terrain_refreshing=true
 	while _terrain_pending:

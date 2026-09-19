@@ -16,6 +16,7 @@ var neck_chain: Array[int] = []
 var neck_limits: Array[float] = []
 var beak_rest: Vector3
 var beak_bindings: Array[Dictionary] = []
+static var _beaks: Dictionary = {}
 
 func configure(bird: Node3D, kind: String) -> void:
 	root = bird
@@ -30,6 +31,20 @@ func configure(bird: Node3D, kind: String) -> void:
 		if bone >= 0:
 			neck_chain.append(bone)
 			neck_limits.append(.38 if label == "Spine_0" else (.65 if label.begins_with("Spine") else .95))
+	# The imported bind geometry is shared by every instance of this asset.
+	# Cache only root-local beak data; animated poses and skeletons stay individual.
+	var key: String=bird.scene_file_path+":"+kind
+	if not bird.scene_file_path.is_empty() and _beaks.has(key):
+		beak_rest=_beaks[key].point;beak_bindings.assign(_beaks[key].bindings)
+	else:
+		_find_beak(bird)
+		if not bird.scene_file_path.is_empty(): _beaks[key]={"point":beak_rest,"bindings":beak_bindings.duplicate(true)}
+	for side: String in ["Left", "Right"]:
+		var knee: int = skeleton.find_bone("tripo__0_%s_Limb_0" % side)
+		var foot: int = skeleton.find_bone("tripo__0_%s_Limb_1" % side)
+		legs.append({"hip": skeleton.get_bone_parent(knee), "knee": knee, "foot": foot})
+
+func _find_beak(bird: Node3D) -> void:
 	# Skinned vertices include inverse bind transforms: mesh.to_global(vertex)
 	# alone double-applies the normalization retained on the imported skeleton.
 	var threshold: float = root.to_local(skeleton.to_global(rests[head].origin)).y
@@ -59,11 +74,6 @@ func configure(bird: Node3D, kind: String) -> void:
 					farthest = point.z * forward
 					beak_rest = point
 					beak_bindings = vertex_bindings
-	for side: String in ["Left", "Right"]:
-		var knee: int = skeleton.find_bone("tripo__0_%s_Limb_0" % side)
-		var foot: int = skeleton.find_bone("tripo__0_%s_Limb_1" % side)
-		legs.append({"hip": skeleton.get_bone_parent(knee), "knee": knee, "foot": foot})
-
 func update(delta: float, distance: float, speed: float, behavior: String, time: float) -> void:
 	var target_motion: float = clampf(speed / .3, 0.0, 1.0)
 	if species == "hen": target_motion = 1.0 if behavior == "walk" and speed > .005 else 0.0

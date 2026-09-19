@@ -710,6 +710,11 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	if not island_builder.active or island_builder.busy: return
 	var current: Dictionary=farm_state.snapshot().layout
 	var unchanged: Dictionary=snapshot.duplicate(true)
+	unchanged.construction.ducks=current.construction.ducks.duplicate(true)
+	if unchanged==current and snapshot!=current:
+		_apply_ducks(snapshot,undo)
+		return
+	unchanged=snapshot.duplicate(true)
 	unchanged.fields=current.fields.duplicate(true)
 	if unchanged==current:
 		_apply_fields(snapshot,undo)
@@ -770,6 +775,34 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	farm_state=candidate
 	island_builder.set_busy(true,"已保存，正在更新小岛…")
 	_reload_saved_scene()
+
+func _apply_ducks(snapshot: Dictionary, undo: bool) -> void:
+	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
+	if plan==null: return
+	island_builder.set_busy(true,"正在校对活动水域…")
+	if not is_instance_valid(island_builder.duck_preview):
+		island_builder._clear_preview()
+		island_builder.duck_preview=preload("res://presentation/duck_layout_preview.gd").new()
+		add_child(island_builder.duck_preview);island_builder.duck_preview.configure(self)
+	var preview: Node3D=island_builder.duck_preview
+	preview.update(plan)
+	while preview.pending:
+		await get_tree().process_frame
+		if _exiting: return
+	if preview.validated==null:
+		island_builder.set_busy(false,preview.message);return
+	var started: int=Time.get_ticks_msec()
+	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	if not candidate.apply_layout(snapshot,clock.call()).ok:
+		island_builder.set_busy(false,"范围不合适，请调整后再试。");return
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok:
+		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
+	previous_layout={} if undo else farm_state.snapshot().layout
+	previous_decorations={};farm_state=candidate
+	island_builder.accept_ducks(plan)
+	refresh_farm()
+	print("DUCK_COMMIT_MS ",Time.get_ticks_msec()-started)
 
 func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 	var started: int=Time.get_ticks_msec()
