@@ -8,6 +8,10 @@ var scene: Node
 var folder: String
 var failures: int=0
 var measurements: Array[Dictionary]=[]
+var construction_mode: bool=OS.get_cmdline_user_args().has("--construction")
+var actions: Array[Dictionary]=[]
+var _sample: Dictionary={}
+var _sample_tick: int=0
 func _initialize() -> void: run.call_deferred()
 func check(ok: bool,label: String) -> void:
 	if not ok: failures+=1;push_error(label)
@@ -18,7 +22,8 @@ func shot(label: String) -> void:
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(folder.path_join(label+".png"))
 func stats(values: Array[float]) -> Dictionary:
-	values.sort();return {"median":values[values.size()/2],"p95":values[mini(values.size()-1,int(values.size()*.95))]}
+	if values.is_empty(): return {}
+	values.sort();return {"median":values[values.size()/2],"p95":values[mini(values.size()-1,int(values.size()*.95))],"max":values[-1]}
 func measure(label: String) -> void:
 	await create_timer(1).timeout
 	var gpu: Array[float]=[];var cpu: Array[float]=[];var intervals: Array[float]=[]
@@ -33,7 +38,13 @@ func measure(label: String) -> void:
 	await shot(label)
 func run() -> void:
 	folder=ProjectSettings.globalize_path("res://../.local/verification/life-capacity-%d"%Time.get_ticks_usec());DirAccess.make_dir_recursive_absolute(folder)
+	print("EVIDENCE "+folder)
+	if construction_mode: root.size=Vector2i(1600,900)
 	var plan:=Plan.new();plan.expand_shore(8,8)
+	var construction: Dictionary=plan.construction.duplicate(true)
+	construction.east_land=[[15,-5,4,4],[18,-5,4,4],[15,-2,4,3],[18,-2,4,3]]
+	check(preload("res://layout/island_construction.gd").valid(construction),"Capacity terrain uses legal brush stamp sizes")
+	check(plan.apply_construction(construction),"Capacity fixture extends the east island with a connected shoreline")
 	var probe:=preload("res://scenes/environment/courtyard.gd").new();probe.plan=plan;probe.layout_probe=true;probe.process_mode=Node.PROCESS_MODE_DISABLED
 	root.add_child(probe)
 	var obstacles: Dictionary=probe.layout_obstacles.duplicate(true)
@@ -45,46 +56,189 @@ func run() -> void:
 		for column: int in 53:
 			if plan.fields.size()==12: break
 			var field: Dictionary=prototype.duplicate(true)
-			field.position=Vector3(-12.8+column*.35,plan.ground_height+.07,-5.5+row*.35)
+			var point:=Vector2(-12.8+column*.35,-5.5+row*.35)
+			field.position=Vector3(point.x,plan.ground_height_at(point)+.07,point.y)
 			field.id="field_%02d"%(plan.fields.size()+1);field.seed=91744+plan.fields.size()*7919
 			plan.fields.append(field)
+			if plan.supporting_island(plan.field_polygon(plan.fields.size()-1,.14))<0:
+				plan.fields.pop_back();continue
 			var accepted: bool=Circulation.field_placement_issues(plan,obstacles).is_empty()
 			var polygon: PackedVector2Array=plan.field_polygon(plan.fields.size()-1,.35)
 			for prior: int in plan.fields.size()-1:
 				if not Geometry2D.intersect_polygons(polygon,plan.field_polygon(prior,.35)).is_empty(): accepted=false;break
 			if not accepted: plan.fields.pop_back()
 		if plan.fields.size()==12: break
+	# Use actual added land for the final full-size field, without shrinking crops.
+	if plan.fields.size()<12:
+		var field: Dictionary=prototype.duplicate(true)
+		field.position=Vector3(18.5,plan.ground_height_at(Vector2(18.5,-2.5))+.07,-2.5)
+		field.id="field_%02d"%(plan.fields.size()+1);field.seed=91744+plan.fields.size()*7919
+		plan.fields.append(field)
+		check(Circulation.field_placement_issues(plan,obstacles).is_empty(),"East capacity field has full support and respects actual objects")
 	check(plan.fields.size()==12,"Twelve complete fields fit real island and obstacles")
 	var routes:=Circulation.new();routes.build(plan,obstacles)
 	check(routes.issues.is_empty(),"Capacity layout keeps all entrances and fields connected: "+str(routes.issues))
+	if construction_mode:
+		for kind: String in ["duck","goose","hen"]:
+			plan.construction.flocks[kind].count=preload("res://layout/flock_layout.gd").SPECIES[kind].limit
 	write_json("layout",plan.snapshot())
 	if failures>0: print("CAPACITY_LAYOUT failures=",failures," count=",plan.fields.size()," evidence=",folder);quit(1);return
-	var farm:=Farm.new(1000,plan.snapshot());var data: Dictionary=farm.snapshot();var species: Array[String]=Farm.Crops.crop_ids();var index: int=0
-	for field: Dictionary in data.fields.values():
-		for cell: Dictionary in field.cells.values():
+	var farm:=Farm.new(1000,plan.snapshot());var data: Dictionary=farm.snapshot();var species: Array[String]=Farm.Crops.seeds(false);var index: int=0
+	for id: String in farm.field_ids():
+		for cell: Dictionary in data.fields[id].cells.values():
 			cell.ground="ready";cell.crop_id=species[index%species.size()];cell.growth_seconds=Farm.Crops.definition(cell.crop_id).duration_seconds;index+=1
+	for cell: Dictionary in data.fields[Farm.Trellis.FIELD_ID].cells.values():
+		cell.crop_id="luffa";cell.growth_seconds=Farm.Crops.definition("luffa").duration_seconds
 	for home: String in Farm.Neighbors.IDS: data.neighbors[home]={"round":3,"pending":false,"last_gift":Farm.Neighbors.HOMES[home].gifts[0]}
 	data.season="after_rain"
 	check(index==384 and farm.restore_snapshot(data),"Maximum mixed-crop fixture is valid")
+	if failures>0: print("CAPACITY_STATE failures=",failures," crops=",index);quit(1);return
+	print("CAPACITY_STATE valid=true ground_crops=",index," trellis_crops=",data.fields[Farm.Trellis.FIELD_ID].cells.size())
 	var store:=Store.new(folder.path_join("farm"));store.load_state();check(store.save(farm.snapshot(),preload("res://farm/decoration_state.gd").new().snapshot()).ok,"Maximum scene persists")
 	scene=load("res://scenes/main.tscn").instantiate();scene.store=store;scene.settings_store=load("res://settings/settings_store.gd").new(folder.path_join("settings"));scene.clock=func() -> float: return 1000
 	root.add_child(scene);await process_frame
 	while not scene.get_node("Environment/CourtyardAnimals").ready_for_motion: await process_frame
-	root.mode=Window.MODE_EXCLUSIVE_FULLSCREEN
+	if not construction_mode: root.mode=Window.MODE_EXCLUSIVE_FULLSCREEN
 	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(),true)
 	check(scene.farm.fields.size()==12,"All fields presented")
 	for field: Node3D in scene.farm.fields: check(field.get_node("Crops").get_child_count()==32,"Each field renders 32 plants")
-	check(scene.get_node("Environment/CourtyardAnimals").birds.size()==7,"All animals coexist with capacity planting")
+	check(scene.get_node("Environment/CourtyardAnimals").birds.size()==(28 if construction_mode else 7),"All animals coexist with capacity planting")
 	check(scene.get_node("Environment").circulation.issues.is_empty(),"Actual scene retains traversable circulation")
 	var neighbors: Node3D=scene.get_node("Environment/NeighborIslets")
 	var footprint: PackedVector2Array=preload("res://scenes/environment/animal_space.gd").footprint(neighbors.get_node("WillowNeighbor").get_child(0),-.55,.55,false)
 	check(Geometry2D.intersect_polygons(footprint,plan.plateau()).is_empty(),"Maximum expansion cannot merge with Willow household")
 	check(neighbors.get_node("WillowNeighbor").scale==Vector3.ONE,"Neighbor keeps its real authored size")
-	scene.atmosphere.set_preview_hour(14);await measure("overview-day")
-	scene._focus_field(10);await create_timer(1).timeout;await measure("field-day")
-	scene.atmosphere.set_preview_hour(21);await measure("field-night")
+	if construction_mode:
+		RenderingServer.frame_post_draw.connect(_collect_frame)
+		await construction_checks()
+	else:
+		scene.atmosphere.set_preview_hour(14);await measure("overview-day")
+		scene._focus_field(10);await create_timer(1).timeout;await measure("field-day")
+		scene.atmosphere.set_preview_hour(21);await measure("field-night")
 	check(Store.new(store.directory).load_state().farm==scene.farm_state.snapshot(),"No unintended growth rewards or state loss during rendering")
-	write_json("result",{"failures":failures,"fields":12,"crops":384,"species":12,"animals":7,"size":root.size,"gpu":RenderingServer.get_video_adapter_name(),"engine":Engine.get_version_info().string,"measurements":measurements,"note":"Short per-view render samples; foreground counts retained, no focus stealing or low-end/long-term certification."})
+	write_json("result",{"failures":failures,"fields":12,"crops":384,"species":12,"trellis_crops":data.fields[Farm.Trellis.FIELD_ID].cells.size(),"animals":scene.get_node("Environment/CourtyardAnimals").birds.size(),"plants":scene.courtyard_plan.plants.size(),"size":root.size,"quality":scene.focus_detail._quality,"gpu":RenderingServer.get_video_adapter_name(),"engine":Engine.get_version_info().string,"measurements":measurements,"actions":actions,"note":"Actual render and input samples; focus recorded without stealing it. --dev-preview uses the normal second-screen preview frame policy; no low-end certification."})
 	print("LIFE_CAPACITY failures=",failures," evidence=",folder)
 	scene.farm_audio.shutdown();await create_timer(.15).timeout
 	scene.queue_free();await process_frame;await process_frame;quit(0 if failures==0 else 1)
+
+func _collect_frame() -> void:
+	if _sample.is_empty(): return
+	var tick: int=Time.get_ticks_usec()
+	_sample.intervals.append((tick-_sample_tick)/1000.0);_sample_tick=tick
+	_sample.gpu.append(RenderingServer.viewport_get_measured_render_time_gpu(root.get_viewport_rid()))
+	_sample.cpu.append(RenderingServer.viewport_get_measured_render_time_cpu(root.get_viewport_rid())+RenderingServer.get_frame_setup_time_cpu())
+	if scene.window_activity.is_foreground(): _sample.foreground+=1
+
+func begin_sample(label: String) -> void:
+	_sample_tick=Time.get_ticks_usec()
+	_sample={"label":label,"started":_sample_tick,"intervals":[],"gpu":[],"cpu":[],"foreground":0}
+
+func end_sample() -> void:
+	var intervals: Array[float]=[];intervals.assign(_sample.intervals)
+	var gpu: Array[float]=[];gpu.assign(_sample.gpu)
+	var cpu: Array[float]=[];cpu.assign(_sample.cpu)
+	var result: Dictionary={"action":_sample.label,"elapsed_ms":(Time.get_ticks_usec()-_sample.started)/1000.0,"frames":intervals.size(),"foreground_frames":_sample.foreground,"frame_interval_ms":stats(intervals),"gpu_ms":stats(gpu),"cpu_render_ms":stats(cpu),"static_bytes":Performance.get_monitor(Performance.MEMORY_STATIC),"video_bytes":Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED)}
+	actions.append(result);_sample={};print("CONSTRUCTION_SAMPLE "+JSON.stringify(result));write_json("actions",actions)
+
+func pointer(point: Vector2, pressed: bool) -> void:
+	var event:=InputEventMouseButton.new();event.position=point;event.button_index=MOUSE_BUTTON_LEFT;event.pressed=pressed;event.window_id=root.get_window_id()
+	root.push_input(event,true);await process_frame;await process_frame
+
+func click(control: Control) -> void:
+	var point: Vector2=control.get_global_rect().get_center()
+	var event:=InputEventMouseMotion.new();event.position=point;event.window_id=root.get_window_id();root.push_input(event,true)
+	await process_frame;await pointer(point,true);await pointer(point,false)
+
+func choose(id: String) -> void:
+	var builder: Node=scene.island_builder
+	await click(builder.choices.categories[preload("res://layout/construction_catalog.gd").item(id).category])
+	await click(builder.choices.items[id])
+
+func stroke(a: Vector3,b: Vector3,steps: int=48) -> void:
+	var point: Vector2=scene.camera.unproject_position(a)
+	await pointer(point,true)
+	for i: int in range(1,steps+1):
+		var next: Vector2=scene.camera.unproject_position(a.lerp(b,float(i)/steps))
+		var event:=InputEventMouseMotion.new();event.position=next;event.relative=next-point;event.button_mask=MOUSE_BUTTON_MASK_LEFT;event.window_id=root.get_window_id()
+		root.push_input(event,true);point=next;await process_frame
+	await pointer(point,false)
+
+func settle() -> void:
+	var started: int=Time.get_ticks_msec()
+	while scene.island_builder.busy or scene.get_node("Environment")._terrain_refreshing:
+		await process_frame
+		if Time.get_ticks_msec()-started>60000: check(false,"Background construction settles within 60 seconds");return
+
+func construction_checks() -> void:
+	const Plants=preload("res://layout/plantings.gd")
+	scene.atmosphere.set_preview_hour(11)
+	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await choose("trapa")
+	var builder: Node=scene.island_builder
+	await click(builder._plant_buttons.brush);builder._values.radius.value=3;builder._values.density.value=3
+	begin_sample("dense-plant-brush")
+	for point: Vector2 in [Vector2(17,7),Vector2(21,7),Vector2(24,4),Vector2(-4,18),Vector2(0,18),Vector2(4,17)]:
+		await stroke(Vector3(point.x,-.25,point.y),Vector3(point.x+1,-.25,point.y),12)
+		if builder.draft.plants.size()==Plants.MAX_CLUMPS: break
+	end_sample()
+	check(builder.draft.plants.size()==Plants.MAX_CLUMPS,"Real dense brush fills 160 stable clumps with 384 crops and 28 animals")
+	if OS.get_cmdline_user_args().has("--profile"):
+		var timings: Dictionary={}
+		var started: int=Time.get_ticks_usec()
+		var plan: RefCounted=Plan.from_snapshot(builder.draft);timings.decode_ms=(Time.get_ticks_usec()-started)/1000.0
+		started=Time.get_ticks_usec();builder.plant_preview.update(plan);timings.preview_ms=(Time.get_ticks_usec()-started)/1000.0
+		started=Time.get_ticks_usec();builder.issue();timings.issue_ms=(Time.get_ticks_usec()-started)/1000.0
+		started=Time.get_ticks_usec()
+		var dressing: Node3D=preload("res://presentation/shore_dressing.gd").plants(plan)
+		timings.dressing_ms=(Time.get_ticks_usec()-started)/1000.0;dressing.free()
+		started=Time.get_ticks_usec();scene.get_node("Environment").fit_player_dressing(plan);timings.fitting_ms=(Time.get_ticks_usec()-started)/1000.0
+		started=Time.get_ticks_usec()
+		for entry: Dictionary in plan.plants: builder.plant_preview.entry_issue(entry,plan,false)
+		timings.static_entries_ms=(Time.get_ticks_usec()-started)/1000.0
+		write_json("plant-profile",timings);print("PLANT_PROFILE "+JSON.stringify(timings))
+	var waiting_since: int=Time.get_ticks_msec()
+	while builder.issue().contains("动物") and Time.get_ticks_msec()-waiting_since<20000:
+		await create_timer(.25).timeout;builder._refresh()
+	print("CAPACITY_PLANTS ",builder.draft.plants.size()," issue=",builder.issue())
+	check(builder.issue().is_empty(),"Capacity planting can complete after animals clear the live preview: "+builder.issue())
+	if builder.draft.plants.size()!=Plants.MAX_CLUMPS or not builder.issue().is_empty(): await shot("failed-plants");return
+	begin_sample("plant-confirm-and-background")
+	await click(builder._confirm);await settle();end_sample()
+	check(scene.courtyard_plan.plants.size()==160,"Capacity planting commits in the same scene")
+	var saved_fields: Dictionary=scene.farm_state.snapshot().fields
+	var saved_inventory: Dictionary=scene.farm_state.snapshot().inventory
+	var identity: int=scene.get_instance_id()
+	var original_east: Array=scene.courtyard_plan.construction.east_land.duplicate(true)
+	await choose("land")
+	scene.camera._move_to(Vector3(20,.4,-2),Vector3(24,65,25));await create_timer(1).timeout
+	begin_sample("east-held-land-stroke")
+	await stroke(Vector3(21.5,.11,-3.5),Vector3(24,.11,-3.5));end_sample()
+	check(builder.draft.construction.east_land!=original_east and builder.issue().is_empty(),"Full scene accepts real east terrain stroke: "+builder.issue())
+	await shot("capacity-east-preview")
+	if builder.draft.construction.east_land==original_east or not builder.issue().is_empty(): return
+	var expected: Dictionary=builder.candidate.snapshot()
+	begin_sample("land-finish")
+	await click(builder._panel.find_child("Finish",true,false));end_sample()
+	check(not builder.active and scene.courtyard_plan.snapshot()==expected and scene.get_instance_id()==identity,"Finish adopts large-scene terrain without reloading")
+	begin_sample("land-background-navigation")
+	await settle();end_sample()
+	check(scene.get_node("Environment/CourtyardAnimals").ready_for_motion,"All capacity animals resume after terrain edit")
+	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	begin_sample("land-undo-and-background")
+	await click(builder._undo);await settle();end_sample()
+	check(scene.courtyard_plan.construction.east_land==original_east,"Large-scene terrain undo succeeds")
+	for id: String in ["fields","trellis","house","bridge","ducks","trapa"]:
+		begin_sample("select-"+id);await choose(id);end_sample()
+		if id=="fields" and OS.get_cmdline_user_args().has("--profile"):
+			var timings: Dictionary={}
+			var started: int=Time.get_ticks_usec()
+			var copy:=FarmLayout.new();copy.plan.fields.clear();root.add_child(copy);copy.hide();copy.copy_from(scene.farm)
+			timings.copy_farm_ms=(Time.get_ticks_usec()-started)/1000.0;copy.free()
+			started=Time.get_ticks_usec();builder.field_preview.core.update_tiles(builder.candidate,false);timings.core_grass_ms=(Time.get_ticks_usec()-started)/1000.0
+			started=Time.get_ticks_usec();builder.field_preview.expansion.update_expansion(builder.candidate);timings.expansion_grass_ms=(Time.get_ticks_usec()-started)/1000.0
+			started=Time.get_ticks_usec();builder.field_preview.show_ground(builder.candidate);timings.ground_ms=(Time.get_ticks_usec()-started)/1000.0
+			write_json("field-profile",timings);print("FIELD_PROFILE "+JSON.stringify(timings))
+	await choose("land");await click(builder._panel.find_child("Finish",true,false));await settle()
+	check(scene.farm_state.snapshot().fields==saved_fields and scene.farm_state.snapshot().inventory==saved_inventory,"Capacity construction preserves every crop and inventory")
+	scene.atmosphere.set_preview_hour(11);await measure("capacity-overview-day")
+	scene.atmosphere.set_preview_hour(21);await measure("capacity-overview-night")

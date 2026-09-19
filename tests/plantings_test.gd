@@ -35,6 +35,25 @@ func _run() -> void:
 	for point: Vector2 in sparse: nested=nested and point in dense
 	expect(nested,"Increasing density keeps earlier world positions")
 	expect(dense==Plants.brush_points(Vector2(-4,9),3,3,"lotus"),"Same brush region is deterministic")
+	var entries: Array=[]
+	for i: int in 160: entries.append(Plants.make_entry(i+1,"trapa" if i%2==0 else "lotus",Vector2(i%16-8,i/16-5)*.47))
+	var occupied: Dictionary=Plants.index_entries(entries)
+	var mismatches: int=0
+	for tolerance: float in [0,.001]:
+		for kind: String in ["trapa","lotus"]:
+			for i: int in 200:
+				var candidate: Dictionary=Plants.make_entry(999,kind,Vector2(i%20-10,i/20-5)*.49+Vector2(.03,.17))
+				var expected: bool=false
+				for entry: Dictionary in entries:
+					var gap: float=(.32 if kind=="trapa" and entry.kind=="trapa" else .5)-tolerance
+					expected=expected or Plants.position(candidate).distance_to(Plants.position(entry))<gap
+				if Plants.too_close(candidate,occupied,tolerance)!=expected: mismatches+=1
+	expect(mismatches==0,"Spatial clump spacing matches exhaustive clearance across 800 mixed-kind queries")
+	var single: Dictionary=Plants.make_entry(1,"trapa",Vector2(-.5,-.5))
+	var one: Dictionary=Plants.index_entries([single])
+	expect(not Plants.too_close(single,one),"A moving clump never collides with its own identity")
+	Plants.index_entry(one,Plants.make_entry(2,"trapa",Vector2(-.2,-.5)))
+	expect(Plants.too_close(single,one),"New clumps enter the brush spacing index immediately")
 	var banks: Array[PackedVector2Array]=plan.water_banks()
 	expect(not Plants.habitat_issue(Plants.make_entry(1,"lotus",Vector2.ZERO),plan,banks).is_empty(),"Dry land rejects aquatic plants")
 	expect(not Plants.habitat_issue(Plants.make_entry(1,"reed",Vector2(-10,12)),plan,banks).is_empty(),"Deep water rejects emergent reeds")

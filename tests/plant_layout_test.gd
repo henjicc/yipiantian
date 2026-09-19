@@ -32,6 +32,8 @@ func _run() -> void:
 	scene.clock=func() -> float: return now
 	root.add_child(scene);current_scene=scene;await frames(8)
 	scene.atmosphere.set_preview_hour(11)
+	if OS.get_cmdline_user_args().has("--clearance"):
+		await clearance_checks();await finish();return
 	if OS.get_cmdline_user_args().has("--edges-only"):
 		await edges();await finish();return
 	var environment: Node3D=scene.get_node("Environment")
@@ -153,6 +155,36 @@ func _run() -> void:
 	expect(root.get_visible_rect().encloses(scene.island_builder._panel.get_global_rect()),"Plant tools fit minimum window")
 	await shot("06-small-window")
 	await finish()
+
+func clearance_checks() -> void:
+	scene._begin_construction("trapa");await create_timer(1).timeout
+	var preview: Node=scene.island_builder.plant_preview
+	var plan: RefCounted=scene.island_builder.candidate
+	var point: Vector2=free_point("trapa",Vector2(-4,9))
+	expect(point.is_finite(),"Clearance comparison uses a valid water planting site")
+	if not point.is_finite(): return
+	var birds: Array=scene.get_node("Environment/CourtyardAnimals").birds
+	var positions: Array[Vector2]=[]
+	for bird: Dictionary in birds: positions.append(bird.position);bird.position=Vector2(100,100)
+	var checked: int=0;var mismatches: int=0
+	for angle: float in [0,22.5,45,90]:
+		var entry: Dictionary=Plants.make_entry(999,"trapa",point);entry.pose[2]=angle
+		var polygon: PackedVector2Array=Plants.footprint(entry)
+		var expanded: Array[PackedVector2Array]=Geometry2D.offset_polygon(polygon,birds[0].radius+.15)
+		for y: int in range(-12,13):
+			for x: int in range(-12,13):
+				var at: Vector2=point+Vector2(x,y)*.1;birds[0].position=at
+				var blocked: bool=false
+				for shape: PackedVector2Array in expanded: blocked=blocked or Geometry2D.is_point_in_polygon(at,shape)
+				if preview.entry_issue(entry,plan).contains("动物")!=blocked: mismatches+=1
+				checked+=1
+	for i: int in birds.size(): birds[i].position=positions[i]
+	expect(mismatches==0,"Nearby-animal filtering preserves exact rotated clearance at %d samples"%checked)
+	var original: Array[PackedVector3Array]=scene.courtyard_plan.paths.duplicate(true)
+	scene.courtyard_plan.paths.append(PackedVector3Array([Vector3(point.x-1,0,point.y),Vector3(point.x+1,0,point.y)]))
+	expect(preview.entry_issue(Plants.make_entry(999,"trapa",point),plan,false).contains("道路"),"A path arriving after preview creation is protected")
+	scene.courtyard_plan.paths=original
+	expect(preview.entry_issue(Plants.make_entry(999,"trapa",point),plan,false).is_empty(),"Removed path does not leave stale occupied cells")
 
 func edges() -> void:
 	scene._begin_construction("trapa");await create_timer(1).timeout

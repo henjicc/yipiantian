@@ -31,6 +31,28 @@ static func canonical(entries: Array) -> Array:
 static func position(entry: Dictionary) -> Vector2:
 	return Vector2(entry.pose[0],entry.pose[1])
 
+static func index_entries(entries: Array) -> Dictionary:
+	var result: Dictionary={}
+	for entry: Dictionary in entries: index_entry(result,entry)
+	return result
+
+static func index_entry(index: Dictionary, entry: Dictionary) -> void:
+	var cell: Vector2i=Space.cell_at(position(entry))
+	if not index.has(cell): index[cell]=[]
+	index[cell].append(entry)
+
+static func too_close(entry: Dictionary, index: Dictionary, tolerance: float=0.0) -> bool:
+	var point: Vector2=position(entry)
+	var cell: Vector2i=Space.cell_at(point)
+	# All current inter-clump clearances are at most one standard spatial cell.
+	for y: int in range(-1,2):
+		for x: int in range(-1,2):
+			for other: Dictionary in index.get(cell+Vector2i(x,y),[]):
+				if other.id==entry.id: continue
+				var gap: float=(.32 if entry.kind=="trapa" and other.kind=="trapa" else .5)-tolerance
+				if point.distance_squared_to(position(other))<gap*gap: return true
+	return false
+
 static func pose(entry: Dictionary) -> Transform3D:
 	var size: float=entry.pose[3]*SCALES[entry.kind]
 	var scale:=Vector3.ONE*size

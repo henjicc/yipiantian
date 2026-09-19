@@ -358,6 +358,7 @@ func _paint_plants(point: Vector2) -> void:
 	_plant_message=""
 	var next_id: int=1
 	for entry: Dictionary in draft.plants: next_id=maxi(next_id,int(entry.id)+1)
+	var occupied: Dictionary=Plants.index_entries(draft.plants)
 	for sample: Vector2 in samples:
 		if _plant_mode=="erase":
 			for i: int in range(draft.plants.size()-1,-1,-1):
@@ -367,14 +368,11 @@ func _paint_plants(point: Vector2) -> void:
 		var points: PackedVector2Array=Plants.brush_points(sample,_values.radius.value,int(_values.density.value),tool) if _plant_mode=="brush" else PackedVector2Array([sample])
 		for at: Vector2 in points:
 			if draft.plants.size()>=Plants.MAX_CLUMPS: _plant_message="已达到 %d 簇，可擦除部分植物再布置。"%Plants.MAX_CLUMPS;break
-			var near: bool=false
-			for entry: Dictionary in draft.plants:
-				if Plants.position(entry).distance_to(at)<(.32 if tool=="trapa" and entry.kind=="trapa" else .5): near=true;break
-			if near: continue
 			var entry: Dictionary=Plants.make_entry(next_id,tool,at)
+			if Plants.too_close(entry,occupied): continue
 			var message: String=plant_preview.entry_issue(entry,plan)
 			if not message.is_empty(): _plant_message=message;continue
-			draft.plants.append(entry);next_id+=1
+			draft.plants.append(entry);Plants.index_entry(occupied,entry);next_id+=1
 	_plant_last=point;_refresh()
 
 func _move_plants(point: Vector2) -> void:
