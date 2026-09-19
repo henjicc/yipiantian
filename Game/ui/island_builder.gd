@@ -347,8 +347,9 @@ func _ensure_plant_preview() -> void:
 
 func _paint_plants(point: Vector2) -> void:
 	_ensure_plant_preview()
-	var plan: RefCounted=Plan.from_snapshot(draft)
-	if plan==null: return
+	# Every preceding gesture refreshed and validated this candidate. The
+	# plant edits below are decoded once by _refresh after the stroke sample.
+	if candidate==null: return
 	var from: Vector2=_plant_last if _plant_last.is_finite() else point
 	var steps: int=mini(100,maxi(1,ceili(from.distance_to(point)/.3)))
 	var samples:=PackedVector2Array([point])
@@ -370,7 +371,7 @@ func _paint_plants(point: Vector2) -> void:
 			if draft.plants.size()>=Plants.MAX_CLUMPS: _plant_message="已达到 %d 簇，可擦除部分植物再布置。"%Plants.MAX_CLUMPS;break
 			var entry: Dictionary=Plants.make_entry(next_id,tool,at)
 			if Plants.too_close(entry,occupied): continue
-			var message: String=plant_preview.entry_issue(entry,plan)
+			var message: String=plant_preview.entry_issue(entry)
 			if not message.is_empty(): _plant_message=message;continue
 			draft.plants.append(entry);Plants.index_entry(occupied,entry);next_id+=1
 	_plant_last=point;_refresh()

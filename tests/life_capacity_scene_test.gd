@@ -84,7 +84,7 @@ func run() -> void:
 		# do not depend on an animal walking out of an uncommitted plant brush.
 		for i: int in Plants.MAX_CLUMPS:
 			var entry: Dictionary=Plants.make_entry(i+1,"trapa",Vector2(17+(i%16)*.5,7+floori(i/16.0)*.5))
-			check(Plants.habitat_issue(entry,plan,plan.water_banks()).is_empty(),"Established capacity plant has water support")
+			check(Plants.habitat_issue(entry,Plants.habitat_geometry(plan)).is_empty(),"Established capacity plant has water support")
 			plan.plants.append(entry)
 	write_json("layout",plan.snapshot())
 	if failures>0: print("CAPACITY_LAYOUT failures=",failures," count=",plan.fields.size()," evidence=",folder);quit(1);return
@@ -205,7 +205,7 @@ func paint_capacity_plants() -> bool:
 		timings.dressing_ms=(Time.get_ticks_usec()-started)/1000.0;dressing.free()
 		started=Time.get_ticks_usec();scene.get_node("Environment").fit_player_dressing(plan);timings.fitting_ms=(Time.get_ticks_usec()-started)/1000.0
 		started=Time.get_ticks_usec()
-		for entry: Dictionary in plan.plants: builder.plant_preview.entry_issue(entry,plan,false)
+		for entry: Dictionary in plan.plants: builder.plant_preview.entry_issue(entry,false)
 		timings.static_entries_ms=(Time.get_ticks_usec()-started)/1000.0
 		write_json("plant-profile",timings);print("PLANT_PROFILE "+JSON.stringify(timings))
 	var waiting_since: int=Time.get_ticks_msec()

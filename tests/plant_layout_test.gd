@@ -19,7 +19,7 @@ func free_point(kind: String, target: Vector2) -> Vector2:
 			for entry: Dictionary in builder.draft.plants:
 				if Plants.position(entry).distance_to(point)<1: near=true;break
 			if near: continue
-			if builder.plant_preview.entry_issue(Plants.make_entry(999,kind,point),builder.candidate).is_empty():
+			if builder.plant_preview.entry_issue(Plants.make_entry(999,kind,point)).is_empty():
 				best=point;distance=point.distance_squared_to(target)
 	return best
 
@@ -159,7 +159,6 @@ func _run() -> void:
 func clearance_checks() -> void:
 	scene._begin_construction("trapa");await create_timer(1).timeout
 	var preview: Node=scene.island_builder.plant_preview
-	var plan: RefCounted=scene.island_builder.candidate
 	var point: Vector2=free_point("trapa",Vector2(-4,9))
 	expect(point.is_finite(),"Clearance comparison uses a valid water planting site")
 	if not point.is_finite(): return
@@ -176,15 +175,15 @@ func clearance_checks() -> void:
 				var at: Vector2=point+Vector2(x,y)*.1;birds[0].position=at
 				var blocked: bool=false
 				for shape: PackedVector2Array in expanded: blocked=blocked or Geometry2D.is_point_in_polygon(at,shape)
-				if preview.entry_issue(entry,plan).contains("动物")!=blocked: mismatches+=1
+				if preview.entry_issue(entry).contains("动物")!=blocked: mismatches+=1
 				checked+=1
 	for i: int in birds.size(): birds[i].position=positions[i]
 	expect(mismatches==0,"Nearby-animal filtering preserves exact rotated clearance at %d samples"%checked)
 	var original: Array[PackedVector3Array]=scene.courtyard_plan.paths.duplicate(true)
 	scene.courtyard_plan.paths.append(PackedVector3Array([Vector3(point.x-1,0,point.y),Vector3(point.x+1,0,point.y)]))
-	expect(preview.entry_issue(Plants.make_entry(999,"trapa",point),plan,false).contains("道路"),"A path arriving after preview creation is protected")
+	expect(preview.entry_issue(Plants.make_entry(999,"trapa",point),false).contains("道路"),"A path arriving after preview creation is protected")
 	scene.courtyard_plan.paths=original
-	expect(preview.entry_issue(Plants.make_entry(999,"trapa",point),plan,false).is_empty(),"Removed path does not leave stale occupied cells")
+	expect(preview.entry_issue(Plants.make_entry(999,"trapa",point),false).is_empty(),"Removed path does not leave stale occupied cells")
 
 func edges() -> void:
 	scene._begin_construction("trapa");await create_timer(1).timeout

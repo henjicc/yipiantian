@@ -58,9 +58,28 @@ func _run() -> void:
 	expect(not Plants.too_close(single,one),"A moving clump never collides with its own identity")
 	Plants.index_entry(one,Plants.make_entry(2,"trapa",Vector2(-.2,-.5)))
 	expect(Plants.too_close(single,one),"New clumps enter the brush spacing index immediately")
-	var banks: Array[PackedVector2Array]=plan.water_banks()
-	expect(not Plants.habitat_issue(Plants.make_entry(1,"lotus",Vector2.ZERO),plan,banks).is_empty(),"Dry land rejects aquatic plants")
-	expect(not Plants.habitat_issue(Plants.make_entry(1,"reed",Vector2(-10,12)),plan,banks).is_empty(),"Deep water rejects emergent reeds")
+	var habitat: Dictionary=Plants.habitat_geometry(plan)
+	expect(not Plants.habitat_issue(Plants.make_entry(1,"lotus",Vector2.ZERO),habitat).is_empty(),"Dry land rejects aquatic plants")
+	expect(not Plants.habitat_issue(Plants.make_entry(1,"reed",Vector2(-10,12)),habitat).is_empty(),"Deep water rejects emergent reeds")
+	var shore:=Plan.new();shore.plants=[Plants.make_entry(1,"lotus",Vector2(0,8))]
+	var shore_before: Dictionary=shore.snapshot()
+	expect(Plants.terrain_issue(shore).is_empty(),"Existing water supports the player's lotus")
+	var construction: Dictionary=shore.construction.duplicate(true);construction.land=[[-2,5,4,5]]
+	expect(shore.apply_construction(construction) and not Plants.terrain_issue(shore).is_empty(),"New land cannot cover an existing player plant")
+	var restored_shore: RefCounted=Plan.from_snapshot(shore_before)
+	expect(Plants.terrain_issue(restored_shore).is_empty(),"Restoring the previous shore restores plant support without stale bounds")
+	for terrain: RefCounted in [restored_shore,shore]:
+		var geometry: Dictionary=Plants.habitat_geometry(terrain)
+		var same: bool=true;var queries: int=0
+		for kind: String in Plants.KINDS:
+			for i: int in 200:
+				var entry: Dictionary=Plants.make_entry(i+1,kind,Vector2(-12+(i%20)*1.9,-12+floori(i/20.0)*3.1))
+				var expected: String=""
+				if not terrain.buildable_bounds().grow(7).has_point(Plants.position(entry)): expected="请在小岛附近布置植物。"
+				elif not Plants.Space.water_clear(Plants.footprint(entry),geometry.banks): expected="水生植物需要放在水面上，请避开岛岸。"
+				elif kind in ["reed","cattail"] and Plants.nearest_bank(Plants.position(entry),geometry.banks)>1.4: expected="芦苇和香蒲需要靠近岸边。"
+				same=same and Plants.habitat_issue(entry,geometry)==expected;queries+=1
+		expect(same,"Prepared habitat matches exact unfiltered water and shore rules across %d queries"%queries)
 	for kind: String in Plants.KINDS:
 		for tier: String in ["high","low"]:
 			var data: Dictionary=Display.source(kind,tier)

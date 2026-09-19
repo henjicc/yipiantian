@@ -13,7 +13,7 @@ var _index:=IslandSpace.new()
 var _paths:=IslandSpace.new()
 var _path_source: Array=[]
 var _entry_checks: Dictionary={}
-var _banks: Array[PackedVector2Array]=[]
+var _habitat: Dictionary={}
 var _accepted: bool=false
 var _original_shore: Node3D
 var _shore: Node3D
@@ -21,7 +21,9 @@ var _shown: Array=[]
 
 func configure(scene: Node3D) -> void:
 	main=scene;environment=main.get_node("Environment");_original=environment.get_node("PlayerPlants")
-	_banks=environment.plan.water_banks()
+	# Land is fixed for this plant-only preview; each terrain edit creates a
+	# fresh preview. Dynamic animals and arriving paths are checked separately.
+	_habitat=Plants.habitat_geometry(environment.plan)
 	_obstacles=environment.layout_obstacles.duplicate(true)
 	for key: String in _obstacles.keys():
 		if key.begins_with("player_plant_"): _obstacles.erase(key)
@@ -49,13 +51,13 @@ func _sync_paths() -> void:
 			var side:=Vector2(-(b-a).y,(b-a).x).normalized()*.34
 			_paths.add("%d_%d"%[route_index,i],PackedVector2Array([a-side,b-side,b+side,a+side]))
 
-func entry_issue(entry: Dictionary, plan: RefCounted, check_animals: bool=true) -> String:
+func entry_issue(entry: Dictionary, check_animals: bool=true) -> String:
 	_sync_paths()
 	# Terrain and scene feet belong to this preview session. Pose/path changes
 	# invalidate static checks; moving animals are always checked again below.
 	var previous: Dictionary=_entry_checks.get(entry.id,{})
 	if previous.get("entry",{})!=entry:
-		previous={"entry":entry.duplicate(true),"message":_static_entry_issue(entry,plan)}
+		previous={"entry":entry.duplicate(true),"message":_static_entry_issue(entry)}
 		_entry_checks[entry.id]=previous
 	if not previous.message.is_empty(): return previous.message
 	if check_animals:
@@ -70,8 +72,8 @@ func entry_issue(entry: Dictionary, plan: RefCounted, check_animals: bool=true) 
 				if Geometry2D.is_point_in_polygon(bird.position,expanded): return "这里有动物，请等它走开再布置。"
 	return ""
 
-func _static_entry_issue(entry: Dictionary, plan: RefCounted) -> String:
-	var issue: String=Plants.habitat_issue(entry,plan,_banks)
+func _static_entry_issue(entry: Dictionary) -> String:
+	var issue: String=Plants.habitat_issue(entry,_habitat)
 	if not issue.is_empty(): return issue
 	var polygon: PackedVector2Array=Plants.footprint(entry)
 	if not _index.collisions(polygon).is_empty(): return "请避开景物、桥头和码头。"
@@ -93,7 +95,7 @@ func update(plan: RefCounted) -> void:
 		if not present.has(id): _entry_checks.erase(id)
 	for entry: Dictionary in plan.plants:
 		if entry in environment.plan.plants: continue
-		message=entry_issue(entry,plan)
+		message=entry_issue(entry)
 		if not message.is_empty(): break
 		if Plants.too_close(entry,occupied,.001):
 			message="这里已有手植植物，请留出一点间距。";return

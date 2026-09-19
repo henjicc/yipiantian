@@ -79,16 +79,31 @@ static func nearest_bank(point: Vector2, banks: Array[PackedVector2Array]) -> fl
 		for i: int in bank.size(): distance=minf(distance,point.distance_to(Geometry2D.get_closest_point_to_segment(point,bank[i],bank[(i+1)%bank.size()])))
 	return distance
 
-static func habitat_issue(entry: Dictionary, plan: RefCounted, banks: Array[PackedVector2Array]) -> String:
-	if not plan.buildable_bounds().grow(7).has_point(position(entry)): return "请在小岛附近布置植物。"
-	if not Space.water_clear(footprint(entry),banks): return "水生植物需要放在水面上，请避开岛岸。"
-	if entry.kind in ["reed","cattail"] and nearest_bank(position(entry),banks)>1.4: return "芦苇和香蒲需要靠近岸边。"
+static func habitat_geometry(plan: RefCounted) -> Dictionary:
+	var banks: Array[PackedVector2Array]=plan.water_banks()
+	var bank_bounds: Array[Rect2]=[]
+	for bank: PackedVector2Array in banks:
+		var bounds:=Rect2(bank[0],Vector2.ZERO)
+		for point: Vector2 in bank: bounds=bounds.expand(point)
+		bank_bounds.append(bounds)
+	return {"bounds":plan.buildable_bounds().grow(7),"banks":banks,"bank_bounds":bank_bounds}
+
+static func habitat_issue(entry: Dictionary, habitat: Dictionary) -> String:
+	if not habitat.bounds.has_point(position(entry)): return "请在小岛附近布置植物。"
+	var polygon: PackedVector2Array=footprint(entry)
+	var bounds:=Rect2(polygon[0],Vector2.ZERO)
+	for point: Vector2 in polygon: bounds=bounds.expand(point)
+	for i: int in habitat.banks.size():
+		if bounds.intersects(habitat.bank_bounds[i],true) and Space.overlaps(polygon,habitat.banks[i]):
+			return "水生植物需要放在水面上，请避开岛岸。"
+	if entry.kind in ["reed","cattail"] and nearest_bank(position(entry),habitat.banks)>1.4: return "芦苇和香蒲需要靠近岸边。"
 	return ""
 
 static func terrain_issue(plan: RefCounted) -> String:
-	var banks: Array[PackedVector2Array]=plan.water_banks()
+	if plan.plants.is_empty(): return ""
+	var habitat: Dictionary=habitat_geometry(plan)
 	for entry: Dictionary in plan.plants:
-		if not habitat_issue(entry,plan,banks).is_empty(): return "这里有亲手布置的水草，请先调整植物再修改土地。"
+		if not habitat_issue(entry,habitat).is_empty(): return "这里有亲手布置的水草，请先调整植物再修改土地。"
 	return ""
 
 static func make_entry(id: int, kind: String, point: Vector2) -> Dictionary:
