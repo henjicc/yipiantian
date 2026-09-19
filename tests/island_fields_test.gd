@@ -10,7 +10,48 @@ func ready_draft() -> bool:
 	expect(message.is_empty(),"Field draft accepted: "+message)
 	return message.is_empty()
 
+func path_appearance(paths: Node3D) -> Array:
+	var result: Array=[]
+	for stone: Node3D in paths.get_children():
+		var meshes: Array=[]
+		var geometry: Array[Node]=stone.find_children("*","MeshInstance3D",true,false)
+		if stone is MeshInstance3D: geometry.push_front(stone)
+		assert(not geometry.is_empty(),"Path appearance includes actual stone meshes")
+		for mesh: MeshInstance3D in geometry:
+			var surfaces: Array=[]
+			for i: int in mesh.mesh.get_surface_count():
+				var material: ShaderMaterial=mesh.get_active_material(i)
+				surfaces.append([material.shader,material.get_shader_parameter("base_color"),material.get_shader_parameter("rock_color"),material.get_shader_parameter("ground_level")])
+			meshes.append([mesh.mesh,mesh.transform,surfaces])
+		result.append([stone.transform,meshes])
+	return result
+
+func path_reuse_checks() -> void:
+	var environment: Node3D=scene.get_node("Environment")
+	var plan:=Plan.new()
+	plan.paths=[PackedVector3Array([Vector3(0,.11,0),Vector3(2,.11,0)])]
+	var original: Node3D=environment.make_paths(plan)
+	var before: Array=path_appearance(original)
+	plan.paths=[PackedVector3Array([Vector3(1,.11,1),Vector3(5,.11,2)]),PackedVector3Array([Vector3(3,.11,1),Vector3(3,.11,4)])]
+	var reused: Node3D=environment.make_paths(plan,original)
+	var fresh: Node3D=environment.make_paths(plan)
+	expect(reused.get_child_count()>original.get_child_count() and path_appearance(reused)==path_appearance(fresh),"Reused and newly added stones match fresh path shape, pose, paint and ground height")
+	expect(path_appearance(original)==before,"Preview road creation does not move or recolor the original stones")
+	plan.paths=[PackedVector3Array([Vector3(-1,.11,0),Vector3(0,.11,0)])]
+	var shorter: Node3D=environment.make_paths(plan,reused)
+	var short_fresh: Node3D=environment.make_paths(plan)
+	expect(shorter.get_child_count()<reused.get_child_count() and path_appearance(shorter)==path_appearance(short_fresh),"Repeated preview can shrink and relocate paths without stale stones")
+	for node: Node3D in [shorter,short_fresh,reused,fresh]: node.free()
+	expect(path_appearance(original)==before,"Cancelling reused roads leaves original materials and transforms intact")
+	original.free()
+
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("--paths-only"):
+		scene=Node3D.new()
+		var environment: Node3D=load("res://scenes/environment/courtyard.gd").new();environment.name="Environment"
+		scene.add_child(environment)
+		path_reuse_checks();scene.free()
+		print("PATH_APPEARANCE checks=",checks," failures=",failures.size());quit(0 if failures.is_empty() else 1);return
 	root.size=Vector2i(1600,900)
 	folder=ProjectSettings.globalize_path("res://../.local/verification/island-fields-%d"%Time.get_unix_time_from_system())
 	DirAccess.make_dir_recursive_absolute(folder);print("EVIDENCE "+folder)
@@ -20,6 +61,7 @@ func _run() -> void:
 	scene.store=Store.new(folder.path_join("farm"));scene.settings_store=Settings.new(folder.path_join("settings"))
 	scene.clock=func() -> float: return 2000000.0
 	root.add_child(scene);current_scene=scene;await frames(8)
+	path_reuse_checks()
 	scene.atmosphere.set_preview_hour(11)
 	var house_id: int=scene.get_node("Environment/MainHouse").get_instance_id()
 	var water_id: int=scene.get_node("Environment/CourtyardAnimals").water.get_instance_id()

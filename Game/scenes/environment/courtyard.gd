@@ -293,9 +293,12 @@ func _build_ground() -> void:
 func _build_paths() -> void:
 	add_child(make_paths(plan))
 
-func make_paths(layout: RefCounted) -> Node3D:
+func make_paths(layout: RefCounted, source: Node3D=null) -> Node3D:
 	var holder:=Node3D.new();holder.name="GardenPaths"
 	holder.set_meta("garden_paths",true)
+	var prototypes: Array[Node]=[]
+	if is_instance_valid(source): prototypes=source.get_children()
+	var ordinal: int=0
 	# A separate seed makes a route change independent of all surrounding foliage.
 	var road_rng := RandomNumberGenerator.new()
 	road_rng.seed=931772
@@ -312,17 +315,31 @@ func make_paths(layout: RefCounted) -> Node3D:
 					if old.distance_squared_to(point)<.27*.27: duplicate=true;break
 				if duplicate: continue
 				placed.append(point)
-				holder.add_child(make_path_stone(p,road_rng))
+				var style: Dictionary=_path_stone_style(road_rng)
+				var stone: Node3D
+				# The fixed seed assigns appearance by stone ordinal, independently
+				# of its position. Duplicate prepared meshes/materials when identical;
+				# a moved path must still look exactly like a fresh reconstruction.
+				if ordinal<prototypes.size() and prototypes[ordinal].get_meta("path_style",{})==style:
+					stone=prototypes[ordinal].duplicate(0);stone.position=p
+				else: stone=_make_styled_path_stone(p,style)
+				holder.add_child(stone);ordinal+=1
 
 	return holder
 
 func make_path_stone(p: Vector3, road_rng: RandomNumberGenerator) -> Node3D:
-	var shape: int = 1 if road_rng.randf()<.65 else 2
-	var stone: Node3D=(load(ROOT+"modules/stone_%d.glb"%shape) as PackedScene).instantiate()
-	stone.position=p;stone.rotation.y=deg_to_rad(road_rng.randf_range(-180,180));stone.scale=Vector3(.40,.28,.40)
-	_apply_pigment(stone,"stone_%d"%shape)
+	return _make_styled_path_stone(p,_path_stone_style(road_rng))
+
+func _path_stone_style(road_rng: RandomNumberGenerator) -> Dictionary:
+	return {"shape":1 if road_rng.randf()<.65 else 2,"yaw":road_rng.randf_range(-180,180),"tint":Color("93907e")*road_rng.randf_range(.90,1.08),"ground":plan.ground_height}
+
+func _make_styled_path_stone(p: Vector3, style: Dictionary) -> Node3D:
+	var stone: Node3D=(load(ROOT+"modules/stone_%d.glb"%style.shape) as PackedScene).instantiate()
+	stone.position=p;stone.rotation.y=deg_to_rad(style.yaw);stone.scale=Vector3(.40,.28,.40)
+	_apply_pigment(stone,"stone_%d"%style.shape)
 	stone.set_meta("path_stone",true)
-	_tint_stone(stone,Color("93907e")*road_rng.randf_range(.90,1.08))
+	stone.set_meta("path_style",style)
+	_tint_stone(stone,style.tint)
 	return stone
 
 func _tint_stone(node: Node, color: Color) -> void:

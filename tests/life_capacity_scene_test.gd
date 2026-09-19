@@ -257,6 +257,12 @@ func construction_checks() -> void:
 			started=Time.get_ticks_usec();builder.field_preview.core.update_tiles(builder.candidate,false);timings.core_grass_ms=(Time.get_ticks_usec()-started)/1000.0
 			started=Time.get_ticks_usec();builder.field_preview.expansion.update_expansion(builder.candidate);timings.expansion_grass_ms=(Time.get_ticks_usec()-started)/1000.0
 			started=Time.get_ticks_usec();builder.field_preview.show_ground(builder.candidate);timings.ground_ms=(Time.get_ticks_usec()-started)/1000.0
+			var environment: Node3D=scene.get_node("Environment")
+			started=Time.get_ticks_usec();var fresh: Node3D=environment.make_paths(scene.courtyard_plan)
+			timings.fresh_paths_ms=(Time.get_ticks_usec()-started)/1000.0;timings.path_stones=fresh.get_child_count()
+			started=Time.get_ticks_usec();var reused: Node3D=environment.make_paths(scene.courtyard_plan,environment.get_node("GardenPaths"))
+			timings.reused_paths_ms=(Time.get_ticks_usec()-started)/1000.0
+			fresh.free();reused.free()
 			write_json("field-profile",timings);print("FIELD_PROFILE "+JSON.stringify(timings))
 	await choose("land");await click(builder._panel.find_child("Finish",true,false));await settle()
 	check(scene.farm_state.snapshot().fields==saved_fields and scene.farm_state.snapshot().inventory==saved_inventory,"Capacity construction preserves every crop and inventory")

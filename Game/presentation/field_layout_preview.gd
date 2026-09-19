@@ -66,10 +66,12 @@ func update(plan: RefCounted) -> void:
 func show_ground(plan: RefCounted) -> void:
 	var environment: Node3D=main.get_node("Environment")
 	if plan.paths!=_shown_paths:
+		var source: Node3D=paths if is_instance_valid(paths) else environment.get_node("GardenPaths")
+		var replacement: Node3D=environment.make_paths(plan,source)
 		if is_instance_valid(paths): paths.hide();paths.queue_free()
 		var original: Node3D=environment.get_node("GardenPaths")
 		if original.visible: _hidden.append(original);original.hide()
-		paths=environment.make_paths(plan);add_child(paths)
+		paths=replacement;add_child(paths)
 		_shown_paths=plan.paths.duplicate(true)
 	if plan.fences!=_shown_fences or plan.fence_style!=_shown_fence_style:
 		if is_instance_valid(fence): fence.hide();fence.queue_free()
