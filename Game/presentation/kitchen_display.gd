@@ -1,5 +1,5 @@
 extends Node3D
-## Existing supports stay put; only their food contents reflect durable kitchen state.
+## Food contents follow durable kitchen state and their actual movable supports.
 const Kitchen=preload("res://farm/kitchen.gd")
 const Assets=preload("res://scenes/environment/courtyard_assets.gd")
 const SURFACE=preload("res://scenes/environment/courtyard_surface.gdshader")
@@ -8,6 +8,7 @@ var _contents: Dictionary={}
 var _ids: Dictionary={}
 var _originals: Dictionary={}
 var _environment: Node3D
+var _supports: Dictionary={}
 
 func configure(environment: Node3D) -> void:
 	_environment=environment
@@ -21,12 +22,17 @@ func configure(environment: Node3D) -> void:
 		var anchor:=Node3D.new()
 		anchor.name=entry[0]
 		add_child(anchor)
-		anchor.global_transform=entry[1].global_transform*Transform3D(Basis.IDENTITY,entry[2])
+		_supports[entry[0]]={"node":entry[1],"offset":entry[2]}
 		_anchors[entry[0]]=anchor
 	_originals.table=table.get_node("Slices")
 	_originals.jar=jars.get_node("PickleBase")
 	# Each tray is named once when built; only the top-left food is replaceable.
 	_originals.rack=rack.get_node("DryingContents")
+	sync_supports()
+
+func sync_supports() -> void:
+	for id: String in _anchors:
+		_anchors[id].global_transform=_supports[id].node.global_transform*Transform3D(Basis.IDENTITY,_supports[id].offset)
 
 func refresh(state: Dictionary) -> void:
 	for station: String in Kitchen.STATIONS:

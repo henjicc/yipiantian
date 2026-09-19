@@ -8,6 +8,7 @@ const DEFAULT_VIEW := Vector3(27.5, 16.5, 28.6)
 const FOCUS_DISTANCE: float = 10.4
 const ARRANGEMENT_DISTANCE: float = 31.0
 var construction_framing: bool = false
+var construction_bounds := Rect2(-7.6,-8.4,14.4,15.1)
 const ZOOM_RESPONSE: float = 16.0
 const SurfacePick = preload("res://scenes/camera_surface_pick.gd")
 
@@ -203,7 +204,7 @@ func _advance_zoom(delta: float) -> void:
 
 
 func _maximum_distance() -> float:
-	if construction_framing: return maxf(34.0,overview_view.z+2.4)
+	if construction_framing: return maxf(maxf(34.0,overview_view.z+2.4),maxf(construction_bounds.size.x,construction_bounds.size.y)*1.8)
 	return _focus_distance if focused else maxf(ARRANGEMENT_DISTANCE,overview_view.z+2.4) if _decoration_framing else overview_view.z
 
 func set_construction_framing(enabled: bool, animate: bool = true) -> void:
@@ -212,7 +213,9 @@ func set_construction_framing(enabled: bool, animate: bool = true) -> void:
 	construction_framing=enabled
 	focused=false
 	_anchor=overview_point
-	if enabled and animate: _move_to(Vector3(0,.4,1),Vector3(24,65,maxf(34,overview_view.z+2.4)))
+	if enabled and animate:
+		var center: Vector2=construction_bounds.get_center()
+		_move_to(Vector3(center.x,.4,center.y),Vector3(24,65,_maximum_distance()))
 	elif not enabled: reset_view()
 
 
@@ -309,8 +312,12 @@ func drag(relative: Vector2, pan: bool) -> void:
 		var forward := Vector3(sin(deg_to_rad(view.x)), 0.0, cos(deg_to_rad(view.x)))
 		focus_point += (-right * relative.x - forward * relative.y) * view.z * 0.0014
 		var limit: float = 1.1 if focused else 2.0
-		focus_point.x = clampf(focus_point.x, _anchor.x - limit, _anchor.x + limit)
-		focus_point.z = clampf(focus_point.z, _anchor.z - limit, _anchor.z + limit)
+		if construction_framing:
+			focus_point.x=clampf(focus_point.x,construction_bounds.position.x,construction_bounds.end.x)
+			focus_point.z=clampf(focus_point.z,construction_bounds.position.y,construction_bounds.end.y)
+		else:
+			focus_point.x = clampf(focus_point.x, _anchor.x - limit, _anchor.x + limit)
+			focus_point.z = clampf(focus_point.z, _anchor.z - limit, _anchor.z + limit)
 	else:
 		view.x = clampf(view.x - relative.x * 0.18, minf(-12.0, overview_view.x), maxf(68.0, overview_view.x))
 		view.y = clampf(view.y + relative.y * 0.18, 50.0 if construction_framing else 32.0 if focused else minf(22.0, overview_view.y), 78.0 if construction_framing else 54.0 if focused else maxf(40.0, overview_view.y))

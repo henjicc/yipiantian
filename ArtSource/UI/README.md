@@ -44,9 +44,11 @@ Create a single polished Windows indie farming game application icon for 我有�
 
 ### 小岛建设目录缩略图 · 20260919
 
-`Game/art/ui/construction/` 的九张透明 PNG 是 Godot 4.7.2 离线渲染的现有资产缩略图：民居、竹篱、荷花、芦苇、香蒲、菱叶，以及当前程序菜架、分段木桥和道路。没有新增 Tripo 模型或图像生成费用。其他目录项复用已有动物、摆件和操作图标；图标不改变模型真实尺寸。
+`Game/art/ui/construction/` 的十张透明 PNG 是 Godot 4.7.2 离线渲染的现有资产缩略图：民居、厨房、竹篱、荷花、芦苇、香蒲、菱叶，以及当前程序菜架、分段木桥和道路。没有新增 Tripo 模型或图像生成费用。其他目录项复用已有动物、摆件和操作图标；图标不改变模型真实尺寸。
 
 重建入口：`scripts/godot.ps1 -Action Run -ExtraArgs @('--script','res://../scripts/render-construction-icons.gd')`，随后运行项目 Import。输出为256×192透明图，脚本直接引用正式模型及结构／道路生成入口，不依赖开发模型查看器。运行时仅加载 PNG，不保留缩略图用的三维视口。实景目录、摆件操作与小窗口检查入口为 `tests/construction_catalog_test.gd`。
+
+厨房条目随房屋移动接入，引用现役 `Game/art/environment/courtyard_life/kitchen_high.glb`。单独重建时给上述参数追加 `'--','kitchen'`；其他条目同样按名称筛选，避免重写未改变的图标。建筑拖放、挂件、昼夜与小窗口验证见 `tests/building_layout_test.gd`。
 
 ### 除草与开垦图标 · 20260918
 

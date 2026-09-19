@@ -3,6 +3,7 @@ extends Node3D
 const SHADER = preload("res://scenes/environment/meadow.gdshader")
 const Space = preload("res://scenes/environment/animal_space.gd")
 const IslandSpace = preload("res://layout/island_space.gd")
+const BUILDING_EXCLUSIONS={"MainHouse":0,"Kitchen":1,"PorchDeck":3,"SidePorchDryingRack":4,"YardFirewood":5}
 var _rim: PackedVector2Array
 var _exclusions: Array[PackedVector2Array] = []
 var object_footprints: Array[PackedVector2Array] = []
@@ -22,6 +23,8 @@ func build(courtyard: Node3D) -> void:
 		var world: Vector3 = porch_pose * Vector3(p.x,0,p.y)
 		porch.append(Vector2(world.x,world.z))
 	_exclusions.append(porch)
+	for key: String in ["SidePorchDryingRack","YardFirewood"]:
+		_exclusions.append(Space.footprint(courtyard.get_node("LivingDetails/"+key),courtyard.plan.ground_height-.13,courtyard.plan.ground_height+.57))
 	var soil_gradient := Gradient.new()
 	soil_gradient.colors = PackedColorArray([Color(.33,.28,.16,.52),Color(.40,.36,.20,0)])
 	var root_soil := GradientTexture2D.new()
@@ -72,6 +75,7 @@ func build(courtyard: Node3D) -> void:
 	core.update_tiles(courtyard.plan,false)
 	var expansion:=get_script().new() as Node3D
 	expansion.name="ExpansionGrass";courtyard.add_child(expansion)
+	expansion._exclusions=_exclusions.duplicate()
 	expansion.object_footprints=core.object_footprints.duplicate()
 	expansion.update_expansion(courtyard.plan)
 
@@ -199,7 +203,7 @@ func _build_foundation_contacts(plan: RefCounted) -> void:
 				var amount: float = 1.0-smoothstep(.0,.13+noise.get_noise_2d(x,y)*.05,distance)
 				image.set_pixel(x,y,Color(.32,.29,.20,amount*.38))
 		var decal := Decal.new()
-		decal.name = "FoundationWeathering"
+		decal.name = "HouseFoundation" if item.anchor=="veranda" else "KitchenFoundation"
 		decal.texture_albedo = ImageTexture.create_from_image(image)
 		decal.size = Vector3(extent.x,.18,extent.y)
 		decal.transform = pose

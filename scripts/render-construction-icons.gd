@@ -4,6 +4,7 @@ const Structures = preload("res://layout/garden_structures.gd")
 const Plan = preload("res://layout/courtyard_plan.gd")
 const MODELS: Dictionary = {
 	"house":"res://art/environment/house/house_high.glb",
+	"kitchen":"res://art/environment/courtyard_life/kitchen_high.glb",
 	"fence":"res://art/environment/modules/bamboo_fence.glb",
 	"lotus":"res://art/environment/lotus/lotus_high.glb",
 	"reed":"res://art/environment/archipelago/reed_high.glb",
@@ -30,7 +31,8 @@ func _run() -> void:
 	var camera := Camera3D.new();world.add_child(camera);camera.projection=Camera3D.PROJECTION_ORTHOGONAL
 	camera.current=true
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://art/ui/construction"))
-	for id: String in ["house","fence","lotus","reed","cattail","trapa","trellis","bridge","road"]:
+	for id: String in ["house","kitchen","fence","lotus","reed","cattail","trapa","trellis","bridge","road"]:
+		if not OS.get_cmdline_user_args().is_empty() and id not in OS.get_cmdline_user_args(): continue
 		var model: Node3D
 		var plan := Plan.new()
 		if id=="trellis": model=Structures.trellis(plan)

@@ -701,6 +701,7 @@ func _begin_construction(tool: String = "land") -> void:
 	selected_field=-1;selected_cell="";hover_field=-1;hover_cell=""
 	farm.select_field(-1);farm.select_cell(-1,"");focus_detail.set_focus()
 	camera.cancel_zoom()
+	camera.construction_bounds=courtyard_plan.land_bounds()
 	camera.set_construction_framing(true,_construction_resume.is_empty())
 	_construction_resume={}
 	island_builder.begin(self,tool);hud.hide()
@@ -717,6 +718,14 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	unchanged.construction.trellis=current.construction.trellis.duplicate(true)
 	if unchanged==current:
 		_apply_trellis(snapshot,undo)
+		return
+	unchanged=snapshot.duplicate(true)
+	unchanged.construction.buildings=current.construction.buildings.duplicate(true)
+	if unchanged==current:
+		var changed_buildings: Array[String]=[]
+		for id: String in current.construction.buildings:
+			if snapshot.construction.buildings[id]!=current.construction.buildings[id]: changed_buildings.append(id)
+		if changed_buildings.size()==1: _apply_building(snapshot,undo,changed_buildings[0])
 		return
 	unchanged=snapshot.duplicate(true)
 	unchanged.construction.land=current.construction.land.duplicate(true)
@@ -789,6 +798,7 @@ func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 		island_builder._clear_preview();island_builder.draft=snapshot.duplicate(true);island_builder.candidate=plan
 	courtyard_plan=plan;farm.plan=plan
 	camera.overview_point=plan.camera_point;camera.overview_view.z=plan.camera_distance
+	camera.construction_bounds=plan.land_bounds()
 	RenderingServer.global_shader_parameter_set("courtyard_haze_region",plan.haze_region)
 	island_builder.accept_land(plan)
 	_refresh_hud()
@@ -859,6 +869,40 @@ func _apply_trellis(snapshot: Dictionary, undo: bool) -> void:
 	refresh_farm();seasonal_courtyard.refresh_paths($Environment)
 	$Environment.refresh_terrain.call_deferred(false)
 	print("TRELLIS_COMMIT_MS ",Time.get_ticks_msec()-started)
+
+func _apply_building(snapshot: Dictionary, undo: bool, id: String) -> void:
+	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
+	if plan==null: return
+	island_builder.set_busy(true,"正在校对屋前通路…")
+	if is_instance_valid(island_builder.building_preview) and island_builder.building_preview.building_id!=id: island_builder._clear_preview()
+	if not is_instance_valid(island_builder.building_preview):
+		island_builder._clear_preview()
+		island_builder.building_preview=preload("res://presentation/building_layout_preview.gd").new()
+		add_child(island_builder.building_preview);island_builder.building_preview.configure(self,id)
+	var preview: Node3D=island_builder.building_preview
+	preview.update(plan)
+	while preview.pending:
+		await get_tree().process_frame
+		if _exiting: return
+	if preview.validated==null:
+		island_builder.set_busy(false,preview.message);return
+	var animal_issue: String=preview.animal_issue()
+	if not animal_issue.is_empty(): island_builder.set_busy(false,animal_issue);return
+	var started: int=Time.get_ticks_msec()
+	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	if not candidate.apply_layout(snapshot,clock.call()).ok:
+		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok:
+		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
+	previous_layout={} if undo else farm_state.snapshot().layout
+	previous_decorations={};farm_state=candidate
+	plan=preview.validated
+	island_builder.accept_building(plan)
+	decoration_layout.refresh_path_geometry()
+	refresh_farm();seasonal_courtyard.refresh_paths($Environment)
+	$Environment.refresh_terrain.call_deferred(false)
+	print("BUILDING_COMMIT_MS ",Time.get_ticks_msec()-started)
 
 func _begin_courtyard_edit() -> void:
 	if not _loaded or _save_failed or _layout_active(): return

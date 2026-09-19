@@ -22,8 +22,8 @@ var rim := PackedVector2Array([Vector2(-7.5,-7.6),Vector2(-4.8,-8.4),Vector2(-1,
 var paths: Array[PackedVector3Array] = [] # Derived by courtyard_circulation after real obstacles exist.
 var garden_fences: Array[Dictionary]=[] # Original garden boundary, retained across brush undo.
 var anchors := {
-	"house": Vector3(.65,.13,-4.65), "veranda": Vector3(.65,.13,-2.4),
-	"kitchen": Vector3(-4.5,.115,-5), "trellis": Vector3(-5.8,.13,1.05),
+	"house": Construction.Buildings.BASE.house, "veranda": Vector3(.65,.13,-2.4),
+	"kitchen": Construction.Buildings.BASE.kitchen, "trellis": Vector3(-5.8,.13,1.05),
 	"bridge": Vector3(8.1,-.04,-.15), "east_bank": Vector3(12.65,-.02,-2.8),
 	"boat": Vector3(9,-.5,4.3), "mooring": Vector3(6.32,-.3,3.85),
 }
@@ -180,6 +180,7 @@ func apply_construction(value: Dictionary) -> bool:
 	# from the scene's Vector3 anchors and dimension handles.
 	for i: int in construction.trellis.size(): construction.trellis[i]=float("%.4f"%construction.trellis[i])
 	if not construction.trellis.is_empty(): construction.trellis[5]=wrapf(construction.trellis[5],-180,180)
+	Construction.Buildings.apply(self)
 	var combined: PackedVector2Array=Construction.land_outline(rim,construction.land)
 	if combined.is_empty(): return false
 	rim=combined

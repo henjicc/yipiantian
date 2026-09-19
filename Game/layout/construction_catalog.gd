@@ -7,12 +7,13 @@ const CATEGORIES: Dictionary = {
 }
 const ITEMS: Dictionary = {
 	"land": {"name":"添地", "category":"land", "editor":"layout", "placement":"brush", "capabilities":["terrain"], "icon":"res://art/ui/actions/arrange.svg"},
-	"house": {"name":"民居", "category":"buildings", "editor":"", "placement":"fixed", "capabilities":["entrance","attachments"], "icon":"res://art/ui/construction/house.png"},
+	"house": {"name":"民居", "category":"buildings", "editor":"layout", "placement":"free", "capabilities":["entrance","attachments"], "icon":"res://art/ui/construction/house.png"},
+	"kitchen": {"name":"厨房", "category":"buildings", "editor":"layout", "placement":"free", "capabilities":["entrance","attachments","production"], "icon":"res://art/ui/construction/kitchen.png"},
 	"road": {"name":"石板路", "category":"routes", "editor":"", "placement":"line", "capabilities":["passage"], "icon":"res://art/ui/construction/road.png"},
 	"fence": {"name":"竹篱", "category":"routes", "editor":"", "placement":"line", "capabilities":["obstacle"], "icon":"res://art/ui/construction/fence.png"},
 	"bridge": {"name":"桥梁", "category":"routes", "editor":"layout", "placement":"endpoints", "capabilities":["passage","parametric"], "icon":"res://art/ui/construction/bridge.png"},
 	"fields": {"name":"田块", "category":"growing", "editor":"layout", "placement":"grid", "capabilities":["planting","parametric"], "icon":"res://art/ui/crops/till.png"},
-	"trellis": {"name":"菜架", "category":"growing", "editor":"layout", "placement":"fixed", "capabilities":["parametric","attachments"], "icon":"res://art/ui/construction/trellis.png"},
+	"trellis": {"name":"菜架", "category":"growing", "editor":"layout", "placement":"free", "capabilities":["parametric","attachments"], "icon":"res://art/ui/construction/trellis.png"},
 	"lotus": {"name":"荷花", "category":"plants", "editor":"", "placement":"water", "capabilities":["decoration"], "icon":"res://art/ui/construction/lotus.png"},
 	"reed": {"name":"芦苇", "category":"plants", "editor":"", "placement":"shore", "capabilities":["decoration"], "icon":"res://art/ui/construction/reed.png"},
 	"cattail": {"name":"香蒲", "category":"plants", "editor":"", "placement":"shore", "capabilities":["decoration"], "icon":"res://art/ui/construction/cattail.png"},

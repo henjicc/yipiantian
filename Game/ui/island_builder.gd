@@ -12,6 +12,12 @@ const ShorePreview=preload("res://presentation/island_shore_preview.gd")
 const IslandSpace=preload("res://layout/island_space.gd")
 const FieldPreview=preload("res://presentation/field_layout_preview.gd")
 const TrellisPreview=preload("res://presentation/trellis_layout_preview.gd")
+const BuildingPreview=preload("res://presentation/building_layout_preview.gd")
+const Buildings=preload("res://layout/building_layout.gd")
+var building_preview: BuildingPreview
+var _building_actions: HBoxContainer
+var _building_snap: CheckButton
+var _building_gesture: String=""
 const Catalog=preload("res://layout/construction_catalog.gd")
 const Choices=preload("res://ui/construction_choices.gd")
 var choices: Choices
@@ -84,6 +90,9 @@ func _ready() -> void:
 	_trellis_actions=HBoxContainer.new();content.add_child(_trellis_actions)
 	_button(_trellis_actions,"旋转",_rotate_trellis).name="RotateTrellis"
 	_trellis_snap=CheckButton.new();_trellis_snap.text="吸附格子";_trellis_snap.button_pressed=true;_trellis_actions.add_child(_trellis_snap)
+	_building_actions=HBoxContainer.new();content.add_child(_building_actions)
+	_button(_building_actions,"旋转",_rotate_building).name="RotateBuilding"
+	_building_snap=CheckButton.new();_building_snap.text="吸附格子";_building_snap.button_pressed=true;_building_actions.add_child(_building_snap)
 	_decoration_actions=HBoxContainer.new();content.add_child(_decoration_actions)
 	_decoration_rotate=_button(_decoration_actions,"旋转",func() -> void: main.decoration_layout.rotate_preview())
 	_decoration_remove=_button(_decoration_actions,"收起摆件",func() -> void: main.decoration_layout.remove_selected())
@@ -128,6 +137,7 @@ func choose(id: String) -> void:
 	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id=="ducks" and key=="count") or (id=="fields" and key in ["columns","rows"])
 	_field_actions.visible=id=="fields"
 	_trellis_actions.visible=id=="trellis"
+	_building_actions.visible=Buildings.BASE.has(id)
 	_decoration_actions.visible=_is_decoration()
 	_decoration_snap.visible=_is_decoration() and Catalog.Decorations.ITEMS[tool].type=="ground"
 	selected_field=mini(selected_field,draft.fields.size()-1)
@@ -191,10 +201,11 @@ func _undo_last() -> void:
 func _commit() -> void:
 	if _is_decoration():
 		main.decoration_layout.confirm_preview();return
-	if busy or candidate==null or (not issue().is_empty() and not _trellis_check_pending()) or draft==main.farm_state.snapshot().layout: return
+	if busy or candidate==null or (not issue().is_empty() and not _layout_check_pending()) or draft==main.farm_state.snapshot().layout: return
 	commit_requested.emit(draft.duplicate(true),false)
 
-func _trellis_check_pending() -> bool:
+func _layout_check_pending() -> bool:
+	if Buildings.BASE.has(tool): return is_instance_valid(building_preview) and building_preview.pending and building_preview.message.is_empty()
 	return tool=="trellis" and is_instance_valid(trellis_preview) and trellis_preview.pending and trellis_preview.message.is_empty()
 
 func set_busy(value: bool, message: String = "") -> void:
@@ -217,7 +228,7 @@ func finish() -> void:
 		tool="";layout.finish_mode()
 	_flush_land()
 	if draft!=main.farm_state.snapshot().layout:
-		if candidate==null or (not issue().is_empty() and not _trellis_check_pending()): return
+		if candidate==null or (not issue().is_empty() and not _layout_check_pending()): return
 		close_after_commit=true
 		_commit()
 		return
@@ -246,6 +257,15 @@ func accept_fields(plan: RefCounted) -> void:
 
 func accept_trellis(plan: RefCounted) -> void:
 	trellis_preview.accept(plan);trellis_preview.free();trellis_preview=null
+	var close_now: bool=close_after_commit
+	set_busy(false);previous=main.previous_layout.duplicate(true)
+	draft=plan.snapshot();candidate=plan
+	if close_now:
+		_clear_preview();active=false;_start=Vector2.INF;hide();closed.emit()
+	else: choose(tool)
+
+func accept_building(plan: RefCounted) -> void:
+	building_preview.accept(plan);building_preview.free();building_preview=null
 	var close_now: bool=close_after_commit
 	set_busy(false);previous=main.previous_layout.duplicate(true)
 	draft=plan.snapshot();candidate=plan
@@ -358,6 +378,18 @@ func _press(screen: Vector2) -> void:
 			var structure: Node3D=trellis_preview.structure if is_instance_valid(trellis_preview) else main.get_node("Environment/EntranceTrellis")
 			var hit: MeshInstance3D=main.decoration_layout.environment_surface_at(screen,structure)
 			if hit==null or not structure.is_ancestor_of(hit): return
+	elif Buildings.BASE.has(tool):
+		var plan: RefCounted=Plan.from_snapshot(draft)
+		if plan==null: return
+		_building_gesture="move"
+		if main.camera.unproject_position(_building_handle(plan)).distance_to(screen)<18: _building_gesture="rotate"
+		else:
+			var hit: MeshInstance3D=main.decoration_layout.environment_surface_at(screen)
+			var selected: bool=false
+			if hit!=null:
+				for member: Node3D in main.get_node("Environment").building_contact_sources(tool):
+					if member==hit or member.is_ancestor_of(hit): selected=true;break
+			if not selected: return
 	_start=point;_drag_snapshot=draft.duplicate(true);_last_cell=Vector2.INF
 	if tool=="land":
 		_brush_last=point;_pending_land=point;_flush_land()
@@ -375,6 +407,16 @@ func _drag(screen: Vector2) -> void:
 	if point==_last_cell: return
 	_last_cell=point;draft=_drag_snapshot.duplicate(true)
 	match tool:
+		"house","kitchen":
+			var plan: RefCounted=Plan.from_snapshot(_drag_snapshot)
+			var parameters: Array=Buildings.parameters(plan,tool)
+			if _building_gesture=="move":
+				var delta: Vector2=(point-_start).snapped(Vector2.ONE*(.5 if _building_snap.button_pressed else .05))
+				parameters[0]+=delta.x;parameters[1]+=delta.y
+			else:
+				var center:=Vector2(parameters[0],parameters[1])
+				parameters[2]=wrapf(parameters[2]+snappedf(rad_to_deg((_start-center).angle()-(point-center).angle()),15),-180,180)
+			draft.construction.buildings[tool]=parameters
 		"ducks":
 			var start: Vector2=IslandSpace.snap(_start)
 			var low: Vector2=start.min(point);var size: Vector2=(start-point).abs()
@@ -406,6 +448,7 @@ func _drag(screen: Vector2) -> void:
 
 func issue() -> String:
 	if candidate==null:
+		if Buildings.BASE.has(tool): return "建筑位置超出可布置范围，请移回岛内。"
 		if tool=="fields": return "田块位置或大小超出范围。最多 12 块田、384 个田格，每块田最多 8 行 × 8 列；可取消后重新调整。"
 		if tool=="ducks": return "水域至少 2 × 2 米，每只鸭子需约 3 平方米。请扩大水域或减少数量。"
 		if tool=="bridge": return "桥长需在 2 至 9 米之间，请调整桥头。"
@@ -414,6 +457,9 @@ func issue() -> String:
 	if tool=="fields" and is_instance_valid(field_preview):
 		if not field_preview.message.is_empty(): return field_preview.message
 		if field_preview.pending: return "正在校对田边通路…"
+	if Buildings.BASE.has(tool) and is_instance_valid(building_preview):
+		if not building_preview.message.is_empty(): return building_preview.message
+		if building_preview.pending: return "正在校对屋前通路…"
 	var bridge: String=Construction.bridge_issue(candidate)
 	if not bridge.is_empty(): return bridge
 	var water_issue: String=Construction.water_area_issue(candidate)
@@ -435,7 +481,7 @@ func issue() -> String:
 func _refresh() -> void:
 	if _is_decoration(): _decoration_changed();return
 	candidate=Plan.from_snapshot(draft)
-	if tool=="trellis" and candidate!=null: draft=candidate.snapshot()
+	if (tool=="trellis" or Buildings.BASE.has(tool)) and candidate!=null: draft=candidate.snapshot()
 	if tool.is_empty():
 		_status.text="";_confirm.disabled=true;_undo.disabled=not _has_undo();return
 	if tool=="fields" and candidate!=null:
@@ -448,14 +494,21 @@ func _refresh() -> void:
 			trellis_preview=TrellisPreview.new();main.add_child(trellis_preview);trellis_preview.configure(main)
 			trellis_preview.checked.connect(_trellis_checked)
 		trellis_preview.update(candidate)
+	if Buildings.BASE.has(tool) and candidate!=null and draft!=main.farm_state.snapshot().layout:
+		if not is_instance_valid(building_preview):
+			building_preview=BuildingPreview.new();main.add_child(building_preview);building_preview.configure(main,tool)
+			building_preview.checked.connect(_building_checked)
+		building_preview.update(candidate)
 	var message: String=issue()
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
 	_undo.disabled=busy or not _has_undo()
-	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架移动；圆点调长度和方向。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}[tool]
+	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架移动；圆点调长度和方向。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}.get(tool,"")
 	if tool=="land" and not _brush_message.is_empty(): _status.text=_brush_message
 	_render_preview(message.is_empty())
 
-func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trellis: bool=false) -> void:
+func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trellis: bool=false, keep_building: bool=false) -> void:
+	if not keep_building and is_instance_valid(building_preview):
+		building_preview.retire();building_preview=null
 	if not keep_trellis and is_instance_valid(trellis_preview):
 		trellis_preview.retire();trellis_preview=null
 	if not keep_fields and is_instance_valid(field_preview):
@@ -471,7 +524,7 @@ func _hide_node(node: Node3D) -> void:
 	if node!=null and node.visible: node.hide();_hidden.append(node)
 
 func _render_preview(valid: bool) -> void:
-	_clear_preview(tool=="land" and candidate!=null and draft!=main.farm_state.snapshot().layout,tool=="fields",tool=="trellis" and candidate!=null and draft!=main.farm_state.snapshot().layout)
+	_clear_preview(tool=="land" and candidate!=null and draft!=main.farm_state.snapshot().layout,tool=="fields",tool=="trellis" and candidate!=null and draft!=main.farm_state.snapshot().layout,Buildings.BASE.has(tool) and candidate!=null and draft!=main.farm_state.snapshot().layout)
 	_preview=Node3D.new();_preview.name="ConstructionPreview";main.add_child(_preview)
 	var tint:=Color("88b779") if valid else Color("d77d62")
 	var plan: RefCounted=candidate if candidate!=null else main.courtyard_plan
@@ -507,12 +560,37 @@ func _render_preview(valid: bool) -> void:
 					Assets.place(_preview,"duck",p,i*39,.8)
 	elif tool=="bridge":
 		for point: Vector3 in Construction.bridge_points(plan): _handle(point+Vector3.UP*.12,tint)
+	elif Buildings.BASE.has(tool):
+		var parts: Dictionary={}
+		for key: String in Buildings.STRUCTURES[tool]+Buildings.PROPS[tool]:
+			if main.get_node("Environment").layout_obstacles.has(key): parts[key]=main.get_node("Environment").layout_obstacles[key]
+		var polygon: PackedVector2Array=building_preview.footprint if is_instance_valid(building_preview) else BuildingPreview._outline(parts)
+		_outline(polygon,plan.ground_height+.06,tint,false)
+		_handle(_building_handle(plan),tint)
 	elif tool=="trellis":
 		var pose: Transform3D=Construction.trellis_pose(plan)
 		var size: Vector3=Construction.trellis_size(plan)
 		_outline(Construction.trellis_footprint(plan),plan.ground_height+.06,tint,false)
 		_handle(pose*Vector3(0,.08,size.x*.5),tint)
 		_handle(pose*Vector3(size.y*.5+.65,.08,0),tint)
+
+func _building_handle(plan: RefCounted) -> Vector3:
+	return Buildings.pose(plan,tool)*Vector3(0,.08,4.3 if tool=="house" else 3.3)
+
+func _rotate_building() -> void:
+	if busy: return
+	var plan: RefCounted=Plan.from_snapshot(draft)
+	if plan==null: return
+	var parameters: Array=Buildings.parameters(plan,tool)
+	parameters[2]=wrapf(parameters[2]+15,-180,180)
+	draft.construction.buildings[tool]=parameters;_refresh()
+
+func _building_checked() -> void:
+	if not active or not Buildings.BASE.has(tool): return
+	var message: String=issue()
+	_status.text=message
+	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
+	_render_preview(message.is_empty())
 
 func _rotate_trellis() -> void:
 	if busy: return

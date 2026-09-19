@@ -189,11 +189,21 @@ func _test_current_boundaries() -> void:
 	var loaded: Dictionary = Store.new(mixed_dir).load_state()
 	_expect(loaded.farm == mixed.snapshot() and loaded.decorations == decorations.snapshot(), "Mixed crops, independent water and decorations restore exactly")
 	var construction: Dictionary=mixed.snapshot().layout
-	construction.construction={"land":[[0,6,3,2.5]],"trellis":[4.9,.8,2.4,-5.8,1.05,0],"bridge":[5.6,-.5,11,.1,1.2],"ducks":{"count":7,"area":[-12,4,4,6]}}
+	construction.construction={"land":[[0,6,3,2.5]],"trellis":[4.9,.8,2.4,-5.8,1.05,0],"buildings":{"house":[],"kitchen":[]},"bridge":[5.6,-.5,11,.1,1.2],"ducks":{"count":7,"area":[-12,4,4,6]}}
 	_expect(mixed.apply_layout(construction,20001.0).ok,"Construction parameters join the farm state")
 	_expect(mixed_store.save(mixed.snapshot(),decorations.snapshot()).ok,"Construction parameters save")
 	var built: Dictionary=Store.new(mixed_dir).load_state()
 	_expect(built.ok and built.farm==mixed.snapshot(),"Construction numeric types and duck identities roundtrip exactly")
+	construction=mixed.snapshot().layout
+	construction.construction.buildings={"house":[.8,8.85,15],"kitchen":[-7,8,-15]}
+	_expect(mixed.apply_layout(construction,20002.0).ok,"Independent building poses join the farm state")
+	_expect(mixed_store.save(mixed.snapshot(),decorations.snapshot()).ok,"Building poses save")
+	built=Store.new(mixed_dir).load_state()
+	_expect(built.ok and built.farm==mixed.snapshot(),"Building poses and crops roundtrip without float noise")
+	for values: Array in [[INF,0,0],[0,0,180],[25,0,0],[0,0]]:
+		var invalid: Dictionary=mixed.snapshot().layout
+		invalid.construction.buildings.house=values
+		_expect(Farm.Plan.from_snapshot(invalid)==null,"Malformed building pose rejected: "+str(values))
 
 
 func _write(path: String, text: String) -> void:

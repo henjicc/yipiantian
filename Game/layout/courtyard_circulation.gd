@@ -63,7 +63,7 @@ func build(plan: RefCounted, obstacles: Dictionary) -> void:
 	var bridge: Vector3 = Transform3D(Basis(Vector3.UP,deg_to_rad(plan.angles.bridge)),plan.anchors.bridge)*Vector3(-2.60,0,0)
 	if not plan.construction.bridge.is_empty(): bridge=preload("res://layout/island_construction.gd").bridge_points(plan)[0]
 	_connect(Vector2(bridge.x,bridge.z),"bridge",.65)
-	var kitchen: Vector3 = plan.anchors.kitchen+Vector3(0,0,1.8)
+	var kitchen: Vector3 = preload("res://layout/building_layout.gd").pose(plan,"kitchen")*Vector3(0,0,1.8)
 	_connect(Vector2(kitchen.x,kitchen.z),"kitchen",.8)
 	var mooring: Vector3 = plan.anchors.mooring
 	_connect(Vector2(mooring.x,mooring.z),"mooring",1.5)

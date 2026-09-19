@@ -1,13 +1,14 @@
 extends RefCounted
 ## Persisted parameters for the first in-world construction slice. Coordinates are XZ.
 const IslandSpace = preload("res://layout/island_space.gd")
+const Buildings = preload("res://layout/building_layout.gd")
 const CELL: float = IslandSpace.CELL
 const MAX_PATCHES: int = 256
 const BRUSH_SIZE: float = 1.5
 const MAX_DUCKS: int = 12
 
 static func initial() -> Dictionary:
-	return {"land":[],"trellis":[],"bridge":[],"ducks":{"count":3,"area":[]}}
+	return {"land":[],"trellis":[],"bridge":[],"ducks":{"count":3,"area":[]},"buildings":Buildings.initial()}
 
 static func numbers(value: Variant, count: int) -> bool:
 	if not value is Array or value.size()!=count: return false
@@ -16,7 +17,7 @@ static func numbers(value: Variant, count: int) -> bool:
 	return true
 
 static func valid(data: Variant) -> bool:
-	if not data is Dictionary or data.size()!=4: return false
+	if not data is Dictionary or data.size()!=5 or not Buildings.valid(data.get("buildings")): return false
 	if not data.get("land") is Array or data.land.size()>MAX_PATCHES: return false
 	for patch: Variant in data.land:
 		if not numbers(patch,4): return false

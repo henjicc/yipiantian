@@ -99,6 +99,7 @@ func update(plan: RefCounted) -> void:
 		var polygon: PackedVector2Array=_flower_footprint(pair)
 		if polygon.size()>=3: _obstacles[String(pair.source.name)]=polygon
 	core._exclusions[2]=_footprint(plan)
+	expansion._exclusions[2]=core._exclusions[2]
 	plan.paths=environment.plan.paths.duplicate()
 	var changed: Dictionary=Cover.grass_cells([_last_footprint,core._exclusions[2]])
 	core.update_tiles(plan,false,changed);expansion.update_tiles(plan,true,changed)

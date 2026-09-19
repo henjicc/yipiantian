@@ -55,7 +55,7 @@ func _run() -> void:
 	plan.construction.bridge[0]=0;plan.construction.bridge[1]=14
 	expect(not Construction.bridge_issue(plan).is_empty(),"Floating bridge approach is rejected")
 	plan=Plan.new()
-	expect(plan.apply_construction({"land":[[-2,5,4,5],[-4,5,3,5]],"trellis":[],"bridge":[],"ducks":{"count":3,"area":[]}}),"Connected extension supports the planting fixture")
+	expect(plan.apply_construction({"land":[[-2,5,4,5],[-4,5,3,5]],"trellis":[],"bridge":[],"buildings":{"house":[],"kitchen":[]},"ducks":{"count":3,"area":[]}}),"Connected extension supports the planting fixture")
 	var cover:=Cover.new();root.add_child(cover);cover.update_expansion(plan)
 	var initial: Dictionary=meshes(cover)
 	expect(not initial.is_empty(),"Extension generates actual grass geometry")

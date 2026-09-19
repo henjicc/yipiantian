@@ -20,6 +20,7 @@ const Space = preload("res://scenes/environment/animal_space.gd")
 const DoorTools = preload("res://scenes/environment/door_tools.gd")
 const Structures = preload("res://layout/garden_structures.gd")
 const Construction = preload("res://layout/island_construction.gd")
+const Buildings = preload("res://layout/building_layout.gd")
 # Modules whose feet meet a visible surface and therefore need a contact pool.
 const CONTACT_MODULES := ["veranda", "side_wing", "stone_bridge", "climbing_trellis", "bamboo_fence"]
 const ROOT := "res://art/environment/"
@@ -422,20 +423,23 @@ func _build_slots() -> void:
 		var marker:=Marker3D.new();marker.name=id;marker.position=plan.slots[id];_slots.add_child(marker)
 	# Every hanging position has a real cantilever / cord ending at its top ring.
 	var rise:=Vector3.UP*(plan.ground_height-.13)
+	var house_support:=Node3D.new();house_support.name="HouseSupports";house_support.transform=Buildings.delta(plan,"house");add_child(house_support)
 	for id in ["hanging_01","hanging_02"]:
-		var p:Vector3=plan.slots[id]
-		_support_line(Vector3(p.x,2.50,-2.72)+rise,Vector3(p.x,2.50,p.z)+rise,.037,Color("62543a"))
-		_support_line(Vector3(p.x,2.50,p.z)+rise,p,.012,Color("89794c"))
+		var p:Vector3=house_support.transform.affine_inverse()*plan.slots[id]
+		_support_line(Vector3(p.x,2.50,-2.72)+rise,Vector3(p.x,2.50,p.z)+rise,.037,Color("62543a"),house_support)
+		_support_line(Vector3(p.x,2.50,p.z)+rise,p,.012,Color("89794c"),house_support)
 	add_child(Structures.trellis_support(plan))
-	_support_line(Vector3(-4.85,2.55,-3.77)+rise,Vector3(-4.85,2.55,-2.95)+rise,.035,Color("62543a"))
-	_support_line(Vector3(-4.85,2.10,-3.77)+rise,Vector3(-4.85,2.55,-3.0)+rise,.025,Color("62543a"))
-	_support_line(Vector3(-4.85,2.55,-2.95)+rise,plan.slots.hanging_04,.012,Color("89794c"))
+	var kitchen_support:=Node3D.new();kitchen_support.name="KitchenSupports";kitchen_support.transform=Buildings.delta(plan,"kitchen");add_child(kitchen_support)
+	_support_line(Vector3(-4.85,2.55,-3.77)+rise,Vector3(-4.85,2.55,-2.95)+rise,.035,Color("62543a"),kitchen_support)
+	_support_line(Vector3(-4.85,2.10,-3.77)+rise,Vector3(-4.85,2.55,-3.0)+rise,.025,Color("62543a"),kitchen_support)
+	_support_line(Vector3(-4.85,2.55,-2.95)+rise,kitchen_support.transform.affine_inverse()*plan.slots.hanging_04,.012,Color("89794c"),kitchen_support)
 
-func _support_line(a:Vector3,b:Vector3,radius:float,color:Color)->void:
+func _support_line(a:Vector3,b:Vector3,radius:float,color:Color,parent:Node=null)->void:
 	var node:=MeshInstance3D.new();node.name="LanternSupport"
 	var shape:=CylinderMesh.new();shape.top_radius=radius;shape.bottom_radius=radius;shape.height=a.distance_to(b);shape.radial_segments=10;node.mesh=shape
 	var material:=StandardMaterial3D.new();material.albedo_color=color;material.roughness=.95;node.material_override=material
-	add_child(node);node.position=(a+b)/2
+	if parent==null: parent=self
+	parent.add_child(node);node.position=(a+b)/2
 	var axis:Vector3=(b-a).normalized()
 	node.quaternion=Quaternion(Vector3.UP,axis)
 
@@ -451,15 +455,32 @@ func _build_contact_shading() -> void:
 	shading.configure_bounds(plan.land_bounds().grow(.6))
 	var ground: float=plan.ground_height+.002
 	var deck: float=plan.anchors.veranda.y+.28
+	var owned: Array[Node3D]=[]
+	for id: String in Buildings.BASE: owned.append_array(building_contact_sources(id))
 	for source: Node3D in _contact_sources:
 		if source.name=="EntranceTrellis": continue
+		var attached: bool=false
+		for member: Node3D in owned:
+			if member==source or member.is_ancestor_of(source): attached=true;break
+		if attached: continue
 		shading.collect(source, [ground, deck])
-	shading.collect(get_node("MainHouse"), [ground])
-	shading.collect(_living, [ground, deck])
+	for child: Node3D in _living.get_children():
+		if not owned.has(child): shading.collect(child,[ground,deck])
 	shading.bake()
+	for id: String in Buildings.BASE:
+		var contacts:=ContactShading.new();contacts.name=id.capitalize()+"Contacts";add_child(contacts)
+		contacts.configure_bounds(plan.land_bounds().grow(.6))
+		for source: Node3D in building_contact_sources(id): contacts.collect(source,[ground,deck])
+		contacts.bake()
 	var trellis_contacts:=ContactShading.new();trellis_contacts.name="TrellisContacts";add_child(trellis_contacts)
 	trellis_contacts.configure_bounds(plan.land_bounds().grow(.6))
 	trellis_contacts.collect(get_node("EntranceTrellis"),[ground]);trellis_contacts.bake()
+
+func building_contact_sources(id: String) -> Array[Node3D]:
+	var result: Array[Node3D]=[]
+	for key: String in Buildings.STRUCTURES[id]: result.append(get_node(key))
+	for key: String in Buildings.PROPS[id]: result.append(_living.get_node(key))
+	return result
 
 
 func _life_asset(id: String, key: String, at: Vector3, yaw: float = 0.0, size: float = 1.0, wind: String = "") -> Node3D:
