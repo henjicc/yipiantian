@@ -78,14 +78,29 @@ static func plants(plan: RefCounted) -> Node3D:
 	var placements: Dictionary={"reed":[],"trapa":[]}
 	for island: int in 2:
 		_add_plants(plan,island,placements)
+	# Player footprints are unchanged during this generation. Prepare them once;
+	# cheap bounds reject distant clumps before the original exact overlap test.
+	var protected: Array[PackedVector2Array]=[]
+	var bounds: Array[Rect2]=[]
+	for entry: Dictionary in plan.plants:
+		var footprint: PackedVector2Array=Plants.footprint(entry)
+		protected.append(footprint);bounds.append(_bounds(footprint))
 	var builder:=Marsh.new()
 	for species: String in placements:
 		for i: int in range(placements[species].size()-1,-1,-1):
 			var footprint: PackedVector2Array=Plants.Space.footprint(Plants.EXTENTS[species],placements[species][i],.06)
-			if Plants.overlaps_player(footprint,plan.plants): placements[species].remove_at(i)
+			var area: Rect2=_bounds(footprint)
+			for j: int in protected.size():
+				if area.intersects(bounds[j],true) and Plants.Space.overlaps(footprint,protected[j]):
+					placements[species].remove_at(i);break
 		if not placements[species].is_empty(): builder._batch(holder,species,"low",placements[species])
 	builder.free()
 	return holder
+
+static func _bounds(polygon: PackedVector2Array) -> Rect2:
+	var result:=Rect2(polygon[0],Vector2.ZERO)
+	for point: Vector2 in polygon: result=result.expand(point)
+	return result
 
 static func _add_plants(plan: RefCounted,island: int,placements: Dictionary) -> void:
 	var pose: Transform2D=plan.island_pose(island)

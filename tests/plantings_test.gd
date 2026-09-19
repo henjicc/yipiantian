@@ -9,6 +9,10 @@ func expect(value: bool, message: String) -> void:
 	if not value: failures+=1;push_error(message)
 func _initialize() -> void: _run.call_deferred()
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("--shore"):
+		if DisplayServer.get_name()=="headless":
+			push_error("Shore MultiMesh transform checks require the real rendering backend; omit --headless.");quit(1);return
+		shore_checks();print("SHORE_PLANTS checks=%d failures=%d"%[checks,failures]);quit(0 if failures==0 else 1);return
 	var plan:=Plan.new()
 	for kind: String in Plants.KINDS: plan.plants.append(Plants.make_entry(plan.plants.size()+1,kind,Vector2(-10,7)))
 	var encoded: Dictionary=plan.snapshot()
@@ -64,3 +68,57 @@ func _run() -> void:
 			var extent: Vector2=Plants.EXTENTS[kind]*.5
 			expect(bounds.position.x>=-extent.x-.01 and bounds.end.x<=extent.x+.01 and bounds.position.z>=-extent.y-.01 and bounds.end.z<=extent.y+.01,"Protected footprint contains source mesh: "+kind+"_"+tier)
 	print("PLANTINGS checks=%d failures=%d"%[checks,failures]);quit(0 if failures==0 else 1)
+
+func shore_checks() -> void:
+	var dressing=preload("res://presentation/shore_dressing.gd")
+	var plan:=Plan.new()
+	var construction: Dictionary=plan.construction.duplicate(true)
+	construction.land=[[0,5,2,3]]
+	construction.east_land=[[15,-5,4,4],[18,-5,4,4],[15,-2,4,3],[18,-2,4,3]]
+	expect(plan.apply_construction(construction),"Two-island shore fixture has valid connected land")
+	var raw: Dictionary={"reed":[],"trapa":[]}
+	for island: int in 2: dressing._add_plants(plan,island,raw)
+	expect(not raw.reed.is_empty() and not raw.trapa.is_empty(),"Both automatic species are present in the shore fixture")
+	var base: Dictionary=compare_shore_plants(plan)
+	for i: int in Plants.MAX_CLUMPS:
+		var entry: Dictionary=Plants.make_entry(i+1,Plants.KINDS[i%4],Vector2(-20+(i%16)*.5,15+floori(i/16.0)*.5))
+		entry.pose[2]=fposmod(i*37.0,360);entry.pose[3]=.8+(i%5)*.1
+		plan.plants.append(entry)
+	expect(compare_shore_plants(plan)==base,"A full distant player garden leaves automatic shore poses intact")
+	# Rotated mixed species on both shores must displace automatic plants.
+	# Their real footprints, not just their centres, determine exclusions.
+	var count: int=mini(raw.reed.size(),Plants.MAX_CLUMPS)
+	for i: int in count:
+		var at: Vector3=raw.reed[i].origin
+		plan.plants[i].pose[0]=at.x+.08;plan.plants[i].pose[1]=at.z-.06
+	var occupied: Dictionary=compare_shore_plants(plan)
+	expect(occupied.reed.size()<base.reed.size(),"Hand-placed plants still take priority over automatic reeds")
+	for i: int in count:
+		plan.plants[i].pose[0]=-20+(i%16)*.5;plan.plants[i].pose[1]=15+floori(i/16.0)*.5
+	expect(compare_shore_plants(plan)==base,"Moving player clumps away restores the same automatic poses")
+	plan.plants.clear()
+	expect(compare_shore_plants(plan)==base,"Removing player clumps does not leave stale shore exclusions")
+
+func compare_shore_plants(plan: RefCounted) -> Dictionary:
+	var dressing=preload("res://presentation/shore_dressing.gd")
+	var expected: Dictionary={"reed":[],"trapa":[]}
+	for island: int in 2: dressing._add_plants(plan,island,expected)
+	var started: int=Time.get_ticks_usec()
+	for species: String in expected:
+		for i: int in range(expected[species].size()-1,-1,-1):
+			var footprint: PackedVector2Array=Plants.Space.footprint(Plants.EXTENTS[species],expected[species][i],.06)
+			if Plants.overlaps_player(footprint,plan.plants): expected[species].remove_at(i)
+	var exhaustive_ms: float=(Time.get_ticks_usec()-started)/1000.0
+	started=Time.get_ticks_usec()
+	var shown: Node3D=dressing.plants(plan)
+	var bounded_ms: float=(Time.get_ticks_usec()-started)/1000.0
+	var actual: Dictionary={"reed":[],"trapa":[]};var matches: bool=true
+	for batch: MultiMeshInstance3D in shown.get_children():
+		for i: int in batch.multimesh.instance_count: actual[String(batch.name)].append(batch.multimesh.get_instance_transform(i))
+	for species: String in expected:
+		matches=matches and actual[species].size()==expected[species].size()
+		for i: int in mini(actual[species].size(),expected[species].size()):
+			matches=matches and actual[species][i].is_equal_approx(expected[species][i])
+	expect(matches,"Batched shore transforms match exhaustive player-footprint filtering")
+	print("SHORE_FILTER_SAMPLE ",{"players":plan.plants.size(),"exhaustive_filter_ms":exhaustive_ms,"bounded_full_build_ms":bounded_ms,"counts":[actual.reed.size(),actual.trapa.size()]})
+	shown.free();return actual
