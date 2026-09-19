@@ -25,6 +25,9 @@ func _run() -> void:
 	values.dof_enabled = false
 	_expect(store.save(values).ok, "All preference categories save")
 	_expect(Store.new(path).load_settings().settings == values, "Reopening preserves exact settings")
+	values.quality = "high"
+	_expect(store.save(values).ok, "High quality is a supported saved preference")
+	_expect(Store.new(path).load_settings().settings.quality == "high", "Reopening preserves high quality")
 	var farm_marker: String = root_path.path_join("farm.json")
 	_write(farm_marker, "unchanged farm sentinel")
 	var before: String = FileAccess.get_file_as_string(path.path_join(Store.MAIN))

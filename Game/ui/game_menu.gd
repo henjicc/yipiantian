@@ -8,6 +8,7 @@ signal quit_requested
 signal wallpaper_requested
 
 const FarmTheme = preload("res://ui/farm_theme.gd")
+const QUALITY_VALUES: Array[String] = ["standard", "low", "high"]
 var _root: Control
 var _pages: Array[Control] = []
 var _tabs: Array[Button] = []
@@ -102,11 +103,12 @@ func _ready() -> void:
 	_quality.name = "Quality"
 	_quality.add_item("标准")
 	_quality.add_item("低画质")
+	_quality.add_item("高画质")
 	_quality.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_quality.custom_minimum_size.y = 42
 	_row(settings, "画质").add_child(_quality)
 	_quality.item_selected.connect(func(index: int) -> void:
-		_change("quality", "low" if index == 1 else "standard")
+		_change("quality", QUALITY_VALUES[index])
 		_refresh_dof())
 	_dof = _button(_row(settings, "景深"), "开启")
 	_dof.name = "DepthOfField"
@@ -153,7 +155,7 @@ func present(value: Dictionary, message: String = "") -> void:
 		_sliders[key].set_value_no_signal(roundf(float(value[key]) * 100.0))
 		_volume_labels[key].text = "%d%%" % roundi(float(value[key]) * 100.0)
 	_window.select(1 if value.fullscreen else 0)
-	_quality.select(1 if value.quality == "low" else 0)
+	_quality.select(QUALITY_VALUES.find(value.quality))
 	_refresh_dof()
 	_populating = false
 	set_status(message)

@@ -5,6 +5,7 @@ signal night_weight_changed(weight: float)
 signal window_warmth_changed(strength: float)
 
 const WATER_SHADER = preload("res://atmosphere/quiet_water.gdshader")
+const WATER_HIGH_SHADER = preload("res://atmosphere/quiet_water_high.gdshader")
 const WATER_PIGMENT = preload("res://art/environment/backdrop/river-distance.png")
 const HOURS: Array[float] = [0.0, 5.0, 6.5, 9.0, 12.0, 16.5, 18.5, 20.0, 24.0]
 const SUN: Array[float] = [0.24, 0.24, 0.88, 1.18, 1.25, 1.28, 0.66, 0.24, 0.24]
@@ -40,6 +41,18 @@ var _elapsed: float = 0.0
 var _night_weight: float = -1.0
 var _window_warmth: float = 0.0
 var _ripple_age: float = 10.0
+var _high_quality: bool = false
+
+
+func set_quality(value: String) -> void:
+	_high_quality = value == "high"
+	if _water_material != null:
+		# Keep the same material and shared uniforms: shore, boat and ripple state
+		# must survive a quality switch. Both shaders use the same surface code.
+		_water_material.shader = WATER_HIGH_SHADER if _high_quality else WATER_SHADER
+	if _sun != null:
+		_apply_clock()
+
 
 func get_preview_hour() -> float:
 	return _preview_hour
@@ -255,6 +268,9 @@ func _apply_clock() -> void:
 	_world.environment.ambient_light_color = values.ambient_color
 	if _water_material != null:
 		_water_material.set_shader_parameter("water_color", values.water_color)
+		if _high_quality:
+			var fill: Color = values.ambient_color.srgb_to_linear().lerp(values.sky_top.srgb_to_linear() * _sky_material.sky_energy_multiplier, 0.50) * values.ambient_energy
+			_water_material.set_shader_parameter("sky_fill", Vector3(fill.r, fill.g, fill.b))
 	if _sky_material != null:
 		_sky_material.sky_top_color = values.sky_top
 		_sky_material.sky_horizon_color = values.sky_horizon

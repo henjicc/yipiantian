@@ -97,7 +97,7 @@ static func valid_settings(value: Dictionary) -> bool:
 		var volume: Variant = value.get(key)
 		if not (volume is float or volume is int) or not is_finite(float(volume)) or float(volume) < 0.0 or float(volume) > 1.0:
 			return false
-	return value.get("fullscreen") is bool and value.get("dof_enabled") is bool and value.get("quality") in ["standard", "low"]
+	return value.get("fullscreen") is bool and value.get("dof_enabled") is bool and value.get("quality") in ["standard", "low", "high"]
 
 
 func _read(filename: String) -> Dictionary:

@@ -107,9 +107,9 @@ func _process(delta: float) -> void:
 	var pivot:=Vector3(0,.35/.85,0)
 	_boat.position=plan.anchors.boat+Vector3.UP*(.021*sin(_motion_time*.81)) + Vector3.UP*.35 - _boat.basis*pivot
 	var water_material: ShaderMaterial = _water.material_override
-	if water_material.shader.resource_path == "res://atmosphere/quiet_water.gdshader":
-		water_material.set_shader_parameter("boat_mask_enabled",true)
-		water_material.set_shader_parameter("world_to_boat",_boat.global_transform.affine_inverse())
+	# Standard and high-quality water share these uniforms and follow the same hull.
+	water_material.set_shader_parameter("boat_mask_enabled",true)
+	water_material.set_shader_parameter("world_to_boat",_boat.global_transform.affine_inverse())
 	for i: int in _floaters.size():
 		var phase: float = _motion_time*.88+i*1.7
 		var drift := Vector3(sin(phase*.61)*.025, sin(phase)*.024, cos(phase*.73)*.018)

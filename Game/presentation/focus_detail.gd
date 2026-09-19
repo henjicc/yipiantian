@@ -1,12 +1,16 @@
 extends Node
 ## Derived presentation only. The caller owns selected field, camera and gameplay.
 
+signal quality_changed(value: String)
+
 const FOCUS_BIAS: float = 2.0
 # Zero forces the coarsest generated LOD even at close range. Preserve Godot's
 # screen-space selection everywhere; selected crops get a modest quality margin.
 const OVERVIEW_BIAS: float = 1.0
 const CameraForeground = preload("res://presentation/camera_foreground.gd")
 const PlantWind = preload("res://presentation/plant_wind.gd")
+const IndirectLighting = preload("res://presentation/indirect_lighting.gd")
+var _indirect_lighting: Node
 var _decoration_wind := PlantWind.new()
 var _foreground: Node3D
 var _camera: Camera3D
@@ -50,6 +54,9 @@ func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations
 	_foreground.name = "CameraForeground"
 	_camera.add_child(_foreground)
 	_foreground.configure(_camera, _fields, _environment)
+	_indirect_lighting = IndirectLighting.new()
+	add_child(_indirect_lighting)
+	_indirect_lighting.configure(_environment.get_parent(), _environment, _camera.get_world_3d().environment)
 	# Run after the camera pose so the clear band follows current projected depth.
 	process_priority = 10
 	for field: Node3D in _fields:
@@ -70,11 +77,12 @@ func set_focus(field: Node3D = null) -> void:
 
 
 func set_quality(value: String) -> bool:
-	if value != "standard" and value != "low":
+	if value not in ["standard", "low", "high"]:
 		return false
 	_quality = value
 	if _camera != null:
 		_apply_quality()
+	quality_changed.emit(value)
 	return true
 
 
@@ -97,15 +105,16 @@ func get_settings() -> Dictionary:
 
 func _apply_quality() -> void:
 	_environment.get_node("NeighborIslets").set_low_detail_enabled(_quality == "low")
-	_environment.get_node("LivingDetails").set_lamp_shadows(_quality == "standard")
-	# Sun shadows and selected crop detail stay intact in both quality levels.
+	_environment.get_node("LivingDetails").set_lamp_shadows(_quality != "low")
+	# Sun shadows and selected crop detail stay intact at every quality level.
 	# Drop decorative geometry before an MSAA switch can stall shader compilation.
 	if _quality == "low" and _foreground != null:
 		_foreground.set_overview_visible(false, true)
 	_camera.get_viewport().msaa_3d = Viewport.MSAA_2X if _quality == "low" else Viewport.MSAA_4X
 	var world_environment: Environment = _camera.get_world_3d().environment
 	if world_environment != null:
-		world_environment.ssil_enabled = _quality == "standard"
+		world_environment.ssil_enabled = _quality != "low"
+	_indirect_lighting.set_enabled(_quality == "high")
 
 
 func refresh_field(field: Node3D) -> void:
@@ -193,9 +202,9 @@ func _process(delta: float) -> void:
 	# Global buffer colors are consumed directly by spatial shaders in linear space.
 	RenderingServer.global_shader_parameter_set("courtyard_haze_color", environment.fog_light_color.srgb_to_linear())
 	var inspecting: bool = _camera.get("free_view") == true
-	var framing: bool = not inspecting and not is_instance_valid(_neighbor) and not is_instance_valid(_target) and not _decorations.active and _quality == "standard"
+	var framing: bool = not inspecting and not is_instance_valid(_neighbor) and not is_instance_valid(_target) and not _decorations.active and _quality != "low"
 	_foreground.set_overview_visible(framing, inspecting)
-	var allowed: bool = not inspecting and _dof_enabled and _quality == "standard" and _dof_strength > 0.0
+	var allowed: bool = not inspecting and _dof_enabled and _quality != "low" and _dof_strength > 0.0
 	var effect_active: bool = allowed and not _decorations.active
 	var target_amount: float = 0.115 * _dof_strength if effect_active else 0.0
 	_attributes.dof_blur_amount = move_toward(_attributes.dof_blur_amount, target_amount, delta * 0.35)

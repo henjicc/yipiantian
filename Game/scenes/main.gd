@@ -242,6 +242,7 @@ func _ready() -> void:
 	focus_detail.name = "FocusDetail"
 	add_child(focus_detail)
 	focus_detail.configure(camera, farm.fields, courtyard, decoration_layout)
+	focus_detail.quality_changed.connect(atmosphere.set_quality)
 	_setup_settings()
 	desktop_wallpaper = DesktopWallpaper.new()
 	desktop_wallpaper.name = "DesktopWallpaper"

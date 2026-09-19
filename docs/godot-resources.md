@@ -32,17 +32,27 @@
 
 ## 光照能力核验 · 2026-09-19
 
-本机仍为Godot 4.7.2官方版、Forward+／Vulkan。官方[4.7 beta说明](https://godotengine.org/article/dev-snapshot-godot-4-7-beta-1/)及[已合并PR 99119](https://github.com/godotengine/godot/pull/99119)确认加入RenderingDevice的Vulkan光追管线、加速结构与指令接口；这是底层能力，不代表当前农场已使用实时光追。项目现有实现是实时阴影、SSAO、SSIL与辉光；不能将SSIL或SDFGI命名为硬件光追。官方[全局光照方案比较](https://docs.godotengine.org/en/4.7/tutorials/3d/global_illumination/introduction_to_global_illumination.html)可作后续选型入口，实际新增效果仍需同镜头验证视觉与开销。
+本机仍为Godot 4.7.2官方版、Forward+／Vulkan。官方[4.7 beta说明](https://godotengine.org/article/dev-snapshot-godot-4-7-beta-1/)及[已合并PR 99119](https://github.com/godotengine/godot/pull/99119)确认加入RenderingDevice的Vulkan光追管线、加速结构与指令接口；这是底层能力，不代表当前农场已使用实时光追。项目使用实时阴影、SSAO、SSIL、辉光，以及可选高画质SDFGI；不能将SSIL或SDFGI命名为硬件光追。方案边界见官方[全局光照方案比较](https://docs.godotengine.org/en/4.7/tutorials/3d/global_illumination/introduction_to_global_illumination.html)，本项目视觉与开销记录见下方。
 
-已接入三盏高挂路灯：`day_night.gd::_apply_lanterns`取消白天最低亮度，`living_details.gd::set_night_weight`统一控制门廊／路灯照明和纸灯笼发光，室内材质仍由`set_window_warmth`独立控制。标准画质保留三盏路灯投影，低画质关闭局部投影但保留照明，日间灯光不可见且能量为0。真实昼夜、通行及画质往返验证见`tests/night_lighting_test.gd`，来源与素材见[院落灯笼节点](../ArtSource/Environment/CourtyardLife/README.md#田边高挂灯笼--20260919-path-lanterns)。整体色调已完成中性高光／适度夜光与接触阴影调整，晨昏和季节连续性及十二菜混植实景通过，见同页色调节点。额外画质效果仍待接入，未接入硬件光追。
+已接入三盏高挂路灯：`day_night.gd::_apply_lanterns`取消白天最低亮度，`living_details.gd::set_night_weight`统一控制门廊／路灯照明和纸灯笼发光，室内材质仍由`set_window_warmth`独立控制。标准画质保留三盏路灯投影，低画质关闭局部投影但保留照明，日间灯光不可见且能量为0。真实昼夜、通行及画质往返验证见`tests/night_lighting_test.gd`，来源与素材见[院落灯笼节点](../ArtSource/Environment/CourtyardLife/README.md#田边高挂灯笼--20260919-path-lanterns)。整体色调已完成中性高光／适度夜光与接触阴影调整，晨昏和季节连续性及十二菜混植实景通过，见同页色调节点。可选高画质SDFGI已接入，详见下节；未接入硬件光追。
 
-### SDFGI小样与湖面边界
+### 高画质SDFGI与湖面边界
 
-2026-09-19在同一Godot 4.7.2／Forward+／RTX4090实景比较：SDFGI四级、最小格.12m、能量.50、反馈.20、遮蔽与天空开启；只让主屋、廊台、厨房、架子、主／东岸和石桥参与静态遮蔽，作物、动物、船与可移动摆件仅接收间接光。[官方说明](https://docs.godotengine.org/en/4.7/tutorials/3d/global_illumination/using_sdfgi.html)确认SDFGI不支持动态遮蔽物；正式接入必须处理新播种、成长、摆放与地形重建，不能只设置启动时的网格。
+2026-09-19正式增加设置→画质→高画质，默认仍为标准。高画质保留标准的4×MSAA、景深、SSIL和路灯投影，增加SDFGI四级、最小格.12m、能量.50、反馈.20、遮蔽与天空采样。只让主屋、廊台、厨房、架子、主／东岸和石桥贡献静态遮蔽；`presentation/indirect_lighting.gd`初始化分类并监听本场景新增几何，作物、风动植物、动物、船、相机前景及可移动摆件仅接收间接光。新增作物／成长替换／摆件都不进入静态体素；院落布局重载会替换Environment，重新构建体素。[官方说明](https://docs.godotengine.org/en/4.7/tutorials/3d/global_illumination/using_sdfgi.html)确认SDFGI不支持动态遮蔽物，因此不能把这项效果当作动物或风动叶片的动态反射／遮蔽；原实时阴影仍工作。
 
-小样能改善屋檐与菜地反射光，但原湖面出现环岛浅色亮带及水中物体边缘亮线，未接入正式画质选项。`.local/verification/lighting-20260919/gi-probe/`保留12张四时段／聚焦对照。第二轮仅令水面RADIANCE归零不能解决，见`gi-water-probe/`；`gi_debug.gd`及`gi-debug/`六张固定夜景进一步确认：关SSIL、关MSAA、关水下透射都不能消除，水面加`ambient_light_disabled`则消失，但湖面整体会变暗，需要保留原有艺术水色／波光并单独验证，不能直接发布该诊断改法。正式`quiet_water.gdshader`未改变，所有试验均在局部材质副本执行。
+前期小样能改善屋檐与菜地反射光，但原湖面出现环岛浅色亮带及水中物体边缘亮线。`.local/verification/lighting-20260919/gi-probe/`保留12张四时段／聚焦对照；`gi-water-probe/`证明仅令水面RADIANCE归零不能解决。`gi_debug.gd`及`gi-debug/`六张固定夜景进一步确认：关SSIL、关MSAA、关水下透射都不能消除，水面加`ambient_light_disabled`则消失但整体偏暗。
 
-[4.7.2渲染源码](https://github.com/godotengine/godot/blob/4.7.2-stable/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl)在custom_irradiance／custom_radiance混合之后才进行GI计算；因此写IRRADIANCE／RADIANCE不能当作关闭SDFGI的等价办法。`AMBIENT_LIGHT_DISABLED`明确包住GI区段，与本机消除亮圈的观察一致。另有[官方仓库水面深度／颜色采样问题113540](https://github.com/godotengine/godot/issues/113540)，报告4.5.1／4.6.dev5的相关透明水异常；它仅作为排查线索，尚未证明与本例同一根因。当前下一步是验证隔离水面环境光后的昼夜、近远水衔接及移动镜头，并完成动态网格排除、画质菜单／设置往返及开销对照；不能把本次小样记为高画质功能完成或硬件光追。
+正式水面共用`quiet_water.gdshaderinc`：标准入口保持原计算；高画质入口仅关闭水面的环境／GI采样，加入随昼夜与季节变化的天空漫反射补光（线性环境色与天空顶色各半，再乘环境光能量）。原有水色、手绘天空反射、直接灯光、碎波、近岸透色、深度和雾气仍保留。这是美术近似，不是物理天空积分或光追倒影。切换保留同一材质及岸线／涟漪数据；船体遮罩在两档水面均持续跟随船姿，不能用旧的单一shader路径判断跳过更新。
+
+[4.7.2渲染源码](https://github.com/godotengine/godot/blob/4.7.2-stable/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl)在custom_irradiance／custom_radiance混合之后才进行GI计算；因此写IRRADIANCE／RADIANCE不能当作关闭SDFGI的等价办法。`AMBIENT_LIGHT_DISABLED`明确包住GI区段，与本机消除亮圈的观察一致。另有[官方仓库水面深度／颜色采样问题113540](https://github.com/godotengine/godot/issues/113540)，报告4.5.1／4.6.dev5的相关透明水异常；它仅作为排查线索，尚未证明与本例同一根因。
+
+验证入口`tests/high_quality_scene_test.gd -- --output=<本地目录>`：真实菜单点击与方向键选择、保存／重载、高→低→高→标准往返、昼夜与季节、作物生长和新增摆件、船遮罩跟随、场景替换均通过74项；截图与性能原始记录在`.local/verification/lighting-20260919/high-quality-4/`。`high-quality/`、`high-quality-2/`、`high-quality-3/`是菜单输入验证失败的中间证据，不能按文件名当成高画质实拍。既有灯光179项、设置存储36项通过，包含写入失败与重试。重现时不要在正式目录外另写平行材质配置。
+
+本机RTX4090、1920×1080、6田96格（采样时95株十二菜混植），每档60个前台帧：白天标准／高画质视口GPU中位4.364／4.586ms，夜间5.093／5.785ms；渲染器报告显存增加约408／374MiB。不是完整GPU帧预算、长期帧率或低配承诺，首次开启的体素与shader准备成本未纳入稳定采样；4K高画质尚无新性能结论。
+
+`water_motion.gd`及`water-motion/`补拍昼夜各六张靠近／转角过程，已检查中途帧和转角末帧，未再出现环岛大亮圈。首次保持高画质退出有12个ObjectDB／6个资源未释放告警；在间接光照控制器`_exit_tree`中断开新增节点监听并关闭SDFGI后，同一场景与镜头复测正常释放，见`water-motion-exit.log`。该verbose日志仍包含本机旧Vulkan覆盖层路径和RGB8转RGBA8提示，未改系统配置，不宣称整份日志零告警。
+
+菜单验证经验：Godot 4.7.2的PopupMenu按键先由Window路径处理（见[官方源码](https://github.com/godotengine/godot/blob/4.7.2-stable/scene/gui/popup_menu.cpp)的`_input_from_window`），直接对PopupMenu调用`Viewport.push_input`不会完成条目选择。需使用带实际window_id的`Input.parse_input_event`，逐次检查聚焦条目后Enter，并核对实际设置与画面；它只向游戏投递事件，不操作系统键盘。最小复核见本地`menu_input_probe.gd`，完整回归已使用同一路径。
 
 ## 当前接入方式
 
