@@ -44,7 +44,7 @@ func build(plan: RefCounted, obstacles: Dictionary) -> void:
 	road = Space.new()
 	road.configure(Passage.bounds(plan),.22,inner)
 	for key: String in obstacles:
-		if not key.begins_with("player_road_") and key!="AdaptiveBridge": road.block(obstacles[key])
+		if not key.begins_with("player_road_") and not Passage.is_bridge(key): road.block(obstacles[key])
 	for i: int in plan.fields.size(): road.block(plan.field_polygon(i,.035))
 	road.bake()
 	if road.points.is_empty():
@@ -105,7 +105,6 @@ func build(plan: RefCounted, obstacles: Dictionary) -> void:
 	if not flock_issue.is_empty(): issues.append(flock_issue)
 
 func _bridge_connection() -> void:
-	if _plan.construction.bridge.is_empty(): return
 	var ends: Array[Vector3]=Construction.bridge_points(_plan)
 	var end:=Vector2(ends[1].x,ends[1].z)
 	var landing: Vector2=road.nearest(end)

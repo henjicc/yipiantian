@@ -346,10 +346,9 @@ func _build_architecture() -> void:
 	else:
 		trellis=Structures.trellis(plan);add_child(trellis);_contact_sources.append(trellis)
 	trellis.name = "EntranceTrellis"
-	if plan.construction.bridge.is_empty(): _module("stone_bridge",plan.anchors.bridge,plan.angles.bridge)
-	else:
-		var bridge: Node3D=Structures.bridge(plan);add_child(bridge);_contact_sources.append(bridge)
-		_shore_sources.append(bridge)
+	var bridge: Node3D=Structures.authored_bridge(plan) if plan.construction.bridge.is_empty() else Structures.bridge(plan)
+	add_child(bridge);_contact_sources.append(bridge);_shore_sources.append(bridge)
+	if plan.construction.bridge.is_empty(): _apply_pigment(bridge,"stone_bridge")
 	for child: Node in get_children():
 		if child.has_meta("shore_stone"): _fit_bridge_stone(child)
 	_boat=_asset("boat","CoveredBoat",plan.anchors.boat,plan.angles.boat,.85)
@@ -372,7 +371,7 @@ func _fit_bridge_stone(stone: Node3D) -> void:
 	stone.set_meta("bridge_dressing_stone",true)
 	var bridge_polygon: PackedVector2Array=Space.cached_footprint(get_bridge(),plan.ground_height-.08,plan.ground_height+.75)
 	var hidden: bool=preload("res://layout/bridge_passage.gd").dressing_overlap(plan,bridge_polygon,Space.cached_footprint(stone,plan.ground_height+.10,plan.ground_height+.62))
-	hidden=hidden or (stone.get_meta("authored_bridge_path",false) and not plan.construction.bridge.is_empty())
+	hidden=hidden or stone.get_meta("authored_bridge_path",false)
 	var player_hidden: bool=not plan.plants.is_empty() and preload("res://layout/plantings.gd").overlaps_player(Space.cached_footprint(stone,-.55,.55),plan.plants)
 	stone.set_meta("player_dressing_hidden",player_hidden)
 	stone.set_meta("bridge_dressing_hidden",hidden);stone.visible=not hidden and not player_hidden
@@ -461,9 +460,8 @@ func _grass_patch(at: Vector3, index: int) -> void:
 
 func _fit_bridge_reed(reed: Node3D, candidate: RefCounted, publish: bool) -> void:
 	var hidden: bool=false
-	if not candidate.construction.bridge.is_empty():
-		var deck: PackedVector2Array=Space.cached_footprint(get_bridge(),candidate.ground_height-.08,candidate.ground_height+.75)
-		hidden=preload("res://layout/bridge_passage.gd").dressing_overlap(candidate,deck,Space.cached_footprint(reed,candidate.ground_height+.10,candidate.ground_height+.62))
+	var deck: PackedVector2Array=Space.cached_footprint(get_bridge(),candidate.ground_height-.08,candidate.ground_height+.75)
+	hidden=preload("res://layout/bridge_passage.gd").dressing_overlap(candidate,deck,Space.cached_footprint(reed,candidate.ground_height+.10,candidate.ground_height+.62))
 	reed.visible=not hidden
 	if publish: reed.set_meta("bridge_dressing_hidden",hidden)
 

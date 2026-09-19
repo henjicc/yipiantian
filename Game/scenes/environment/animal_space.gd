@@ -22,6 +22,7 @@ var radius: float
 var _floor_faces: Dictionary = {}
 var floor_level: float = .13
 var floor_origin:=Vector2.ZERO
+var floor_seams: Array[PackedVector2Array]=[]
 var component_cells: Dictionary = {}
 
 func configure(area: Rect2, clearance: float, polygon: PackedVector2Array = PackedVector2Array()) -> void:
@@ -137,6 +138,17 @@ func path(start: Vector2, end: Vector2) -> PackedVector2Array:
 	return result
 
 func ground_height(p: Vector2) -> float:
+	var height: float=_triangle_height(p)
+	if not is_finite(height):
+		for polygon: PackedVector2Array in floor_seams:
+			if not Geometry2D.is_point_in_polygon(p,polygon): continue
+			# Bridge masonry has 14 mm joints. A foot spans those tiny gaps;
+			# sampling a neighbouring real face prevents a drop to water level.
+			for offset: Vector2 in [Vector2(.025,0),Vector2(-.025,0),Vector2(0,.025),Vector2(0,-.025)]:
+				height=maxf(height,_triangle_height(p+offset))
+	return height if is_finite(height) else floor_level
+
+func _triangle_height(p: Vector2) -> float:
 	var cell := Vector2i(((p-floor_origin)/CELL).floor())
 	var height: float=-INF
 	for face: PackedVector3Array in _floor_faces.get(cell,[]):
@@ -149,7 +161,7 @@ func ground_height(p: Vector2) -> float:
 		var v: float=b.cross(point)/determinant
 		if u>=0 and v>=0 and u+v<=1:
 			height=maxf(height,face[0].y+u*(face[1].y-face[0].y)+v*(face[2].y-face[0].y))
-	return height if is_finite(height) else floor_level
+	return height
 
 func add_floor(node: Node3D, visible_only: bool=true, height_range: Vector2=Vector2.INF) -> void:
 	# Index real low triangles per spatial cell; feet sample the triangle at their
@@ -216,14 +228,14 @@ static func cached_footprint(node: Node3D, bottom: float, top: float) -> PackedV
 
 static func capture(source: RefCounted) -> Dictionary:
 	return {"radius":source.radius,"obstacles":source.obstacles.duplicate(),"cells":source._obstacle_cells.duplicate(true),
-		"allowed":source.allowed.duplicate(),"floor":source._floor_faces.duplicate(true),"origin":source.floor_origin,"level":source.floor_level}
+		"allowed":source.allowed.duplicate(),"floor":source._floor_faces.duplicate(true),"origin":source.floor_origin,"level":source.floor_level,"seams":source.floor_seams.duplicate()}
 
 static func build_region(area: Array, captured: Dictionary) -> RefCounted:
 	var result:=new()
 	var rect:=Rect2(area[0],area[1],area[2],area[3])
 	result.configure(rect,captured.radius,captured.allowed)
 	result.obstacles.assign(captured.obstacles);result._obstacle_cells=captured.cells
-	result._floor_faces=captured.floor;result.floor_origin=captured.origin;result.floor_level=captured.level
+	result._floor_faces=captured.floor;result.floor_origin=captured.origin;result.floor_level=captured.level;result.floor_seams.assign(captured.seams)
 	result.bake();result.keep_largest_component()
 	for p: Vector2 in [rect.position,rect.end,Vector2(rect.position.x,rect.end.y),Vector2(rect.end.x,rect.position.y)]: result.resting.append(result.nearest(p))
 	return result

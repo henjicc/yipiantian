@@ -50,9 +50,10 @@ static func terrain_issue(plan: RefCounted) -> String:
 		if int(flock.count)==0 or flock.area.is_empty(): continue
 		var polygon: PackedVector2Array=Space.rectangle(Vector2(flock.area[0],flock.area[1]),Vector2(flock.area[2],flock.area[3]))
 		if kind=="hen":
-			if not Space.supported(polygon,plan.plateau()): return "鸡群活动区域需要完整留在岛上平地。"
+			var ground: PackedVector2Array=load("res://layout/bridge_passage.gd").outline(plan,.21)
+			if not Space.overlaps(polygon,ground): return "鸡群活动区域需要包含可到达的陆地或桥面。"
 		elif not Space.water_clear(polygon,plan.water_banks()): return "%s活动区域需要留在水面上，请避开两岸的土坡。"%SPECIES[kind].name
-		var bounds: Rect2=plan.animal_areas.yard if kind=="hen" else plan.animal_areas.water
+		var bounds: Rect2=load("res://layout/bridge_passage.gd").bounds(plan) if kind=="hen" else plan.animal_areas.water
 		if not bounds.encloses(Rect2(flock.area[0],flock.area[1],flock.area[2],flock.area[3])): return "请在小岛附近圈定活动区域。"
 	return ""
 
@@ -96,11 +97,12 @@ static func land_issue(plan: RefCounted, obstacles: Dictionary) -> String:
 	var flock: Dictionary=plan.construction.flocks.hen
 	if flock.count==0 or flock.area.is_empty(): return ""
 	var region:=Navigation.new()
-	var inner: Array[PackedVector2Array]=Geometry2D.offset_polygon(plan.plateau(),-.21)
+	var passage=load("res://layout/bridge_passage.gd")
+	var inner: PackedVector2Array=passage.outline(plan,.21)
 	if inner.is_empty(): return "鸡群没有足够平地，请先调整活动区域。"
-	region.configure(Rect2(flock.area[0],flock.area[1],flock.area[2],flock.area[3]),.21,inner[0])
+	region.configure(Rect2(flock.area[0],flock.area[1],flock.area[2],flock.area[3]),.21,inner)
 	for key: String in obstacles:
-		if not key.begins_with("player_road_"): region.block(obstacles[key])
+		if not key.begins_with("player_road_") and not passage.is_bridge(key): region.block(obstacles[key])
 	for i: int in plan.fields.size(): region.block(plan.field_polygon(i))
 	for span: Dictionary in plan.fences:
 		var a:=Vector2(span.a.x,span.a.z);var b:=Vector2(span.b.x,span.b.z)

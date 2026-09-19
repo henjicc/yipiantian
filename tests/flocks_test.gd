@@ -61,4 +61,10 @@ func _initialize() -> void:
 	land._floor_faces[Vector2i(25,25)]=[PackedVector3Array([Vector3(0,.22,0),Vector3(1,.22,0),Vector3(0,.22,1)])]
 	var copy: RefCounted=Navigation.build_region([-.5,-.5,3,3],Navigation.capture(land))
 	expect(is_equal_approx(copy.ground_height(Vector2(.05,.05)),.22),"Region keeps real floor triangle origin for hen feet")
+	var across:=Plan.new();across.construction.flocks.hen={"count":2,"area":[4,-2,9,4]}
+	expect(Flocks.terrain_issue(across).is_empty() and Flocks.land_issue(across,{}).is_empty(),"A selection can span both banks using the stone bridge")
+	across.construction.bridge=[5.4,-.1,11,.1,1.2,1]
+	expect(Flocks.terrain_issue(across).is_empty() and Flocks.land_issue(across,{}).is_empty(),"The same hen region works with a parameter bridge")
+	across.construction.flocks.hen.area=[7,2,2,2]
+	expect(not Flocks.terrain_issue(across).is_empty(),"A water-only rectangle remains invalid for hens")
 	print("FLOCKS_TEST checks=%d failures=%d"%[checks,failures.size()]);quit(0 if failures.is_empty() else 1)

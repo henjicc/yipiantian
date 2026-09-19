@@ -64,6 +64,7 @@ func _run() -> void:
 	expect(is_instance_valid(builder.bridge_preview) and builder.bridge_preview.structure.has_meta("bridge_supports"),"Held pointer displays generated bridge and supports")
 	expect(scene.farm_state.snapshot()==original and not original_bridge.visible,"Held preview preserves authority and hides original")
 	await mouse(event.position,false)
+	await drag(Construction.bridge_points(builder.candidate)[0]+Vector3.UP*.12,Vector3(4.8,.13,-1.5))
 	expect(builder.issue().contains("景物"),"Bridge rejects new intrusion into authored jars")
 	await drag(Construction.bridge_points(builder.candidate)[0]+Vector3.UP*.12,Vector3(5.4,.13,-.1))
 	if not await ready_draft(): await shot("failure-placement");await finish();return

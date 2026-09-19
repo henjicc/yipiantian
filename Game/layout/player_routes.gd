@@ -179,10 +179,10 @@ static func placement_issue(plan: RefCounted, obstacles: Dictionary) -> String:
 	for key: String in plan.route_footprints():
 		var polygon: PackedVector2Array=plan.route_footprints()[key]
 		for blocker: String in index.collisions(polygon):
-			if blocker=="AdaptiveBridge" and key.begins_with("player_road_"):
+			if preload("res://layout/bridge_passage.gd").is_bridge(blocker) and key.begins_with("player_road_"):
 				var ends: Array[Vector3]=preload("res://layout/island_construction.gd").bridge_points(plan)
 				var a:=Vector2(ends[0].x,ends[0].z);var b:=Vector2(ends[1].x,ends[1].z)
-				var walking: PackedVector2Array=strip(a,b,plan.construction.bridge[4]*.5-.06,.08)
+				var walking: PackedVector2Array=strip(a,b,preload("res://layout/island_construction.gd").bridge_parameters(plan)[4]*.5-.06,.08)
 				var fits: bool=true
 				for overlap: PackedVector2Array in Geometry2D.intersect_polygons(polygon,obstacles[blocker]):
 					if not Space.supported(overlap,walking): fits=false;break

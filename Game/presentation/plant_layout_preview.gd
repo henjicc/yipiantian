@@ -71,13 +71,12 @@ func update(plan: RefCounted) -> void:
 	var added: Array[PackedVector2Array]=[]
 	for entry: Dictionary in plan.plants:
 		if entry not in environment.plan.plants: added.append(Plants.footprint(entry))
-	if not plan.construction.bridge.is_empty():
-		var shapes: Array[PackedVector2Array]=[]
-		for child: Node in environment.get_children():
-			if child is Node3D and child.name!="PlayerPlants": shapes.append_array(animals.water_shapes(child,plan))
-		shapes.append_array(Plants.footprints(plan.plants).values())
-		message=preload("res://layout/bridge_passage.gd").water_issue(plan,shapes)
-		if not message.is_empty(): return
+	var shapes: Array[PackedVector2Array]=[]
+	for child: Node in environment.get_children():
+		if child is Node3D and child.name!="PlayerPlants": shapes.append_array(animals.water_shapes(child,plan))
+	shapes.append_array(Plants.footprints(plan.plants).values())
+	message=preload("res://layout/bridge_passage.gd").water_issue(plan,shapes)
+	if not message.is_empty(): return
 	for kind: String in ["duck","goose"]:
 		message=preload("res://layout/flock_layout.gd").added_obstacle_issue(plan,kind,animals.water,added)
 		if not message.is_empty(): return

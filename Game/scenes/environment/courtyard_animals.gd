@@ -95,7 +95,10 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 		if update_water:
 			for polygon: PackedVector2Array in water_shapes(child,environment.plan): water.block(polygon)
 		if child.has_meta("bridge_water_shapes"):
-			yard.add_floor(child.get_node("Deck"),false,Vector2(-INF,INF))
+			if child.has_meta("bridge_seamed_deck"):
+				yard.add_floor(child,false,Vector2(-INF,INF))
+				yard.floor_seams.append(child.get_meta("bridge_seamed_deck"))
+			else: yard.add_floor(child.get_node("Deck"),false,Vector2(-INF,INF))
 			continue
 		if child.name=="PlayerRoutes":
 			yard.add_floor(child.get_node("Roads"),false)
@@ -383,6 +386,11 @@ func _advance(entry: Dictionary, delta: float) -> void:
 		var safe: float = entry.radius + other.radius + .12
 		if away.length() < safe + .5 and away.length() > .001:
 			var urgency: float = 1.0 - smoothstep(safe, safe + .5, away.length())
+			# Narrow passages may not fit the preferred social distance. Relax
+			# that buffer at an edge, while the hard body collision below remains.
+			var retreat: Vector2=p+away.normalized()*(safe+.5-away.length())
+			if entry.kind=="hen" and not entry.space.clear_segment(p,retreat):
+				urgency=1.0-smoothstep(entry.radius+other.radius,safe,away.length())
 			desired += away.normalized() * urgency * entry.speed
 			if moving and urgency > .1: desired += Vector2(-away.y, away.x).normalized() * .09
 	var velocity: Vector2 = (entry.velocity as Vector2).move_toward(desired.limit_length(entry.speed), delta * (2.3 if entry.kind=="hen" else .65))

@@ -27,7 +27,7 @@ func _run() -> void:
 	check(courtyard.plan == scene.courtyard_plan and scene.farm.plan == scene.courtyard_plan, "Farm and courtyard share one layout instance")
 	check(courtyard.get_node("LivingDetails").plan == scene.courtyard_plan, "Life props share the same layout instance")
 	check(courtyard.get_node("MainHouse").position.is_equal_approx(scene.courtyard_plan.anchors.house), "House anchor comes from layout")
-	check(animals.water.bounds == scene.courtyard_plan.animal_areas.water and animals.yard.bounds == scene.courtyard_plan.animal_areas.yard, "Animal activity bounds come from layout")
+	check(animals.water.bounds == scene.courtyard_plan.animal_areas.water and animals.yard.bounds.encloses(scene.courtyard_plan.land_bounds()) and animals.yard.bounds.has_point(Vector2(12,-2)), "Animal activity bounds include the main and opposite banks")
 	animals.set_process(false)
 	animals._rng.seed = 9182026
 	print("ANIMAL_SPACES water=", animals.water.points.size(), " yard=", animals.yard.points.size())

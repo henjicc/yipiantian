@@ -49,7 +49,7 @@ var props := {
 	"YardWaterVats": [Vector3(-5.7,.14,-2.02),18.0],
 	"YardFirewood": [Vector3(-4.5,.14,-6.8),90.0],
 	"YardStoneMill": [Vector3(5.07,.14,-2.92),-95.0],
-	"YardJarCluster": [Vector3(5.3,.14,-1.6),-30.0],
+	"YardJarCluster": [Vector3(4.6,.14,-2.0),-30.0],
 	"YardGroundTrays": [Vector3(-4.05,.14,4.85),40.0],
 	"YardBasketStack": [Vector3(3.95,.14,4.55),-20.0],
 	"YardBucket": [Vector3(-3.6,.14,-1.42),8.0],

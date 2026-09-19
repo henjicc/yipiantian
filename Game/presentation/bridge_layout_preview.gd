@@ -26,11 +26,8 @@ var validated: RefCounted
 var routes: RefCounted
 var footprint: PackedVector2Array
 var _source: Node3D
-var _source_footprint: PackedVector2Array
-var _water_footprint: PackedVector2Array
 var _hidden: Array[Node3D]=[]
 var _dressing: Array[Dictionary]=[]
-var _authored_contacts: Array[String]=["YardJarCluster"]
 var _obstacles: Dictionary={}
 var _base_water: Dictionary={}
 var _water_obstacles: Dictionary={}
@@ -46,24 +43,12 @@ func configure(scene: Node3D) -> void:
 	main=scene;environment=main.get_node("Environment");_source=environment.get_bridge()
 	for child: Node in environment.get_children():
 		if child is Node3D and child!=_source: _base_water[String(child.name)]=Animals.water_shapes(child,environment.plan)
-		if String(child.name).begins_with("BankReeds"): _authored_contacts.append(String(child.name))
 		if child.has_meta("bridge_dressing_stone") or String(child.name).begins_with("BankReeds"):
 			var ground: PackedVector2Array=environment.layout_obstacles.get(String(child.name),PackedVector2Array())
 			if ground.is_empty(): ground=Space.cached_footprint(child,environment.plan.ground_height+.10,environment.plan.ground_height+.62)
 			var water: PackedVector2Array=Space.cached_footprint(child,-.55,.55) if child.has_meta("bridge_dressing_stone") else PackedVector2Array()
 			_dressing.append({"node":child,"visible":child.visible,"footprint":ground,"water":water})
 
-	if environment.has_meta("authored_bridge_footprint"):
-		_source_footprint=environment.get_meta("authored_bridge_footprint")
-	elif environment.plan.construction.bridge.is_empty():
-		_source_footprint=Space.cached_footprint(_source,environment.plan.ground_height-.08,environment.plan.ground_height+.75)
-	else:
-		var authored: Node3D=load("res://art/environment/modules/stone_bridge.glb").instantiate()
-		authored.position=environment.plan.anchors.bridge;authored.rotation.y=deg_to_rad(environment.plan.angles.bridge)
-		authored.hide();add_child(authored)
-		_source_footprint=Space.footprint(authored,environment.plan.ground_height-.08,environment.plan.ground_height+.75,false)
-		authored.free()
-	environment.set_meta("authored_bridge_footprint",_source_footprint)
 	core=Cover.new();add_child(core);core.copy_tiles(environment.get_node("GroundCover/CoreGrass"))
 	expansion=Cover.new();add_child(expansion);expansion.copy_tiles(environment.get_node("ExpansionGrass"))
 	for node: Node3D in [_source,environment.get_node("BridgeContacts"),environment.get_node("GroundCover/CoreGrass"),environment.get_node("ExpansionGrass")]: _hide(node)
@@ -77,13 +62,11 @@ func update(plan: RefCounted) -> void:
 	for node: Node in [structure,contacts]:
 		if is_instance_valid(node): node.free()
 	if plan.construction.bridge.is_empty():
-		structure=load("res://art/environment/modules/stone_bridge.glb").instantiate()
-		structure.position=plan.anchors.bridge;structure.rotation.y=deg_to_rad(plan.angles.bridge)
+		structure=Structures.authored_bridge(plan)
 		environment._apply_pigment(structure,"stone_bridge")
 	else: structure=Structures.bridge(plan)
 	add_child(structure)
 	footprint=Space.cached_footprint(structure,plan.ground_height-.08,plan.ground_height+.75)
-	_water_footprint=Space.cached_footprint(structure,-.55,.55) if plan.construction.bridge.is_empty() else PackedVector2Array()
 	contacts=Contacts.new();add_child(contacts)
 	var end: Vector3=Construction.bridge_points(plan)[1]
 	contacts.configure_bounds(plan.land_bounds().expand(Vector2(end.x,end.z)).grow(.6))
@@ -109,19 +92,14 @@ func update(plan: RefCounted) -> void:
 	pending=message.is_empty();_due=Time.get_ticks_msec()+120;checked.emit()
 
 func _hide_dressing(entry: Dictionary, plan: RefCounted) -> bool:
-	if plan.construction.bridge.is_empty() and String(entry.node.name).begins_with("BankReeds"): return false
-	return Passage.dressing_overlap(plan,footprint,entry.footprint) or (entry.node.get_meta("authored_bridge_path",false) and not plan.construction.bridge.is_empty())
+	return Passage.dressing_overlap(plan,footprint,entry.footprint) or entry.node.get_meta("authored_bridge_path",false)
 
 func _placement_issue(plan: RefCounted) -> String:
 	var issue: String=Construction.bridge_issue(plan)
 	if not issue.is_empty(): return issue
 	for key: String in _obstacles:
 		if key.begins_with("player_road_"): continue
-		for overlap: PackedVector2Array in Geometry2D.intersect_polygons(footprint,_obstacles[key]):
-			# The authored stone bridge meets bank reeds and the nearby jar cluster.
-			# Retain only that envelope; player props are never exempted.
-			if key in _authored_contacts and IslandSpace.supported(overlap,_source_footprint): continue
-			return "桥梁碰到了景物或摆件，请调整桥头或宽度。"
+		if IslandSpace.overlaps(footprint,_obstacles[key]): return "桥梁碰到了景物或摆件，请调整桥头或宽度。"
 	for i: int in plan.fields.size():
 		if IslandSpace.overlaps(footprint,plan.field_polygon(i,.12)): return "请为田地留出空间。"
 	return animal_issue()
@@ -131,14 +109,10 @@ func animal_issue() -> String:
 	if not issue.is_empty(): return issue
 	for bird: Dictionary in environment.get_node("CourtyardAnimals").birds:
 		if bird.kind=="hen": continue
-		if not _water_footprint.is_empty():
-			for polygon: PackedVector2Array in Geometry2D.offset_polygon(_water_footprint,bird.radius):
-				if Geometry2D.is_point_in_polygon(bird.position,polygon): return "水边有动物，请等它游开再调整。"
 		for shape: PackedVector2Array in structure.get_meta("bridge_water_shapes",[]):
 			for polygon: PackedVector2Array in Geometry2D.offset_polygon(shape,bird.radius):
 				if Geometry2D.is_point_in_polygon(bird.position,polygon): return "桥下有动物，请等它游开再调整。"
 	var additions: Array[PackedVector2Array]=[]
-	if not _water_footprint.is_empty(): additions.append(_water_footprint)
 	additions.append_array(structure.get_meta("bridge_water_shapes",[]))
 	var plan: RefCounted=Plan.from_snapshot(_wanted)
 	var source: RefCounted=null
@@ -161,10 +135,9 @@ static func _build(snapshot: Dictionary, obstacles: Dictionary, water_obstacles:
 	var plan: RefCounted=Plan.from_snapshot(snapshot)
 	var circulation:=Circulation.new();circulation.build(plan,obstacles)
 	var water_issue: String=""
-	if not plan.construction.bridge.is_empty():
-		var polygons: Array[PackedVector2Array]=[]
-		for shapes: Array in water_obstacles.values(): polygons.append_array(shapes)
-		if Passage.water_crossing(plan,polygons).is_empty(): water_issue="桥下没有足够通行空间，请调整位置、跨度或桥型。"
+	var polygons: Array[PackedVector2Array]=[]
+	for shapes: Array in water_obstacles.values(): polygons.append_array(shapes)
+	water_issue=Passage.water_issue(plan,polygons)
 	return {"plan":plan,"routes":circulation,"water_issue":water_issue,"contacts":Contacts.paint_levels(levels,origin,extent)}
 
 func _process(_delta: float) -> void:

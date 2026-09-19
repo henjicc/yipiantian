@@ -483,6 +483,8 @@ func placement_issue(prop: Node3D, item: String, slot: String) -> String:
 	var polygon: PackedVector2Array=Space.cached_footprint(prop,.05+rise,1.3+rise)
 	if polygon.size()<3: return "摆件没有可用的落地轮廓"
 	if not IslandSpace.supported(polygon,environment.plan.plateau()): return "这里超出了平地"
+	var approach: String=preload("res://layout/bridge_passage.gd").approach_issue(environment.plan,{"candidate_decoration":polygon})
+	if not approach.is_empty(): return approach
 	var occupied:=IslandSpace.new()
 	for key: String in environment.layout_obstacles:
 		if key==SITE_SCENERY.get(slot,""): continue

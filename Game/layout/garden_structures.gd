@@ -44,6 +44,13 @@ static func trellis(plan: RefCounted) -> Node3D:
 	_finish(root,bamboo,Color("93845b"));_finish(root,joints,Color("61533a"))
 	return root
 
+static func authored_bridge(plan: RefCounted) -> Node3D:
+	var root: Node3D=load("res://art/environment/modules/stone_bridge.glb").instantiate()
+	root.name="AuthoredBridge";root.position=plan.anchors.bridge;root.rotation.y=deg_to_rad(plan.angles.bridge)
+	root.set_meta("bridge_water_shapes",Passage.water_shapes(plan))
+	root.set_meta("bridge_seamed_deck",Passage.deck_strip(plan))
+	return root
+
 static func bridge(plan: RefCounted) -> Node3D:
 	var root:=Node3D.new();root.name="AdaptiveBridge"
 	var ends: Array[Vector3]=Construction.bridge_points(plan)
