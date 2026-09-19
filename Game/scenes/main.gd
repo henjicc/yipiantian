@@ -679,10 +679,8 @@ func _begin_construction(tool: String = "land") -> void:
 	if decoration_layout.active: decoration_layout.finish_mode()
 	_cancel_tool();_cancel_input();field_menu.dismiss();hud.hide_time_preview()
 	camera.cancel_zoom()
-	camera.set_construction_framing(true)
-	if _construction_resume.is_empty():
-		camera.focus_point=Vector3(0,.4,1);camera.view=Vector3(24,42,34)
-		camera.focused=false
+	camera.set_construction_framing(true,_construction_resume.is_empty())
+	_construction_resume={}
 	island_builder.begin(self,tool);hud.hide()
 
 func _apply_construction(snapshot: Dictionary, undo: bool) -> void:

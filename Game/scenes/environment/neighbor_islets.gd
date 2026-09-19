@@ -70,7 +70,16 @@ func _add(label: String, asset: String, at: Vector3, yaw: float, directory: Stri
 				material.set_shader_parameter("painted_color",source.albedo_texture)
 				geometry.set_surface_override_material(surface, material)
 	levels[1].visible = false
-	_islets.append({"node":holder, "high":levels[0], "low":levels[1], "distant":false})
+	_islets.append({"node":holder, "high":levels[0], "low":levels[1], "distant":false,"base_position":at})
+
+func preview_expansion(value: Vector2) -> void:
+	if value.is_equal_approx(shore_expansion): return
+	shore_expansion=value
+	for entry: Dictionary in _islets:
+		var at: Vector3=entry.base_position
+		entry.node.position=at-Vector3.RIGHT*value.x*(1.0-smoothstep(-10.0,-4.0,at.x))
+	_lake_plants.populate_lake(value)
+	_lake_plants.set_low_detail(_low_quality)
 
 func _process(_delta: float) -> void:
 	var camera: Camera3D = get_viewport().get_camera_3d()

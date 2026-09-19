@@ -181,17 +181,24 @@ func apply_construction(value: Dictionary) -> bool:
 	scenery_expansion=Vector2(maxf(shore_expansion.x,-7.6-bounds.position.x),maxf(shore_expansion.y,bounds.end.y-6.7))
 	animal_areas.yard=bounds
 	animal_areas.water=bounds.grow(5.5)
-	# Only water plants submerged by added land move to the nearest new bank.
+	# Keep whole clumps (not only their centres) clear of the new waterline.
+	var painted: bool=not construction.land.is_empty()
+	var waterline: PackedVector2Array=BankGeometry.ring(BankGeometry.contour(rim,painted),1.055,bank_width,painted)
 	for i: int in lily_coves.size():
 		var p:=Vector2(lily_coves[i].x,lily_coves[i].z)
-		if not Geometry2D.is_point_in_polygon(p,rim): continue
-		var nearest:=Vector2.INF;var distance: float=INF
-		for j: int in rim.size():
-			var edge: Vector2=Geometry2D.get_closest_point_to_segment(p,rim[j],rim[(j+1)%rim.size()])
-			if p.distance_squared_to(edge)<distance: nearest=edge;distance=p.distance_squared_to(edge)
-		var outward: Vector2=(nearest-p).normalized()
-		p=nearest+outward*1.8
+		var affected: bool=false
+		for patch: Array in construction.land:
+			if Rect2(patch[0],patch[1],patch[2],patch[3]).grow(1.6).has_point(p): affected=true;break
+		if not affected: continue
+		p=Construction.clear_water(p,waterline,1.5)
 		lily_coves[i]=Vector3(p.x,lily_coves[i].y,p.y)
+	for i: int in reeds.size():
+		var p:=Vector2(reeds[i].x,reeds[i].z)
+		for patch: Array in construction.land:
+			if Rect2(patch[0],patch[1],patch[2],patch[3]).has_point(p):
+				p=Construction.nearest_edge(p,rim)*.95
+				reeds[i]=Vector3(p.x,reeds[i].y,p.y)
+				break
 	if not construction.trellis.is_empty():
 		var size: Vector3=Construction.trellis_size(self)
 		slots.hanging_03=anchors.trellis+Vector3(size.y*.5,size.z-.3,size.x*.5-.2)
@@ -253,7 +260,8 @@ static func resized_field(field: Dictionary, columns: int, rows: int, size: Vect
 	return candidate
 
 func plateau() -> PackedVector2Array:
-	return BankGeometry.ring(BankGeometry.contour(rim), .96, bank_width)
+	var painted: bool=not construction.land.is_empty()
+	return BankGeometry.ring(BankGeometry.contour(rim,painted), .96, bank_width,painted)
 
 func land_bounds() -> Rect2:
 	var result := Rect2(rim[0],Vector2.ZERO)

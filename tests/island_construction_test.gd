@@ -81,13 +81,14 @@ func _run() -> void:
 	print("ENTRY_AFTER ",scene.island_builder.active," hovered=",root.gui_get_hovered_control())
 	expect(scene.island_builder.active,"Real HUD click enters in-world construction")
 	if not scene.island_builder.active: await finish();return
+	await create_timer(1).timeout
 	await frames();await shot("01-original")
 	await drag(Vector3(0,.13,6),Vector3(2,.13,8))
 	var escape:=InputEventKey.new();escape.keycode=KEY_ESCAPE;escape.pressed=true
 	root.push_input(escape,true);await frames()
 	expect(scene.island_builder.active and scene.island_builder.draft==scene.farm_state.snapshot().layout,"Escape cancels only the pending draft")
 	await drag(Vector3(0,.13,6),Vector3(3,.13,8.5))
-	expect(scene.island_builder.draft.construction.land.size()==1,"World drag creates local grid patch")
+	expect(scene.island_builder.draft.construction.land.size()>1,"World drag creates connected brush samples")
 	expect(scene.farm_state.snapshot().layout.construction.land.is_empty(),"Preview does not mutate farm")
 	await shot("02-land-preview")
 	if not await apply(): await finish();return

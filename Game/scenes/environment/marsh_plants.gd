@@ -53,6 +53,8 @@ func populate(island: Node3D, seed_value: int) -> void:
 	set_low_detail(true)
 
 func populate_lake(shore_expansion: Vector2=Vector2.ZERO) -> void:
+	for child: Node in get_children(): child.free()
+	_tiers.clear()
 	var transforms: Array = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed=91839

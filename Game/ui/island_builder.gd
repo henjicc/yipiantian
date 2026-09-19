@@ -5,9 +5,9 @@ signal closed
 const Plan = preload("res://layout/courtyard_plan.gd")
 const Construction = preload("res://layout/island_construction.gd")
 const Structures = preload("res://layout/garden_structures.gd")
-const Bank = preload("res://layout/bank_geometry.gd")
 const ThemeFactory = preload("res://ui/farm_theme.gd")
 const Assets = preload("res://scenes/environment/courtyard_assets.gd")
+const ShorePreview=preload("res://presentation/island_shore_preview.gd")
 var main: Node3D
 var active: bool = false
 var busy: bool = false
@@ -29,6 +29,10 @@ var _drag_snapshot: Dictionary = {}
 var _bridge_end: int = -1
 var _pan:=Vector2.INF
 var _last_cell:=Vector2.INF
+var _shore: Node3D
+var _brush_last:=Vector2.INF
+var _pending_land:=Vector2.INF
+var _brush_message: String=""
 
 func _ready() -> void:
 	layer=15
@@ -74,6 +78,7 @@ func begin(scene: Node3D, selected: String = "land") -> void:
 func choose(id: String) -> void:
 	if busy: return
 	tool=id;draft=main.farm_state.snapshot().layout;_start=Vector2.INF;_drag_snapshot={};_last_cell=Vector2.INF
+	_pending_land=Vector2.INF;_brush_last=Vector2.INF;_brush_message=""
 	for key: String in _tools: _tools[key].set_pressed_no_signal(key==id)
 	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id=="ducks" and key=="count")
 	var size: Vector3=Construction.trellis_size(main.courtyard_plan)
@@ -117,7 +122,31 @@ func finish() -> void:
 func _focus_lost() -> void:
 	if active and not busy:
 		if not _drag_snapshot.is_empty(): draft=_drag_snapshot;_drag_snapshot={}
-		_start=Vector2.INF;_pan=Vector2.INF;_refresh()
+		_start=Vector2.INF;_pan=Vector2.INF;_pending_land=Vector2.INF;_last_cell=Vector2.INF;_refresh()
+
+func _process(_delta: float) -> void:
+	if active and not busy and _pending_land.is_finite(): _flush_land()
+
+func _flush_land() -> void:
+	if not _pending_land.is_finite(): return
+	var point: Vector2=_pending_land;_pending_land=Vector2.INF
+	var before: int=draft.construction.land.size()
+	var outline: PackedVector2Array=candidate.rim if candidate!=null else main.courtyard_plan.rim
+	var from: Vector2=point if not _brush_last.is_finite() else _brush_last
+	var steps: int=mini(100,maxi(1,ceili(from.distance_to(point)/.25)))
+	var east: PackedVector2Array=Construction.bridge_support(main.courtyard_plan,1)
+	var flock: Dictionary=draft.construction.ducks
+	for i: int in steps+1:
+		var sample: Vector2=from.lerp(point,float(i)/steps)
+		var cell: Vector2=(sample/Construction.CELL).floor()*Construction.CELL
+		var area: PackedVector2Array=Construction.rectangle([cell.x-.5,cell.y-.5,1.5,1.5])
+		if not Geometry2D.intersect_polygons(area,east).is_empty(): continue
+		if flock.count>0 and not flock.area.is_empty() and not Geometry2D.intersect_polygons(area,Construction.rectangle(flock.area)).is_empty(): continue
+		outline=Construction.paint(draft.construction.land,outline,sample)
+	_brush_last=point;_last_cell=point
+	_brush_message="从现有岸边开始涂抹；对岸和鸭群水域会保留。" if draft==main.farm_state.snapshot().layout and draft.construction.land.size()==before else ""
+	if draft.construction.land.size()>=Construction.MAX_PATCHES: _brush_message="本岛添地范围已达到本轮上限。可取消当前调整。"
+	_refresh()
 
 func observe(event: InputEvent) -> void:
 	if not active or busy: return
@@ -141,6 +170,7 @@ func handle(event: InputEvent) -> void:
 			if event.pressed: _press(event.position)
 			else:
 				if _start!=Vector2.INF: _drag(event.position)
+				if tool=="land": _flush_land()
 				_start=Vector2.INF;_drag_snapshot={}
 	elif event is InputEventMouseMotion:
 		if _pan!=Vector2.INF:
@@ -157,6 +187,7 @@ func world_point(screen: Vector2) -> Vector2:
 	return Vector2(point.x,point.z)
 
 func _press(screen: Vector2) -> void:
+	if main.camera.is_transitioning(): return
 	var point: Vector2=world_point(screen)
 	if not point.is_finite(): return
 	_bridge_end=-1
@@ -171,20 +202,24 @@ func _press(screen: Vector2) -> void:
 		var p: Vector3=main.courtyard_plan.anchors.trellis
 		if absf(point.x-p.x)>2 or absf(point.y-p.z)>4: return
 	_start=point;_drag_snapshot=draft.duplicate(true);_last_cell=Vector2.INF
+	if tool=="land":
+		_brush_last=point;_pending_land=point;_flush_land()
 
 func _drag(screen: Vector2) -> void:
 	var point: Vector2=world_point(screen)
 	if not point.is_finite(): return
+	if tool=="land":
+		_pending_land=point
+		return
 	point=point.snapped(Vector2.ONE*Construction.CELL) if tool in ["land","ducks"] else point.snapped(Vector2.ONE*.1)
 	if point==_last_cell: return
 	_last_cell=point;draft=_drag_snapshot.duplicate(true)
 	match tool:
-		"land","ducks":
+		"ducks":
 			var start: Vector2=_start.snapped(Vector2.ONE*Construction.CELL)
 			var low: Vector2=start.min(point);var size: Vector2=(start-point).abs()
 			var rect: Array=[low.x,low.y,maxf(.5,size.x),maxf(.5,size.y)]
-			if tool=="land": draft.construction.land.append(rect)
-			else: draft.construction.ducks.area=rect
+			draft.construction.ducks.area=rect
 		"trellis":
 			var size: Vector3=Construction.trellis_size(main.courtyard_plan)
 			draft.construction.trellis=[clampf(size.x+(point.y-_start.y)*2,2,6),_values.width.value,_values.height.value]
@@ -203,7 +238,7 @@ func issue() -> String:
 		if tool=="ducks": return "水域至少 2 × 2 米，每只鸭子需约 3 平方米。请扩大水域或减少数量。"
 		if tool=="bridge": return "桥长需在 2 至 9 米之间，请调整桥头。"
 		if tool=="trellis": return "请把菜架尺寸调回允许范围。"
-		return "添地需与岸边重叠，单次不超过 5 × 5 米，最多添加 16 块。"
+		return "从现有岸边涂抹，让新土地保持连通。"
 	var bridge: String=Construction.bridge_issue(candidate)
 	if not bridge.is_empty(): return bridge
 	if not candidate.construction.trellis.is_empty():
@@ -234,10 +269,13 @@ func _refresh() -> void:
 	var message: String=issue()
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
 	_undo.disabled=busy or previous.is_empty()
-	_status.text=message if not message.is_empty() else {"land":"沿岸拖出添地范围，确认后生效。","trellis":"拖动菜架调整长度，也可调节长宽高。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}[tool]
+	_status.text=message if not message.is_empty() else {"land":"按住左键沿岸涂抹，土地与水边植物实时变化。确认保存，Esc 取消。","trellis":"拖动菜架调整长度，也可调节长宽高。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}[tool]
+	if tool=="land" and not _brush_message.is_empty(): _status.text=_brush_message
 	_render_preview(message.is_empty())
 
-func _clear_preview() -> void:
+func _clear_preview(keep_shore: bool=false) -> void:
+	if not keep_shore and is_instance_valid(_shore):
+		_shore.restore();_shore.free();_shore=null
 	for node: Node3D in _hidden:
 		if is_instance_valid(node): node.show()
 	_hidden.clear()
@@ -247,34 +285,25 @@ func _hide_node(node: Node3D) -> void:
 	if node!=null and node.visible: node.hide();_hidden.append(node)
 
 func _render_preview(valid: bool) -> void:
-	_clear_preview()
+	_clear_preview(tool=="land" and candidate!=null and draft!=main.farm_state.snapshot().layout)
 	_preview=Node3D.new();_preview.name="ConstructionPreview";main.add_child(_preview)
 	var tint:=Color("88b779") if valid else Color("d77d62")
 	var plan: RefCounted=candidate if candidate!=null else main.courtyard_plan
 	if candidate!=null and draft!=main.farm_state.snapshot().layout:
 		if tool=="land":
-			var old: Node3D=main.get_node("Environment/MainBank")
-			_hide_node(old)
-			var mesh:=MeshInstance3D.new();mesh.mesh=Bank.build(plan.rim,plan.ground_height,plan.bank_width)
-			mesh.material_override=old.get_child(0).get_active_material(0);mesh.set_layer_mask_value(2,true);_preview.add_child(mesh)
-			var environment: Node3D=main.get_node("Environment")
-			for node: Node in environment.get_children():
-				if node is Node3D and (node.has_meta("shore_stone") or node.name=="NewShorePlants"): _hide_node(node)
-			for entry: Dictionary in preload("res://presentation/shore_dressing.gd").stones(plan):
-				var rock: Node3D=(load("res://art/environment/modules/"+entry.asset+".glb") as PackedScene).instantiate()
-				_preview.add_child(rock);rock.position=entry.at;rock.rotation.y=deg_to_rad(entry.yaw);rock.scale=entry.size
-				environment._apply_pigment(rock,entry.asset);environment._tint_stone(rock,entry.color)
-			_preview.add_child(preload("res://presentation/shore_dressing.gd").plants(plan))
+			if not is_instance_valid(_shore):
+				_shore=ShorePreview.new();main.add_child(_shore);_shore.configure(main.get_node("Environment"))
+			_shore.update(plan)
 		elif tool=="trellis":
 			_hide_node(main.get_node("Environment/EntranceTrellis"));_preview.add_child(Structures.trellis(plan))
 		elif tool=="bridge" and not plan.construction.bridge.is_empty():
 			for child: Node in main.get_node("Environment").get_children():
 				if child is Node3D and (child.name=="AdaptiveBridge" or child.scene_file_path.ends_with("stone_bridge.glb")): _hide_node(child)
 			_preview.add_child(Structures.bridge(plan))
-	if tool=="land" and not draft.construction.land.is_empty():
-		var rect: Array=draft.construction.land[-1]
-		if Construction.numbers(rect,4) and rect[2]<=5 and rect[3]<=5:
-			_outline(Construction.rectangle(rect),main.courtyard_plan.ground_height+.08,tint,true)
+	if tool=="land" and _last_cell.is_finite():
+		var circle:=PackedVector2Array()
+		for i: int in 32: circle.append(_last_cell+Vector2.from_angle(i*TAU/32)*.8)
+		_outline(circle,main.courtyard_plan.ground_height+.06,tint,false)
 	elif tool=="ducks" and not draft.construction.ducks.area.is_empty():
 		var rect: Array=draft.construction.ducks.area
 		if Construction.numbers(rect,4) and rect[2]<=12 and rect[3]<=12:

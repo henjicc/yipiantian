@@ -144,7 +144,7 @@ func _bank(role: String, outline: PackedVector2Array, at: Vector3, yaw_degrees: 
 	node.rotation.y = deg_to_rad(yaw_degrees)
 	var surface := MeshInstance3D.new()
 	surface.name = "RoundedShore"
-	surface.mesh = BankGeometry.build(outline, plan.ground_height, plan.bank_width)
+	surface.mesh = BankGeometry.build(outline, plan.ground_height, plan.bank_width,role=="main" and not plan.construction.land.is_empty())
 	node.add_child(surface)
 	add_child(node)
 	_apply_pigment(node, "island_bank_v2" if role == "main" else "east_bank_v2")
@@ -311,6 +311,16 @@ func _grass_patch(at: Vector3, index: int) -> void:
 	var material:=ShaderMaterial.new();material.shader=PIGMENT;material.set_shader_parameter("base_color",Color("697f4f"));material.set_shader_parameter("wash_scale",8.0)
 	mesh.material_override=material;add_child(mesh)
 	_plant_wind.apply(mesh,"grass")
+
+func preview_shore_plants(candidate: RefCounted) -> void:
+	for index: int in _floaters.size():
+		var parts: PackedStringArray=String(_floaters[index].name).trim_prefix("Lotus").split("_")
+		var cove: int=int(parts[0]);var member: int=int(parts[1])
+		var angle: float=member*2.4+cove*.7
+		_floater_origins[index]=candidate.lily_coves[cove]+Vector3(cos(angle)*.72,0,sin(angle)*.6)
+		_floaters[index].position=_floater_origins[index]
+	for index: int in candidate.reeds.size(): get_node("BankReeds%d"%index).position=candidate.reeds[index]
+	get_node("NeighborIslets").preview_expansion(candidate.scenery_expansion.max(candidate.shore_expansion))
 
 func _build_slots() -> void:
 	_slots=Node3D.new();_slots.name="DecorationSlots";add_child(_slots)

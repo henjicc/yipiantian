@@ -1,7 +1,8 @@
 extends RefCounted
 ## Persisted parameters for the first in-world construction slice. Coordinates are XZ.
 const CELL: float = .5
-const MAX_PATCHES: int = 16
+const MAX_PATCHES: int = 256
+const BRUSH_SIZE: float = 1.5
 const MAX_DUCKS: int = 12
 
 static func initial() -> Dictionary:
@@ -44,6 +45,35 @@ static func valid(data: Variant) -> bool:
 static func rectangle(values: Array) -> PackedVector2Array:
 	var p:=Vector2(values[0],values[1]);var s:=Vector2(values[2],values[3])
 	return PackedVector2Array([p,p+Vector2(s.x,0),p+s,p+Vector2(0,s.y)])
+
+static func paint(land: Array, outline: PackedVector2Array, point: Vector2) -> PackedVector2Array:
+	var cell: Vector2=(point/ CELL).floor()*CELL
+	var stamp: Array=[cell.x-CELL,cell.y-CELL,BRUSH_SIZE,BRUSH_SIZE]
+	if absf(stamp[0])>18 or absf(stamp[1])>18 or land.size()>=MAX_PATCHES: return outline
+	var polygon: PackedVector2Array=rectangle(stamp)
+	if Geometry2D.clip_polygons(polygon,outline).is_empty(): return outline
+	var merged: PackedVector2Array=land_outline(outline,[stamp])
+	if not merged.is_empty():
+		land.append(stamp)
+		return merged
+	return outline
+
+static func nearest_edge(point: Vector2, outline: PackedVector2Array) -> Vector2:
+	var nearest:=Vector2.INF;var distance: float=INF
+	for i: int in outline.size():
+		var p: Vector2=Geometry2D.get_closest_point_to_segment(point,outline[i],outline[(i+1)%outline.size()])
+		if point.distance_squared_to(p)<distance: nearest=p;distance=point.distance_squared_to(p)
+	return nearest
+
+static func clear_water(point: Vector2, outline: PackedVector2Array, clearance: float) -> Vector2:
+	for step: int in 8:
+		var nearest: Vector2=nearest_edge(point,outline)
+		var inside: bool=Geometry2D.is_point_in_polygon(point,outline)
+		if not inside and nearest.distance_to(point)>=clearance-.01: break
+		var direction: Vector2=(nearest-point if inside else point-nearest).normalized()
+		if direction==Vector2.ZERO: direction=nearest.normalized()
+		point=nearest+direction*(clearance+.05)
+	return point
 
 static func land_outline(original: PackedVector2Array, patches: Array) -> PackedVector2Array:
 	var outline: PackedVector2Array=original.duplicate()

@@ -206,13 +206,14 @@ func _maximum_distance() -> float:
 	if construction_framing: return maxf(34.0,overview_view.z+2.4)
 	return _focus_distance if focused else maxf(ARRANGEMENT_DISTANCE,overview_view.z+2.4) if _decoration_framing else overview_view.z
 
-func set_construction_framing(enabled: bool) -> void:
+func set_construction_framing(enabled: bool, animate: bool = true) -> void:
 	_stop_transition()
 	set_free_view(false)
 	construction_framing=enabled
 	focused=false
 	_anchor=overview_point
-	if not enabled: reset_view()
+	if enabled and animate: _move_to(Vector3(0,.4,1),Vector3(24,65,maxf(34,overview_view.z+2.4)))
+	elif not enabled: reset_view()
 
 
 func overview_parameters() -> Dictionary:
@@ -312,7 +313,7 @@ func drag(relative: Vector2, pan: bool) -> void:
 		focus_point.z = clampf(focus_point.z, _anchor.z - limit, _anchor.z + limit)
 	else:
 		view.x = clampf(view.x - relative.x * 0.18, minf(-12.0, overview_view.x), maxf(68.0, overview_view.x))
-		view.y = clampf(view.y + relative.y * 0.18, 32.0 if focused else minf(22.0, overview_view.y), 54.0 if focused else maxf(40.0, overview_view.y))
+		view.y = clampf(view.y + relative.y * 0.18, 50.0 if construction_framing else 32.0 if focused else minf(22.0, overview_view.y), 78.0 if construction_framing else 54.0 if focused else maxf(40.0, overview_view.y))
 	_apply_pose()
 	motion_finished.emit()
 
