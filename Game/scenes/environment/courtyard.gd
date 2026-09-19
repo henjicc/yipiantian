@@ -370,6 +370,7 @@ func _build_architecture() -> void:
 	for child: Node in get_children():
 		if child.has_meta("shore_stone"): _fit_bridge_stone(child)
 	_boat=_asset("boat","CoveredBoat",plan.anchors.boat,plan.angles.boat,.85)
+	Space.capture_rigid_footprint(_boat)
 	# Opposite landing is a small bank, with irregular rock margins, not a floating bridge end.
 	_bank("east", plan.east_rim, plan.anchors.east_bank, plan.angles.east_bank)
 	for index: int in 7:

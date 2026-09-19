@@ -212,13 +212,33 @@ static func footprint(node: Node3D, bottom: float, top: float, visible_only: boo
 	if node is MeshInstance3D: meshes.append(node)
 	for mesh: MeshInstance3D in meshes:
 		if (visible_only and not mesh.is_visible_in_tree()) or mesh.mesh == null: continue
-		for points: PackedVector3Array in mesh_vertices(mesh):
+		var captured: Dictionary=mesh.get_meta("rigid_footprint",{})
+		var surfaces: Array[PackedVector3Array]=[]
+		if captured.get("mesh")==mesh.mesh: surfaces.append(captured.vertices)
+		else: surfaces=mesh_vertices(mesh)
+		for points: PackedVector3Array in surfaces:
 			# Native packed-array transformation keeps the same current mesh pose
 			# without one script-to-node transform lookup for every hull vertex.
 			var world: PackedVector3Array=mesh.global_transform*points
 			for p: Vector3 in world:
 				if p.y >= bottom and p.y <= top: vertices.append(Vector2(p.x, p.z))
 	return Geometry2D.convex_hull(vertices) if vertices.size() >= 3 else PackedVector2Array()
+
+static func capture_rigid_footprint(node: Node3D) -> void:
+	# Opt in only for meshes whose local vertices remain fixed, such as the
+	# rocking boat. Keep exact unique positions, not an approximate hull/LOD.
+	# The owner must recapture after editing vertices in place; replacing the
+	# mesh falls back to live sampling. Pose and height filtering stay live.
+	var meshes: Array[Node]=node.find_children("*","MeshInstance3D",true,false)
+	if node is MeshInstance3D: meshes.append(node)
+	for mesh: MeshInstance3D in meshes:
+		if mesh.mesh==null: continue
+		var seen: Dictionary={};var unique:=PackedVector3Array()
+		for points: PackedVector3Array in mesh_vertices(mesh):
+			for point: Vector3 in points:
+				if not seen.has(point): seen[point]=true;unique.append(point)
+		mesh.set_meta("rigid_footprint",{"mesh":mesh.mesh,"vertices":unique})
+	if node.has_meta("navigation_footprints"): node.remove_meta("navigation_footprints")
 
 static func mesh_vertices(instance: MeshInstance3D) -> Array[PackedVector3Array]:
 	# Construction keeps its original CPU vertices so pointer edits do not read

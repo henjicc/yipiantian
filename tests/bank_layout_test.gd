@@ -258,6 +258,7 @@ func footprint_checks() -> void:
 	var points:=PackedVector3Array([Vector3(-1,-.55,-1),Vector3(1,-.55,-1),Vector3(1,.55,1),Vector3(-1,.55,1),Vector3(0,2,0)])
 	direct.set_meta("construction_vertices",points)
 	var missing:=MeshInstance3D.new();boat.add_child(missing)
+	space.capture_rigid_footprint(boat)
 	var samples: int=0;var matches: bool=true
 	var scalar_ms: Array[float]=[];var bulk_ms: Array[float]=[]
 	for i: int in 8:
@@ -277,5 +278,12 @@ func footprint_checks() -> void:
 					matches=matches and actual==expected;samples+=1
 	expect(matches,"Bulk footprints exactly match scalar hulls across %d moving/scaled/hidden/empty/procedural cases"%samples)
 	expect(direct.get_meta("construction_vertices")==points,"Footprint sampling never mutates source CPU vertices")
+	space.capture_rigid_footprint(direct)
+	for band: Vector2 in [Vector2(-.55,.55),Vector2(.05,.75),Vector2(10,11)]:
+		expect(space.footprint(direct,band.x,band.y,false)==scalar_footprint(direct,band.x,band.y,false),"Captured procedural vertices preserve exact height-band sampling")
+	direct.remove_meta("construction_vertices");direct.mesh=SphereMesh.new()
+	expect(space.footprint(direct,-1,1,false)==scalar_footprint(direct,-1,1,false),"Replacing a captured mesh reads its new geometry")
+	space.capture_rigid_footprint(direct)
+	expect(space.footprint(direct,-1,1,false)==scalar_footprint(direct,-1,1,false),"Explicit recapture refreshes the new geometry")
 	print("FOOTPRINT_TIMING ",JSON.stringify({"scalar_ms":scalar_ms,"bulk_ms":bulk_ms}))
 	boat.free();direct.free()

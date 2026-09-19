@@ -2,6 +2,12 @@
 
 ## 场景内建设验证 · 20260919-island-construction
 
+2026-09-20 船的刚性足迹顶点预采集：连续笔刷诊断`dense-preview-probe.log`（目录2957680，完整链零失败）将预览拆成显示、单簇检查、水障碍采集、桥下通路与放养检查；其中障碍采集约10ms，逐节点诊断`plant-water-probe.log`指向摇摆船。`courtyard`创建船后调用`animal_space.capture_rigid_footprint`，对每个网格精确去重局部位置，保留12883个位置（原32100）；后续继续用当前世界变换、原高度带和凸包算法。船的视觉模型、摇摆、LOD与接触阴影不变。此采集只服务局部顶点不变的刚性模型；替换Mesh时回退实时采样，原地编辑顶点后由拥有者显式重新采集，不用于骨骼或CPU变形模型。原通用顶点读取入口不变。
+
+复核`bank_layout_test.gd -- --footprint-only`在headless及真实渲染后端均通过（`footprint-rigid-captured.log`、`footprint-rigid-renderer.log`）：101组原逐点／现役足迹精确对照，覆盖实际高低船模、移动摇摆、非均匀缩放、隐藏与空高度带、程序顶点、网格替换及重新采集。真实后端8次采集足迹0.83–0.98ms；前一轮未采集的批量变换约4.1–4.9ms，仅比较几何步骤。`plant_layout_test.gd`70项实景通过（`plant-layout-rigid-boat.log`，目录1789856416），保存失败重试、取消、撤销保留库存与重开通过，已查看保存画面。
+
+相同放养区域、实际从零刷到160簇的满额链`dense-plants-rigid-boat.log`（目录2941171，`--construction --dev-preview --profile`）零失败，384株地栽／10株架上作物／28只活动动物，RTX4090／3840×2160／标准画质，全部操作样本前台。笔刷64帧中位45.1ms、p95 59.8ms、最长61.7ms，植物预览独立样本16.0ms；再次进入植物工具最长42.1ms。上轮同夹具中位50.1ms、p95 55.2ms、工具进入78.3ms，不能因中位改善而声称全部长帧改善。地形完成126.6ms、撤销154.1ms，仍有停顿。临时诊断已移除，第15项继续处理预览重复检查及完成／撤销尖峰；终极目标文档未改动，无新模型费用。
+
 2026-09-20 密集植物笔刷占地筛选：`island_space`内部索引使用多边形包围格取得候选，再以原多边形精确判交；`covered_cells`仍返回真实相交格，草地差异范围不扩大。`animal_space.footprint`使用当前变换乘整组顶点，再按原高度带筛选和取凸包，不冻结船的摇摆姿态。Godot 4.7 的[整组顶点变换接口](https://docs.godotengine.org/en/4.7/classes/class_transform3d.html#class-transform3d-operator-mul-packedvector3array)已核验；实际高低船模、隐藏网格、程序顶点、非均匀缩放及空高度带共96组与原逐点算法精确一致，源顶点不变。8次船足迹样本逐点6.3–8.4ms、整组4.1–4.9ms，仅代表几何步骤。
 
 复核：`island_space_test.gd`32项（`island-bounded-index-fixed.log`）包含864次索引／穷举精确判交对照和凹形覆盖格；`bank_layout_test.gd -- --footprint-only`为上述足迹对照（`footprint-bulk.log`）；`player_routes_test.gd`30项（`routes-bounded-index.log`）。这些使用headless，仅证明规则和几何。`plant_layout_test.gd`真实渲染70项通过（`plant-layout-bounded-index.log`，目录1789854968），包含四物种布置、移转擦除、保存失败重试、撤销保留库存和重开；`-- --clearance`4项通过（`plants-bounded-clearance.log`），包含2500个动态动物位置及后来新增／删除道路，静态检查缓存不会掩盖后来的冲突。已查看保存画面。
