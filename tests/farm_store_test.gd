@@ -143,10 +143,30 @@ func _run() -> void:
 	_test_current_boundaries()
 	_test_readback_integrity()
 	_test_admitted_main_changes()
+	_test_sidecar_version_gate()
 	for failure: String in failures:
 		push_error(failure)
 	print("FARM_STORE_TEST checks=%d failures=%d root=%s" % [checks, failures.size(), test_root])
 	quit(0 if failures.is_empty() else 1)
+
+func _test_sidecar_version_gate() -> void:
+	var farm: Dictionary=Farm.new(10000).snapshot()
+	var decorations: Dictionary=Decorations.new().snapshot()
+	for filename: String in [Store.BACKUP,Store.BACKUP_PENDING,Store.PENDING]:
+		var folder: String=test_root.path_join("version-gate-"+filename)
+		DirAccess.make_dir_recursive_absolute(folder)
+		var corrupt: String=JSON.stringify({"version":Store.VERSION,"farm":{},"decorations":{}})
+		_write(folder.path_join(filename),corrupt)
+		_expect(Store.new(folder).load_state().kind=="corrupt","Version alone cannot admit a broken recovery candidate: "+filename)
+		# Admission comes from a valid main, never the unvalidated sidecar.
+		_write(folder.path_join(Store.MAIN),JSON.stringify({"version":Store.VERSION,"farm":farm,"decorations":decorations}))
+		var store:=Store.new(folder)
+		_expect(store.load_state().ok and store.save(farm,decorations).ok,"A damaged current-version sidecar does not block saving valid current state: "+filename)
+		var main_before: String=FileAccess.get_file_as_string(folder.path_join(Store.MAIN))
+		var future: String=JSON.stringify({"version":Store.VERSION+1,"farm":null})
+		_write(folder.path_join(filename),future)
+		_expect(store.save(farm,decorations).kind=="unsupported","Unknown sidecar version blocks replacement even without a valid farm payload: "+filename)
+		_expect(FileAccess.get_file_as_string(folder.path_join(filename))==future and FileAccess.get_file_as_string(folder.path_join(Store.MAIN))==main_before,"Rejected sidecar replacement preserves main and sidecar bytes: "+filename)
 
 func _test_readback_integrity() -> void:
 	var decorations: Dictionary=Decorations.new().snapshot()

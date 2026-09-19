@@ -73,7 +73,9 @@ func save(farm: Dictionary, decorations: Dictionary) -> Dictionary:
 	if not _matches_expected(current):
 		return _failure("changed_on_disk")
 	for filename: String in [BACKUP, BACKUP_PENDING, PENDING]:
-		if _read(filename).kind == "unsupported":
+		# These files are not recovery inputs here. Only their version can veto
+		# replacing them; load/recover must still validate their entire contents.
+		if _read_document(filename).kind == "unsupported":
 			return _failure("unsupported")
 	var text: String = JSON.stringify({"version": VERSION, "farm": validator.snapshot(), "decorations": decoration_validator.snapshot()}, "\t")
 	var result: Dictionary = _write_verified(PENDING, text)
@@ -142,7 +144,7 @@ func _read_text(filename: String) -> Dictionary:
 	return {"kind": "read", "text": text}
 
 
-func _read(filename: String) -> Dictionary:
+func _read_document(filename: String) -> Dictionary:
 	var content: Dictionary = _read_text(filename)
 	if content.kind != "read": return content
 	var text: String = content.text
@@ -155,6 +157,13 @@ func _read(filename: String) -> Dictionary:
 		return {"kind": "corrupt"}
 	if version != VERSION:
 		return {"kind": "unsupported"}
+	return {"kind":"document","text":text,"data":data}
+
+
+func _read(filename: String) -> Dictionary:
+	var document: Dictionary=_read_document(filename)
+	if document.kind!="document": return document
+	var data: Dictionary=document.data
 	if data.size() != 3 or not data.get("farm") is Dictionary:
 		return {"kind": "corrupt"}
 	var validator := FarmState.new()
@@ -165,7 +174,7 @@ func _read(filename: String) -> Dictionary:
 	if not data.get("decorations") is Dictionary or not decoration_validator.restore_snapshot(data.decorations):
 		return {"kind": "corrupt"}
 	if not FarmState.Kitchen.placement_valid(farm_data.kitchen,data.decorations): return {"kind":"corrupt"}
-	return {"kind": "valid", "version": int(version), "text": text, "farm": validator.snapshot(), "decorations": decoration_validator.snapshot()}
+	return {"kind": "valid", "version": VERSION, "text": document.text, "farm": validator.snapshot(), "decorations": decoration_validator.snapshot()}
 
 
 func _write_verified(filename: String, text: String) -> Dictionary:
