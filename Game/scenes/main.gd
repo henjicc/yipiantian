@@ -98,6 +98,7 @@ func _enter_tree() -> void:
 		_startup_state = store.load_state()
 		if _startup_state.ok and _startup_state.kind == "loaded":
 			courtyard_plan = CourtyardPlan.from_snapshot(_startup_state.farm.layout)
+			$Environment.decoration_data = _startup_state.decorations
 	# Children build their geometry in _ready; share one plan before that happens.
 	$Environment.plan = courtyard_plan
 	$Farm.plan = courtyard_plan
@@ -208,6 +209,7 @@ func _ready() -> void:
 	decoration_layout.configure(courtyard, camera, decoration_state if _loaded else DecorationState.new())
 	decoration_layout.mode_changed.connect(_on_decoration_mode_changed)
 	decoration_layout.change_requested.connect(_change_decoration)
+	decoration_layout.illumination_changed.connect(_refresh_lanterns)
 	decoration_layout.update_life(farm_state.snapshot().kitchen)
 	farm_audio = FarmAudio.new()
 	farm_audio.name = "FarmAudio"

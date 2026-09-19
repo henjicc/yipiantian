@@ -5,11 +5,13 @@ signal confirmed
 signal change_requested(candidate: Dictionary)
 signal mode_changed(active: bool)
 signal preview_changed
+signal illumination_changed
 
 const Catalog = preload("res://farm/decoration_catalog.gd")
 const ConstructionCatalog = preload("res://layout/construction_catalog.gd")
 const State = preload("res://farm/decoration_state.gd")
 const DecorHUD = preload("res://scenes/decoration_hud.gd")
+const Geometry = preload("res://presentation/decoration_geometry.gd")
 var active: bool = false
 var state: State
 var camera: FarmCamera
@@ -18,17 +20,19 @@ var hud: DecorHUD
 var selected_item: String = ""
 var preview_slot: String = ""
 var preview_turn: int = 0
+var preview_position := Vector2.INF
+var snap_to_grid: bool = true
+var _grab_offset := Vector2.ZERO
+var _outline: MeshInstance3D
 var _instances: Dictionary = {}
 var _rings: Dictionary = {}
 var _preview: Node3D
-var _press_slot: String = ""
 var _press_position := Vector2.INF
 var _message: String = "布置"
 var _environment_meshes: Array[MeshInstance3D] = []
 var _triangle_meshes: Dictionary = {}
 var _night_weight: float=0
 var _kitchen: Dictionary={}
-const LivingDecoration=preload("res://presentation/living_decoration.gd")
 const Space=preload("res://scenes/environment/animal_space.gd")
 const IslandSpace=preload("res://layout/island_space.gd")
 const SITE_SCENERY=preload("res://layout/courtyard_plan.gd").DECORATION_SCENERY
@@ -38,6 +42,12 @@ func configure(courtyard: Node3D, farm_camera: FarmCamera, decoration_state: Sta
 	environment = courtyard
 	camera = farm_camera
 	state = decoration_state
+	for id: String in environment.prepared_decorations:
+		var instance: Node3D=environment.prepared_decorations[id]
+		instance.reparent(self);_instances[id]=instance
+	environment.prepared_decorations.clear()
+	var prepared: Node=environment.get_node_or_null("PlacedDecorations")
+	if prepared!=null: prepared.free()
 	_collect_environment_meshes(environment)
 	hud = DecorHUD.new()
 	hud.name = "DecorationHUD"
@@ -97,11 +107,14 @@ func cancel_preview() -> void:
 	selected_item = ""
 	preview_slot = ""
 	preview_turn = 0
+	preview_position = Vector2.INF
 	_cancel_press()
 	_clear_preview()
 	for instance: Node3D in _instances.values():
 		instance.show()
 	_restore_site_scenery()
+	_update_grass()
+	illumination_changed.emit()
 	_message = "布置"
 	_refresh()
 
@@ -123,7 +136,7 @@ func preview_at(slot_id: String) -> void:
 	if not active or selected_item.is_empty() or camera.is_transitioning():
 		return
 	var turn: int = preview_turn if Catalog.allowed_turns(slot_id).has(preview_turn) else 0
-	var result: Dictionary = state.can_place(selected_item, slot_id, turn,true)
+	var result: Dictionary = state.can_place(selected_item, slot_id, turn,false)
 	if not result.ok:
 		_message = {"occupied": "这个位置已有装饰", "wrong_type": "这个位置不适合这件装饰"}.get(result.reason, "无法放在这里")
 		_refresh()
@@ -133,35 +146,72 @@ func preview_at(slot_id: String) -> void:
 		_refresh()
 		return
 	preview_slot = slot_id
+	preview_position = Vector2.INF
 	preview_turn = turn
-	_clear_preview()
 	for instance: Node3D in _instances.values(): instance.show()
-	_restore_site_scenery(slot_id)
-	_preview = _instantiate(selected_item, slot_id, turn)
+	var created: bool=not has_preview()
+	if created: _preview = _instantiate(selected_item, _preview_entry())
+	else: Geometry.pose(_preview,_preview_entry(),environment.plan)
 	if _instances.has(selected_item):
 		_instances[selected_item].hide()
+	_restore_site_scenery(slot_id)
 	_message = Catalog.ITEMS[selected_item].name + " · 待确认"
-	for other: String in Catalog.IDS:
-		if other!=selected_item and state.snapshot()[other].slot_id==slot_id:
-			_instances[other].hide()
-			_message+=" · 将收起"+Catalog.ITEMS[other].name
+	if created: illumination_changed.emit()
+	_update_preview_feedback()
+
+func has_preview() -> bool:
+	return is_instance_valid(_preview)
+
+func preview_on_ground(point: Vector2) -> void:
+	if not active or selected_item.is_empty() or Catalog.ITEMS[selected_item].type!="ground" or camera.is_transitioning() or not point.is_finite(): return
+	preview_position=IslandSpace.snap(point) if snap_to_grid else point
+	preview_slot=""
+	if not has_preview():
+		_preview=_instantiate(selected_item,_preview_entry())
+		illumination_changed.emit()
+	else: Geometry.pose(_preview,_preview_entry(),environment.plan)
+	if _instances.has(selected_item): _instances[selected_item].hide()
+	_restore_site_scenery()
+	_update_preview_feedback()
+
+func _preview_entry() -> Dictionary:
+	return {"slot_id":preview_slot,"position":[preview_position.x,preview_position.y] if preview_position.is_finite() else [],"quarter_turn":preview_turn}
+
+func _update_preview_feedback() -> void:
+	var issue: String=placement_issue(_preview,selected_item,preview_slot)
+	_message=Catalog.ITEMS[selected_item].name+" · 待确认" if issue.is_empty() else issue
+	if is_instance_valid(_outline): _outline.free()
+	if Catalog.ITEMS[selected_item].type=="ground":
+		var polygon: PackedVector2Array=Space.cached_footprint(_preview,environment.plan.ground_height-.08,environment.plan.ground_height+1.17)
+		var mesh:=ImmediateMesh.new();mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+		for i: int in polygon.size():
+			for p: Vector2 in [polygon[i],polygon[(i+1)%polygon.size()]]: mesh.surface_add_vertex(Vector3(p.x,environment.plan.ground_height+.025,p.y))
+		mesh.surface_end()
+		_outline=MeshInstance3D.new();_outline.mesh=mesh
+		var material:=StandardMaterial3D.new();material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.albedo_color=Color("b4c589") if issue.is_empty() else Color("dc876b")
+		_outline.material_override=material;add_child(_outline)
+	_update_grass()
 	_refresh()
 
 
 func rotate_preview() -> void:
-	if not active or preview_slot.is_empty():
+	if not active or not has_preview():
 		return
+	if preview_position.is_finite():
+		preview_turn=(preview_turn+1)%4
+		preview_on_ground(preview_position);return
 	var turns: Array[int] = Catalog.allowed_turns(preview_slot)
 	preview_turn = turns[(turns.find(preview_turn) + 1) % turns.size()]
 	preview_at(preview_slot)
 
 
 func confirm_preview() -> void:
-	if not active or preview_slot.is_empty() or camera.is_transitioning():
+	if not active or not has_preview() or camera.is_transitioning():
 		return
 	var candidate:=State.new()
 	candidate.restore_snapshot(state.snapshot())
-	var result: Dictionary = candidate.place(selected_item, preview_slot, preview_turn,true)
+	var result: Dictionary = candidate.place_at(selected_item,preview_position,preview_turn) if preview_position.is_finite() else candidate.place(selected_item, preview_slot, preview_turn,false)
 	if not result.ok:
 		return
 	var issue: String=placement_issue(_preview,selected_item,preview_slot)
@@ -173,6 +223,10 @@ func confirm_preview() -> void:
 	change_requested.emit(candidate.snapshot())
 
 func accept_state(replacement: State) -> void:
+	# Adopt the displayed mesh only after the save succeeds; keep other objects alive.
+	if has_preview() and replacement.snapshot()[selected_item] != state.snapshot()[selected_item] and State.is_placed(replacement.snapshot()[selected_item]):
+		if _instances.has(selected_item): _instances[selected_item].free()
+		_instances[selected_item]=_preview;_preview=null
 	state=replacement
 	cancel_preview()
 	refresh_confirmed()
@@ -193,15 +247,16 @@ func remove_selected() -> void:
 
 
 func refresh_confirmed() -> void:
-	for instance: Node3D in _instances.values():
-		remove_child(instance)
-		instance.queue_free()
-	_instances.clear()
+	environment.decoration_data=state.snapshot()
 	for item_id: String in Catalog.IDS:
 		var item: Dictionary = state.snapshot()[item_id]
-		if not item.slot_id.is_empty():
-			_instances[item_id] = _instantiate(item_id, item.slot_id, item.quarter_turn)
+		if State.is_placed(item):
+			if not _instances.has(item_id): _instances[item_id]=_instantiate(item_id,item)
+			else: Geometry.pose(_instances[item_id],item,environment.plan)
+		elif _instances.has(item_id):
+			_instances[item_id].free();_instances.erase(item_id)
 	_restore_site_scenery()
+	_update_grass()
 	update_life(_kitchen)
 	var animals: Node=environment.get_node("CourtyardAnimals")
 	animals.set_decorations(_instances)
@@ -211,7 +266,8 @@ func refresh_confirmed() -> void:
 func lantern_anchors() -> Array[Node3D]:
 	var anchors: Array[Node3D] = []
 	for id: String in _instances:
-		if ConstructionCatalog.has_capability(id,"light"): anchors.append(_instances[id])
+		if ConstructionCatalog.has_capability(id,"light") and _instances[id].visible: anchors.append(_instances[id])
+	if has_preview() and ConstructionCatalog.has_capability(selected_item,"light"): anchors.append(_preview)
 	return anchors
 
 func show_save_issue() -> void:
@@ -223,8 +279,8 @@ func restoration_issue(candidate: Dictionary) -> String:
 	if not issue.is_empty(): return issue
 	for id: String in candidate:
 		var entry: Dictionary=candidate[id]
-		if entry.slot_id.is_empty() or entry==state.snapshot()[id]: continue
-		var node: Node3D=_instantiate(id,entry.slot_id,entry.quarter_turn)
+		if not State.is_placed(entry) or entry==state.snapshot()[id]: continue
+		var node: Node3D=_instantiate(id,entry)
 		issue=placement_issue(node,id,entry.slot_id)
 		remove_child(node);node.queue_free()
 		if not issue.is_empty(): return issue
@@ -232,27 +288,53 @@ func restoration_issue(candidate: Dictionary) -> String:
 
 
 func handle_input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion and _press_position != Vector2.INF and event.position.distance_to(_press_position) > 7:
-		_cancel_press()
+	if selected_item.is_empty(): return
+	if event is InputEventMouseMotion and _press_position != Vector2.INF:
+		_preview_pointer(event.position)
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.double_click or event.canceled or camera.is_transitioning():
 			_cancel_press()
 		elif event.pressed:
 			_press_position = event.position
-			_press_slot = _slot_at(event.position)
+			_grab_offset=Vector2.ZERO
+			var prop: Node3D=_preview if has_preview() else _instances.get(selected_item)
+			if prop!=null:
+				var surface: Node=environment_surface_at(event.position)
+				if surface!=null and (surface==prop or prop.is_ancestor_of(surface)):
+					_grab_offset=Vector2(prop.global_position.x,prop.global_position.z)-_ground_point(event.position)
+					if not has_preview(): preview_turn=state.snapshot()[selected_item].quarter_turn
+			_preview_pointer(event.position)
 		else:
-			if not _press_slot.is_empty() and _slot_at(event.position) == _press_slot:
-				preview_at(_press_slot)
+			if _press_position!=Vector2.INF: _preview_pointer(event.position)
 			_cancel_press()
+
+func _ground_point(screen: Vector2) -> Vector2:
+	var origin: Vector3=camera.project_ray_origin(screen)
+	var direction: Vector3=camera.project_ray_normal(screen)
+	if direction.y>=-.001: return Vector2.INF
+	var distance: float=(environment.plan.ground_height-origin.y)/direction.y
+	if distance<0 or distance>200: return Vector2.INF
+	var point: Vector3=origin+direction*distance
+	return Vector2(point.x,point.z)
+
+func _preview_pointer(screen: Vector2) -> void:
+	var slot: String=_slot_at(screen)
+	if not slot.is_empty():
+		if slot!=preview_slot: preview_at(slot)
+	elif Catalog.ITEMS[selected_item].type=="ground":
+		preview_on_ground(_ground_point(screen)+_grab_offset)
+	else:
+		_clear_preview();preview_slot=""
+		for instance: Node3D in _instances.values(): instance.show()
+		illumination_changed.emit();_message="灯笼需要挂在挂点上";_refresh()
 
 
 func observe_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and not event.pressed:
 		var hovered := get_viewport().gui_get_hovered_control()
 		if hovered != null and hovered.mouse_filter != Control.MOUSE_FILTER_IGNORE:
-			_cancel_press()
-	elif event is InputEventMouseMotion and _press_position != Vector2.INF and event.position.distance_to(_press_position) > 7:
-		_cancel_press()
+			if _press_position!=Vector2.INF:
+				var id: String=selected_item;cancel_preview();select_item(id)
 
 
 func _slot_at(point: Vector2) -> String:
@@ -323,6 +405,7 @@ func environment_surface_at(screen_point: Vector2) -> MeshInstance3D:
 	var surfaces: Array[Node]=environment.find_children("*","MeshInstance3D",true,false)
 	for item: Node3D in _instances.values():
 		surfaces.append_array(item.find_children("*","MeshInstance3D",true,false))
+	if has_preview(): surfaces.append_array(_preview.find_children("*","MeshInstance3D",true,false))
 	var panorama: Node=environment.get_node_or_null("DistantRiverPanorama")
 	for instance: MeshInstance3D in surfaces:
 		if not instance.is_visible_in_tree() or instance.mesh==null: continue
@@ -343,23 +426,22 @@ func environment_surface_at(screen_point: Vector2) -> MeshInstance3D:
 	return nearest
 
 
-func _instantiate(item_id: String, slot_id: String, turn: int) -> Node3D:
-	var instance: Node3D
-	if item_id in ["bench","drying_rack","tea_table"]:
-		instance=LivingDecoration.build(environment.get_node("LivingDetails"),item_id)
-	else: instance=environment.get_decoration_scene(item_id).instantiate()
+func _instantiate(item_id: String, entry: Dictionary) -> Node3D:
+	var instance: Node3D=Geometry.build(environment,item_id)
 	add_child(instance)
-	instance.global_transform = environment.get_slot_marker(slot_id).global_transform
-	instance.rotate_object_local(Vector3.UP, turn * PI / 2.0)
+	Geometry.pose(instance,entry,environment.plan)
+	_apply_life(instance,item_id)
 	return instance
 
 func update_life(kitchen: Dictionary) -> void:
 	_kitchen=kitchen
-	if _instances.has("drying_rack"):
-		var showing: bool=not kitchen.is_empty() and (not kitchen.jobs.rack.is_empty() or kitchen.stock.root_dry>0)
-		_instances.drying_rack.get_node("Harvest").visible=showing
-	if _instances.has("tea_table"):
-		_instances.tea_table.get_node("Tea").visible=_night_weight>.25
+	for id: String in _instances: _apply_life(_instances[id],id)
+	if has_preview(): _apply_life(_preview,selected_item)
+
+func _apply_life(instance: Node3D, id: String) -> void:
+	if id=="drying_rack":
+		instance.get_node("Harvest").visible=not _kitchen.is_empty() and (not _kitchen.jobs.rack.is_empty() or _kitchen.stock.root_dry>0)
+	if id=="tea_table": instance.get_node("Tea").visible=_night_weight>.25
 
 func set_night_weight(weight: float) -> void:
 	_night_weight=weight
@@ -368,20 +450,34 @@ func set_night_weight(weight: float) -> void:
 func placement_issue(prop: Node3D, item: String, slot: String) -> String:
 	if Catalog.ITEMS[item].type!="ground": return ""
 	var rise: float=environment.plan.ground_height-.13
-	var polygon: PackedVector2Array=Space.footprint(prop,.05+rise,1.3+rise,false)
+	var polygon: PackedVector2Array=Space.cached_footprint(prop,.05+rise,1.3+rise)
 	if polygon.size()<3: return "摆件没有可用的落地轮廓"
 	if not IslandSpace.supported(polygon,environment.plan.plateau()): return "这里超出了平地"
 	var occupied:=IslandSpace.new()
 	for key: String in environment.layout_obstacles:
 		if key==SITE_SCENERY.get(slot,""): continue
+		var occupied_site: bool=false
+		for other: String in state.snapshot():
+			if other!=item and SITE_SCENERY.get(state.snapshot()[other].slot_id,"")==key: occupied_site=true;break
+		if occupied_site: continue
 		occupied.add(key,environment.layout_obstacles[key])
 	if not occupied.collisions(polygon).is_empty(): return "这里会碰到院中景物"
 	for index: int in environment.plan.fields.size():
 		if IslandSpace.overlaps(polygon,environment.plan.field_polygon(index,.12)): return "这里需要留给田地"
 	for other: String in _instances:
-		if other==item or state.snapshot()[other].slot_id==slot: continue
-		var obstacle: PackedVector2Array=Space.footprint(_instances[other],.05+rise,1.3+rise,false)
+		if other==item: continue
+		var obstacle: PackedVector2Array=Space.cached_footprint(_instances[other],.05+rise,1.3+rise)
 		if IslandSpace.overlaps(polygon,obstacle): return "这里会碰到其他摆件"
+	if slot.is_empty():
+		for route: PackedVector3Array in environment.plan.paths:
+			for i: int in range(route.size()-1):
+				var a:=Vector2(route[i].x,route[i].z);var b:=Vector2(route[i+1].x,route[i+1].z)
+				var offset: Vector2=(b-a).normalized().orthogonal()*.3
+				if IslandSpace.overlaps(polygon,PackedVector2Array([a-offset,a+offset,b+offset,b-offset])): return "这里需要留出通路"
+	for span: Dictionary in environment.plan.fences:
+		var a:=Vector2(span.a.x,span.a.z);var b:=Vector2(span.b.x,span.b.z)
+		var offset: Vector2=(b-a).normalized().orthogonal()*.07
+		if IslandSpace.overlaps(polygon,PackedVector2Array([a-offset,a+offset,b+offset,b-offset])): return "这里会碰到围栏"
 	return _animal_issue(polygon)
 
 func _animal_issue(polygon: PackedVector2Array) -> String:
@@ -408,16 +504,26 @@ func _restoration_issue(candidate: Dictionary) -> String:
 		var polygon: PackedVector2Array=Space.footprint(source,.05+rise,1.3+rise,false)
 		var issue: String=_animal_issue(polygon)
 		if not issue.is_empty(): return "小鸡正在摆件旁，等它走开再整理"
+		for id: String in candidate:
+			var entry: Dictionary=candidate[id]
+			if not State.is_placed(entry) or Catalog.ITEMS[id].type!="ground": continue
+			var prop: Node3D=_instantiate(id,entry)
+			var other: PackedVector2Array=Space.cached_footprint(prop,.05+rise,1.3+rise)
+			prop.free()
+			if IslandSpace.overlaps(polygon,other): return "原位置的景物会碰到摆件，请先移开摆件"
 	return ""
 
 func _restore_site_scenery(preview: String="") -> void:
 	for slot: String in SITE_SCENERY:
 		var occupied: bool=slot==preview
-		for item: Dictionary in state.snapshot().values():
-			if item.slot_id==slot: occupied=true
+		var items: Dictionary=state.snapshot()
+		for id: String in items:
+			if has_preview() and id==selected_item: continue
+			if items[id].slot_id==slot: occupied=true
 		environment.get_node("LivingDetails/"+SITE_SCENERY[slot]).visible=not occupied
 
 func _clear_preview() -> void:
+	if is_instance_valid(_outline): _outline.free()
 	if is_instance_valid(_preview):
 		remove_child(_preview)
 		_preview.queue_free()
@@ -428,16 +534,19 @@ func cancel_pointer_gesture() -> void:
 	_cancel_press()
 
 func ground_footprints() -> Dictionary:
-	var result: Dictionary = {}
-	var rise: float=environment.plan.ground_height-.13
-	for key: String in _instances:
-		var polygon: PackedVector2Array = preload("res://scenes/environment/animal_space.gd").footprint(_instances[key],.05+rise,.75+rise)
-		if polygon.size()>=3: result["decoration_"+key]=polygon
-	return result
+	return Geometry.footprints(_instances,environment.plan.ground_height)
+
+func _update_grass() -> void:
+	var instances: Dictionary=_instances.duplicate()
+	if has_preview(): instances[selected_item]=_preview
+	var footprints: Dictionary=Geometry.footprints(instances,environment.plan.ground_height)
+	for path: String in ["GroundCover/CoreGrass","ExpansionGrass"]:
+		var cover: Node=environment.get_node_or_null(path)
+		if cover!=null:
+			cover.update_objects(environment.plan,footprints.values(),path=="ExpansionGrass")
 
 
 func _cancel_press() -> void:
-	_press_slot = ""
 	_press_position = Vector2.INF
 
 
@@ -445,6 +554,6 @@ func _refresh() -> void:
 	if hud == null:
 		return
 	for slot_id: String in _rings:
-		_rings[slot_id].visible = active and not selected_item.is_empty() and state.can_place(selected_item, slot_id, 0,true).ok and _slot_visible(slot_id)
-	hud.present(state.snapshot(), selected_item, preview_slot, not preview_slot.is_empty(), _message, camera.is_transitioning())
+		_rings[slot_id].visible = active and not selected_item.is_empty() and state.can_place(selected_item, slot_id, 0,false).ok and _slot_visible(slot_id)
+	hud.present(state.snapshot(), selected_item, preview_slot, has_preview(), _message, camera.is_transitioning())
 	preview_changed.emit()

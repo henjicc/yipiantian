@@ -20,7 +20,7 @@ static func allowed_turns(slot_id: String) -> Array[int]:
 	if SLOT_TYPES.get(slot_id) == "ground":
 		return [0, 1, 2, 3]
 	if SLOT_TYPES.get(slot_id) == "hanging":
-		return [0]
+		return [0, 1, 2, 3]
 	return []
 
 

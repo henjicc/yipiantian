@@ -17,6 +17,7 @@ var choices: Choices
 var _decoration_actions: HBoxContainer
 var _decoration_rotate: Button
 var _decoration_remove: Button
+var _decoration_snap: CheckButton
 var field_preview: FieldPreview
 var selected_field: int=0
 var _new_field: bool=false
@@ -78,6 +79,11 @@ func _ready() -> void:
 	_decoration_actions=HBoxContainer.new();content.add_child(_decoration_actions)
 	_decoration_rotate=_button(_decoration_actions,"旋转",func() -> void: main.decoration_layout.rotate_preview())
 	_decoration_remove=_button(_decoration_actions,"收起摆件",func() -> void: main.decoration_layout.remove_selected())
+	_decoration_snap=CheckButton.new();_decoration_snap.text="吸附格子";content.add_child(_decoration_snap)
+	_decoration_snap.button_pressed=true
+	_decoration_snap.toggled.connect(func(enabled: bool) -> void:
+		main.decoration_layout.snap_to_grid=enabled
+		if main.decoration_layout.preview_position.is_finite(): main.decoration_layout.preview_on_ground(main.decoration_layout.preview_position))
 	_status=Label.new();_status.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;_status.custom_minimum_size=Vector2(248,48);content.add_child(_status)
 	_confirm=_button(content,"确认调整",_commit);_confirm.name="Confirm"
 	var actions:=HBoxContainer.new();content.add_child(actions)
@@ -114,6 +120,7 @@ func choose(id: String) -> void:
 	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id=="ducks" and key=="count") or (id=="fields" and key in ["columns","rows"])
 	_field_actions.visible=id=="fields"
 	_decoration_actions.visible=_is_decoration()
+	_decoration_snap.visible=_is_decoration() and Catalog.Decorations.ITEMS[tool].type=="ground"
 	selected_field=mini(selected_field,draft.fields.size()-1)
 	_sync_field_controls()
 	var size: Vector3=Construction.trellis_size(main.courtyard_plan)
@@ -133,9 +140,9 @@ func _decoration_changed() -> void:
 	if not active or not _is_decoration(): return
 	var layout: Node=main.decoration_layout
 	_status.text=layout._message
-	_confirm.disabled=busy or layout.preview_slot.is_empty() or main.camera.is_transitioning()
-	_decoration_rotate.disabled=busy or layout.preview_slot.is_empty() or Catalog.Decorations.allowed_turns(layout.preview_slot).size()<2
-	_decoration_remove.disabled=busy or layout.selected_item.is_empty() or main.decoration_state.snapshot().get(tool,{}).get("slot_id","").is_empty()
+	_confirm.disabled=busy or not layout.has_preview() or main.camera.is_transitioning()
+	_decoration_rotate.disabled=busy or not layout.has_preview() or (not layout.preview_slot.is_empty() and Catalog.Decorations.allowed_turns(layout.preview_slot).size()<2)
+	_decoration_remove.disabled=busy or layout.selected_item.is_empty() or not preload("res://farm/decoration_state.gd").is_placed(main.decoration_state.snapshot().get(tool,{}))
 	_undo.disabled=busy or not _has_undo()
 	choices.present(main.decoration_state.snapshot(),busy)
 
@@ -188,9 +195,9 @@ func finish() -> void:
 	if busy: return
 	if _is_decoration():
 		var layout: Node=main.decoration_layout
-		if not layout.preview_slot.is_empty():
+		if layout.has_preview():
 			layout.confirm_preview()
-			if not layout.preview_slot.is_empty(): return
+			if layout.has_preview(): return
 		tool="";layout.finish_mode()
 	_flush_land()
 	if draft!=main.farm_state.snapshot().layout:
@@ -260,7 +267,7 @@ func observe(event: InputEvent) -> void:
 	if not active or busy: return
 	if _is_decoration(): main.decoration_layout.observe_input(event)
 	if (event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_RIGHT):
-		if _is_decoration() and not main.decoration_layout.preview_slot.is_empty(): cancel_draft()
+		if _is_decoration() and main.decoration_layout.has_preview(): cancel_draft()
 		elif draft!=main.farm_state.snapshot().layout or _start!=Vector2.INF: cancel_draft()
 		else: finish()
 		get_viewport().set_input_as_handled()

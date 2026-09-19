@@ -38,7 +38,7 @@ static func item(id: String) -> Dictionary:
 	var source: Dictionary = Decorations.ITEMS[id]
 	var abilities: Array = DECORATION_CAPABILITIES[id]
 	return {"name":source.name, "category":"lights" if abilities.has("light") else "objects",
-		"editor":"decoration", "placement":"attachment" if source.type=="hanging" else "slot",
+		"editor":"decoration", "placement":"attachment" if source.type=="hanging" else "free",
 		"capabilities":abilities.duplicate(), "icon":"res://art/ui/decorations/%s.png"%id}
 
 static func has_capability(id: String, capability: String) -> bool:

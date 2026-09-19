@@ -5,6 +5,7 @@ const Space = preload("res://scenes/environment/animal_space.gd")
 const IslandSpace = preload("res://layout/island_space.gd")
 var _rim: PackedVector2Array
 var _exclusions: Array[PackedVector2Array] = []
+var object_footprints: Array[PackedVector2Array] = []
 var _rng := RandomNumberGenerator.new()
 
 func build(courtyard: Node3D) -> void:
@@ -61,9 +62,11 @@ func build(courtyard: Node3D) -> void:
 	var core:=get_script().new() as Node3D
 	core.name="CoreGrass";add_child(core)
 	core._exclusions=_exclusions.duplicate()
+	core.object_footprints.assign(preload("res://presentation/decoration_geometry.gd").footprints(courtyard.prepared_decorations,courtyard.plan.ground_height).values())
 	core.update_tiles(courtyard.plan,false)
 	var expansion:=get_script().new() as Node3D
 	expansion.name="ExpansionGrass";courtyard.add_child(expansion)
+	expansion.object_footprints=core.object_footprints.duplicate()
 	expansion.update_expansion(courtyard.plan)
 
 var _tiles: Dictionary={}
@@ -72,6 +75,7 @@ var _tile_shapes: Dictionary={}
 func copy_tiles(source: Node3D) -> void:
 	_tile_shapes=source._tile_shapes.duplicate(true)
 	_exclusions=source._exclusions.duplicate()
+	object_footprints=source.object_footprints.duplicate()
 	for cell: Vector2i in source._tiles:
 		var tile: Node3D=source._tiles[cell].duplicate()
 		add_child(tile);_tiles[cell]=tile
@@ -79,7 +83,16 @@ func copy_tiles(source: Node3D) -> void:
 func update_expansion(plan: RefCounted) -> void:
 	update_tiles(plan,true)
 
-func update_tiles(plan: RefCounted, expansion_only: bool) -> void:
+func update_objects(plan: RefCounted, polygons: Array, expansion_only: bool) -> void:
+	if object_footprints==polygons: return
+	var changed: Dictionary={}
+	for polygon: PackedVector2Array in object_footprints+polygons:
+		if object_footprints.has(polygon) and polygons.has(polygon): continue
+		for cell: Vector2i in IslandSpace.covered_cells(polygon): changed[cell]=true
+	object_footprints.assign(polygons)
+	if not changed.is_empty(): update_tiles(plan,expansion_only,changed)
+
+func update_tiles(plan: RefCounted, expansion_only: bool, changed: Dictionary={}) -> void:
 	if expansion_only and plan.construction.land.is_empty():
 		for tile: Node3D in _tiles.values(): tile.free()
 		_tiles.clear();_tile_shapes.clear();return
@@ -89,6 +102,7 @@ func update_tiles(plan: RefCounted, expansion_only: bool) -> void:
 	var fields: Array[PackedVector2Array]=[]
 	for index: int in plan.fields.size(): fields.append(plan.field_polygon(index,.07))
 	fields.append_array(_exclusions)
+	fields.append_array(object_footprints)
 	for id: String in plan.slots:
 		if not id.begins_with("ground"): continue
 		var at: Vector3=plan.slots[id]
@@ -97,6 +111,7 @@ func update_tiles(plan: RefCounted, expansion_only: bool) -> void:
 	for z: int in range(floori(bounds.position.y),ceili(bounds.end.y)):
 		for x: int in range(floori(bounds.position.x),ceili(bounds.end.x)):
 			var cell:=Vector2i(x,z)
+			if not changed.is_empty() and not changed.has(cell): continue
 			var rect:=PackedVector2Array([Vector2(x,z),Vector2(x+1,z),Vector2(x+1,z+1),Vector2(x,z+1)])
 			var pieces: Array[PackedVector2Array]=Geometry2D.clip_polygons(rect,base) if expansion_only else Geometry2D.intersect_polygons(rect,base)
 			if pieces.is_empty(): continue
@@ -137,6 +152,7 @@ func update_tiles(plan: RefCounted, expansion_only: bool) -> void:
 			grass.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			add_child(grass);_tiles[cell]=grass
 	for cell: Vector2i in _tile_shapes.keys():
+		if not changed.is_empty() and not changed.has(cell): continue
 		if not wanted.has(cell):
 			if _tiles.has(cell): _tiles[cell].free();_tiles.erase(cell)
 			_tile_shapes.erase(cell)

@@ -38,6 +38,8 @@ var _contact_sources: Array[Node3D] = []
 var _shore_sources: Array[Node3D] = []
 var circulation := Circulation.new()
 var layout_obstacles: Dictionary = {}
+var decoration_data: Dictionary = {}
+var prepared_decorations: Dictionary = {}
 var layout_probe: bool = false
 var _terrain_refreshing: bool=false
 var _terrain_pending: bool=false
@@ -124,7 +126,23 @@ func _ready() -> void:
 	_living.configure_house(get_node("MainHouse"))
 	_living.attach_boat(_boat)
 	layout_obstacles = _circulation_obstacles()
-	circulation.build(plan,layout_obstacles)
+	var route_obstacles: Dictionary=layout_obstacles.duplicate()
+	if not decoration_data.is_empty():
+		var holder:=Node3D.new();holder.name="PlacedDecorations";add_child(holder)
+		for id: String in decoration_data:
+			var entry: Dictionary=decoration_data[id]
+			if not preload("res://farm/decoration_state.gd").is_placed(entry): continue
+			var prop: Node3D=preload("res://presentation/decoration_geometry.gd").build(self,id)
+			holder.add_child(prop)
+			preload("res://presentation/decoration_geometry.gd").pose(prop,entry,plan)
+			prepared_decorations[id]=prop
+			if plan.DECORATION_SCENERY.has(entry.slot_id):
+				var key: String=plan.DECORATION_SCENERY[entry.slot_id]
+				# Preserve the original site's reserved footprint: removing the prop
+				# restores this scenery and must not close a newly generated route.
+				_living.get_node(key).hide()
+		route_obstacles.merge(preload("res://presentation/decoration_geometry.gd").footprints(prepared_decorations,plan.ground_height))
+	circulation.build(plan,route_obstacles)
 	_build_paths()
 	var fence: Node3D = FenceGeometry.build(plan.fences,plan.fence_style)
 	add_child(fence)

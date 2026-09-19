@@ -43,6 +43,6 @@ func present(decorations: Dictionary, busy: bool) -> void:
 		var card: ItemCard=items[id]
 		var definition: Dictionary=Catalog.item(id)
 		var entry: Dictionary=decorations.get(id,{})
-		card.show_state(not entry.get("slot_id","").is_empty(),entry.get("unlocked",true))
+		card.show_state(preload("res://farm/decoration_state.gd").is_placed(entry),entry.get("unlocked",true))
 		card.disabled=busy or definition.editor.is_empty()
 		if definition.editor.is_empty(): card._badge.text="暂不可布置"

@@ -39,7 +39,8 @@ func _run() -> void:
 	var before: Dictionary = decorations.snapshot()
 	_expect(not decorations.place("flowerpot", "ground_01", 0).ok and decorations.snapshot() == before, "Occupied target rejects without mutation")
 	_expect(not decorations.place("lantern", "ground_02", 0).ok, "Hanging item rejects ground slots")
-	_expect(not decorations.place("lantern", "hanging_01", 1).ok, "Hanging item rejects unsupported rotation")
+	_expect(not decorations.place("lantern", "hanging_01", 4).ok, "Hanging item rejects unsupported rotation")
+	_expect(decorations.place("lantern", "hanging_01", 1).ok, "Hanging item rotates around its actual hook")
 	_expect(decorations.place("pot", "ground_02", 1).ok and decorations.place("flowerpot", "ground_01", 0).ok, "Moving frees previous slot")
 	_expect(decorations.place("lantern", "hanging_04", 0).ok, "Alternative hanging slot works")
 	var lived:=Decorations.new()
@@ -49,6 +50,17 @@ func _run() -> void:
 	_expect(lived.remove("tea_table").ok and not lived.remove("tea_table").ok,"Removal is a single state transition")
 	_expect(lived.snapshot().tea_table.quarter_turn==0 and lived.place("drying_rack","ground_04",3).ok,"Removed item clears turn; another item remains placeable")
 	var restored := Decorations.new()
+	_expect(decorations.place_at("bench",Vector2(2.125,7.35),3).ok,"Ground props accept unsnapped world positions")
+	_expect(Decorations.is_placed(decorations.snapshot().bench) and decorations.snapshot().bench.slot_id.is_empty(),"A free prop is placed without a preset slot")
+	var free_before: Dictionary=decorations.snapshot()
+	_expect(not decorations.place_at("lantern",Vector2(2,7),0).ok and not decorations.place_at("bench",Vector2(INF,7),0).ok and decorations.snapshot()==free_before,"Hanging and nonfinite free placements reject atomically")
+	var free_restored:=Decorations.new()
+	_expect(free_restored.restore_snapshot(free_before),"Free position round trips")
+	var malformed: Dictionary=free_before.duplicate(true);malformed.bench.position=[1]
+	_expect(not free_restored.restore_snapshot(malformed),"Truncated coordinate rejected")
+	malformed=free_before.duplicate(true);malformed.bench.slot_id="ground_03"
+	_expect(not free_restored.restore_snapshot(malformed),"Mixed free position and anchor rejected")
+	_expect(free_restored.remove("bench").ok and not Decorations.is_placed(free_restored.snapshot().bench),"Free prop can be removed")
 	_expect(restored.restore_snapshot(decorations.snapshot()) and restored.snapshot() == decorations.snapshot(), "Confirmed placements round trip")
 	var invalid: Dictionary = decorations.snapshot()
 	invalid.flowerpot.slot_id = "ground_02"

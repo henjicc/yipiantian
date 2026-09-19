@@ -84,13 +84,13 @@ func present(items: Dictionary, selected: String, preview_slot: String, can_conf
 	for item_id: String in Catalog.IDS:
 		var button: ItemCard = _items[item_id]
 		var item: Dictionary = items[item_id]
-		button.show_state(not item.slot_id.is_empty(),item.unlocked)
+		button.show_state(preload("res://farm/decoration_state.gd").is_placed(item),item.unlocked)
 		button.disabled = traveling
 		button.set_pressed_no_signal(selected == item_id)
 	_confirm.disabled = traveling or not can_confirm
-	_rotate.disabled = traveling or preview_slot.is_empty() or Catalog.allowed_turns(preview_slot).size() < 2
+	_rotate.disabled = traveling or not can_confirm or (not preview_slot.is_empty() and Catalog.allowed_turns(preview_slot).size() < 2)
 	_cancel.disabled = selected.is_empty()
-	_remove.disabled=traveling or selected.is_empty() or items.get(selected,{}).get("slot_id","").is_empty()
+	_remove.disabled=traveling or selected.is_empty() or not preload("res://farm/decoration_state.gd").is_placed(items.get(selected,{}))
 
 
 func _button(parent: Control, text: String, icon: String) -> Button:

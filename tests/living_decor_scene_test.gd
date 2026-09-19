@@ -12,6 +12,7 @@ func shot(label: String) -> void:
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(folder.path_join(label+".png"))
 func let_hens_leave(decor: Node, animals: Node, removing: bool=false) -> void:
+	while not animals.ready_for_motion: await process_frame
 	var candidate:=preload("res://farm/decoration_state.gd").new()
 	candidate.restore_snapshot(decor.state.snapshot())
 	if removing: candidate.remove(decor.selected_item)
@@ -28,13 +29,14 @@ func click(control: Control) -> void:
 	var point: Vector2=control.get_global_rect().get_center()
 	await click_at(point)
 func click_at(point: Vector2) -> void:
-	var motion:=InputEventMouseMotion.new();motion.position=point;Input.parse_input_event(motion)
+	var motion:=InputEventMouseMotion.new();motion.position=point;motion.window_id=root.get_window_id();root.push_input(motion,true)
 	await process_frame
 	for pressed: bool in [true,false]:
 		var event:=InputEventMouseButton.new();event.position=point;event.button_index=MOUSE_BUTTON_LEFT;event.pressed=pressed
-		Input.parse_input_event(event)
+		event.window_id=root.get_window_id();root.push_input(event,true)
 		await process_frame
 func run() -> void:
+	root.size=Vector2i(1600,900)
 	folder=ProjectSettings.globalize_path("res://../.local/verification/living-decor-%d"%Time.get_ticks_usec())
 	DirAccess.make_dir_recursive_absolute(folder)
 	scene=load("res://scenes/main.tscn").instantiate()
@@ -43,6 +45,7 @@ func run() -> void:
 	await process_frame
 	var animals: Node=scene.get_node("Environment/CourtyardAnimals")
 	while not animals.ready_for_motion: await process_frame
+	for frame: int in 8: await physics_frame;await process_frame
 	animals.set_process(false)
 	var original_water: RefCounted=animals.water
 	# A lathe without indices must survive merging with an indexed cylinder.
@@ -65,6 +68,8 @@ func run() -> void:
 	scene.atmosphere.set_preview_hour(14)
 	scene._begin_decoration()
 	await create_timer(1).timeout
+	expect(decor.active,"Legacy arrangement entry opens its controller")
+	print("LIVING_ENTRY active=",decor.active," loaded=",scene._loaded," saving=",scene._save_failed," focused=",root.has_focus())
 	await shot("menu")
 	for item: String in ["bench","drying_rack","tea_table"]:
 		await click(decor.hud._items[item])
@@ -89,6 +94,7 @@ func run() -> void:
 			await create_timer(1).timeout
 			await click(decor.hud._items[item]);decor.preview_at(chosen)
 		await click(decor.hud._confirm)
+		while not animals.ready_for_motion: await process_frame
 		expect(decor._instances.has(item),"Confirmed real placement "+item)
 		expect(animals.water==original_water,"Ground furniture does not resample moving water obstacles")
 	expect(animals.decoration_rest.size()>0,"Furniture supplies real resting approaches")
@@ -146,8 +152,15 @@ func run() -> void:
 	expect(scene.get_node("Environment/LivingDetails/YardWaterVats").visible,"Moving restores original site scenery")
 	var old_slot: String=decor.state.snapshot().bench.slot_id
 	await click(decor.hud._items.flowerpot);decor.preview_at(old_slot)
+	expect(not decor.has_preview() and decor.state.snapshot().bench.slot_id==old_slot,"Occupied site preserves the placed bench")
+	await click(decor.hud._items.bench)
+	await let_hens_leave(decor,animals,true)
+	await click(decor.hud._remove)
+	while not animals.ready_for_motion: await process_frame
+	await click(decor.hud._items.flowerpot);decor.preview_at(old_slot)
+	await let_hens_leave(decor,animals)
 	await click(decor.hud._confirm)
-	expect(decor.state.snapshot().bench.slot_id=="" and decor._instances.has("flowerpot"),"Explicit replacement returns bench to storage")
+	expect(decor.state.snapshot().bench.slot_id=="" and decor._instances.has("flowerpot"),"Explicitly removing bench makes its site available")
 	await click(decor.hud._items.flowerpot)
 	await let_hens_leave(decor,animals,true)
 	await click(decor.hud._remove)

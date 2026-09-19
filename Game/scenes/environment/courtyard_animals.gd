@@ -33,7 +33,8 @@ static func _bake_spaces(water_space: RefCounted,yard_space: RefCounted,update_w
 
 func set_decorations(instances: Dictionary) -> void:
 	_decorations=instances.duplicate()
-	if ready_for_motion: rebuild_spaces(false)
+	if ready_for_motion or get_parent()._terrain_refreshing:
+		get_parent().refresh_terrain(false)
 
 func _ready() -> void:
 	interaction.owner=self
@@ -94,7 +95,10 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 		if not bank_role.is_empty() or String(child.name).begins_with("BankGrass"): continue
 		if child.name == "LivingDetails":
 			for prop: Node in child.get_children():
-				if prop is Node3D: yard.block(Space.cached_footprint(prop, .19+rise, .70+rise))
+				var replaced: bool=false
+				for entry: Dictionary in environment.decoration_data.values():
+					if environment.plan.DECORATION_SCENERY.get(entry.slot_id,"")==String(prop.name): replaced=true;break
+				if prop is Node3D and not replaced: yard.block(Space.cached_footprint(prop, .19+rise, .70+rise))
 		else: yard.block(Space.cached_footprint(child, .23+rise, .70+rise))
 	var farm: Node3D = environment.get_parent().get_node_or_null("Farm")
 	if farm != null:

@@ -75,7 +75,7 @@ func _run() -> void:
 	_expect(scene.decoration_state.snapshot().pot.slot_id == "ground_01" and scene.decoration_layout.active, "Escape cancels movement before leaving arrangement")
 	_expect(scene.decoration_layout.get("_instances").pot.visible, "Cancelled move restores original visible object")
 	await _choose("Flowerpot")
-	_expect(scene.decoration_layout.get("_rings").ground_01.visible, "Occupied slot is offered for explicit replacement")
+	_expect(not scene.decoration_layout.get("_rings").ground_01.visible, "Occupied slot protects the already placed prop")
 	await _slot("ground_02")
 	await _control("Confirm")
 	_expect(scene.decoration_state.snapshot().flowerpot.slot_id == "ground_02", "Flowerpot reaches and confirms the second ground slot")

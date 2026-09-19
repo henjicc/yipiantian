@@ -19,6 +19,7 @@ func configure(courtyard: Node3D) -> void:
 	_surface.material_override=environment.get_node("MainBank").get_child(0).get_active_material(0)
 	_surface.set_layer_mask_value(2,true);add_child(_surface)
 	_grass=preload("res://scenes/environment/ground_cover.gd").new();_grass.name="ExpansionGrass";add_child(_grass)
+	_grass.object_footprints=environment.get_node("ExpansionGrass").object_footprints.duplicate()
 
 func update(plan: RefCounted) -> void:
 	# Terrain-only preview keeps the existing paths until a structure edit
