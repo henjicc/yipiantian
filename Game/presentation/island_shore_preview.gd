@@ -6,6 +6,7 @@ const Cover=preload("res://scenes/environment/ground_cover.gd")
 var environment: Node3D
 var _surfaces: Dictionary={}
 var _rocks: Dictionary={}
+var _original_rocks: Dictionary={}
 var _plants: Node3D
 var _hidden: Array[Node3D]=[]
 var _originals: Array[Node3D]=[]
@@ -50,6 +51,7 @@ func update(plan: RefCounted) -> void:
 			for child: Node in environment.get_children():
 				if child.has_meta("shore_stone") and child.get_meta("shore_island",0)==island:
 					_originals.append(child)
+					_original_rocks[child.get_meta("shore_key")]=child
 					if child.visible: _hidden.append(child);child.hide()
 			var surface:=MeshInstance3D.new();surface.name="LiveBank%d"%island
 			surface.material_override=bank.get_child(0).get_active_material(0)
@@ -61,14 +63,26 @@ func update(plan: RefCounted) -> void:
 			var key: String=str(island)+var_to_str(entry)
 			wanted[key]=true
 			if _rocks.has(key): continue
+			# Keep prepared geometry, materials and footprint caches for rocks
+			# whose placement is unchanged. Originals stay owned by the courtyard
+			# until save, so a cancelled stroke can restore them without rebuilding.
+			if _original_rocks.has(key):
+				var original: Node3D=_original_rocks[key]
+				original.visible=original in _hidden
+				_rocks[key]=original
+				continue
 			var rock: Node3D=(load("res://art/environment/modules/"+entry.asset+".glb") as PackedScene).instantiate()
 			add_child(rock);rock.position=entry.at;rock.rotation.y=deg_to_rad(entry.yaw);rock.scale=entry.size
 			environment._apply_pigment(rock,entry.asset);environment._tint_stone(rock,entry.color)
 			_rocks[key]=rock
 			rock.set_meta("shore_stone",true);rock.set_meta("shore_island",island)
+			rock.set_meta("shore_key",key)
 			environment._fit_bridge_stone(rock)
 		for key: String in _rocks.keys():
-			if _rocks[key].get_meta("shore_island")==island and not wanted.has(key): _rocks[key].free();_rocks.erase(key)
+			if _rocks[key].get_meta("shore_island",0)==island and not wanted.has(key):
+				if _original_rocks.has(key): _rocks[key].hide()
+				else: _rocks[key].free()
+				_rocks.erase(key)
 	if is_instance_valid(_plants): _plants.free()
 	_plants=Dressing.plants(plan);add_child(_plants)
 	# Compare actual world-space ground, including the opposite island's pose.
@@ -112,16 +126,18 @@ func accept(plan: RefCounted) -> void:
 		var bank: Node3D=environment.get_node("EastBank" if island==1 else "MainBank")
 		bank.get_child(0).mesh=_surfaces[island].mesh;bank.show()
 		bank.remove_meta("navigation_footprints")
+	var retained: Array=_rocks.values()
 	for node: Node3D in _originals:
-		if node.has_meta("bank_role"): continue
+		if node.has_meta("bank_role") or node in retained: continue
 		environment._shore_sources.erase(node);environment._contact_sources.erase(node)
 		environment.layout_obstacles.erase(String(node.name))
 		node.free()
 	_hidden.clear()
 	_originals.clear()
+	_original_rocks.clear()
 	for rock: Node3D in _rocks.values():
-		rock.reparent(environment)
-		if rock.visible: environment._shore_sources.append(rock)
+		if rock.get_parent()!=environment: rock.reparent(environment)
+		if rock.visible and rock not in environment._shore_sources: environment._shore_sources.append(rock)
 	_rocks.clear()
 	_plants.reparent(environment);_grass.reparent(environment)
 	environment.get_node("GroundCover/CoreGrass").free()

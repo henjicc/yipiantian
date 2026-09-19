@@ -287,6 +287,7 @@ func _build_ground() -> void:
 	for entry: Dictionary in preload("res://presentation/shore_dressing.gd").stones(plan):
 		var rock: Node3D=_module(entry.asset,entry.at,entry.yaw,entry.size)
 		rock.set_meta("shore_stone",true)
+		rock.set_meta("shore_key","0"+var_to_str(entry))
 		_tint_stone(rock,entry.color)
 	if not plan.construction.land.is_empty() or not plan.construction.east_land.is_empty(): add_child(preload("res://presentation/shore_dressing.gd").plants(plan))
 
@@ -380,6 +381,7 @@ func _build_architecture() -> void:
 	for entry: Dictionary in preload("res://presentation/shore_dressing.gd").stones(plan,1):
 		var rock: Node3D=_module(entry.asset,entry.at,entry.yaw,entry.size)
 		rock.set_meta("shore_stone",true);rock.set_meta("shore_island",1)
+		rock.set_meta("shore_key","1"+var_to_str(entry))
 		_fit_bridge_stone(rock);_tint_stone(rock,entry.color)
 	# The right bay contains the harvest table; the old bench occupied its legs
 	# and was partly buried in the raised veranda platform.
