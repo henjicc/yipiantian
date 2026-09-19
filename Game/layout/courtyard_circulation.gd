@@ -90,6 +90,8 @@ func build(plan: RefCounted, obstacles: Dictionary) -> void:
 			endpoints[field.id] = best[-1]
 			_add_route(best)
 	_build_fences(obstacles)
+	var flock_issue: String=preload("res://layout/flock_layout.gd").land_issue(plan,obstacles)
+	if not flock_issue.is_empty(): issues.append(flock_issue)
 
 func _connect(target: Vector2, key: String, tolerance: float) -> void:
 	var snapped: Vector2 = road.nearest(target)

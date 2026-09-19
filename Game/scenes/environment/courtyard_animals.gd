@@ -13,7 +13,8 @@ const PROFILES := {
 }
 var water := Space.new()
 var yard := Space.new()
-var duck_space: RefCounted
+const Flocks=preload("res://layout/flock_layout.gd")
+var flock_spaces: Dictionary={}
 var birds: Array[Dictionary] = []
 var _swimmers: Array[Dictionary] = []
 var _hens: Array[Node3D] = []
@@ -21,7 +22,8 @@ var _time: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var ready_for_motion: bool = false
 var water_ready: bool = false
-var duck_preview: bool = false
+var preview_kind: String=""
+var yard_ready: bool=false
 var _decorations: Dictionary={}
 var decoration_rest := PackedVector2Array()
 var _navigation_worker: Thread
@@ -45,19 +47,21 @@ func _ready() -> void:
 
 func _build() -> void:
 	rebuild_spaces()
-	var flock: Dictionary=get_parent().plan.construction.ducks
-	for i: int in int(flock.count):
-		var point:=Vector2(-10.7 + i * .8,1.7 + i * .6)
-		if not flock.area.is_empty():
-			point=Vector2(flock.area[0],flock.area[1])+Vector2(flock.area[2],flock.area[3])*.5+Vector2.from_angle(i*2.4)*sqrt(i)*.6
-		_spawn("duck", "LakeDuck%d" % (i + 1), point, .88 if i == 2 else 1.0)
-	for i: int in 2: _spawn("goose", "LakeGoose%d" % (i + 1), Vector2(1.5 + i * 1.4, 9.3), 1.0)
-	for i: int in 2: _spawn("hen", "YardHen%d" % (i + 1), Vector2(-.7 + i * .8, 4.62), .88 + i * .12)
+	for kind: String in Flocks.KINDS:
+		var flock: Dictionary=get_parent().plan.construction.flocks[kind]
+		var placed:=PackedVector2Array()
+		for entry: Dictionary in birds:
+			if (entry.kind=="hen")== (kind=="hen"): placed.append(entry.position)
+		for i: int in int(flock.count):
+			var point: Vector2=Flocks.separated_point(flock_spaces[kind],Flocks.start(kind,i,flock.area),placed,Flocks.SPECIES[kind].spacing)
+			if not point.is_finite():
+				push_error("No valid flock spawn: "+Flocks.id(kind,i));continue
+			placed.append(point);_spawn(kind,Flocks.id(kind,i),point,Flocks.size(kind,i))
 	ready_for_motion = true
 
 func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 	if update_water: water_ready=false;water = Space.new()
-	yard = Space.new()
+	yard_ready=false;yard = Space.new()
 	var environment: Node3D = get_parent()
 	var rise: float=environment.plan.ground_height-.13
 	yard.floor_level=environment.plan.ground_height
@@ -144,27 +148,29 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 	if update_water:
 		for p: Vector2 in environment.plan.animal_rest.water: water.resting.append(water.nearest(p))
 	for p: Vector2 in environment.plan.animal_rest.yard: yard.resting.append(yard.nearest(p))
-	if update_water:
-		# Only this small region changes when the flock is edited. Never bake it
-		# on the main thread after an otherwise asynchronous water rebuild.
-		var area: Array=environment.plan.construction.ducks.area.duplicate()
-		duck_space=water
-		if not area.is_empty():
-			if progressive:
-				_navigation_worker=Thread.new()
-				if _navigation_worker.start(build_duck_space.bind(area,water.obstacles.duplicate(),water._obstacle_cells.duplicate(true)))==OK:
-					while _navigation_worker.is_alive(): await get_tree().process_frame
-					duck_space=_navigation_worker.wait_to_finish()
-				else:
-					push_error("Duck navigation worker could not start")
-					duck_space=build_duck_space(area,water.obstacles,water._obstacle_cells)
-				_navigation_worker=null
-			else: duck_space=build_duck_space(area,water.obstacles,water._obstacle_cells)
-		water_ready=true
+	for kind: String in Flocks.KINDS:
+		if not update_water and kind!="hen": continue
+		var source: RefCounted=yard if kind=="hen" else water
+		var area: Array=environment.plan.construction.flocks[kind].area.duplicate()
+		flock_spaces[kind]=source
+		if area.is_empty(): continue
+		var captured: Dictionary=Space.capture(source)
+		if progressive:
+			_navigation_worker=Thread.new()
+			if _navigation_worker.start(Space.build_region.bind(area,captured))==OK:
+				while _navigation_worker.is_alive(): await get_tree().process_frame
+				flock_spaces[kind]=_navigation_worker.wait_to_finish()
+			else:
+				push_error("Flock navigation worker could not start")
+				flock_spaces[kind]=Space.build_region(area,captured)
+			_navigation_worker=null
+		else: flock_spaces[kind]=Space.build_region(area,captured)
+	if update_water: water_ready=true
+	yard_ready=true
 	for entry: Dictionary in birds:
 		if not update_water and entry.kind!="hen": continue
 		interaction.cancel(entry.node.name)
-		entry.space = yard if entry.kind == "hen" else (duck_space if entry.kind=="duck" else water)
+		entry.space = flock_spaces[entry.kind]
 		entry.pose.ground = entry.space.ground_height
 		entry.route = PackedVector2Array()
 		entry.state = "observe"
@@ -172,35 +178,33 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 		entry.velocity=Vector2.ZERO
 		entry.interest=Vector2.INF
 		if not entry.space.contains(entry.position):
-			entry.position=entry.space.nearest(entry.position)
-			entry.node.position.x=entry.position.x;entry.node.position.z=entry.position.y
+			var occupied:=PackedVector2Array()
+			for other: Dictionary in birds:
+				if other!=entry and (other.kind=="hen")== (entry.kind=="hen"): occupied.append(other.position)
+			var point: Vector2=Flocks.separated_point(entry.space,entry.position,occupied,Flocks.SPECIES[entry.kind].spacing)
+			if point.is_finite():
+				entry.position=point;entry.node.position.x=point.x;entry.node.position.z=point.y
+			else: push_error("Flock region has no separated relocation: "+String(entry.node.name))
 
-static func build_duck_space(area: Array, obstacles: Array[PackedVector2Array], cells: Dictionary) -> RefCounted:
-	var result:=Space.new()
-	var rect:=Rect2(area[0],area[1],area[2],area[3])
-	result.configure(rect,.46)
-	result.obstacles=obstacles;result._obstacle_cells=cells
-	result.bake()
-	for p: Vector2 in [rect.position,rect.end,Vector2(rect.position.x,rect.end.y),Vector2(rect.end.x,rect.position.y)]: result.resting.append(result.nearest(p))
-	return result
 
-func apply_ducks(space: RefCounted, profiles: Dictionary, models: Dictionary) -> void:
+func apply_flock(kind: String, space: RefCounted, profiles: Dictionary, models: Dictionary) -> void:
 	interaction.profiles=profiles
-	var changed_area: bool=duck_space!=space
-	duck_space=space
+	var changed_area: bool=flock_spaces[kind]!=space
+	flock_spaces[kind]=space
 	for entry: Dictionary in birds.duplicate():
-		if entry.kind!="duck" or models.has(String(entry.node.name)): continue
+		if entry.kind!=kind or models.has(String(entry.node.name)): continue
 		interaction.cancel(entry.node.name)
 		for other: Dictionary in birds:
 			if other.buddy==entry.node: other.buddy=null
-		birds.erase(entry);_swimmers.erase(entry)
-		entry.node.queue_free();entry.wake.queue_free()
+		birds.erase(entry);_swimmers.erase(entry);_hens.erase(entry.node)
+		entry.node.queue_free()
+		if is_instance_valid(entry.wake): entry.wake.queue_free()
 	for id: String in models:
 		var model: Node3D=models[id]
 		var point:=Vector2(model.position.x,model.position.z)
 		var entry: Dictionary=interaction.find(id)
 		if entry.is_empty():
-			_spawn("duck",id,point,model.scale.x,model)
+			_spawn(kind,id,point,model.scale.x,model)
 			continue
 		if not changed_area: continue
 		interaction.cancel(id)
@@ -208,10 +212,11 @@ func apply_ducks(space: RefCounted, profiles: Dictionary, models: Dictionary) ->
 		entry.position=point;entry.node.position.x=point.x;entry.node.position.z=point.y
 		entry.route=PackedVector2Array();entry.waypoint=0;entry.state="observe"
 		entry.timer=0.0;entry.velocity=Vector2.ZERO;entry.interest=Vector2.INF;entry.buddy=null
-		entry.wake_strength=0.0;entry.wake.hide()
+		entry.wake_strength=0.0
+		if is_instance_valid(entry.wake): entry.wake.hide()
 
 func _spawn(kind: String, label: String, start: Vector2, size: float, model: Node3D=null) -> void:
-	var space: RefCounted = yard if kind == "hen" else (duck_space if kind=="duck" else water)
+	var space: RefCounted = flock_spaces[kind]
 	var p: Vector2 = space.nearest(start)
 	var bird: Node3D = model
 	if bird==null: bird=Assets.place(self,kind,Vector3.ZERO,0,size)
@@ -312,7 +317,7 @@ func _process(delta: float) -> void:
 		var step: float = minf(remaining, 1.0 / 30.0)
 		_time += step
 		for entry: Dictionary in birds:
-			if duck_preview and entry.kind=="duck": continue
+			if entry.kind==preview_kind: continue
 			_advance(entry, step)
 		remaining -= step
 
@@ -354,7 +359,7 @@ func _advance(entry: Dictionary, delta: float) -> void:
 		entry.timer -= delta
 		if entry.timer <= 0: _choose(entry)
 	for other: Dictionary in birds:
-		if other == entry or other.space != entry.space: continue
+		if other == entry or (other.kind=="hen") != (entry.kind=="hen"): continue
 		var away: Vector2 = p - other.position
 		var safe: float = entry.radius + other.radius + .12
 		if away.length() < safe + .5 and away.length() > .001:
@@ -382,7 +387,7 @@ func _advance(entry: Dictionary, delta: float) -> void:
 		next = p + velocity * delta
 		safe_step = entry.space.clear_segment(p, next)
 	for other: Dictionary in birds:
-		if other == entry or other.space != entry.space: continue
+		if other == entry or (other.kind=="hen") != (entry.kind=="hen"): continue
 		if next.distance_to(other.position) < entry.radius + other.radius and next.distance_to(other.position) < p.distance_to(other.position): safe_step = false
 	if not safe_step:
 		velocity = Vector2.ZERO

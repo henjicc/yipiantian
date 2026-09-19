@@ -117,6 +117,13 @@ func animal_issue() -> String:
 				if Geometry2D.is_point_in_polygon(bird.position,polygon): return "水边有动物，请等它游开再调整。"
 		for point: Vector2 in structure.get_meta("bridge_supports",PackedVector2Array()):
 			if point.distance_to(bird.position)<bird.radius+.10: return "桥柱旁有动物，请等它游开再调整。"
+	var additions: Array[PackedVector2Array]=[]
+	if not _water_footprint.is_empty(): additions.append(_water_footprint)
+	for point: Vector2 in structure.get_meta("bridge_supports",PackedVector2Array()): additions.append(IslandSpace.rectangle(point-Vector2.ONE*.055,Vector2.ONE*.11))
+	for kind: String in ["duck","goose"]:
+		issue=preload("res://layout/flock_layout.gd").added_obstacle_issue(Plan.from_snapshot(_wanted),kind,environment.get_node("CourtyardAnimals").water,additions)
+		if not issue.is_empty(): return issue
+
 	return ""
 
 static func _build(snapshot: Dictionary, obstacles: Dictionary, levels: Dictionary, origin: Vector2, extent: Vector2) -> Dictionary:
@@ -137,7 +144,7 @@ func _process(_delta: float) -> void:
 			pending=false
 			if result.routes.issues.is_empty():
 				validated=result.plan;routes=result.routes;contacts.apply_pixels(result.contacts);_show_ground(validated)
-			else: message="这里会挡住通路，请为屋前、田边和桥头留出空间。"
+			else: message=result.routes.issues[-1] if result.routes.issues[-1].begins_with("鸡群") else "这里会挡住通路，请为屋前、田边和桥头留出空间。"
 			checked.emit()
 	if not pending or _worker!=null or Time.get_ticks_msec()<_due: return
 	_working=_wanted.duplicate(true);_worker=Thread.new()

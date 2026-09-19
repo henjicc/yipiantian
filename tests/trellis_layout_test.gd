@@ -34,7 +34,7 @@ func _run() -> void:
 	folder=ProjectSettings.globalize_path("res://../.local/verification/trellis-layout-%d"%Time.get_unix_time_from_system())
 	DirAccess.make_dir_recursive_absolute(folder);print("EVIDENCE "+folder)
 	var plan:=Plan.new()
-	plan.apply_construction({"land":[[-3,5,5,5]],"trellis":[],"bridge":[],"buildings":{"house":[],"kitchen":[]},"ducks":{"count":3,"area":[]}})
+	plan.apply_construction({"land":[[-3,5,5,5]],"trellis":[],"bridge":[],"buildings":{"house":[],"kitchen":[]},"flocks":preload("res://layout/flock_layout.gd").initial()})
 	scene=load("res://scenes/main.tscn").instantiate();scene.name="FarmExperience";scene.courtyard_plan=plan
 	scene.store=Store.new(folder.path_join("farm"));scene.settings_store=Settings.new(folder.path_join("settings"))
 	scene.clock=func() -> float: return now

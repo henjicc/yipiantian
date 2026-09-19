@@ -177,8 +177,11 @@ static func from_snapshot(data: Dictionary) -> RefCounted:
 
 func apply_construction(value: Dictionary) -> bool:
 	construction=value.duplicate(true)
-	construction.ducks.count=int(construction.ducks.count)
-	for values: Array in construction.land+[construction.trellis,construction.bridge,construction.ducks.area]:
+	var regions: Array=[]
+	for kind: String in Construction.Flocks.KINDS:
+		construction.flocks[kind].count=int(construction.flocks[kind].count)
+		regions.append(construction.flocks[kind].area)
+	for values: Array in construction.land+[construction.trellis,construction.bridge]+regions:
 		for i: int in values.size(): values[i]=float(values[i])
 	# Canonical decimal precision survives JSON without retaining float32 noise
 	# from the scene's Vector3 anchors and dimension handles.

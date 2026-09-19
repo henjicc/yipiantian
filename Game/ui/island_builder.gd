@@ -11,8 +11,13 @@ const IslandSpace=preload("res://layout/island_space.gd")
 const FieldPreview=preload("res://presentation/field_layout_preview.gd")
 const TrellisPreview=preload("res://presentation/trellis_layout_preview.gd")
 const BuildingPreview=preload("res://presentation/building_layout_preview.gd")
-const DuckPreview=preload("res://presentation/duck_layout_preview.gd")
-var duck_preview: DuckPreview
+const FlockPreview=preload("res://presentation/flock_layout_preview.gd")
+var flock_preview: FlockPreview
+const Flocks=preload("res://layout/flock_layout.gd")
+var _flock_actions: HBoxContainer
+var _flock_gesture: String=""
+var _flock_corner: int=0
+var _flock_redraw: bool=false
 const BridgePreview=preload("res://presentation/bridge_layout_preview.gd")
 var bridge_preview: BridgePreview
 const Plants=preload("res://layout/plantings.gd")
@@ -101,6 +106,9 @@ func _ready() -> void:
 		button.add_theme_font_size_override("font_size",17)
 		button.toggle_mode=true;button.button_pressed=mode==_plant_mode;button.name="Plant"+mode.capitalize();_plant_buttons[mode]=button
 	_plant_rotate=_button(content,"旋转选中的植物",_rotate_plants);_plant_rotate.name="RotatePlants"
+	_flock_actions=HBoxContainer.new();content.add_child(_flock_actions)
+	_button(_flock_actions,"重新圈定",func() -> void: _focus_lost();_flock_redraw=true).name="DrawFlock"
+	_button(_flock_actions,"自由活动",_reset_flock_area).name="ResetFlock"
 	_field_actions=HBoxContainer.new();content.add_child(_field_actions)
 	_button(_field_actions,"添田",func() -> void: _field_action("new")).name="AddField"
 	_button(_field_actions,"旋转",func() -> void: _field_action("rotate")).name="RotateField"
@@ -154,7 +162,9 @@ func choose(id: String) -> void:
 	tool=id;draft=main.farm_state.snapshot().layout;_start=Vector2.INF;_drag_snapshot={};_last_cell=Vector2.INF
 	_pending_land=Vector2.INF;_brush_last=Vector2.INF;_brush_message="";_plant_message="";_plant_last=Vector2.INF;_plant_selected.clear()
 	choices.select_item(id);choices.present(main.decoration_state.snapshot(),busy)
-	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id=="ducks" and key=="count") or (id=="fields" and key in ["columns","rows"]) or (id in Plants.KINDS and key in ["radius","density"])
+	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id in Flocks.TOOLS and key=="count") or (id=="fields" and key in ["columns","rows"]) or (id in Plants.KINDS and key in ["radius","density"])
+	_flock_actions.visible=id in Flocks.TOOLS
+	_flock_redraw=false
 	_plant_actions.visible=id in Plants.KINDS
 	_plant_rotate.visible=id in Plants.KINDS and _plant_mode=="move"
 	_field_actions.visible=id=="fields"
@@ -166,13 +176,45 @@ func choose(id: String) -> void:
 	_sync_field_controls()
 	var size: Vector3=Construction.trellis_size(main.courtyard_plan)
 	_values.length.set_value_no_signal(size.x);_values.width.set_value_no_signal(size.y);_values.height.set_value_no_signal(size.z)
-	_values.count.set_value_no_signal(draft.construction.ducks.count)
+	if id in Flocks.TOOLS:
+		var kind: String=Flocks.TOOLS[id]
+		_rows.count.get_child(0).text=Flocks.SPECIES[kind].name+"数量"
+		_values.count.set_block_signals(true);_values.count.max_value=Flocks.SPECIES[kind].limit
+		_values.count.set_value_no_signal(draft.construction.flocks[kind].count);_values.count.set_block_signals(false)
 	_values.bridge_width.set_value_no_signal(1.2 if draft.construction.bridge.is_empty() else draft.construction.bridge[4])
 	if _is_decoration():
 		main.decoration_layout.begin_mode();main.decoration_layout.hud.hide()
 		main.decoration_layout.select_item(id)
 		_decoration_changed();return
 	_refresh()
+
+func _reset_flock_area() -> void:
+	if busy or tool not in Flocks.TOOLS: return
+	_focus_lost();draft.construction.flocks[Flocks.TOOLS[tool]].area=[];_flock_redraw=false;_refresh()
+
+func _press_flock(point: Vector2, screen: Vector2) -> void:
+	_flock_gesture="draw"
+	var area: Array=draft.construction.flocks[Flocks.TOOLS[tool]].area
+	if _flock_redraw or area.is_empty(): return
+	var corners: PackedVector2Array=Construction.rectangle(area)
+	var level: float=main.courtyard_plan.ground_height+.08 if tool=="hen" else -.21
+	for i: int in corners.size():
+		if main.camera.unproject_position(Vector3(corners[i].x,level,corners[i].y)).distance_to(screen)<18:
+			_flock_gesture="resize";_flock_corner=i;return
+	if Geometry2D.is_point_in_polygon(point,corners): _flock_gesture="move"
+
+func _drag_flock(point: Vector2) -> void:
+	var kind: String=Flocks.TOOLS[tool]
+	var area: Array=_drag_snapshot.construction.flocks[kind].area
+	if _flock_gesture=="move":
+		var delta: Vector2=(point-_start).snapped(Vector2.ONE*.5)
+		draft.construction.flocks[kind].area=[area[0]+delta.x,area[1]+delta.y,area[2],area[3]]
+		return
+	var start: Vector2=IslandSpace.snap(_start)
+	if _flock_gesture=="resize": start=Construction.rectangle(area)[(_flock_corner+2)%4]
+	var low: Vector2=start.min(point);var size: Vector2=(start-point).abs()
+	draft.construction.flocks[kind].area=[low.x,low.y,maxf(.5,size.x),maxf(.5,size.y)]
+	_flock_redraw=false
 
 func _is_decoration() -> bool:
 	return Catalog.Decorations.ITEMS.has(tool)
@@ -272,7 +314,7 @@ func _parameter_changed(_value: float) -> void:
 	elif tool=="bridge":
 		var points: Array[Vector3]=Construction.bridge_points(main.courtyard_plan) if draft.construction.bridge.is_empty() else Construction.bridge_points(candidate if candidate!=null else main.courtyard_plan)
 		draft.construction.bridge=[points[0].x,points[0].z,points[1].x,points[1].z,_values.bridge_width.value]
-	elif tool=="ducks": draft.construction.ducks.count=int(_values.count.value)
+	elif tool in Flocks.TOOLS: draft.construction.flocks[Flocks.TOOLS[tool]].count=int(_values.count.value)
 	_refresh()
 
 func cancel_draft() -> void:
@@ -293,7 +335,7 @@ func _commit() -> void:
 
 func _layout_check_pending() -> bool:
 	if tool=="bridge": return is_instance_valid(bridge_preview) and bridge_preview.pending and bridge_preview.message.is_empty()
-	if tool=="ducks": return is_instance_valid(duck_preview) and duck_preview.pending and duck_preview.message.is_empty()
+	if tool in Flocks.TOOLS: return is_instance_valid(flock_preview) and flock_preview.pending and flock_preview.message.is_empty()
 	if Buildings.BASE.has(tool): return is_instance_valid(building_preview) and building_preview.pending and building_preview.message.is_empty()
 	return tool=="trellis" and is_instance_valid(trellis_preview) and trellis_preview.pending and trellis_preview.message.is_empty()
 
@@ -362,8 +404,8 @@ func accept_building(plan: RefCounted) -> void:
 		_clear_preview();active=false;_start=Vector2.INF;hide();closed.emit()
 	else: choose(tool)
 
-func accept_ducks(plan: RefCounted) -> void:
-	duck_preview.accept(plan);duck_preview.free();duck_preview=null
+func accept_flock(plan: RefCounted) -> void:
+	flock_preview.accept(plan);flock_preview.free();flock_preview=null
 	var close_now: bool=close_after_commit
 	set_busy(false);previous=main.previous_layout.duplicate(true)
 	draft=plan.snapshot();candidate=plan
@@ -407,16 +449,19 @@ func _flush_land() -> void:
 	var from: Vector2=point if not _brush_last.is_finite() else _brush_last
 	var steps: int=mini(100,maxi(1,ceili(from.distance_to(point)/.25)))
 	var east: PackedVector2Array=Construction.bridge_support(main.courtyard_plan,1)
-	var flock: Dictionary=draft.construction.ducks
 	for i: int in steps+1:
 		var sample: Vector2=from.lerp(point,float(i)/steps)
 		var cell: Vector2=Vector2(IslandSpace.cell_at(sample))*Construction.CELL
 		var area: PackedVector2Array=Construction.rectangle([cell.x-.5,cell.y-.5,1.5,1.5])
 		if not Geometry2D.intersect_polygons(area,east).is_empty(): continue
-		if flock.count>0 and not flock.area.is_empty() and not Geometry2D.intersect_polygons(area,Construction.rectangle(flock.area)).is_empty(): continue
+		var protected: bool=false
+		for kind: String in ["duck","goose"]:
+			var flock: Dictionary=draft.construction.flocks[kind]
+			if flock.count>0 and not flock.area.is_empty() and IslandSpace.overlaps(area,Construction.rectangle(flock.area)): protected=true;break
+		if protected: continue
 		outline=Construction.paint(draft.construction.land,outline,sample)
 	_brush_last=point;_last_cell=point
-	_brush_message="从现有岸边开始涂抹；对岸和鸭群水域会保留。" if draft==main.farm_state.snapshot().layout and draft.construction.land.size()==before else ""
+	_brush_message="从现有岸边开始涂抹；对岸和水禽活动区域会保留。" if draft==main.farm_state.snapshot().layout and draft.construction.land.size()==before else ""
 	if draft.construction.land.size()>=Construction.MAX_PATCHES: _brush_message="本岛添地范围已达到本轮上限。可取消当前调整。"
 	if draft.construction.land.size()!=before: _refresh()
 	elif is_instance_valid(_preview):
@@ -463,7 +508,7 @@ func handle(event: InputEvent) -> void:
 func world_point(screen: Vector2) -> Vector2:
 	var from: Vector3=main.camera.project_ray_origin(screen);var direction: Vector3=main.camera.project_ray_normal(screen)
 	if direction.y>=-.001: return Vector2.INF
-	var level: float=-.25 if tool in Plants.KINDS else main.courtyard_plan.ground_height
+	var level: float=-.25 if tool in Plants.KINDS or tool in ["ducks","goose"] else main.courtyard_plan.ground_height
 	var distance: float=(level-from.y)/direction.y
 	if distance<0 or distance>200: return Vector2.INF
 	var point: Vector3=from+direction*distance
@@ -475,6 +520,7 @@ func _press(screen: Vector2) -> void:
 	var point: Vector2=world_point(screen)
 	if not point.is_finite(): return
 	_bridge_end=-1
+	if tool in Flocks.TOOLS: _press_flock(point,screen)
 	if tool=="fields":
 		_press_field(point,screen)
 		return
@@ -534,7 +580,7 @@ func _drag(screen: Vector2) -> void:
 	if tool=="land":
 		_pending_land=point
 		return
-	point=IslandSpace.snap(point) if tool in ["land","ducks"] else point
+	point=IslandSpace.snap(point) if tool in Flocks.TOOLS else point
 	if point==_last_cell: return
 	_last_cell=point;draft=_drag_snapshot.duplicate(true)
 	match tool:
@@ -549,11 +595,8 @@ func _drag(screen: Vector2) -> void:
 				var center:=Vector2(parameters[0],parameters[1])
 				parameters[2]=wrapf(parameters[2]+snappedf(rad_to_deg((_start-center).angle()-(point-center).angle()),15),-180,180)
 			if parameters!=original: draft.construction.buildings[tool]=parameters
-		"ducks":
-			var start: Vector2=IslandSpace.snap(_start)
-			var low: Vector2=start.min(point);var size: Vector2=(start-point).abs()
-			var rect: Array=[low.x,low.y,maxf(.5,size.x),maxf(.5,size.y)]
-			draft.construction.ducks.area=rect
+		"ducks","goose","hen":
+			_drag_flock(point)
 		"trellis":
 			var plan: RefCounted=Plan.from_snapshot(_drag_snapshot)
 			var parameters: Array=Construction.trellis_parameters(plan)
@@ -583,16 +626,16 @@ func issue() -> String:
 		if tool in Plants.KINDS: return "植物位置超出布置范围，请移回小岛附近。"
 		if Buildings.BASE.has(tool): return "建筑位置超出可布置范围，请移回岛内。"
 		if tool=="fields": return "田块位置或大小超出范围。最多 12 块田、384 个田格，每块田最多 8 行 × 8 列；可取消后重新调整。"
-		if tool=="ducks": return "水域至少 2 × 2 米，每只鸭子需约 3 平方米。请扩大水域或减少数量。"
+		if tool in Flocks.TOOLS: return "区域边长需在 2–12 米；每只需约 %s 平方米。请扩大范围或减少数量。"%Flocks.SPECIES[Flocks.TOOLS[tool]].area
 		if tool=="bridge": return "桥长需在 2 至 9 米之间，请调整桥头。"
 		if tool=="trellis": return "请把菜架尺寸调回允许范围。"
 		return "从现有岸边涂抹，让新土地保持连通。"
 	var plants_issue: String=Plants.terrain_issue(candidate)
 	if not plants_issue.is_empty(): return plants_issue
 	if tool in Plants.KINDS and is_instance_valid(plant_preview): return plant_preview.message
-	if tool=="ducks" and is_instance_valid(duck_preview):
-		if not duck_preview.message.is_empty(): return duck_preview.message
-		if duck_preview.pending: return "正在校对活动水域…"
+	if tool in Flocks.TOOLS and is_instance_valid(flock_preview):
+		if not flock_preview.message.is_empty(): return flock_preview.message
+		if flock_preview.pending: return "正在校对活动区域…"
 		return ""
 	if tool=="bridge" and is_instance_valid(bridge_preview):
 		if not bridge_preview.message.is_empty(): return bridge_preview.message
@@ -605,20 +648,12 @@ func issue() -> String:
 		if building_preview.pending: return "正在校对屋前通路…"
 	var bridge: String=Construction.bridge_issue(candidate)
 	if not bridge.is_empty(): return bridge
-	var water_issue: String=Construction.water_area_issue(candidate)
-	if not water_issue.is_empty(): return water_issue
+	var flock_issue: String=Construction.Flocks.terrain_issue(candidate)
+	if not flock_issue.is_empty(): return flock_issue
 	if tool=="trellis" and is_instance_valid(trellis_preview):
 		if not trellis_preview.message.is_empty(): return trellis_preview.message
 		if trellis_preview.pending: return "正在校对架旁通路…"
-	var area: Array=candidate.construction.ducks.area
-	if not area.is_empty() and int(candidate.construction.ducks.count)>0:
-		var rect:=Rect2(area[0],area[1],area[2],area[3])
-		var clear: int=0
-		for y: int in 7:
-			for x: int in 7:
-				var p: Vector2=rect.position+Vector2((x+.5)/7.0,(y+.5)/7.0)*rect.size
-				if main.get_node("Environment/CourtyardAnimals").water.contains(p): clear+=1
-		if clear<35: return "这里的水面太拥挤，请避开岛岸、桥头和密集荷花"
+
 	return ""
 
 func _refresh() -> void:
@@ -629,11 +664,11 @@ func _refresh() -> void:
 		_status.text="";_confirm.disabled=true;_undo.disabled=not _has_undo();return
 	if tool in Plants.KINDS and candidate!=null:
 		_ensure_plant_preview();plant_preview.update(candidate)
-	if tool=="ducks" and candidate!=null and draft!=main.farm_state.snapshot().layout:
-		if not is_instance_valid(duck_preview):
-			duck_preview=DuckPreview.new();main.add_child(duck_preview);duck_preview.configure(main)
-			duck_preview.checked.connect(_duck_checked)
-		duck_preview.update(candidate)
+	if tool in Flocks.TOOLS and candidate!=null and draft!=main.farm_state.snapshot().layout:
+		if not is_instance_valid(flock_preview):
+			flock_preview=FlockPreview.new();main.add_child(flock_preview);flock_preview.configure(main,Flocks.TOOLS[tool])
+			flock_preview.checked.connect(_flock_checked)
+		flock_preview.update(candidate)
 	if tool=="bridge" and candidate!=null and draft!=main.farm_state.snapshot().layout:
 		if not is_instance_valid(bridge_preview):
 			bridge_preview=BridgePreview.new();main.add_child(bridge_preview);bridge_preview.configure(main)
@@ -657,7 +692,7 @@ func _refresh() -> void:
 	var message: String=issue()
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
 	_undo.disabled=busy or not _has_undo()
-	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架移动；圆点调长度和方向。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}.get(tool,"")
+	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架移动；圆点调长度和方向。","bridge":"拖动任一桥头，让两端落在岸上。"}.get(tool,"")
 	if tool=="land" and not _brush_message.is_empty(): _status.text=_brush_message
 	if tool in Plants.KINDS and message.is_empty():
 		_status.text=_plant_message if not _plant_message.is_empty() else "点放或按住左键涂刷；擦除仅作用于当前植物。已布置 %d / %d 簇。"%[draft.plants.size(),Plants.MAX_CLUMPS]
@@ -665,13 +700,13 @@ func _refresh() -> void:
 	_plant_rotate.disabled=_plant_selected.is_empty() or busy
 	_render_preview(message.is_empty())
 
-func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trellis: bool=false, keep_building: bool=false, keep_ducks: bool=false, keep_bridge: bool=false, keep_plants: bool=false) -> void:
+func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trellis: bool=false, keep_building: bool=false, keep_flock: bool=false, keep_bridge: bool=false, keep_plants: bool=false) -> void:
 	if not keep_plants and is_instance_valid(plant_preview):
 		plant_preview.free();plant_preview=null
 	if not keep_bridge and is_instance_valid(bridge_preview):
 		bridge_preview.retire();bridge_preview=null
-	if not keep_ducks and is_instance_valid(duck_preview):
-		duck_preview.retire();duck_preview=null
+	if not keep_flock and is_instance_valid(flock_preview):
+		flock_preview.retire();flock_preview=null
 	if not keep_building and is_instance_valid(building_preview):
 		building_preview.retire();building_preview=null
 	if not keep_trellis and is_instance_valid(trellis_preview):
@@ -684,7 +719,7 @@ func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trelli
 
 func _render_preview(valid: bool) -> void:
 	var changed: bool=candidate!=null and draft!=main.farm_state.snapshot().layout
-	_clear_preview(tool=="land" and changed,tool=="fields",tool=="trellis" and changed,Buildings.BASE.has(tool) and changed,tool=="ducks" and changed,tool=="bridge" and changed,tool in Plants.KINDS)
+	_clear_preview(tool=="land" and changed,tool=="fields",tool=="trellis" and changed,Buildings.BASE.has(tool) and changed,tool in Flocks.TOOLS and changed,tool=="bridge" and changed,tool in Plants.KINDS)
 	_preview=Node3D.new();_preview.name="ConstructionPreview";main.add_child(_preview)
 	var tint:=Color("88b779") if valid else Color("d77d62")
 	var plan: RefCounted=candidate if candidate!=null else main.courtyard_plan
@@ -709,10 +744,13 @@ func _render_preview(valid: bool) -> void:
 		_handle(pose*Vector3(0,.12,-field.size.y*.5-.55),tint)
 	elif tool=="land" and _last_cell.is_finite():
 		_draw_brush(tint)
-	elif tool=="ducks" and not draft.construction.ducks.area.is_empty():
-		var rect: Array=draft.construction.ducks.area
+	elif tool in Flocks.TOOLS and not draft.construction.flocks[Flocks.TOOLS[tool]].area.is_empty():
+		var rect: Array=draft.construction.flocks[Flocks.TOOLS[tool]].area
 		if Construction.numbers(rect,4) and rect[2]<=12 and rect[3]<=12:
-			_outline(Construction.rectangle(rect),-.21,tint,false)
+			var level: float=plan.ground_height+.08 if tool=="hen" else -.21
+			var corners: PackedVector2Array=Construction.rectangle(rect)
+			_outline(corners,level,tint,false)
+			for at: Vector2 in corners: _handle(Vector3(at.x,level,at.y),tint)
 	elif tool=="bridge":
 		for point: Vector3 in Construction.bridge_points(plan): _handle(point+Vector3.UP*.12,tint)
 	elif Buildings.BASE.has(tool):
@@ -732,8 +770,8 @@ func _render_preview(valid: bool) -> void:
 func _building_handle(plan: RefCounted) -> Vector3:
 	return Buildings.pose(plan,tool)*Vector3(0,.08,4.3 if tool=="house" else 3.3)
 
-func _duck_checked() -> void:
-	if not active or tool!="ducks": return
+func _flock_checked() -> void:
+	if not active or tool not in Flocks.TOOLS: return
 	var message: String=issue()
 	_status.text=message
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout

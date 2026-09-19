@@ -5,10 +5,10 @@ const Buildings = preload("res://layout/building_layout.gd")
 const CELL: float = IslandSpace.CELL
 const MAX_PATCHES: int = 256
 const BRUSH_SIZE: float = 1.5
-const MAX_DUCKS: int = 12
+const Flocks=preload("res://layout/flock_layout.gd")
 
 static func initial() -> Dictionary:
-	return {"land":[],"trellis":[],"bridge":[],"ducks":{"count":3,"area":[]},"buildings":Buildings.initial()}
+	return {"land":[],"trellis":[],"bridge":[],"flocks":Flocks.initial(),"buildings":Buildings.initial()}
 
 static func numbers(value: Variant, count: int) -> bool:
 	if not value is Array or value.size()!=count: return false
@@ -36,14 +36,7 @@ static func valid(data: Variant) -> bool:
 		if data.bridge[4]<.8 or data.bridge[4]>1.8: return false
 		var distance: float=Vector2(data.bridge[0],data.bridge[1]).distance_to(Vector2(data.bridge[2],data.bridge[3]))
 		if distance<2 or distance>9: return false
-	var flock: Variant=data.get("ducks")
-	if not flock is Dictionary or flock.size()!=2 or not numbers([flock.get("count")],1): return false
-	if flock.count<0 or flock.count>MAX_DUCKS or floorf(flock.count)!=flock.count or not flock.get("area") is Array: return false
-	if not flock.area.is_empty():
-		if not numbers(flock.area,4): return false
-		if absf(flock.area[0])>24 or absf(flock.area[1])>24 or flock.area[2]<2 or flock.area[3]<2 or flock.area[2]>12 or flock.area[3]>12: return false
-		if flock.area[2]*flock.area[3]<flock.count*3.0: return false
-	return true
+	return Flocks.valid(data.get("flocks"))
 
 static func rectangle(values: Array) -> PackedVector2Array:
 	return IslandSpace.rectangle(Vector2(values[0],values[1]), Vector2(values[2],values[3]))
@@ -144,13 +137,6 @@ static func bridge_issue(plan: RefCounted) -> String:
 	var approach_b: PackedVector2Array=IslandSpace.footprint(Vector2(.16,width),Transform3D(basis,ends[1]+direction*.08))
 	if not IslandSpace.supported(approach_a,main): return "左桥头需要完整落在主岛平地上"
 	if not IslandSpace.supported(approach_b,east): return "右桥头需要完整落在对岸平地上"
-	return ""
-
-static func water_area_issue(plan: RefCounted) -> String:
-	var flock: Dictionary=plan.construction.ducks
-	if flock.area.is_empty() or int(flock.count)==0: return ""
-	if not IslandSpace.water_clear(rectangle(flock.area),plan.water_banks()):
-		return "鸭群活动区域需要留在水面上，请避开两岸的土坡。"
 	return ""
 
 static func bridge_support(plan: RefCounted, end: int) -> PackedVector2Array:

@@ -723,11 +723,12 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	if unchanged==current and snapshot!=current:
 		_apply_bridge(snapshot,undo)
 		return
-	unchanged=snapshot.duplicate(true)
-	unchanged.construction.ducks=current.construction.ducks.duplicate(true)
-	if unchanged==current and snapshot!=current:
-		_apply_ducks(snapshot,undo)
-		return
+	for kind: String in CourtyardPlan.Construction.Flocks.KINDS:
+		unchanged=snapshot.duplicate(true)
+		unchanged.construction.flocks[kind]=current.construction.flocks[kind].duplicate(true)
+		if unchanged==current and snapshot!=current:
+			_apply_flock(snapshot,undo,kind)
+			return
 	unchanged=snapshot.duplicate(true)
 	unchanged.fields=current.fields.duplicate(true)
 	if unchanged==current:
@@ -758,7 +759,7 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 		island_builder.set_busy(false,"范围或尺寸不合适，请调整后再试。")
 		return
 	var message: String=preload("res://layout/island_construction.gd").bridge_issue(plan)
-	if message.is_empty(): message=preload("res://layout/island_construction.gd").water_area_issue(plan)
+	if message.is_empty(): message=preload("res://layout/island_construction.gd").Flocks.terrain_issue(plan)
 	if message.is_empty():
 		var probe:=preload("res://scenes/environment/courtyard.gd").new()
 		probe.plan=plan;probe.layout_probe=true;probe.process_mode=Node.PROCESS_MODE_DISABLED
@@ -844,15 +845,15 @@ func _apply_bridge(snapshot: Dictionary, undo: bool) -> void:
 	$Environment.refresh_terrain.call_deferred(true)
 	print("BRIDGE_COMMIT_MS ",Time.get_ticks_msec()-started)
 
-func _apply_ducks(snapshot: Dictionary, undo: bool) -> void:
+func _apply_flock(snapshot: Dictionary, undo: bool, kind: String) -> void:
 	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
 	if plan==null: return
-	island_builder.set_busy(true,"正在校对活动水域…")
-	if not is_instance_valid(island_builder.duck_preview):
+	island_builder.set_busy(true,"正在校对活动区域…")
+	if not is_instance_valid(island_builder.flock_preview) or island_builder.flock_preview.kind!=kind:
 		island_builder._clear_preview()
-		island_builder.duck_preview=preload("res://presentation/duck_layout_preview.gd").new()
-		add_child(island_builder.duck_preview);island_builder.duck_preview.configure(self)
-	var preview: Node3D=island_builder.duck_preview
+		island_builder.flock_preview=preload("res://presentation/flock_layout_preview.gd").new()
+		add_child(island_builder.flock_preview);island_builder.flock_preview.configure(self,kind)
+	var preview: Node3D=island_builder.flock_preview
 	preview.update(plan)
 	while preview.pending:
 		await get_tree().process_frame
@@ -868,9 +869,9 @@ func _apply_ducks(snapshot: Dictionary, undo: bool) -> void:
 		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
 	previous_decorations={};farm_state=candidate
-	island_builder.accept_ducks(plan)
+	island_builder.accept_flock(plan)
 	refresh_farm()
-	print("DUCK_COMMIT_MS ",Time.get_ticks_msec()-started)
+	print("FLOCK_COMMIT_MS ",Time.get_ticks_msec()-started)
 
 func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 	var started: int=Time.get_ticks_msec()
@@ -878,7 +879,7 @@ func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 	if plan==null: return
 	var construction=preload("res://layout/island_construction.gd")
 	var message: String=construction.bridge_issue(plan)
-	if message.is_empty(): message=construction.water_area_issue(plan)
+	if message.is_empty(): message=construction.Flocks.terrain_issue(plan)
 	if not Geometry2D.intersect_polygons(plan.plateau(),construction.bridge_support(plan,1)).is_empty(): message="请为对岸留出水道。"
 	# Only the brush changed. Existing fields, buildings and routes are retained;
 	# do not instantiate a second courtyard to validate unchanged architecture.

@@ -189,11 +189,11 @@ func _test_current_boundaries() -> void:
 	var loaded: Dictionary = Store.new(mixed_dir).load_state()
 	_expect(loaded.farm == mixed.snapshot() and loaded.decorations == decorations.snapshot(), "Mixed crops, independent water and decorations restore exactly")
 	var construction: Dictionary=mixed.snapshot().layout
-	construction.construction={"land":[[0,6,3,2.5]],"trellis":[4.9,.8,2.4,-5.8,1.05,0],"buildings":{"house":[],"kitchen":[]},"bridge":[5.40000009536743,-.10000038146973,11,.10000038146973,1.2],"ducks":{"count":7,"area":[-12,4,4,6]}}
+	construction.construction={"land":[[0,6,3,2.5]],"trellis":[4.9,.8,2.4,-5.8,1.05,0],"buildings":{"house":[],"kitchen":[]},"bridge":[5.40000009536743,-.10000038146973,11,.10000038146973,1.2],"flocks":{"duck":{"count":7,"area":[-12,4,4,6]},"goose":{"count":4,"area":[]},"hen":{"count":5,"area":[]}}}
 	_expect(mixed.apply_layout(construction,20001.0).ok,"Construction parameters join the farm state")
 	_expect(mixed_store.save(mixed.snapshot(),decorations.snapshot()).ok,"Construction parameters save")
 	var built: Dictionary=Store.new(mixed_dir).load_state()
-	_expect(built.ok and built.farm==mixed.snapshot(),"Construction numeric types and duck identities roundtrip exactly")
+	_expect(built.ok and built.farm==mixed.snapshot(),"Construction numeric types and all flock identities roundtrip exactly")
 	construction=mixed.snapshot().layout
 	construction.construction.buildings={"house":[.8,8.85,15],"kitchen":[-7,8,-15]}
 	_expect(mixed.apply_layout(construction,20002.0).ok,"Independent building poses join the farm state")

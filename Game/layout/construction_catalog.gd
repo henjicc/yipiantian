@@ -18,9 +18,9 @@ const ITEMS: Dictionary = {
 	"reed": {"name":"芦苇", "category":"plants", "editor":"layout", "placement":"shore", "capabilities":["decoration"], "icon":"res://art/ui/construction/reed.png"},
 	"cattail": {"name":"香蒲", "category":"plants", "editor":"layout", "placement":"shore", "capabilities":["decoration"], "icon":"res://art/ui/construction/cattail.png"},
 	"trapa": {"name":"菱叶", "category":"plants", "editor":"layout", "placement":"water", "capabilities":["decoration"], "icon":"res://art/ui/construction/trapa.png"},
-	"hen": {"name":"鸡群", "category":"animals", "editor":"", "placement":"region", "capabilities":["animal"], "icon":"res://art/ui/animals/hen.png"},
+	"hen": {"name":"鸡群", "category":"animals", "editor":"layout", "placement":"region", "capabilities":["animal"], "icon":"res://art/ui/animals/hen.png"},
 	"ducks": {"name":"鸭群", "category":"animals", "editor":"layout", "placement":"region", "capabilities":["animal"], "icon":"res://art/ui/animals/duck.png"},
-	"goose": {"name":"鹅群", "category":"animals", "editor":"", "placement":"region", "capabilities":["animal"], "icon":"res://art/ui/animals/goose.png"},
+	"goose": {"name":"鹅群", "category":"animals", "editor":"layout", "placement":"region", "capabilities":["animal"], "icon":"res://art/ui/animals/goose.png"},
 }
 const DECORATION_CAPABILITIES: Dictionary = {
 	"pot":["decoration","production"], "flowerpot":["decoration"], "lantern":["decoration","light"],

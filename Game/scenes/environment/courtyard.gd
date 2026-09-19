@@ -54,7 +54,7 @@ func refresh_terrain(water_changed: bool=true) -> void:
 	_terrain_pending=true
 	_water_pending=_water_pending or water_changed
 	var animals: Node3D=get_node("CourtyardAnimals")
-	animals.ready_for_motion=false
+	animals.ready_for_motion=false;animals.yard_ready=false
 	if water_changed: animals.water_ready=false
 	if _terrain_refreshing: return
 	_terrain_refreshing=true
@@ -62,7 +62,8 @@ func refresh_terrain(water_changed: bool=true) -> void:
 		_terrain_pending=false
 		var update_water: bool=_water_pending
 		_water_pending=false
-		animals.ready_for_motion=false
+		animals.ready_for_motion=false;animals.yard_ready=false
+		if update_water: animals.water_ready=false
 		await get_tree().process_frame
 		var started: int=Time.get_ticks_msec()
 		await animals.rebuild_spaces(update_water,true)

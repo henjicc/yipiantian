@@ -161,7 +161,7 @@ func _process(_delta: float) -> void:
 			pending=false
 			if result.routes.issues.is_empty():
 				validated=result.plan;routes=result.routes;_show_ground(validated)
-			else: message="这里会挡住通路，请为屋前、田边和桥头留出空间。"
+			else: message=result.routes.issues[-1] if result.routes.issues[-1].begins_with("鸡群") else "这里会挡住通路，请为屋前、田边和桥头留出空间。"
 			checked.emit()
 	if not pending or _worker!=null or Time.get_ticks_msec()<_due: return
 	_working=_wanted.duplicate(true);_worker=Thread.new()

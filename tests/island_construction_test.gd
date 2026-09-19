@@ -77,7 +77,7 @@ func _run() -> void:
 	expect(Plan.from_snapshot(bad)==null,"Out of range land rejected")
 	bad=base.duplicate(true);bad.construction.land=[[12,12,2,2]]
 	expect(Plan.from_snapshot(bad)==null,"Detached island patch rejected")
-	bad=base.duplicate(true);bad.construction.ducks.count=13
+	bad=base.duplicate(true);bad.construction.flocks.duck.count=13
 	expect(Plan.from_snapshot(bad)==null,"Population bound enforced")
 	scene=load("res://scenes/main.tscn").instantiate();scene.name="FarmExperience"
 	scene.store=Store.new(folder.path_join("farm"));scene.settings_store=Settings.new(folder.path_join("settings"))
@@ -130,7 +130,7 @@ func _run() -> void:
 	await shot("07-bridge-built")
 	await choose_tool("ducks")
 	scene.island_builder._values.count.value=6
-	await drag(Vector3(-12,.13,4),Vector3(-8,.13,10))
+	await drag(Vector3(-12,-.25,4),Vector3(-8,-.25,10))
 	print("DUCK_ISSUE "+scene.island_builder.issue())
 	await shot("08-ducks-preview")
 	if not await apply(): await finish();return
@@ -163,16 +163,16 @@ func _run() -> void:
 	expect(scene.island_builder._status.text.contains("未能保存"),"Failed save is visible and retryable")
 	scene.store.directory=normal_path
 	if not await apply(): await finish();return
-	expect(scene.farm_state.snapshot().layout.construction.ducks.count==7,"Retry succeeds without duplicate construction")
+	expect(scene.farm_state.snapshot().layout.construction.flocks.duck.count==7,"Retry succeeds without duplicate construction")
 	var old: Node=scene
 	await click(scene.island_builder._undo)
 	var start: int=Time.get_ticks_msec()
 	while is_instance_valid(old) and root.get_node_or_null("FarmExperience")==old:
 		await frames()
-		if not old.island_builder.busy and old.farm_state.snapshot().layout.construction.ducks.count==6: break
+		if not old.island_builder.busy and old.farm_state.snapshot().layout.construction.flocks.duck.count==6: break
 		if Time.get_ticks_msec()-start>45000: expect(false,"Undo timeout");await finish();return
 	scene=root.get_node("FarmExperience");await frames(5)
-	expect(scene.farm_state.snapshot().layout.construction.ducks.count==6,"Undo restores previous duck count")
+	expect(scene.farm_state.snapshot().layout.construction.flocks.duck.count==6,"Undo restores previous duck count")
 	expect(scene.farm_state.snapshot().fields==crops,"Undo does not rewind or erase crops")
 	scene.island_builder.finish()
 	await shot("10-finished")
@@ -197,15 +197,15 @@ func _run() -> void:
 
 func flock_preview_checks() -> void:
 	var builder: Node=scene.island_builder
-	expect(builder._preview.get_child_count()==1,"Unchanged flock shows only live ducks and area outline")
+	expect(builder._preview.get_child_count()==5,"Unchanged flock shows only live ducks and area outline")
 	builder._values.count.value=7;await frames()
-	expect(is_instance_valid(builder.duck_preview) and builder.duck_preview.models.size()==7,"Seven-duck draft has seven preview models")
+	expect(is_instance_valid(builder.flock_preview) and builder.flock_preview.models.size()==7,"Seven-duck draft has seven preview models")
 	for bird: Dictionary in scene.get_node("Environment/CourtyardAnimals").birds:
 		if bird.kind=="duck": expect(not bird.node.visible,"Draft hides live duck to avoid doubled count")
 	builder.cancel_draft();await frames()
 	for bird: Dictionary in scene.get_node("Environment/CourtyardAnimals").birds:
 		if bird.kind=="duck": expect(bird.node.visible,"Cancelling restores live duck visibility")
-	expect(builder._preview.get_child_count()==1,"Cancel removes all temporary ducks")
+	expect(builder._preview.get_child_count()==5,"Cancel removes all temporary ducks")
 
 func finish() -> void:
 	if is_instance_valid(scene): root.remove_child(scene);scene.free()

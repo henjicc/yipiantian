@@ -1,5 +1,6 @@
 extends RefCounted
 ## Durable identity and voluntary interaction; no hunger or time-based loss.
+const Flocks=preload("res://layout/flock_layout.gd")
 const IDS: Array[String]=["LakeDuck1","LakeDuck2","LakeDuck3","LakeGoose1","LakeGoose2","YardHen1","YardHen2"]
 const NAMES: Array[String]=["小满","点点","团团","白露","云朵","栗子","阿黄"]
 const FOOD: Array[String]=["greens","lettuce","spinach","tatsoi"]
@@ -13,23 +14,24 @@ static func initial_state() -> Dictionary:
 	for i: int in IDS.size(): result[IDS[i]]={"name":NAMES[i],"preference":-1,"visits":0,"shared":0,"revision":0}
 	return result
 
-static func include_ducks(data: Dictionary, count: int) -> void:
-	for i: int in count:
-		var id: String="LakeDuck%d"%(i+1)
-		if not data.has(id): data[id]={"name":"小鸭%d"%(i+1),"preference":-1,"visits":0,"shared":0,"revision":0}
+static func include_flocks(data: Dictionary, flocks: Dictionary) -> void:
+	for species: String in Flocks.KINDS:
+		for i: int in int(flocks[species].count):
+			var identity: String=Flocks.id(species,i)
+			if not data.has(identity): data[identity]={"name":"%s%d"%[{"duck":"小鸭","goose":"小鹅","hen":"小鸡"}[species],i+1],"preference":-1,"visits":0,"shared":0,"revision":0}
 static func valid_name(value: Variant) -> bool:
 	if not value is String or value.length()<1 or value.length()>12 or value!=value.strip_edges(): return false
 	for i: int in value.length():
 		if value.unicode_at(i)<32 or value.unicode_at(i)==127: return false
 	return true
 static func valid(data: Dictionary) -> bool:
-	if data.size()<IDS.size() or data.size()>16: return false
+	if data.size()<IDS.size() or data.size()>28: return false
 	for id: String in IDS:
 		if not data.has(id): return false
 	for id: String in data:
-		if id not in IDS:
-			var suffix: String=id.trim_prefix("LakeDuck")
-			if not suffix.is_valid_int() or int(suffix)<4 or int(suffix)>12 or id!="LakeDuck%d"%int(suffix): return false
+		var species: String=kind(id)
+		var suffix: String=id.trim_prefix(Flocks.SPECIES[species].prefix)
+		if not suffix.is_valid_int() or int(suffix)<1 or int(suffix)>Flocks.SPECIES[species].limit or id!=Flocks.id(species,int(suffix)-1): return false
 		var entry: Variant=data.get(id)
 		if not entry is Dictionary or entry.size()!=5 or not valid_name(entry.get("name")): return false
 		for field: String in ["preference","visits","shared","revision"]:

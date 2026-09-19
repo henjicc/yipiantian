@@ -21,9 +21,12 @@ var resting := PackedVector2Array()
 var radius: float
 var _floor_faces: Dictionary = {}
 var floor_level: float = .13
+var floor_origin:=Vector2.ZERO
+var component_cells: Dictionary = {}
 
 func configure(area: Rect2, clearance: float, polygon: PackedVector2Array = PackedVector2Array()) -> void:
 	bounds = area
+	floor_origin=area.position
 	radius = clearance
 	allowed = polygon
 	grid.region = Rect2i(Vector2i.ZERO, Vector2i(ceil(area.size.x / CELL), ceil(area.size.y / CELL)))
@@ -47,6 +50,7 @@ func block(polygon: PackedVector2Array) -> void:
 				_obstacle_cells[cell].append(index)
 
 func bake() -> void:
+	component_cells.clear()
 	points.clear()
 	grid.blocked_edges.clear()
 	for y: int in grid.region.size.y:
@@ -65,7 +69,32 @@ func bake() -> void:
 				grid.blocked_edges[Vector4i(a.x,a.y,b.x,b.y)]=true
 				grid.blocked_edges[Vector4i(b.x,b.y,a.x,a.y)]=true
 
+func keep_largest_component() -> void:
+	# Four-way flood is conservative at narrow corners and honors thin barriers.
+	var unseen: Dictionary={}
+	for p: Vector2 in points: unseen[Vector2i(((p-bounds.position)/CELL).round())]=true
+	var largest: Dictionary={}
+	while not unseen.is_empty():
+		var first: Vector2i=unseen.keys()[0]
+		var queue: Array[Vector2i]=[first];var component: Dictionary={first:true};unseen.erase(first)
+		var index: int=0
+		while index<queue.size():
+			var a: Vector2i=queue[index];index+=1
+			for direction: Vector2i in [Vector2i.LEFT,Vector2i.RIGHT,Vector2i.UP,Vector2i.DOWN]:
+				var b: Vector2i=a+direction
+				if not unseen.has(b) or grid.blocked_edges.has(Vector4i(a.x,a.y,b.x,b.y)): continue
+				unseen.erase(b);component[b]=true;queue.append(b)
+		if component.size()>largest.size(): largest=component
+	component_cells=largest
+	var retained:=PackedVector2Array()
+	for p: Vector2 in points:
+		var id:=Vector2i(((p-bounds.position)/CELL).round())
+		if largest.has(id): retained.append(p)
+		else: grid.set_point_solid(id,true)
+	points=retained
+
 func contains(p: Vector2) -> bool:
+	if not component_cells.is_empty() and not component_cells.has(Vector2i(((p-bounds.position)/CELL).round())): return false
 	if not bounds.grow(-radius).has_point(p): return false
 	if not allowed.is_empty() and not Geometry2D.is_point_in_polygon(p, allowed): return false
 	for index: int in _obstacle_cells.get(Vector2i(p.floor()), []):
@@ -108,7 +137,7 @@ func path(start: Vector2, end: Vector2) -> PackedVector2Array:
 	return result
 
 func ground_height(p: Vector2) -> float:
-	var cell := Vector2i(((p-bounds.position)/CELL).floor())
+	var cell := Vector2i(((p-floor_origin)/CELL).floor())
 	var height: float=floor_level
 	for face: PackedVector3Array in _floor_faces.get(cell,[]):
 		var a:=Vector2(face[0].x,face[0].z)
@@ -181,3 +210,17 @@ static func cached_footprint(node: Node3D, bottom: float, top: float) -> PackedV
 		cache[band]={"pose":pose,"polygon":footprint(node,bottom,top,false)}
 		node.set_meta("navigation_footprints",cache)
 	return cache[band].polygon
+
+static func capture(source: RefCounted) -> Dictionary:
+	return {"radius":source.radius,"obstacles":source.obstacles.duplicate(),"cells":source._obstacle_cells.duplicate(true),
+		"allowed":source.allowed.duplicate(),"floor":source._floor_faces.duplicate(true),"origin":source.floor_origin,"level":source.floor_level}
+
+static func build_region(area: Array, captured: Dictionary) -> RefCounted:
+	var result:=new()
+	var rect:=Rect2(area[0],area[1],area[2],area[3])
+	result.configure(rect,captured.radius,captured.allowed)
+	result.obstacles.assign(captured.obstacles);result._obstacle_cells=captured.cells
+	result._floor_faces=captured.floor;result.floor_origin=captured.origin;result.floor_level=captured.level
+	result.bake();result.keep_largest_component()
+	for p: Vector2 in [rect.position,rect.end,Vector2(rect.position.x,rect.end.y),Vector2(rect.end.x,rect.position.y)]: result.resting.append(result.nearest(p))
+	return result

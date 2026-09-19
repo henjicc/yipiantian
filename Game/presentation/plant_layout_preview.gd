@@ -67,20 +67,13 @@ func update(plan: RefCounted) -> void:
 			if Plants.position(entry).distance_to(Plants.position(other))<gap-.001:
 				message="这里已有手植植物，请留出一点间距。";return
 	if not message.is_empty(): return
-	var flock: Dictionary=plan.construction.ducks
-	if flock.count==0 or flock.area.is_empty(): return
 	var animals: Node3D=environment.get_node("CourtyardAnimals")
-	var rect:=Rect2(flock.area[0],flock.area[1],flock.area[2],flock.area[3])
-	var added:=IslandSpace.new()
+	var added: Array[PackedVector2Array]=[]
 	for entry: Dictionary in plan.plants:
-		if entry in environment.plan.plants: continue
-		for polygon: PackedVector2Array in Geometry2D.offset_polygon(Plants.footprint(entry),.46): added.add(str(entry.id),polygon)
-	var clear: int=0
-	for y: int in 7:
-		for x: int in 7:
-			var at: Vector2=rect.position+Vector2((x+.5)/7.0,(y+.5)/7.0)*rect.size
-			if animals.water.contains(at) and added.collisions(IslandSpace.rectangle(at-Vector2.ONE*.01,Vector2.ONE*.02)).is_empty(): clear+=1
-	if clear<35: message="请为鸭群保留足够的开阔水面，移开一些植物或先调整活动区域。"
+		if entry not in environment.plan.plants: added.append(Plants.footprint(entry))
+	for kind: String in ["duck","goose"]:
+		message=preload("res://layout/flock_layout.gd").added_obstacle_issue(plan,kind,animals.water,added)
+		if not message.is_empty(): return
 
 func accept(plan: RefCounted) -> void:
 	_accepted=true;environment.remove_child(_original);_original.queue_free()

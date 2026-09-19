@@ -508,7 +508,8 @@ func placement_issue(prop: Node3D, item: String, slot: String) -> String:
 		var a:=Vector2(span.a.x,span.a.z);var b:=Vector2(span.b.x,span.b.z)
 		var offset: Vector2=(b-a).normalized().orthogonal()*.07
 		if IslandSpace.overlaps(polygon,PackedVector2Array([a-offset,a+offset,b+offset,b-offset])): return "这里会碰到围栏"
-	return _animal_issue(polygon)
+	var flock_issue: String=preload("res://layout/flock_layout.gd").added_obstacle_issue(environment.plan,"hen",environment.get_node("CourtyardAnimals").yard,[polygon])
+	return flock_issue if not flock_issue.is_empty() else _animal_issue(polygon)
 
 func _animal_issue(polygon: PackedVector2Array) -> String:
 	var animals: Node=environment.get_node("CourtyardAnimals")
