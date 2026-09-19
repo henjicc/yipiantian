@@ -30,6 +30,12 @@
 | 发布许可 | [Godot MIT 许可及署名要求](https://godotengine.org/license/)；不要求游戏开源，发行时保留所需声明；美术、字体、音乐和插件分别核对许可 |
 | Blender Python 与导出 | [5.2 Python API](https://docs.blender.org/api/5.2/)、[Blender 手册](https://docs.blender.org/manual/en/latest/)、[官方 Lab MCP](https://www.blender.org/lab/mcp-server/)；latest 页面先确认版本 |
 
+## 光照能力核验 · 2026-09-19
+
+本机仍为Godot 4.7.2官方版、Forward+／Vulkan。官方[4.7 beta说明](https://godotengine.org/article/dev-snapshot-godot-4-7-beta-1/)及[已合并PR 99119](https://github.com/godotengine/godot/pull/99119)确认加入RenderingDevice的Vulkan光追管线、加速结构与指令接口；这是底层能力，不代表当前农场已使用实时光追。项目现有实现是实时阴影、SSAO、SSIL与辉光；不能将SSIL或SDFGI命名为硬件光追。官方[全局光照方案比较](https://docs.godotengine.org/en/4.7/tutorials/3d/global_illumination/introduction_to_global_illumination.html)可作后续选型入口，实际新增效果仍需同镜头验证视觉与开销。
+
+当前待改边界：`day_night.gd::_apply_lanterns`保留白天最低亮度，`living_details.gd::set_window_warmth`同时控制房屋材质、门廊灯与灯笼发光，均不满足本轮要求的灯笼白天熄灭。后续路灯应复用昼夜权重，室内暖光与户外灯分开；现有灯笼几何可复用。此处只记录已查明的接线与需求差异，尚未实现高挂路灯或新的画质选项。
+
 ## 当前接入方式
 
 采用 **Godot 原生 CLI + 文本场景 / 资源 + 项目技能**。CLI 已能完成导入、运行和 Windows 导出；不需要让游戏接入大模型 API，也不需要在游戏中放通用远程执行服务器。需要读画面、调试运行时对象或模拟输入时，再按具体任务选择引擎调试接口或经过核验的工具。
