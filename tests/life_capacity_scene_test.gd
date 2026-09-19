@@ -4,12 +4,14 @@ const Plan=preload("res://layout/courtyard_plan.gd")
 const Circulation=preload("res://layout/courtyard_circulation.gd")
 const Farm=preload("res://farm/farm_state.gd")
 const Store=preload("res://farm/farm_store.gd")
+const Plants=preload("res://layout/plantings.gd")
 var scene: Node
 var folder: String
 var failures: int=0
 var measurements: Array[Dictionary]=[]
 var construction_mode: bool=OS.get_cmdline_user_args().has("--construction")
 var construction_completed: bool=false
+var preplanted: bool=OS.get_cmdline_user_args().has("--preplanted")
 var actions: Array[Dictionary]=[]
 var _sample: Dictionary={}
 var _sample_tick: int=0
@@ -52,36 +54,30 @@ func run() -> void:
 	root.remove_child(probe);probe.free()
 	var prototype: Dictionary=Plan.resized_field(plan.fields[0],8,4,Vector2(5,2.05))
 	plan.fields.clear()
-	# Probe candidate footprints against actual model feet, preserving ordinary paths.
-	for row: int in 52:
-		for column: int in 53:
-			if plan.fields.size()==12: break
-			var field: Dictionary=prototype.duplicate(true)
-			var point:=Vector2(-12.8+column*.35,-5.5+row*.35)
-			field.position=Vector3(point.x,plan.ground_height_at(point)+.07,point.y)
-			field.id="field_%02d"%(plan.fields.size()+1);field.seed=91744+plan.fields.size()*7919
-			plan.fields.append(field)
-			if plan.supporting_island(plan.field_polygon(plan.fields.size()-1,.14))<0:
-				plan.fields.pop_back();continue
-			var accepted: bool=Circulation.field_placement_issues(plan,obstacles).is_empty()
-			var polygon: PackedVector2Array=plan.field_polygon(plan.fields.size()-1,.35)
-			for prior: int in plan.fields.size()-1:
-				if not Geometry2D.intersect_polygons(polygon,plan.field_polygon(prior,.35)).is_empty(): accepted=false;break
-			if not accepted: plan.fields.pop_back()
-		if plan.fields.size()==12: break
-	# Use actual added land for the final full-size field, without shrinking crops.
-	if plan.fields.size()<12:
+	# Keep the admitted 12-field fixture fixed for comparable measurements.
+	# Still verify it against actual model feet and complete island support.
+	for point: Vector2 in [Vector2(-8.6,-5.5),Vector2(-10.7,-2.7),Vector2(-11.75,.1),Vector2(-2.3,.1),Vector2(-12.1,2.9),Vector2(-11.75,5.7),Vector2(-5.8,6.4),Vector2(.15,7.8),Vector2(-9.3,9.2),Vector2(-3.35,10.6),Vector2(2.6,10.6),Vector2(18.5,-2.5)]:
 		var field: Dictionary=prototype.duplicate(true)
-		field.position=Vector3(18.5,plan.ground_height_at(Vector2(18.5,-2.5))+.07,-2.5)
+		field.position=Vector3(point.x,plan.ground_height_at(point)+.07,point.y)
 		field.id="field_%02d"%(plan.fields.size()+1);field.seed=91744+plan.fields.size()*7919
 		plan.fields.append(field)
-		check(Circulation.field_placement_issues(plan,obstacles).is_empty(),"East capacity field has full support and respects actual objects")
+		check(plan.supporting_island(plan.field_polygon(plan.fields.size()-1,.14))>=0,"Capacity field has full island support")
+		for prior: int in plan.fields.size()-1:
+			check(Geometry2D.intersect_polygons(plan.field_polygon(plan.fields.size()-1,.35),plan.field_polygon(prior,.35)).is_empty(),"Capacity fields preserve their working clearance")
+	check(Circulation.field_placement_issues(plan,obstacles).is_empty(),"Capacity fields respect actual objects")
 	check(plan.fields.size()==12,"Twelve complete fields fit real island and obstacles")
 	var routes:=Circulation.new();routes.build(plan,obstacles)
 	check(routes.issues.is_empty(),"Capacity layout keeps all entrances and fields connected: "+str(routes.issues))
 	if construction_mode:
 		for kind: String in ["duck","goose","hen"]:
 			plan.construction.flocks[kind].count=preload("res://layout/flock_layout.gd").SPECIES[kind].limit
+	if preplanted:
+		# Animals spawn with these real plant obstacles, so field measurements
+		# do not depend on an animal walking out of an uncommitted plant brush.
+		for i: int in Plants.MAX_CLUMPS:
+			var entry: Dictionary=Plants.make_entry(i+1,"trapa",Vector2(17+(i%16)*.5,7+floori(i/16.0)*.5))
+			check(Plants.habitat_issue(entry,plan,plan.water_banks()).is_empty(),"Established capacity plant has water support")
+			plan.plants.append(entry)
 	write_json("layout",plan.snapshot())
 	if failures>0: print("CAPACITY_LAYOUT failures=",failures," count=",plan.fields.size()," evidence=",folder);quit(1);return
 	var farm:=Farm.new(1000,plan.snapshot());var data: Dictionary=farm.snapshot();var species: Array[String]=Farm.Crops.seeds(false);var index: int=0
@@ -97,7 +93,10 @@ func run() -> void:
 	print("CAPACITY_STATE valid=true ground_crops=",index," trellis_crops=",data.fields[Farm.Trellis.FIELD_ID].cells.size())
 	var store:=Store.new(folder.path_join("farm"));store.load_state();check(store.save(farm.snapshot(),preload("res://farm/decoration_state.gd").new().snapshot()).ok,"Maximum scene persists")
 	scene=load("res://scenes/main.tscn").instantiate();scene.store=store;scene.settings_store=load("res://settings/settings_store.gd").new(folder.path_join("settings"));scene.clock=func() -> float: return 1000
-	root.add_child(scene);await process_frame
+	root.add_child(scene)
+	# Fullscreen/DPI changes queue UI layout after the scene's ready callback.
+	# A real player sees rendered controls before clicking their final positions.
+	for i: int in 8: await RenderingServer.frame_post_draw
 	while not scene.get_node("Environment/CourtyardAnimals").ready_for_motion: await process_frame
 	if not construction_mode: root.mode=Window.MODE_EXCLUSIVE_FULLSCREEN
 	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(),true)
@@ -172,14 +171,11 @@ func settle() -> void:
 		await process_frame
 		if Time.get_ticks_msec()-started>60000: check(false,"Background construction settles within 60 seconds");return
 
-func construction_checks() -> void:
-	const Plants=preload("res://layout/plantings.gd")
-	scene.atmosphere.set_preview_hour(11)
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+func paint_capacity_plants() -> bool:
 	await choose("trapa")
 	var builder: Node=scene.island_builder
 	check(builder.active and builder.tool=="trapa" and builder.draft.has("plants"),"Real UI opens the plant brush")
-	if not builder.active or builder.tool!="trapa" or not builder.draft.has("plants"): await shot("failed-tool-entry");return
+	if not builder.active or builder.tool!="trapa" or not builder.draft.has("plants"): await shot("failed-tool-entry");return false
 	await click(builder._plant_buttons.brush);builder._values.radius.value=3;builder._values.density.value=3
 	begin_sample("dense-plant-brush")
 	for point: Vector2 in [Vector2(17,7),Vector2(21,7),Vector2(24,4),Vector2(-4,18),Vector2(0,18),Vector2(4,17)]:
@@ -206,10 +202,20 @@ func construction_checks() -> void:
 		await create_timer(.25).timeout;builder._refresh()
 	print("CAPACITY_PLANTS ",builder.draft.plants.size()," issue=",builder.issue())
 	check(builder.issue().is_empty(),"Capacity planting can complete after animals clear the live preview: "+builder.issue())
-	if builder.draft.plants.size()!=Plants.MAX_CLUMPS or not builder.issue().is_empty(): await shot("failed-plants");return
+	if builder.draft.plants.size()!=Plants.MAX_CLUMPS or not builder.issue().is_empty(): await shot("failed-plants");return false
 	begin_sample("plant-confirm-and-background")
 	await click(builder._confirm);await settle();end_sample()
 	check(scene.courtyard_plan.plants.size()==160,"Capacity planting commits in the same scene")
+	return scene.courtyard_plan.plants.size()==160
+
+func construction_checks() -> void:
+	scene.atmosphere.set_preview_hour(11)
+	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	check(scene.island_builder.active,"Real UI opens island construction")
+	if not scene.island_builder.active: await shot("failed-construction-entry");return
+	if not preplanted and not await paint_capacity_plants(): return
+	var builder: Node=scene.island_builder
+	check(scene.courtyard_plan.plants.size()==160,"Terrain and field samples include 160 established plants")
 	var saved_fields: Dictionary=scene.farm_state.snapshot().fields
 	var saved_inventory: Dictionary=scene.farm_state.snapshot().inventory
 	var identity: int=scene.get_instance_id()

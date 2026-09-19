@@ -45,6 +45,24 @@ func path_reuse_checks() -> void:
 	expect(path_appearance(original)==before,"Cancelling reused roads leaves original materials and transforms intact")
 	original.free()
 
+func grass_appearance(cover: Node3D) -> Dictionary:
+	var result: Dictionary={}
+	for cell: Vector2i in cover._tiles:
+		var mesh: MeshInstance3D=cover._tiles[cell]
+		var arrays: Array=mesh.mesh.surface_get_arrays(0)
+		result[cell]=[mesh.transform,arrays[Mesh.ARRAY_VERTEX],arrays[Mesh.ARRAY_NORMAL],arrays[Mesh.ARRAY_COLOR]]
+	return result
+
+func grass_reuse_checks() -> void:
+	var preview: Node3D=scene.island_builder.field_preview
+	for expansion: bool in [false,true]:
+		var shown: Node3D=preview.expansion if expansion else preview.core
+		var reference:=preload("res://scenes/environment/ground_cover.gd").new()
+		reference._exclusions=shown._exclusions.duplicate();reference.object_footprints=shown.object_footprints.duplicate()
+		reference.update_tiles(preview.validated,expansion)
+		expect(grass_appearance(shown)==grass_appearance(reference),"Local field/path grass update matches full generated geometry on "+("added land" if expansion else "original land"))
+		reference.free()
+
 func _run() -> void:
 	if OS.get_cmdline_user_args().has("--paths-only"):
 		scene=Node3D.new()
@@ -91,6 +109,7 @@ func _run() -> void:
 	builder._values.columns.value=5
 	if not await ready_draft(): await shot("failure-resize");await finish();return
 	expect(builder.field_preview.farm.fields[6].get_meta("field_size")==builder.candidate.fields[6].size,"Rendered soil matches changed row and column counts")
+	grass_reuse_checks()
 	await shot("01-new-field-preview")
 	var wanted: Dictionary=builder.draft.duplicate(true)
 	var start: int=Time.get_ticks_msec()
@@ -140,6 +159,7 @@ func _run() -> void:
 	await click(builder._field_actions.get_node("RotateField"))
 	if not await ready_draft(): await shot("failure-rotate");await finish();return
 	expect(builder.draft.fields[6].yaw==15,"Rotate button updates the selected field")
+	grass_reuse_checks()
 	await shot("03-moved-rotated")
 	var normal_path: String=scene.store.directory
 	var blocker:=FileAccess.open(folder.path_join("blocker"),FileAccess.WRITE);blocker.store_string("file");blocker.close()

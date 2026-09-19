@@ -26,6 +26,9 @@ var _retiring: bool=false
 var _shown_paths: Array=[]
 var _shown_fences: Array=[]
 var _shown_fence_style: String=""
+var _grass_context: Dictionary={}
+var _grass_fields: Array[PackedVector2Array]=[]
+var _grass_paths: Array[PackedVector3Array]=[]
 
 func configure(scene: Node3D) -> void:
 	main=scene
@@ -43,6 +46,9 @@ func configure(scene: Node3D) -> void:
 	_wanted=validated.snapshot()
 	_shown_paths=validated.paths.duplicate(true)
 	_shown_fences=validated.fences.duplicate(true);_shown_fence_style=validated.fence_style
+	_grass_context=_wanted.duplicate();_grass_context.erase("fields")
+	for i: int in validated.fields.size(): _grass_fields.append(validated.field_polygon(i,.07))
+	_grass_paths=validated.paths.duplicate()
 
 func update(plan: RefCounted) -> void:
 	var snapshot: Dictionary=plan.snapshot()
@@ -53,7 +59,7 @@ func update(plan: RefCounted) -> void:
 	# Soil/crops move immediately; grass uses the latest known routes while a
 	# private navigation build checks the new connections away from the frame.
 	plan.paths=main.courtyard_plan.paths.duplicate()
-	core.update_tiles(plan,false);expansion.update_expansion(plan)
+	_update_grass(plan)
 	var obstacles: Dictionary=main.get_node("Environment").layout_obstacles.duplicate(true)
 	obstacles.merge(main.decoration_layout.ground_footprints())
 	message=""
@@ -79,7 +85,30 @@ func show_ground(plan: RefCounted) -> void:
 			if node is Node3D and node.has_meta("fence_spans") and node.visible: _hidden.append(node);node.hide()
 		fence=Fence.build(plan.fences,plan.fence_style);add_child(fence)
 		_shown_fences=plan.fences.duplicate(true);_shown_fence_style=plan.fence_style
-	core.update_tiles(plan,false);expansion.update_expansion(plan)
+	_update_grass(plan)
+
+func _update_grass(plan: RefCounted) -> void:
+	var context: Dictionary=plan.snapshot();context.erase("fields")
+	var fields: Array[PackedVector2Array]=[]
+	for i: int in plan.fields.size(): fields.append(plan.field_polygon(i,.07))
+	var changes: Array[PackedVector2Array]=[]
+	for polygon: PackedVector2Array in _grass_fields+fields:
+		if polygon not in _grass_fields or polygon not in fields: changes.append(polygon)
+	for route: PackedVector3Array in _grass_paths+plan.paths:
+		if route in _grass_paths and route in plan.paths: continue
+		for i: int in range(1,route.size()):
+			var a:=Vector2(route[i-1].x,route[i-1].z);var b:=Vector2(route[i].x,route[i].z)
+			# GroundCover clears .23m around path centres, including endpoints.
+			var bounds:=Rect2(a,Vector2.ZERO).expand(b).grow(.24)
+			changes.append(Cover.IslandSpace.rectangle(bounds.position,bounds.size))
+	var full: bool=context!=_grass_context
+	_grass_context=context;_grass_fields=fields;_grass_paths=plan.paths.duplicate()
+	if not full and changes.is_empty(): return
+	# Other layout changes still use the complete ground pass. During normal
+	# field editing only old/new soil feet and changed path segments need it.
+	var cells: Dictionary={} if full else Cover.grass_cells(changes)
+	if not full and cells.is_empty(): return
+	core.update_tiles(plan,false,cells);expansion.update_tiles(plan,true,cells)
 
 static func _build(snapshot: Dictionary, obstacles: Dictionary) -> Dictionary:
 	var plan: RefCounted=Plan.from_snapshot(snapshot)
