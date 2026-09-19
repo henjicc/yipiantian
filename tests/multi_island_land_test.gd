@@ -55,6 +55,16 @@ func shore_grass_checks(preview: bool=true) -> void:
 		reference._exclusions=shown._exclusions.duplicate();reference.object_footprints=shown.object_footprints.duplicate()
 		reference.update_tiles(plan,expansion)
 		expect(grass_appearance(shown)==grass_appearance(reference),"Local shore grass matches fresh full geometry on "+("added land" if expansion else "original land"))
+		var visible: Array[Node]=[]
+		var source: Node3D=environment.get_node("ExpansionGrass" if expansion else "GroundCover/CoreGrass")
+		for tile: Node3D in source.get_children():
+			if tile.is_visible_in_tree(): visible.append(tile)
+		if preview:
+			for tile: Node3D in shown.get_children():
+				if tile.is_visible_in_tree(): visible.append(tile)
+		var complete: bool=visible.size()==shown._tiles.size()
+		for tile: Node3D in shown._tiles.values(): complete=complete and tile in visible
+		expect(complete,"Every final grass tile is visible exactly once with no stale source tiles")
 		reference.free()
 
 func east_view() -> void:
@@ -87,6 +97,8 @@ func _run() -> void:
 	var brush: Node=scene.island_builder
 	var original: Dictionary=scene.farm_state.snapshot()
 	var original_rocks: Dictionary=shore_rocks()
+	var original_core: Node3D=scene.get_node("Environment/GroundCover/CoreGrass")
+	var core_tiles: Dictionary=original_core._tiles.duplicate()
 	var original_mesh: Mesh=scene.get_node("Environment/MainBank").get_child(0).mesh
 	var main_rock: Node3D
 	for child: Node in scene.get_node("Environment").get_children():
@@ -106,28 +118,33 @@ func _run() -> void:
 	await shot("01-held-east-growing")
 	brush._focus_lost();await frames()
 	expect(brush.draft==original.layout and scene.get_node("Environment/EastBank").visible,"Focus loss restores both islands")
+	expect(original_core._tiles==core_tiles,"Cancelling a shore gesture preserves original grass instances")
+	shore_grass_checks(false)
 	shore_rock_checks(original_rocks,false)
 	await mouse(motion.position,false)
 	await grow()
 	shore_grass_checks()
+	expect(brush._shore._core._tiles==core_tiles,"East-only painting reuses every untouched main-island grass tile")
 	shore_rock_checks(original_rocks)
 	expect(is_instance_valid(original_fence) and original_fence.visible and original_fence.get_instance_id()==fence_id,"Unchanged garden fence stays visible during east shore editing")
 	expect(brush.issue().is_empty(),"East extension respects existing support and bridge water passage: "+brush.issue())
 	if not brush.issue().is_empty(): await shot("failed-extension");await finish();return
 	expect(brush._shore._grass.get_child_count()>0,"Grass exists on the added east land before save")
 	var expanded: Dictionary=brush.candidate.snapshot()
-	var grass_id: int=brush._shore._grass.get_instance_id()
+	var grass_tiles: Dictionary=brush._shore._grass._tiles.duplicate()
 	var scene_id: int=scene.get_instance_id()
 	var save_path: String=scene.store.directory
 	var blocker:=FileAccess.open(folder.path_join("blocked"),FileAccess.WRITE);blocker.store_string("file");blocker.close()
 	scene.store.directory=folder.path_join("blocked/child")
 	await click(brush._panel.find_child("Finish",true,false))
 	expect(brush.active and not brush.busy and brush._status.text.contains("未能保存") and scene.farm_state.snapshot()==original,"Actual failed save keeps original islands and a retryable preview")
+	shore_grass_checks()
 	shore_rock_checks(original_rocks)
 	scene.store.directory=save_path
 	await click(brush._panel.find_child("Finish",true,false))
 	expect(not brush.active and scene.get_instance_id()==scene_id and scene.courtyard_plan.snapshot()==expanded,"Retry completes in the current scene")
-	expect(scene.get_node("Environment/ExpansionGrass").get_instance_id()==grass_id,"Completion adopts the visible grass")
+	expect(scene.get_node("Environment/ExpansionGrass")._tiles==grass_tiles and original_core._tiles==core_tiles,"Completion adopts visible grass tiles and retains untouched main grass instances")
+	shore_grass_checks(false)
 	expect(is_instance_valid(original_fence) and original_fence.visible and original_fence.get_instance_id()==fence_id and scene.get_node("Environment")._contact_sources.has(original_fence),"Saving east terrain retains unchanged fence geometry and contacts")
 	expect(scene.get_node("Environment/MainBank").get_child(0).mesh==original_mesh and is_instance_valid(main_rock) and main_rock.get_instance_id()==main_rock_id,"Editing east leaves main bank mesh and rocks untouched")
 	shore_rock_checks(original_rocks,false)

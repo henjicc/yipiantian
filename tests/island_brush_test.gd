@@ -57,14 +57,14 @@ func _run() -> void:
 	var house_id: int=scene.get_node("Environment/MainHouse").get_instance_id()
 	var grass: Node3D=brush._shore._grass
 	expect(grass.get_child_count()>0,"Grass is visible before saving")
-	var grass_id: int=grass.get_instance_id()
+	var grass_tiles: Dictionary=grass._tiles.duplicate()
 	start=Time.get_ticks_msec()
 	await click(brush._panel.find_child("Finish",true,false))
 	var elapsed: int=Time.get_ticks_msec()-start
 	print("FINISH_INPUT_MS ",elapsed)
 	expect(elapsed<700 and not brush.active,"Finish saves and closes without a scene reload")
 	expect(scene.get_node("Environment/MainHouse").get_instance_id()==house_id,"Existing scene objects are retained")
-	expect(scene.get_node("Environment/ExpansionGrass").get_instance_id()==grass_id,"Preview grass becomes final grass without regeneration")
+	expect(scene.get_node("Environment/ExpansionGrass")._tiles==grass_tiles,"Visible preview grass tiles become final grass without regeneration")
 	expect(scene.courtyard_plan.snapshot()==persisted,"Finish persists the painted shape")
 	expect(scene.courtyard_plan.lily_coves==planned_plants,"Confirmed plants match the live candidate")
 	expect(scene.farm_state.snapshot().fields==original.fields,"Painting retains every crop")

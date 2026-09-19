@@ -84,6 +84,41 @@ func build(courtyard: Node3D) -> void:
 
 var _tiles: Dictionary={}
 var _tile_shapes: Dictionary={}
+var _tile_source: Node3D
+var _source_visibility: Dictionary={}
+
+func preview_tiles(source: Node3D) -> void:
+	# Shore previews borrow unchanged grass. Only replaced source tiles are
+	# hidden; cancellation can restore the original field without recreating it.
+	_tile_source=source
+	_tiles=source._tiles.duplicate()
+	# Signatures are immutable: update_tiles replaces whole entries.
+	_tile_shapes=source._tile_shapes.duplicate()
+	_exclusions=source._exclusions.duplicate()
+	object_footprints=source.object_footprints.duplicate()
+	for tile: Node3D in _tiles.values(): _source_visibility[tile]=tile.visible
+
+func accept_tiles() -> void:
+	var retained: Dictionary={}
+	for tile: Node3D in _tiles.values():
+		retained[tile]=true
+		if tile.get_parent()!=_tile_source: tile.reparent(_tile_source)
+	for tile: Node3D in _source_visibility:
+		if not retained.has(tile): tile.free()
+	_tile_source._tiles=_tiles.duplicate()
+	_tile_source._tile_shapes=_tile_shapes.duplicate()
+	_source_visibility.clear();_tile_source=null
+
+func restore_tiles() -> void:
+	for tile: Node3D in _source_visibility: tile.visible=_source_visibility[tile]
+	_source_visibility.clear();_tile_source=null
+
+func _remove_tile(cell: Vector2i) -> void:
+	if not _tiles.has(cell): return
+	var tile: Node3D=_tiles[cell]
+	if _source_visibility.has(tile): tile.hide()
+	else: tile.free()
+	_tiles.erase(cell)
 
 func copy_tiles(source: Node3D) -> void:
 	_tile_shapes=source._tile_shapes.duplicate(true)
@@ -116,7 +151,7 @@ static func grass_cells(polygons: Array) -> Dictionary:
 
 func update_tiles(plan: RefCounted, expansion_only: bool, changed: Dictionary={}) -> void:
 	if expansion_only and plan.construction.land.is_empty() and plan.construction.east_land.is_empty():
-		for tile: Node3D in _tiles.values(): tile.free()
+		for cell: Vector2i in _tiles.keys(): _remove_tile(cell)
 		_tiles.clear();_tile_shapes.clear();return
 	var original: RefCounted=plan.unpainted()
 	var bases: Array[PackedVector2Array]=[original.plateau(),original.plateau(1)]
@@ -155,7 +190,7 @@ func update_tiles(plan: RefCounted, expansion_only: bool, changed: Dictionary={}
 			var signature: Array=[shape,blocked,routes,plan.ground_height]
 			wanted[cell]=true
 			if _tile_shapes.get(cell)==signature: continue
-			if _tiles.has(cell): _tiles[cell].free();_tiles.erase(cell)
+			_remove_tile(cell)
 			_tile_shapes[cell]=signature
 			var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 			var count: int=0
@@ -179,7 +214,7 @@ func update_tiles(plan: RefCounted, expansion_only: bool, changed: Dictionary={}
 	for cell: Vector2i in _tile_shapes.keys():
 		if not changed.is_empty() and not changed.has(cell): continue
 		if not wanted.has(cell):
-			if _tiles.has(cell): _tiles[cell].free();_tiles.erase(cell)
+			_remove_tile(cell)
 			_tile_shapes.erase(cell)
 
 static func _clear_planting(point: Vector2, fields: Array[PackedVector2Array], routes: Array[PackedVector2Array]) -> bool:

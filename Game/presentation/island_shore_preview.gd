@@ -25,15 +25,13 @@ func configure(courtyard: Node3D) -> void:
 		_plateaus.append(environment.plan.plateau(island).duplicate())
 	_shown_fences=environment.plan.fences.duplicate(true)
 	for child: Node in environment.get_children():
-		if child is Node3D and child.name in ["NewShorePlants","ExpansionGrass"]:
+		if child is Node3D and child.name=="NewShorePlants":
 			_originals.append(child)
 			if child.visible: _hidden.append(child);child.hide()
 	_grass=preload("res://scenes/environment/ground_cover.gd").new();_grass.name="ExpansionGrass";add_child(_grass)
-	_grass.copy_tiles(environment.get_node("ExpansionGrass"))
+	_grass.preview_tiles(environment.get_node("ExpansionGrass"))
 	_core=preload("res://scenes/environment/ground_cover.gd").new();add_child(_core)
-	_core.copy_tiles(environment.get_node("GroundCover/CoreGrass"))
-	var original_core: Node3D=environment.get_node("GroundCover/CoreGrass")
-	if original_core.visible: _hidden.append(original_core);original_core.hide()
+	_core.preview_tiles(environment.get_node("GroundCover/CoreGrass"))
 
 func update(plan: RefCounted) -> void:
 	for stamp: Array in plan.construction.land+plan.construction.east_land:
@@ -139,9 +137,8 @@ func accept(plan: RefCounted) -> void:
 		if rock.get_parent()!=environment: rock.reparent(environment)
 		if rock.visible and rock not in environment._shore_sources: environment._shore_sources.append(rock)
 	_rocks.clear()
-	_plants.reparent(environment);_grass.reparent(environment)
-	environment.get_node("GroundCover/CoreGrass").free()
-	_core.reparent(environment.get_node("GroundCover"));_core.name="CoreGrass"
+	_plants.reparent(environment)
+	_grass.accept_tiles();_core.accept_tiles()
 	if is_instance_valid(_fence):
 		_fence.reparent(environment)
 		environment._contact_sources.append(_fence)
@@ -153,6 +150,7 @@ func accept(plan: RefCounted) -> void:
 	environment.refresh_terrain.call_deferred()
 
 func restore() -> void:
+	_grass.restore_tiles();_core.restore_tiles()
 	if _held_hens and is_instance_valid(environment): environment.get_node("CourtyardAnimals").preview_kind="";_held_hens=false
 	for node: Node3D in _hidden:
 		if is_instance_valid(node): node.show()

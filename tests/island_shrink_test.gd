@@ -52,7 +52,7 @@ func _run() -> void:
 	var trimmed: Dictionary=brush.candidate.snapshot()
 	expect(brush.issue().is_empty(),"Safe trimmed shore can be confirmed")
 	var house_id: int=scene.get_node("Environment/MainHouse").get_instance_id()
-	var core_id: int=brush._shore._core.get_instance_id()
+	var core_tiles: Dictionary=brush._shore._core._tiles.duplicate()
 	var normal_path: String=scene.store.directory
 	var blocker:=FileAccess.open(folder.path_join("blocked"),FileAccess.WRITE);blocker.store_string("file");blocker.close()
 	scene.store.directory=folder.path_join("blocked/child")
@@ -64,7 +64,7 @@ func _run() -> void:
 	await click(brush._panel.find_child("Finish",true,false))
 	print("SHRINK_FINISH_INPUT_MS ",Time.get_ticks_msec()-started)
 	expect(not brush.active and scene.farm_state.snapshot().layout==trimmed,"Finish saves trimmed island without a reload")
-	expect(scene.get_node("Environment/MainHouse").get_instance_id()==house_id and scene.get_node("Environment/GroundCover/CoreGrass").get_instance_id()==core_id,"Actual core grass preview is adopted in place")
+	expect(scene.get_node("Environment/MainHouse").get_instance_id()==house_id and scene.get_node("Environment/GroundCover/CoreGrass")._tiles==core_tiles,"Actual core grass preview tiles are adopted in place")
 	await create_timer(1).timeout
 	await close_shore("03-saved-shore")
 	# A real state action after construction; undo must not restore its old stock.

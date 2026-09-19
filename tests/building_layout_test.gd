@@ -28,7 +28,9 @@ func draft_at(id: String, at: Vector3, yaw: float=0) -> void:
 
 func grass_inside(nodes: Array, polygon: PackedVector2Array) -> bool:
 	for node: Node in nodes:
-		for mesh: MeshInstance3D in node.find_children("*","MeshInstance3D",true,false):
+		var meshes: Array[Node]=node.find_children("*","MeshInstance3D",true,false)
+		if node is MeshInstance3D: meshes.push_front(node)
+		for mesh: MeshInstance3D in meshes:
 			for surface: int in mesh.mesh.get_surface_count():
 				for vertex: Vector3 in mesh.mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]:
 					var world: Vector3=mesh.global_transform*vertex
@@ -223,7 +225,7 @@ func edge_checks(builder: Node, original_house: Transform3D) -> void:
 	await choose_tool("land")
 	await drag(Vector3(-8,.13,11),Vector3(-8,.13,13))
 	expect(builder.draft.construction.land.size()>scene.farm_state.snapshot().layout.construction.land.size(),"Real brush adds land after moving a house")
-	expect(not grass_inside([builder._shore._grass],clear_ground),"Later land preview keeps grass outside moved house")
+	expect(not grass_inside(builder._shore._grass._tiles.values(),clear_ground),"Later land preview keeps grass outside moved house")
 	if not await apply(): return
 	expect(not grass_inside([env.get_node("ExpansionGrass")],clear_ground),"Later land save preserves building grass exclusion")
 	var decorations: Dictionary=scene.decoration_state.snapshot();decorations.bench.unlocked=true
