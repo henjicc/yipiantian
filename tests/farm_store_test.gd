@@ -7,6 +7,18 @@ var checks: int = 0
 var failures: Array[String] = []
 var test_root: String
 
+class AlteredReadback:
+	extends "res://farm/farm_store.gd"
+	var change_file: String=""
+	var replacement: String=""
+	func _read_text(filename: String) -> Dictionary:
+		# Change a real newly written file just before verification. The preflight
+		# sees a missing stage, so this exercises write verification, not admission.
+		if filename==change_file and FileAccess.file_exists(_path(filename)):
+			var file:=FileAccess.open(_path(filename),FileAccess.WRITE)
+			assert(file!=null);file.store_string(replacement);file.close();change_file=""
+		return super._read_text(filename)
+
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -129,10 +141,48 @@ func _run() -> void:
 	_expect(not first_store.save(candidate.snapshot(), Decorations.new().snapshot()).ok, "Future backup is not overwritten by older software")
 	_expect(FileAccess.get_file_as_string(first_dir.path_join(Store.BACKUP)) == future and FileAccess.get_file_as_string(first_dir.path_join(Store.MAIN)) == before_future_backup, "Rejecting future backup preserves both files")
 	_test_current_boundaries()
+	_test_readback_integrity()
+	_test_admitted_main_changes()
 	for failure: String in failures:
 		push_error(failure)
 	print("FARM_STORE_TEST checks=%d failures=%d root=%s" % [checks, failures.size(), test_root])
 	quit(0 if failures.is_empty() else 1)
+
+func _test_readback_integrity() -> void:
+	var decorations: Dictionary=Decorations.new().snapshot()
+	for stage: String in [Store.PENDING,Store.BACKUP_PENDING]:
+		for corruption: String in ["truncated","different_valid"]:
+			var folder: String=test_root.path_join(stage+"-"+corruption)
+			var store:=AlteredReadback.new();store.directory=folder
+			var farm:=Farm.new(20000)
+			_expect(store.load_state().kind=="missing" and store.save(farm.snapshot(),decorations).ok,"Readback fixture has a valid first main")
+			farm.sow("field_01","cell_01","greens",20000)
+			_expect(store.save(farm.snapshot(),decorations).ok,"Readback fixture has a committed backup")
+			var main_text: String=FileAccess.get_file_as_string(folder.path_join(Store.MAIN))
+			var backup_text: String=FileAccess.get_file_as_string(folder.path_join(Store.BACKUP))
+			farm.water("field_01","cell_01",20001)
+			store.change_file=stage
+			store.replacement="{truncated" if corruption=="truncated" else JSON.stringify({"version":Store.VERSION,"farm":Farm.new(90000).snapshot(),"decorations":decorations})
+			var result: Dictionary=store.save(farm.snapshot(),decorations)
+			_expect(not result.ok and result.kind=="verify_"+stage,"Readback rejects "+corruption+" content in "+stage)
+			_expect(FileAccess.get_file_as_string(folder.path_join(Store.MAIN))==main_text and FileAccess.get_file_as_string(folder.path_join(Store.BACKUP))==backup_text,"Readback failure preserves committed main and backup")
+			_expect(store.save(farm.snapshot(),decorations).ok and Store.new(folder).load_state().farm==farm.snapshot(),"Readback failure can retry the exact current state")
+
+func _test_admitted_main_changes() -> void:
+	var folder: String=test_root.path_join("admitted-changes")
+	var store:=Store.new(folder);store.load_state()
+	var farm:=Farm.new(20000);var decorations: Dictionary=Decorations.new().snapshot()
+	_expect(store.save(farm.snapshot(),decorations).ok,"Admission fixture is committed")
+	var original: String=FileAccess.get_file_as_string(folder.path_join(Store.MAIN))
+	for changed: String in ["{truncated",original+" "]:
+		_write(folder.path_join(Store.MAIN),changed)
+		var result: Dictionary=store.save(farm.snapshot(),decorations)
+		_expect(not result.ok and result.kind=="changed_on_disk" and FileAccess.get_file_as_string(folder.path_join(Store.MAIN))==changed,"Even invalid or equivalent JSON changes invalidate the admitted main")
+	_write(folder.path_join(Store.MAIN),original)
+	var invalid: Dictionary=farm.snapshot();invalid.fields.field_01.cells.cell_01.growth_seconds=-1
+	var result: Dictionary=store.save(invalid,decorations)
+	_expect(not result.ok and result.kind=="invalid_state" and FileAccess.get_file_as_string(folder.path_join(Store.MAIN))==original,"New candidates still receive full validation before any write")
+	_expect(store.save(farm.snapshot(),decorations).ok,"Restoring the exact admitted main permits retry")
 
 
 func _test_current_boundaries() -> void:

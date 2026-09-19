@@ -67,7 +67,9 @@ func save(farm: Dictionary, decorations: Dictionary) -> Dictionary:
 	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(directory)
 	if mkdir_error != OK:
 		return _failure("create_directory", mkdir_error)
-	var current: Dictionary = _read(MAIN)
+	# The admitted main was fully validated on load or our previous save. Read
+	# it again and require identical text; changed files must never use that trust.
+	var current: Dictionary = _read_text(MAIN)
 	if not _matches_expected(current):
 		return _failure("changed_on_disk")
 	for filename: String in [BACKUP, BACKUP_PENDING, PENDING]:
@@ -77,7 +79,7 @@ func save(farm: Dictionary, decorations: Dictionary) -> Dictionary:
 	var result: Dictionary = _write_verified(PENDING, text)
 	if not result.ok:
 		return result
-	if current.kind == "valid":
+	if current.kind == "read":
 		result = _write_verified(BACKUP_PENDING, current.text)
 		if not result.ok:
 			return result
@@ -121,7 +123,7 @@ func recover() -> Dictionary:
 	return {"ok": true, "kind": "recovered", "farm": source.farm, "decorations": source.decorations, "migrated": source.version < VERSION}
 
 
-func _read(filename: String) -> Dictionary:
+func _read_text(filename: String) -> Dictionary:
 	var path: String = _path(filename)
 	if DirAccess.dir_exists_absolute(path):
 		return {"kind": "io"}
@@ -137,6 +139,13 @@ func _read(filename: String) -> Dictionary:
 	file.close()
 	if read_error != OK and read_error != ERR_FILE_EOF:
 		return {"kind": "io"}
+	return {"kind": "read", "text": text}
+
+
+func _read(filename: String) -> Dictionary:
+	var content: Dictionary = _read_text(filename)
+	if content.kind != "read": return content
+	var text: String = content.text
 	var json := JSON.new()
 	if json.parse(text) != OK or not json.data is Dictionary:
 		return {"kind": "corrupt"}
@@ -160,6 +169,8 @@ func _read(filename: String) -> Dictionary:
 
 
 func _write_verified(filename: String, text: String) -> Dictionary:
+	# All callers supply already validated content (new candidate or admitted
+	# recovery/main text). Verify the actual write, without rebuilding its farm.
 	var file := FileAccess.open(_path(filename), FileAccess.WRITE)
 	if file == null:
 		return _failure("write_" + filename, FileAccess.get_open_error())
@@ -169,8 +180,8 @@ func _write_verified(filename: String, text: String) -> Dictionary:
 	file.close()
 	if write_error != OK:
 		return _failure("flush_" + filename, write_error)
-	var verified: Dictionary = _read(filename)
-	if verified.kind != "valid" or verified.text != text:
+	var verified: Dictionary = _read_text(filename)
+	if verified.kind != "read" or verified.text != text:
 		return _failure("verify_" + filename)
 	return {"ok": true}
 
@@ -178,7 +189,7 @@ func _write_verified(filename: String, text: String) -> Dictionary:
 func _matches_expected(current: Dictionary) -> bool:
 	if _expected_missing:
 		return current.kind == "missing"
-	return current.kind == "valid" and current.text == _expected_main
+	return current.kind == "read" and current.text == _expected_main
 
 
 func _admit(text: String, missing: bool) -> void:
