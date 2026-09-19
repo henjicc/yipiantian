@@ -1,0 +1,60 @@
+{
+  "species": "Allium fistulosum, small Chinese scallion before flowering",
+  "stages": {
+    "sprout": {
+      "task_id": "cc8cc144-226e-46da-9754-c0968a53728e",
+      "height": 0.075,
+      "max_width": 0.08,
+      "face_request": 1500,
+      "seed": 2026091933,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    },
+    "young": {
+      "task_id": "1ae7afe6-dbab-4d88-9972-cbfec0f06e7b",
+      "height": 0.18,
+      "max_width": 0.16,
+      "face_request": 3000,
+      "seed": 2026091934,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    },
+    "mature": {
+      "task_id": "61b6f359-77d5-4cbf-a2cc-837724230654",
+      "height": 0.36,
+      "max_width": 0.28,
+      "face_request": 5500,
+      "seed": 2026091935,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    }
+  },
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "quad": true,
+  "delight": false,
+  "pbr": false,
+  "texture_alignment": "original_image",
+  "enable_image_autofix": false,
+  "adoption": "Adopted in development: three independently generated stages; roundtrip, 93 asset checks, four views, farm day/night and wind toggle passed; user visual feedback pending.",
+  "not_used": [
+    "semantic segmentation",
+    "rigging",
+    "paid retopology",
+    "paid retexturing",
+    "decimation"
+  ]
+}

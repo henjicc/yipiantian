@@ -1,0 +1,89 @@
+{
+  "crop": "scallion",
+  "stage": "sprout",
+  "task": "cc8cc144-226e-46da-9754-c0968a53728e",
+  "blender": "5.2.2 LTS",
+  "source_format": "fbx",
+  "source": [
+    {
+      "vertices": 1535,
+      "polygons": 1655,
+      "quads": 1400,
+      "triangles": 3055,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 17,
+      "non_manifold_edges": 19,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "min_godot": [
+    -0.008610161021351814,
+    0.0,
+    -0.01914386823773384
+  ],
+  "max_godot": [
+    0.007620908319950104,
+    0.07499999552965164,
+    0.007492672186344862
+  ],
+  "root_transform": [
+    [
+      0.07503663748502731,
+      0.0,
+      0.0,
+      -0.0004946262924931943
+    ],
+    [
+      0.0,
+      0.07503663748502731,
+      0.0,
+      0.005825598258525133
+    ],
+    [
+      0.0,
+      0.0,
+      0.07503663748502731,
+      0.03749999776482582
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 1535,
+      "polygons": 1655,
+      "quads": 1400,
+      "triangles": 3055,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 17,
+      "non_manifold_edges": 19,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.009,
+    0.009
+  ],
+  "triangles": 3055,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/scallion/scallion_sprout.glb"
+}

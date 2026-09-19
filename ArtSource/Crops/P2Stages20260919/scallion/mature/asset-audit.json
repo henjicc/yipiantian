@@ -1,0 +1,89 @@
+{
+  "crop": "scallion",
+  "stage": "mature",
+  "task": "61b6f359-77d5-4cbf-a2cc-837724230654",
+  "blender": "5.2.2 LTS",
+  "source_format": "fbx",
+  "source": [
+    {
+      "vertices": 5337,
+      "polygons": 5401,
+      "quads": 5194,
+      "triangles": 10595,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 84,
+      "non_manifold_edges": 95,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "min_godot": [
+    -0.047119468450546265,
+    0.0,
+    -0.13091570138931274
+  ],
+  "max_godot": [
+    0.10892662405967712,
+    0.34758034348487854,
+    0.14908429980278015
+  ],
+  "root_transform": [
+    [
+      0.34775015711784363,
+      0.0,
+      0.0,
+      0.03090357780456543
+    ],
+    [
+      0.0,
+      0.34775015711784363,
+      0.0,
+      -0.009084293618798256
+    ],
+    [
+      0.0,
+      0.0,
+      0.34775015711784363,
+      0.17379017174243927
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 5337,
+      "polygons": 5401,
+      "quads": 5194,
+      "triangles": 10595,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 84,
+      "non_manifold_edges": 95,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.01927228644490242,
+    0.018338387832045555
+  ],
+  "triangles": 10595,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/scallion/scallion_mature.glb"
+}

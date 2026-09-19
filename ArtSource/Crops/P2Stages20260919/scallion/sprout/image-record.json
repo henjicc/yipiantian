@@ -1,0 +1,14 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "research": "../../README.md#小葱-allium-fistulosum",
+  "inputs": [
+    "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png",
+    "<REPO_ROOT>/.local/crop-research-20260919/scallion-seedling.jpg"
+  ],
+  "prompt": "Use case: stylized-concept. Create exactly one complete isolated Allium fistulosum small Chinese scallion plant for a 3D Jiangnan miniature farm game. Input 1 is ONLY the approved gongbi pale-colour surface style, not cabbage anatomy. Input 2 is ONLY the approved world style, not its composition. Input 3 is a real photograph for botanical structure only; do not reproduce the photo or its background. Clear selective fine moss-green and tea-brown brush contours, fine lengthwise structure strokes, layered restrained sage/jade pigment washes, subtly mottled matte volume; organized linework must survive texture transfer. Rounded cylindrical leaf volume, not flat blades. No glossy plastic, photographic noise, yellow aged paper filter, thick black outlines. Isolated coherent 3D form with near/far leaf overlap, gentle three-quarter view 20 degrees above horizontal, all tips visible, 15% margins, flat pale neutral gray background. NO soil, pot, scene, hands, tie, text, collage, flowers, flower stalk, seed head, roots or enlarged onion bulb. Show only above-ground plant ending at a short clean basal cut. STAGE: a very young seed-grown seedling, a SINGLE very slender light-green base with ONE threadlike cylindrical cotyledon forming a natural upright arch/crook near its tip, and ONE shorter straight tapered first true tubular leaf emerging beside it. Two narrow green needle-like shoots from the same tiny white-green base; no paired oval cotyledons. A delicate 6-8 cm plant, not a bunch of mature onions. Make the long curved shoot visibly three-dimensional and naturally tapering, avoid an exaggerated closed loop.",
+  "selected_output": "exec-cc453500-bebf-4759-8e5e-364cd074e20e.png",
+  "model_seed_cost": "not returned",
+  "review": "Hooked cylindrical cotyledon and shorter true leaf; no broad paired cotyledons."
+}

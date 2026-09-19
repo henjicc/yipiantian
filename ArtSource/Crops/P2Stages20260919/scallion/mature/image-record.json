@@ -1,0 +1,19 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "research": "../../README.md#小葱-allium-fistulosum",
+  "inputs": [
+    "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png",
+    "<REPO_ROOT>/.local/crop-research-20260919/scallion-harvest.jpg",
+    "<REPO_ROOT>/.local/crop-research-20260919/scallion-crop.jpg"
+  ],
+  "prompt": "Use case: stylized-concept. Create exactly one complete isolated Allium fistulosum small Chinese scallion plant for a 3D Jiangnan miniature farm game. Input 1 is ONLY the approved gongbi pale-colour surface style, not cabbage anatomy. Input 2 is ONLY the approved world style, not its composition. Input 3 is a real photograph for botanical structure only; do not reproduce the photo or its background. Clear selective fine moss-green and tea-brown brush contours, fine lengthwise structure strokes, layered restrained sage/jade pigment washes, subtly mottled matte volume; organized linework must survive texture transfer. Rounded cylindrical leaf volume, not flat blades. No glossy plastic, photographic noise, yellow aged paper filter, thick black outlines. Isolated coherent 3D form with near/far leaf overlap, gentle three-quarter view 20 degrees above horizontal, all tips visible, 15% margins, flat pale neutral gray background. NO soil, pot, scene, hands, tie, text, collage, flowers, flower stalk, seed head, roots or enlarged onion bulb. Show only above-ground plant ending at a short clean basal cut. STAGE: one harvest-ready small clump of Chinese scallions before flowering, TWO closely joined basal shoots with SEVEN complete slim tubular tapering leaves in total, overlapping naturally in depth. Ivory-white short pseudostems merging into muted jade green leaves, delicate lengthwise gongbi brushwork, leaves mostly upright with gently arcing outer tips. Compact 36 cm tall clump, width about 20 cm. Clearly round tube leaves, not flat leek blades, not wide garlic leaves, not large spring-onion bulb. All basal ends on the same planting plane. Input 4 is the real standing crop photograph, for upright growth habit only. Input 3 is harvested plants; ignore cart, loose cut leaves, roots and dead leaves. Keep seven round tubular leaves clearly staggered front/back, not flattened into one fan.",
+  "selected_output": "exec-7e6bc08d-95b0-4f12-ac47-fc8438833202.png",
+  "model_seed_cost": "not returned",
+  "review": "Two basal shoots, seven tapered tubular leaves; first output had cut-open tips, corrected before P2.",
+  "revision": {
+    "input": "exec-f9e225db-6ab0-4fd1-afd8-6ebf9aa1189f.png",
+    "prompt": "Edit this scallion reference only. Preserve its Chinese gongbi brushwork, pale jade pigment, ivory bases and seven tubular green leaves. Fix botanical anatomy: all seven leaf tips are naturally tapering, pointed and CLOSED, never cut-off open drinking straws. Fix the flat fan composition: show the same small two-shoot clump from a 35-degree-above three-quarter view, with several tubular leaves projecting toward the viewer and two receding away, so they overlap at varied depths around the stems. Three-dimensional radial distribution rather than a fan in one vertical plane. Keep two basal shoots aligned on one soil plane, no roots or soil. All leaf tips visible with comfortable margin. No text, pot, scene or flowers. Isolate on a pale neutral-gray background."
+  }
+}

@@ -13,6 +13,13 @@
 
 ## 形态研究
 
+### 小葱 Allium fistulosum
+
+- 查询：`Allium fistulosum seedling young harvested plant`、`scallion seedlings tubular leaves`。以 [UMN Extension 小葱资料](https://extension.umn.edu/garden-and-home/yard-and-garden/gardening-in-minnesota/growing-scallions-in-home-gardens)（Marissa Schuh／Jill MacKenzie，2024复核）确认葱白与绿色叶，不形成洋葱式膨大球茎；不混用同页另述的楼葱，也不将明尼苏达播期套用江南。
+- 已查看 Salicyna 的[细苗实拍，2020-09-22](https://commons.wikimedia.org/wiki/File:Allium_fistulosum_2020-09-22_2857.jpg)和[生长株，2021-05-30](https://commons.wikimedia.org/wiki/File:Allium_fistulosum_2021-05-30_6548.jpg)（CC BY-SA 4.0）；苗为细长弯钩形子叶与初生管状真叶，照片中的阔叶杂草不是小葱子叶。中期采用少量上举管状叶和细短假茎。
+- 成熟株参考 Forest and Kim Starr 的[田间种植实拍，Kula Maui，2009-05-19](https://commons.wikimedia.org/wiki/File:Starr-090519-8038-Allium_fistulosum-crop-Kula-Maui_(24328807153).jpg)与[收获实拍，Midway Atoll，2017-06-27](https://commons.wikimedia.org/wiki/File:Starr-170627-0204-Allium_fistulosum-harvested-Hydroponics_Greenhouse_Sand_Island-Midway_Atoll_(36319964331).jpg)（Commons页面标注CC BY 3.0 US）。前者用于直立管叶株型，后者用于葱白及渐变连接，不采用切断、枯黄叶和运输车。照片只作形态参考，本地副本在 `.local/crop-research-20260919/scallion-*`，不作为游戏贴图发布。
+- 三阶段分别为两枚细芽、三片长管叶加一片初生叶、双芽小丛的七片管叶。成熟首张工笔参考把叶尖画成切开的管口，已在图片工具中修成自然闭合尖端，并增加前后遮挡，再提交P2。完整提示词与修订保存在 `scallion/<stage>/image-record.json`。
+
 ### 菠菜 Spinacia oleracea
 
 - 查询：`spinach seedlings cotyledons first true leaves`、`spinach growing plant rosette`。
@@ -89,7 +96,7 @@
 - 菠菜三个阶段已完成独立参考／P2生成、Blender整理及游戏接入，见下方节点；用户审美反馈待收集。
 - 白萝卜三个阶段已独立生成并接入；成熟首版因侧面过扁弃用，第二版经外叶姿态和根部接地整理后采用，见下方节点。
 - 青菜幼苗与中期已独立生成并接入，成熟株原文件与材质保留。
-- 生菜、香菜、茼蒿、芹菜、雪里蕻、乌塌菜、胡萝卜各三个阶段已独立生成并接入，通过定向与实景／风动检查；当前累计29／35个新阶段。小葱、青蒜共6阶段未完成；藤蔓玩法与整体光照未开始实现。
+- 生菜、香菜、茼蒿、芹菜、雪里蕻、乌塌菜、胡萝卜、小葱各三个阶段已独立生成并接入，通过定向与实景／风动检查；当前累计32／35个新阶段。青蒜共3阶段未完成；藤蔓玩法与整体光照未开始实现。
 - 本批工作前存在模型目录／检查页及开发说明等其他改动，不属于本批，不覆盖或混入提交。当前仓库未配置远端。
 
 ## 菠菜接入节点 · 20260919-spinach-p2-stages
@@ -277,3 +284,21 @@ Blender只在副本整理。成熟株对下部42%高度作平滑缩短，该区�
 验证：Blender导出重导入及93项定向资产检查通过。`.local/verification/p2-stages/carrot/initial-views/`与`initial-farm/`保存全三阶段四向、昼夜正反面与聚焦；其中成熟株是抬叶前。最终成熟四向在`lifted-views/`，日夜正反面在`lifted-farm/`；风动在`final-wind/`。已查看三阶段日间正反面、所有单体方向、夜间代表与聚焦，最终成熟低叶避开土面、根部接地。近景取根部，顶部全貌结合单体图判断。夜景仍偏暗，后续灯笼与光效任务未完成。未录新视频或更新独立包，待用户审美反馈。
 
 重建：Blender 5.2执行`prepare.py -- carrot <sprout|young|mature>`，检查后加`--install`，再运行项目Godot Import。源图、不可变原模、脱敏任务、blend、GLB和审计均按阶段保存；游戏引用`Game/art/crops/carrot/`。本地索引`制作留档/03_处理与验证/20260919_胡萝卜三阶段P2重制/README.md`。
+
+## 小葱接入节点 · 20260919-scallion-p2-stages
+
+按上方细苗、生長株及成熟葱白／田间实拍分别生成工笔参考，三个独立P2任务各120积分，共360，本批累计4440积分。成熟参考先纠正切开叶尖，再提交模型；没有缩放成熟株替代幼年阶段。精确任务、版本、种子和整理参数见 [scallion/stages.json](scallion/stages.json)，完整图片提示词与修订见各阶段image-record.json。
+
+| 阶段 | 导出三角 | 高度／宽／深（米） | 形态 |
+|---|---:|---|---|
+| 苗 | 3055 | .075／.0162／.0266 | 一枚弯钩状细长子叶及较短真叶，共同细基部 |
+| 中期 | 5694 | .180／.0703／.0965 | 三片长管叶、一片初生叶和短假茎 |
+| 成熟 | 10595 | .3476／.1560／.2800 | 两个相邻基部、七片错落管叶，无花序或洋葱球茎 |
+
+Blender 5.2.2整理时保留原始四边面FBX，按底部假茎切片居中、等比缩放并接地，没有强加旋转、减面、拆叶或变形。三个阶段都保留4K工笔色图、单材质及原始三角数，0零面积面／孤点；诊断开边17／259／84、非流形边19／262／95，少量原生叶尖／接缝开口仍存在，不宣称水密。四向和实景未见大片缺件。成熟高度因.28米最大横展约束略低于请求.36米。土面接触半径分别(.009,.009)、(.009,.009)、(.01927,.01834)米。
+
+小葱使用独立细长叶微风：主摆最多6.5毫米、局部扰动.8毫米，假茎下部28%固定；幼年继续按株高2.5%／.8%限幅，根部受土面约束。保留原画颜色，不套成熟青菜色温，两个画质路径均使用完整模型且禁用额外自动LOD。未调用分件、绑定、付费重贴图或添加粒子。
+
+验证：Blender导出重导入、93项定向资产检查通过；三阶段四向在 `.local/verification/p2-stages/scallion/initial-views/`，实景正反面昼夜与全景／聚焦在 `farm/`，风动开关在 `wind/`。实际两帧风动9898像素变化，关闭后0；已查看所有单体方向、日间三阶段正反面、夜间各阶段代表和聚焦，根部贴合土面。近景画面以接地处为中心，成熟顶部全貌结合单体四向检查。夜景仍暗，后续照明任务未完成。未录新视频、未更新独立包，待用户审美反馈。
+
+重建：Blender运行 `prepare.py -- scallion <sprout|young|mature>`，检查后加 `--install`，再运行项目Godot Import。源图、不可变原模、脱敏任务、blend、GLB与审计按阶段保留；正式落点为 `Game/art/crops/scallion/`。本地索引 `制作留档/03_处理与验证/20260919_小葱三阶段P2重制/README.md`。
