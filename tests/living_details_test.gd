@@ -84,13 +84,19 @@ func _run() -> void:
 	scene.set_window_warmth(1.0)
 	_expect(living._house_materials.size()==2,"Both original house detail materials receive paper-window light")
 	_expect(is_equal_approx(living._house_materials[0].get_shader_parameter("warmth"),1.0),"Warmth reaches original texture material instead of floating geometry")
-	var lights: Array = living._window_lights
-	_expect(lights.size()==4,"Two lantern lights and two bounded field bounce lights")
-	_expect(is_equal_approx(lights[0].light_energy,1.15) and not lights[0].shadow_enabled,"Window warmth controls bounded local light budget")
+	scene.set_night_weight(1.0)
+	var lights: Array = living._lantern_lights
+	_expect(lights.size()==7,"Two porch lanterns, two bounded bounce lights and three raised path lamps")
+	_expect(is_equal_approx(lights[0].light_energy,1.15) and not lights[0].shadow_enabled,"Night weight controls bounded porch light budget")
 	scene.set_window_warmth(0.0)
-	_expect(is_zero_approx(lights[0].light_energy),"Window lights respond to daylight control")
-	scene.set_window_warmth(NAN)
-	_expect(is_zero_approx(lights[0].light_energy),"Invalid warmth does not contaminate light state")
+	_expect(lights[0].light_energy>0,"Interior window changes do not turn off outdoor lamps")
+	scene.set_night_weight(0.0)
+	for light: OmniLight3D in lights:
+		_expect(is_zero_approx(light.light_energy) and not light.visible,"Outdoor lights are fully off in daylight")
+	for mesh: MeshInstance3D in living._lantern_meshes:
+		_expect(is_zero_approx(mesh.get_instance_shader_parameter("lantern_warmth")),"Lantern paper stops emitting during daylight")
+	scene.set_night_weight(NAN)
+	_expect(is_zero_approx(lights[0].light_energy),"Invalid night weight does not contaminate light state")
 	var total: int = _triangle_count(living)
 	print("LIVING_DETAILS_AUDIT triangles=%d child_groups=%d"%[total,living.get_child_count()])
 	for child: Node in living.get_children():

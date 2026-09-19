@@ -220,6 +220,8 @@ func _ready() -> void:
 	atmosphere.set_backdrop_material(courtyard.get_backdrop_material())
 	atmosphere.window_warmth_changed.connect(courtyard.set_window_warmth)
 	courtyard.set_window_warmth(atmosphere.get_window_warmth())
+	atmosphere.night_weight_changed.connect(courtyard.set_night_weight)
+	courtyard.set_night_weight(atmosphere.get_night_weight())
 	atmosphere.night_weight_changed.connect(farm_audio.set_night_weight)
 	farm_audio.set_night_weight(atmosphere.get_night_weight())
 	atmosphere.night_weight_changed.connect(decoration_layout.set_night_weight)

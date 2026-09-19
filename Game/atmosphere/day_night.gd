@@ -24,8 +24,7 @@ const GROUND_HORIZON: Array[Color] = [Color("232a2c"), Color("232a2c"), Color("8
 const GROUND_BOTTOM: Array[Color] = [Color("12171a"), Color("12171a"), Color("3a352c"), Color("44403a"), Color("4a4238"), Color("52443a"), Color("3a3230"), Color("12171a"), Color("12171a")]
 const ELEVATION: Array[float] = [48.0, 48.0, 25.0, 47.0, 58.0, 34.0, 16.0, 48.0, 48.0]
 const AZIMUTH: Array[float] = [-35.0, -35.0, 30.0, 5.0, -25.0, -55.0, -68.0, -35.0, -35.0]
-# Interior and lantern warmth never drops to nothing: the courtyard reads as lived in
-# at midday too, and the warm accents are the only high-chroma notes in the frame.
+# Interior paper windows retain subtle warmth; outdoor lamps use NIGHT separately.
 const WINDOW_WARMTH: Array[float] = [1.0, 1.0, 0.62, 0.30, 0.26, 0.45, 0.9, 1.0, 1.0]
 const WATER_COLORS: Array[Color] = [Color("254653"), Color("254653"), Color("79a9ad"), Color("69a3a4"), Color("68a4a3"), Color("83aaa2"), Color("618c9a"), Color("254653"), Color("254653")]
 
@@ -268,8 +267,8 @@ func _apply_clock() -> void:
 func _apply_lanterns() -> void:
 	for light in _lantern_lights:
 		if is_instance_valid(light):
-			# A small daylight floor keeps the lanterns as warm accents at noon.
-			light.light_energy = maxf(_night_weight, 0.26) * 0.70
+			light.light_energy = maxf(_night_weight, 0.0) * 0.70
+			light.visible = _night_weight > 0.0
 
 
 func _apply_backdrop() -> void:

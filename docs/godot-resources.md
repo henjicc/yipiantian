@@ -34,7 +34,7 @@
 
 本机仍为Godot 4.7.2官方版、Forward+／Vulkan。官方[4.7 beta说明](https://godotengine.org/article/dev-snapshot-godot-4-7-beta-1/)及[已合并PR 99119](https://github.com/godotengine/godot/pull/99119)确认加入RenderingDevice的Vulkan光追管线、加速结构与指令接口；这是底层能力，不代表当前农场已使用实时光追。项目现有实现是实时阴影、SSAO、SSIL与辉光；不能将SSIL或SDFGI命名为硬件光追。官方[全局光照方案比较](https://docs.godotengine.org/en/4.7/tutorials/3d/global_illumination/introduction_to_global_illumination.html)可作后续选型入口，实际新增效果仍需同镜头验证视觉与开销。
 
-当前待改边界：`day_night.gd::_apply_lanterns`保留白天最低亮度，`living_details.gd::set_window_warmth`同时控制房屋材质、门廊灯与灯笼发光，均不满足本轮要求的灯笼白天熄灭。后续路灯应复用昼夜权重，室内暖光与户外灯分开；现有灯笼几何可复用。此处只记录已查明的接线与需求差异，尚未实现高挂路灯或新的画质选项。
+已接入三盏高挂路灯：`day_night.gd::_apply_lanterns`取消白天最低亮度，`living_details.gd::set_night_weight`统一控制门廊／路灯照明和纸灯笼发光，室内材质仍由`set_window_warmth`独立控制。标准画质保留三盏路灯投影，低画质关闭局部投影但保留照明，日间灯光不可见且能量为0。真实昼夜、通行及画质往返验证见`tests/night_lighting_test.gd`，来源与素材见[院落灯笼节点](../ArtSource/Environment/CourtyardLife/README.md#田边高挂灯笼--20260919-path-lanterns)。整体色调和额外画质效果仍待后续比较，未接入硬件光追。
 
 ## 当前接入方式
 

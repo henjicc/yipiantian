@@ -5,7 +5,7 @@ const WINDOW_SHADER := preload("res://scenes/environment/house_warmth.gdshader")
 const Assets = preload("res://scenes/environment/courtyard_assets.gd")
 var _house_materials: Array[ShaderMaterial] = []
 var _lantern_meshes: Array[MeshInstance3D] = []
-var _window_lights: Array[OmniLight3D] = []
+var _lantern_lights: Array[OmniLight3D] = []
 var _rope_segments: Array[MeshInstance3D] = []
 var plan := preload("res://layout/courtyard_plan.gd").new()
 var _rope_origin: Vector3
@@ -29,6 +29,7 @@ func _ready() -> void:
 	_build_tools()
 	_build_mooring()
 	_build_windows()
+	_build_path_lanterns()
 	_build_yard_props()
 	# Every authored group merges by material; the animated mooring rope lives
 	# directly on this node and is deliberately not part of any merged group.
@@ -230,7 +231,7 @@ func _build_windows() -> void:
 		light.omni_attenuation=1.45
 		light.shadow_enabled=false
 		group.add_child(light)
-		_window_lights.append(light)
+		_lantern_lights.append(light)
 		var spill := OmniLight3D.new()
 		spill.name = "LanternGardenBounce"
 		spill.position = Vector3(x,1.05,-.95)
@@ -240,8 +241,35 @@ func _build_windows() -> void:
 		spill.shadow_enabled = false
 		spill.set_meta("energy_scale",.24)
 		group.add_child(spill)
-		_window_lights.append(spill)
-	set_window_warmth(.16)
+		_lantern_lights.append(spill)
+	set_night_weight(0.0)
+
+
+func _build_path_lanterns() -> void:
+	for id: String in ["PathLanternWest", "PathLanternFront", "PathLanternEast"]:
+		var group: Node3D = _group(id)
+		_beam(group, Vector3.ZERO, Vector3(0,2.85,0), .055, _wood)
+		_beam(group, Vector3(-.12,2.85,0), Vector3(.58,2.85,0), .04, _wood)
+		_beam(group, Vector3(0,2.42,0), Vector3(.46,2.85,0), .025, _wood)
+		_beam(group, Vector3(.48,2.85,0), Vector3(.48,2.68,0), .009, _rope)
+		var lantern: Node3D = Assets.place(group, "lantern", Vector3(.48,2.11,0))
+		for mesh: MeshInstance3D in lantern.find_children("*", "MeshInstance3D", true, false):
+			_lantern_meshes.append(mesh)
+			# The opaque paper proxy must not shadow the bulb enclosed inside it.
+			mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var light := OmniLight3D.new()
+		light.name = "PathLanternLight"
+		light.position = Vector3(.48,2.38,0)
+		light.light_color = Color("ffe0ae")
+		light.omni_range = 5.6
+		light.omni_attenuation = 1.25
+		light.shadow_enabled = true
+		light.shadow_bias = .05
+		light.shadow_normal_bias = .25
+		light.set_meta("energy_scale", 2.0)
+		group.add_child(light)
+		_lantern_lights.append(light)
+	set_night_weight(0.0)
 
 func configure_house(node: Node) -> void:
 	if node is MeshInstance3D:
@@ -261,10 +289,21 @@ func set_window_warmth(amount: float) -> void:
 		var strength:float=clampf(amount,0.0,1.0)
 		for material: ShaderMaterial in _house_materials:
 			material.set_shader_parameter("warmth",strength)
-		for light: OmniLight3D in _window_lights:
+
+
+func set_night_weight(amount: float) -> void:
+	if is_finite(amount):
+		var strength: float = clampf(amount, 0.0, 1.0)
+		for light: OmniLight3D in _lantern_lights:
 			light.light_energy=strength*float(light.get_meta("energy_scale",1.15))
+			light.visible = strength > 0.0
 		for mesh: MeshInstance3D in _lantern_meshes:
 			mesh.set_instance_shader_parameter("lantern_warmth",strength)
+
+
+func set_lamp_shadows(enabled: bool) -> void:
+	for light: OmniLight3D in _lantern_lights:
+		if light.name == "PathLanternLight": light.shadow_enabled = enabled
 
 
 ## Yard set dressing. Layout and animal navigation consume these actual meshes;

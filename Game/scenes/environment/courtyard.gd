@@ -121,6 +121,10 @@ func _process(delta: float) -> void:
 func set_window_warmth(amount: float) -> void:
 	if _living != null:_living.set_window_warmth(amount)
 
+
+func set_night_weight(amount: float) -> void:
+	if _living != null:_living.set_night_weight(amount)
+
 func _module(id: String, at: Vector3, yaw_degrees: float=0, scale_value: Vector3=Vector3.ONE) -> Node3D:
 	var node: Node3D = (load(ROOT+"modules/"+id+".glb") as PackedScene).instantiate()
 	add_child(node)
