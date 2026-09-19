@@ -54,17 +54,17 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	# the shoulder; its own contrast and white settings restore the lost snap.
 	_world.environment.tonemap_mode = Environment.TONE_MAPPER_AGX
 	_world.environment.tonemap_exposure = 1.30
-	_world.environment.tonemap_agx_contrast = 1.45
+	_world.environment.tonemap_agx_contrast = 1.30
 	_world.environment.tonemap_agx_white = 8.0
 	_world.environment.adjustment_enabled = true
 	_world.environment.adjustment_contrast = 1.04
-	# AgX desaturates towards the shoulder; the washes need that chroma back.
-	_world.environment.adjustment_saturation = 1.18
-	# Restrained cool shadow toe against warm ivory highlights separates the
-	# evening background from lit paper windows without washing out the beds.
+	# Retain painted chroma without exaggerating the warm daylight on green leaves.
+	_world.environment.adjustment_saturation = 1.10
+	# Keep the cool shadow toe, but neutralize the old yellow mid/highlight grade.
+	# Warmth comes from the timed sun and lanterns, not a tint on every material.
 	var grade := Gradient.new()
 	grade.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
-	grade.colors = PackedColorArray([Color(0.009, 0.013, 0.020), Color(0.52, 0.505, 0.482), Color(1.0, 0.984, 0.946)])
+	grade.colors = PackedColorArray([Color(0.009, 0.013, 0.020), Color(0.505, 0.505, 0.50), Color(1.0, 0.995, 0.985)])
 	var grade_texture := GradientTexture1D.new()
 	grade_texture.gradient = grade
 	grade_texture.width = 256
@@ -85,8 +85,8 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	# kerb stone, so those contacts produced almost no darkening and every prop met
 	# the ground on a hard line. The radius has to match the contact being drawn.
 	_world.environment.ssao_radius = 0.18
-	_world.environment.ssao_intensity = 3.4
-	_world.environment.ssao_power = 1.6
+	_world.environment.ssao_intensity = 2.4
+	_world.environment.ssao_power = 1.35
 	_world.environment.ssao_horizon = 0.035
 	_world.environment.ssao_sharpness = 0.92
 	# Restrained artistic contact darkening in sunlit areas, not a replacement for
@@ -194,7 +194,7 @@ static func sample_hour(hour: float) -> Dictionary:
 	while index < HOURS.size() - 2 and wrapped >= HOURS[index + 1]:
 		index += 1
 	var blend: float = smoothstep(HOURS[index], HOURS[index + 1], wrapped)
-	return {
+	var values: Dictionary = {
 		"sun_energy": lerpf(SUN[index], SUN[index + 1], blend),
 		"ambient_energy": lerpf(AMBIENT[index], AMBIENT[index + 1], blend),
 		"night_weight": lerpf(NIGHT[index], NIGHT[index + 1], blend),
@@ -211,6 +211,14 @@ static func sample_hour(hour: float) -> Dictionary:
 		"water_color": WATER_COLORS[index].lerp(WATER_COLORS[index + 1], blend),
 		"backdrop_tint": BACKDROP_TINT[index].lerp(BACKDROP_TINT[index + 1], blend),
 	}
+	# Open the unlit beds gently while keeping the night distinct from daytime.
+	# Using the same smooth clock weight preserves dawn/dusk and midnight continuity.
+	var night: float = values.night_weight
+	values.sun_energy += 0.07 * night
+	values.ambient_energy += 0.035 * night
+	values.sun_color = values.sun_color.lerp(Color("f6f7ef"), 0.30 * (1.0 - night))
+	values.ambient_color = values.ambient_color.lerp(Color("c6d2d3"), 0.32 * (1.0 - night))
+	return values
 
 
 var _season: String = "daily"

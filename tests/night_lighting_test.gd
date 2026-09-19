@@ -4,6 +4,7 @@ extends SceneTree
 const Store = preload("res://farm/farm_store.gd")
 const Farm = preload("res://farm/farm_state.gd")
 const Decorations = preload("res://farm/decoration_state.gd")
+const Atmosphere = preload("res://atmosphere/day_night.gd")
 var output: String = ""
 var failures: Array[String] = []
 var checks: int = 0
@@ -22,6 +23,14 @@ func _expect(condition: bool, message: String) -> void:
 
 
 func _run() -> void:
+	_expect(Atmosphere.sample_hour(0.0) == Atmosphere.sample_hour(24.0), "Clock lighting wraps continuously at midnight")
+	for hour: float in Atmosphere.HOURS:
+		var before: Dictionary = Atmosphere.sample_hour(hour - .001)
+		var after: Dictionary = Atmosphere.sample_hour(hour + .001)
+		for key: String in ["sun_energy", "ambient_energy", "night_weight"]:
+			_expect(absf(before[key] - after[key]) < .001, "Light energy remains continuous at clock key")
+		for key: String in ["sun_color", "ambient_color"]:
+			_expect((Vector3(before[key].r,before[key].g,before[key].b)-Vector3(after[key].r,after[key].g,after[key].b)).length() < .001, "Color balance remains continuous at clock key")
 	var folder: String = ProjectSettings.globalize_path("res://../.local/verification/night-lighting-%d" % Time.get_ticks_usec())
 	var store = Store.new(folder)
 	_expect(store.load_state().kind == "missing", "Fixture starts without player data")
@@ -65,6 +74,16 @@ func _run() -> void:
 			_expect(is_equal_approx(mesh.get_instance_shader_parameter("lantern_warmth"),strength), "Paper emission follows the same clock as illumination")
 		await _capture("hour-%04d-overview" % int(hour*100))
 	_expect(scene.farm_state.snapshot() == state_before, "Lighting changes do not mutate farm progress")
+	# Seasonal light is composed afresh rather than accumulating color corrections.
+	var sun: DirectionalLight3D = scene.atmosphere._sun
+	var original_day: Color = sun.light_color
+	for season: String in ["after_rain", "drying", "daily"]:
+		scene.atmosphere.set_season(season)
+		var once: Color = sun.light_color
+		scene.atmosphere.set_preview_hour(14.0)
+		_expect(sun.light_color == once, "Repeated clock updates do not accumulate seasonal tint")
+		_expect(scene.atmosphere.get_night_weight() == 0.0, "Daytime seasonal light keeps lanterns off")
+	_expect(sun.light_color == original_day, "Leaving seasonal mood restores the exact daylight color")
 	scene.atmosphere.set_preview_hour(22.0)
 	for quality: String in ["low","standard"]:
 		scene.focus_detail.set_quality(quality)
