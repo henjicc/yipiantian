@@ -26,7 +26,7 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(folder);print("EVIDENCE "+folder)
 	scene=load("res://scenes/main.tscn").instantiate();scene.name="FarmExperience"
 	if OS.get_cmdline_user_args().has("--views-only"):
-		var layout: Dictionary=Plan.new().snapshot();layout.construction.bridge=[5.4,-.1,11.0,.1,1.2]
+		var layout: Dictionary=Plan.new().snapshot();layout.construction.bridge=[5.4,-.1,11.0,.1,1.2,1]
 		scene.courtyard_plan=Plan.from_snapshot(layout)
 	scene.store=Store.new(folder.path_join("farm"));scene.settings_store=Settings.new(folder.path_join("settings"));scene.clock=func() -> float: return now
 	root.add_child(scene);current_scene=scene;await frames(8)
@@ -47,6 +47,8 @@ func _run() -> void:
 	var builder: Node=scene.island_builder
 	if OS.get_cmdline_user_args().has("--edges-only"):
 		await edge_checks(builder);await finish();return
+	if OS.get_cmdline_user_args().has("--move-only"):
+		await move_checks(builder);await finish();return
 	var ends: Array[Vector3]=Construction.bridge_points(scene.courtyard_plan)
 	await drag(ends[1],Vector3(8,.13,3))
 	expect(builder._confirm.disabled and not builder.issue().is_empty(),"Unsupported bridge end is rejected")
@@ -190,7 +192,7 @@ func edge_checks(builder: Node) -> void:
 	scene.decoration_layout.refresh_confirmed()
 	var bench: Node3D=scene.decoration_layout._instances.bench
 	var bench_pose: Transform3D=bench.global_transform
-	builder.draft.construction.bridge=[5.4,.8,11.0,.1,1.0];builder._refresh()
+	builder.draft.construction.bridge=[5.4,.8,11.0,.1,1.0,1];builder._refresh()
 	expect(builder._confirm.disabled and builder.issue().contains("摆件"),"Bridge placement protects the player's bench")
 	expect(bench.visible and bench.global_transform==bench_pose,"Rejected bridge never hides or moves player content")
 	builder.cancel_draft()
@@ -227,3 +229,117 @@ func inspect_bridge() -> void:
 	scene.camera.view=Vector3(215,35,14);await frames(10);await shot("edges-contact-reverse")
 	expect(scene.camera.view==Vector3(215,35,14),"Reverse inspection keeps the opposite viewing direction")
 	scene.focus_detail.set_quality("high");scene.atmosphere.set_preview_hour(22);await frames(20);await shot("edges-night")
+
+func move_pointer(from: Vector3, to: Vector3) -> void:
+	var event:=InputEventMouseMotion.new();event.position=scene.camera.unproject_position(to)
+	event.relative=event.position-scene.camera.unproject_position(from)
+	event.button_mask=MOUSE_BUTTON_MASK_LEFT;event.window_id=root.get_window_id()
+	var started: int=Time.get_ticks_usec();root.push_input(event,true)
+	print("BRIDGE_MOVE_POINTER_US ",Time.get_ticks_usec()-started)
+	await frames()
+
+func move_checks(builder: Node) -> void:
+	var environment: Node=scene.get_node("Environment")
+	var original: Dictionary=scene.farm_state.snapshot()
+	var original_bridge: Node3D=environment.get_bridge()
+	var original_center:=Vector3(8.1,.45,-.15)
+	# The visible deck, not a large endpoint hot zone, selects the entire bridge.
+	var screen: Vector2=scene.camera.unproject_position(original_center)
+	await mouse(screen,true);await mouse(screen,false)
+	expect(builder.draft==original.layout and not is_instance_valid(builder.bridge_preview),"Stationary deck click does not replace the authored bridge")
+	await drag(Vector3(8,.13,3),Vector3(8,.13,4))
+	expect(builder.draft==original.layout,"Dragging open water does not move a bridge")
+	await mouse(screen,true)
+	await move_pointer(original_center,original_center+Vector3(0,0,-.5))
+	expect(is_instance_valid(builder.bridge_preview) and builder._bridge_end==-1,"Held deck drag selects the complete authored bridge")
+	if not is_instance_valid(builder.bridge_preview): return
+	var original_ends: Array[Vector3]=Construction.bridge_points(scene.courtyard_plan)
+	var held: Array[Vector3]=Construction.bridge_points(builder.candidate)
+	expect((held[0]-original_ends[0]).distance_to(Vector3(0,0,-.5))<.0001 and (held[1]-original_ends[1]).distance_to(Vector3(0,0,-.5))<.0001,"Whole-bridge grid drag translates both ends equally")
+	expect(scene.farm_state.snapshot()==original and not original_bridge.visible,"Held whole-bridge drag only changes preview")
+	await move_pointer(original_center+Vector3(0,0,-.5),original_center)
+	expect(builder.draft==original.layout and not is_instance_valid(builder.bridge_preview) and original_bridge.visible,"Dragging back to the press point restores the original mesh and draft")
+	await mouse(screen,false);builder.cancel_draft();await frames()
+	# Prepare the previously verified clear crossing, through real end handles.
+	await drag(original_ends[1]+Vector3.UP*.12,Vector3(11,.13,.1))
+	await drag(Construction.bridge_points(builder.candidate)[0]+Vector3.UP*.12,Vector3(5.4,.13,-.1))
+	builder._values.bridge_width.value=.8
+	if not await ready_draft() or not await apply(): return
+	await terrain_ready()
+	var saved: Dictionary=scene.farm_state.snapshot()
+	var bridge: Node3D=environment.get_bridge()
+	var center: Vector3=Construction.bridge_points(scene.courtyard_plan)[0].lerp(Construction.bridge_points(scene.courtyard_plan)[1],.5)+Vector3.UP*.30
+	# Free drag uses one shared translation; width and structure counts stay stable.
+	await click(builder._bridge_snap)
+	var sections: int=bridge.get_meta("deck_sections")
+	var support_count: int=bridge.get_meta("bridge_supports").size()
+	await mouse(scene.camera.unproject_position(center),true)
+	await move_pointer(center,center+Vector3(0,0,-.15))
+	expect(is_instance_valid(builder.bridge_preview) and builder._bridge_end==-1,"Generated bridge deck remains draggable")
+	if not is_instance_valid(builder.bridge_preview): return
+	var moved: Array=builder.draft.construction.bridge
+	var previous_parameters: Array=saved.layout.construction.bridge
+	expect(is_equal_approx(moved[0],previous_parameters[0]) and is_equal_approx(moved[2],previous_parameters[2]) and is_equal_approx(moved[1],previous_parameters[1]-.15) and is_equal_approx(moved[3],previous_parameters[3]-.15),"Free placement preserves the exact endpoint separation")
+	expect(moved[4]==previous_parameters[4] and builder.bridge_preview.structure.get_meta("deck_sections")==sections and builder.bridge_preview.structure.get_meta("bridge_supports").size()==support_count,"Whole move retains width, plank count and paired supports")
+	await shot("move-held")
+	scene.notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT)
+	expect(builder.draft==saved.layout and bridge.visible,"Focus loss restores an unfinished whole-bridge drag")
+	scene.notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_IN);await frames()
+	await drag(center,center+Vector3(0,0,-.15))
+	if not await ready_draft(): return
+	var preview: Node3D=builder.bridge_preview.structure
+	if not await apply(): return
+	expect(environment.get_bridge()==preview and scene.get_node("Environment")==environment,"Whole move adopts the preview without reloading the island")
+	await terrain_ready()
+	var moved_layout: Dictionary=scene.courtyard_plan.snapshot()
+	await shot("move-saved")
+	# A second drag operates on the adopted bridge, not the deleted old mesh.
+	center.z-=.15
+	await drag(center,center+Vector3(0,0,4))
+	expect(not builder.issue().is_empty() and builder._confirm.disabled,"Whole move rejects unsupported banks")
+	expect(scene.farm_state.snapshot().layout==moved_layout,"Invalid whole move retains the saved crossing")
+	builder.cancel_draft();await frames()
+	expect(environment.get_bridge()==preview and preview.visible,"Cancel restores the adopted bridge")
+	# Undo must restore endpoints without reverting later inventory.
+	var state: Dictionary=scene.farm_state.snapshot();state.inventory.greens+=2;scene.farm_state.restore_snapshot(state);now+=120
+	await click(builder._undo)
+	while builder.busy: await process_frame
+	expect(scene.courtyard_plan.snapshot()==saved.layout,"Undo restores both bridge ends")
+	expect(scene.farm_state.snapshot().inventory==state.inventory,"Whole-bridge undo preserves subsequent inventory")
+	await terrain_ready()
+	center.z+=.15
+	await drag(center,center+Vector3(0,0,-.15))
+	if not await ready_draft(): return
+	# Restore normal state after real save failure, then finish the same draft once.
+	var directory: String=scene.store.directory
+	var blocker:=FileAccess.open(folder.path_join("move-blocker"),FileAccess.WRITE);blocker.store_string("file");blocker.close()
+	scene.store.directory=folder.path_join("move-blocker/child")
+	await click(builder._confirm)
+	while builder.busy: await process_frame
+	expect(scene.courtyard_plan.snapshot()==saved.layout and builder._status.text.contains("未能保存"),"Whole-bridge save failure leaves prior crossing intact and draft retryable")
+	scene.store.directory=directory
+	var wanted: Dictionary=builder.draft.duplicate(true)
+	await click(builder._panel.find_child("Finish",true,false))
+	while builder.busy: await process_frame
+	expect(not builder.active and scene.courtyard_plan.snapshot()==wanted,"One Finish retries, saves and exits whole-bridge editing")
+	await terrain_ready();await inspect_bridge()
+	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout;await choose_tool("bridge")
+	scene.camera.focus_point=Vector3(4,.13,0);await frames(10)
+	builder._bridge_style.select(0);builder._bridge_style.item_selected.emit(0)
+	if not await ready_draft(): return
+	expect(builder.bridge_preview.structure.get_meta("bridge_style")==0 and scene.courtyard_plan.construction.bridge[5]==1,"Bridge style changes the live preview before saving")
+	await shot("move-flat-preview")
+	if not await apply(): return
+	await terrain_ready()
+	wanted=scene.courtyard_plan.snapshot()
+	expect(wanted.construction.bridge[5]==0,"Flat style commits through the same local save")
+	await click(builder._panel.find_child("Finish",true,false));await inspect_bridge()
+	root.remove_child(scene);scene.free();await frames()
+	scene=load("res://scenes/main.tscn").instantiate();scene.name="FarmExperience"
+	scene.store=Store.new(directory);scene.settings_store=Settings.new(folder.path_join("settings"));scene.clock=func() -> float: return now
+	root.add_child(scene);current_scene=scene;await frames(8)
+	expect(scene.courtyard_plan.snapshot()==wanted,"Reopening restores the whole bridge at the moved endpoints and selected style")
+	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout;await choose_tool("bridge")
+	root.size=Vector2i(960,640);await frames()
+	expect(root.get_visible_rect().encloses(scene.island_builder._panel.get_global_rect()),"Bridge snap control fits the minimum window")
+	await shot("move-small-window")

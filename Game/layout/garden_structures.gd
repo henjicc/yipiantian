@@ -46,29 +46,32 @@ static func trellis(plan: RefCounted) -> Node3D:
 static func bridge(plan: RefCounted) -> Node3D:
 	var root:=Node3D.new();root.name="AdaptiveBridge"
 	var ends: Array[Vector3]=Construction.bridge_points(plan)
-	var length: float=ends[0].distance_to(ends[1]);var direction: Vector3=(ends[1]-ends[0]).normalized()
+	var length: float=Vector2(ends[1].x-ends[0].x,ends[1].z-ends[0].z).length()
+	var direction:=Vector3(ends[1].x-ends[0].x,0,ends[1].z-ends[0].z).normalized()
 	var width: float=plan.construction.bridge[4]
-	var side:=Vector3(-direction.z,0,direction.x)
-	var basis:=Basis(side,Vector3.UP,direction)
-	# Positive determinant: local X points across, local Z along the bridge.
-	if basis.determinant()<0: basis.x=-basis.x
+	var style: int=Construction.bridge_style(plan)
+	var side: Vector3=Vector3.UP.cross(direction)
 	var deck: ConstructionMesh=_surface();var rails: ConstructionMesh=_surface()
 	var pieces: int=ceili(length/.22)
 	if _plank_arrays.is_empty():
 		var shape:=BoxMesh.new();shape.size=Vector3.ONE
 		_plank_arrays=shape.get_mesh_arrays()
-	var plank_basis: Basis=basis*Basis.from_scale(Vector3(width,.075,length/pieces-.008))
 	for i: int in pieces:
-		var t: float=(i+.5)/pieces
-		var p: Vector3=ends[0].lerp(ends[1],t)+Vector3.UP*(.04+sin(t*PI)*.22)
-		deck.append(_plank_arrays,Transform3D(plank_basis,p))
+		var a: Vector3=Construction.bridge_profile(ends,style,float(i)/pieces)
+		var b: Vector3=Construction.bridge_profile(ends,style,float(i+1)/pieces)
+		var tangent: Vector3=(b-a).normalized()
+		var up: Vector3=tangent.cross(side).normalized()
+		var basis:=Basis(side,up,tangent)*Basis.from_scale(Vector3(width,.075,a.distance_to(b)+.001))
+		# The upper face follows the profile, including both actual bank levels.
+		# Adjacent segments meet; thickness extends below the walking surface.
+		deck.append(_plank_arrays,Transform3D(basis,(a+b)*.5-up*.0375))
 	var spans: int=ceili(length/.9)
 	var supports:=PackedVector2Array()
 	for edge: float in [-1.0,1.0]:
 		var previous:=Vector3.ZERO
 		for i: int in spans+1:
 			var t: float=float(i)/spans
-			var bottom: Vector3=ends[0].lerp(ends[1],t)+side*(edge*width*.5)+Vector3.UP*(.06+sin(t*PI)*.22)
+			var bottom: Vector3=Construction.bridge_profile(ends,style,t)+side*(edge*width*.5)
 			var top: Vector3=bottom+Vector3.UP*.65
 			Poles._pole(rails,bottom,top,.036)
 			if i>0:
@@ -79,6 +82,7 @@ static func bridge(plan: RefCounted) -> Node3D:
 				Poles._pole(rails,Vector3(bottom.x,-.8,bottom.z),bottom,.052)
 				supports.append(Vector2(bottom.x,bottom.z))
 	root.set_meta("bridge_ends",ends)
+	root.set_meta("bridge_style",style)
 	root.set_meta("bridge_supports",supports)
 	root.set_meta("deck_sections",pieces)
 	_finish(root,deck,Color("867354"));_finish(root,rails,Color("61543c"))

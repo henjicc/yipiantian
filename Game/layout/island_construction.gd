@@ -2,6 +2,7 @@ extends RefCounted
 ## Persisted parameters for the first in-world construction slice. Coordinates are XZ.
 const IslandSpace = preload("res://layout/island_space.gd")
 const Buildings = preload("res://layout/building_layout.gd")
+const BRIDGE_STYLES: Array[String] = ["平桥", "拱桥"]
 const CELL: float = IslandSpace.CELL
 const MAX_PATCHES: int = 256
 const BRUSH_SIZE: float = 1.5
@@ -30,7 +31,8 @@ static func valid(data: Variant) -> bool:
 		if data.trellis[0]<2 or data.trellis[0]>6 or data.trellis[1]<.8 or data.trellis[1]>2 or data.trellis[2]<1.6 or data.trellis[2]>3: return false
 		if absf(data.trellis[3])>24 or absf(data.trellis[4])>24 or data.trellis[5]<-180 or data.trellis[5]>=180: return false
 	if not data.bridge.is_empty():
-		if not numbers(data.bridge,5): return false
+		if not numbers(data.bridge,6): return false
+		if float(data.bridge[5]) not in [0.0,1.0]: return false
 		for i: int in 4:
 			if absf(data.bridge[i])>24: return false
 		if data.bridge[4]<.8 or data.bridge[4]>1.8: return false
@@ -119,18 +121,32 @@ static func trellis_flower_center(plan: RefCounted) -> Vector3:
 
 static func bridge_points(plan: RefCounted) -> Array[Vector3]:
 	var v: Array=plan.construction.bridge
-	if not v.is_empty(): return [Vector3(v[0],plan.ground_height,v[1]),Vector3(v[2],plan.ground_height,v[3])]
+	if not v.is_empty(): return [Vector3(v[0],plan.ground_height,v[1]),Vector3(v[2],plan.ground_height+plan.anchors.east_bank.y,v[3])]
 	var pose:=Transform3D(Basis(Vector3.UP,deg_to_rad(plan.angles.bridge)),plan.anchors.bridge)
 	var a: Vector3=pose*Vector3(-2.6,0,0);var b: Vector3=pose*Vector3(2.6,0,0)
-	a.y=plan.ground_height;b.y=plan.ground_height
+	a.y=plan.ground_height;b.y=plan.ground_height+plan.anchors.east_bank.y
 	return [a,b]
+
+static func bridge_style(plan: RefCounted) -> int:
+	return 1 if plan.construction.bridge.is_empty() else int(plan.construction.bridge[5])
+
+static func bridge_parameters(plan: RefCounted) -> Array:
+	if not plan.construction.bridge.is_empty(): return plan.construction.bridge.duplicate()
+	var ends: Array[Vector3]=bridge_points(plan)
+	return [ends[0].x,ends[0].z,ends[1].x,ends[1].z,1.2,bridge_style(plan)]
+
+static func bridge_profile(ends: Array[Vector3], style: int, t: float) -> Vector3:
+	return ends[0].lerp(ends[1],t)+Vector3.UP*(sin(PI*t)*.22 if style==1 else 0.0)
 
 static func bridge_issue(plan: RefCounted) -> String:
 	if plan.construction.bridge.is_empty(): return ""
 	var ends: Array[Vector3]=bridge_points(plan)
 	var east: PackedVector2Array=bridge_support(plan,1)
 	var main: PackedVector2Array=bridge_support(plan,0)
-	var direction: Vector3=(ends[1]-ends[0]).normalized()
+	var horizontal:=Vector2(ends[1].x-ends[0].x,ends[1].z-ends[0].z)
+	var rise: float=absf(ends[1].y-ends[0].y)+(.22*PI if bridge_style(plan)==1 else 0.0)
+	if rise/horizontal.length()>.5: return "两岸高差太大，请拉长桥梁或改用平桥。"
+	var direction:=Vector3(horizontal.x,0,horizontal.y).normalized()
 	var width: float=float(plan.construction.bridge[4])+.16
 	var basis:=Basis(Vector3.UP,atan2(-direction.z,direction.x))
 	var approach_a: PackedVector2Array=IslandSpace.footprint(Vector2(.16,width),Transform3D(basis,ends[0]-direction*.08))

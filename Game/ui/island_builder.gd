@@ -78,6 +78,9 @@ var _tools: Dictionary = {}
 var _start:=Vector2.INF
 var _drag_snapshot: Dictionary = {}
 var _bridge_end: int = -1
+var _bridge_snap: CheckButton
+var _bridge_style: OptionButton
+var _bridge_style_row: HBoxContainer
 var _pan:=Vector2.INF
 var _last_cell:=Vector2.INF
 var _shore: Node3D
@@ -128,6 +131,12 @@ func _ready() -> void:
 	_trellis_actions=HBoxContainer.new();content.add_child(_trellis_actions)
 	_button(_trellis_actions,"旋转",_rotate_trellis).name="RotateTrellis"
 	_trellis_snap=CheckButton.new();_trellis_snap.text="吸附格子";_trellis_snap.button_pressed=true;_trellis_actions.add_child(_trellis_snap)
+	_bridge_style_row=HBoxContainer.new();content.add_child(_bridge_style_row)
+	var bridge_label:=Label.new();bridge_label.text="桥型";bridge_label.size_flags_horizontal=Control.SIZE_EXPAND_FILL;_bridge_style_row.add_child(bridge_label)
+	_bridge_style=OptionButton.new();_bridge_style.custom_minimum_size.x=106;_bridge_style_row.add_child(_bridge_style)
+	for label: String in Construction.BRIDGE_STYLES: _bridge_style.add_item(label)
+	_bridge_style.item_selected.connect(func(_index: int) -> void: _parameter_changed(0))
+	_bridge_snap=CheckButton.new();_bridge_snap.text="吸附格子";_bridge_snap.button_pressed=true;content.add_child(_bridge_snap)
 	_building_actions=HBoxContainer.new();content.add_child(_building_actions)
 	_button(_building_actions,"旋转",_rotate_building).name="RotateBuilding"
 	_building_snap=CheckButton.new();_building_snap.text="吸附格子";_building_snap.button_pressed=true;_building_actions.add_child(_building_snap)
@@ -188,6 +197,8 @@ func choose(id: String) -> void:
 	_plant_rotate.visible=id in Plants.KINDS and _plant_mode=="move"
 	_field_actions.visible=id=="fields"
 	_trellis_actions.visible=id=="trellis"
+	_bridge_snap.visible=id=="bridge";_bridge_style_row.visible=id=="bridge"
+	_bridge_style.select(Construction.bridge_style(main.courtyard_plan))
 	_building_actions.visible=Buildings.BASE.has(id)
 	_decoration_actions.visible=_is_decoration()
 	_decoration_snap.visible=_is_decoration() and Catalog.Decorations.ITEMS[tool].type=="ground"
@@ -380,8 +391,9 @@ func _parameter_changed(_value: float) -> void:
 		parameters[0]=_values.length.value;parameters[1]=_values.width.value;parameters[2]=_values.height.value
 		draft.construction.trellis=parameters
 	elif tool=="bridge":
-		var points: Array[Vector3]=Construction.bridge_points(main.courtyard_plan) if draft.construction.bridge.is_empty() else Construction.bridge_points(candidate if candidate!=null else main.courtyard_plan)
-		draft.construction.bridge=[points[0].x,points[0].z,points[1].x,points[1].z,_values.bridge_width.value]
+		var parameters: Array=Construction.bridge_parameters(main.courtyard_plan) if draft.construction.bridge.is_empty() else draft.construction.bridge.duplicate()
+		parameters[4]=_values.bridge_width.value;parameters[5]=_bridge_style.selected
+		draft.construction.bridge=parameters
 	elif tool in Flocks.TOOLS: draft.construction.flocks[Flocks.TOOLS[tool]].count=int(_values.count.value)
 	_refresh()
 
@@ -415,6 +427,7 @@ func set_busy(value: bool, message: String = "") -> void:
 	_undo.disabled=value or not _has_undo()
 	choices.present(main.decoration_state.snapshot(),value)
 	for spin: SpinBox in _values.values(): spin.editable=not value
+	_bridge_style.disabled=value;_bridge_snap.disabled=value
 	if _is_decoration(): _decoration_changed()
 	if not message.is_empty(): _status.text=message
 
@@ -604,11 +617,14 @@ func _press(screen: Vector2) -> void:
 		return
 	if tool=="bridge":
 		var points: Array[Vector3]=Construction.bridge_points(candidate if candidate!=null else main.courtyard_plan)
-		var nearest: float=60
+		var nearest: float=18
 		for i: int in points.size():
-			var distance: float=main.camera.unproject_position(points[i]).distance_to(screen)
+			var distance: float=main.camera.unproject_position(points[i]+Vector3.UP*.12).distance_to(screen)
 			if distance<nearest: nearest=distance;_bridge_end=i
-		if _bridge_end<0: return
+		if _bridge_end<0:
+			var structure: Node3D=bridge_preview.structure if is_instance_valid(bridge_preview) else main.get_node("Environment").get_bridge()
+			var hit: MeshInstance3D=main.decoration_layout.environment_surface_at(screen,structure)
+			if hit==null or not structure.is_ancestor_of(hit): return
 	elif tool=="trellis":
 		var plan: RefCounted=Plan.from_snapshot(draft)
 		if plan==null: return
@@ -696,12 +712,23 @@ func _drag(screen: Vector2) -> void:
 			draft.construction.trellis=parameters
 			_values.length.set_value_no_signal(draft.construction.trellis[0])
 		"bridge":
+			# A click is not an edit. Keep the authored bridge until a real drag,
+			# and derive each movement from the press snapshot to avoid drift.
+			var delta: Vector2=point-_start
+			if delta.length()<.015: _refresh();return
 			var ends: Array[Vector3]=Construction.bridge_points(main.courtyard_plan)
 			if not draft.construction.bridge.is_empty():
 				ends=[Vector3(draft.construction.bridge[0],0,draft.construction.bridge[1]),Vector3(draft.construction.bridge[2],0,draft.construction.bridge[3])]
-			point=Construction.snap_bridge_end(main.courtyard_plan,point,_bridge_end,_values.bridge_width.value)
-			ends[_bridge_end]=Vector3(point.x,0,point.y)
-			draft.construction.bridge=[ends[0].x,ends[0].z,ends[1].x,ends[1].z,_values.bridge_width.value]
+			if _bridge_end<0:
+				delta=delta.snapped(Vector2.ONE*(.5 if _bridge_snap.button_pressed else .05))
+				if delta==Vector2.ZERO: _refresh();return
+				# Snap the translation, never each end separately: moving a whole
+				# bridge must preserve its span, heading and width at either shore.
+				for i: int in ends.size(): ends[i]+=Vector3(delta.x,0,delta.y)
+			else:
+				point=Construction.snap_bridge_end(main.courtyard_plan,point,_bridge_end,_values.bridge_width.value)
+				ends[_bridge_end]=Vector3(point.x,0,point.y)
+			draft.construction.bridge=[ends[0].x,ends[0].z,ends[1].x,ends[1].z,_values.bridge_width.value,_bridge_style.selected]
 	_refresh()
 
 func issue() -> String:
@@ -784,7 +811,7 @@ func _refresh() -> void:
 	var message: String=issue()
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
 	_undo.disabled=busy or not _has_undo()
-	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架移动；圆点调长度和方向。","bridge":"拖动任一桥头，让两端落在岸上。"}.get(tool,"")
+	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架移动；圆点调长度和方向。"}.get(tool,"")
 	if tool in Routes.KINDS and message.is_empty():
 		_status.text=_route_message
 	if tool=="land" and not _brush_message.is_empty(): _status.text=_brush_message

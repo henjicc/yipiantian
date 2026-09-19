@@ -50,7 +50,7 @@ func _run() -> void:
 	var slope: Vector2=plan.rim[0]*1.01
 	expect(not Geometry2D.is_point_in_polygon(slope,plan.plateau()) and not Space.water_clear(Space.rectangle(slope,Vector2(.02,.02)),banks),"Shore slope is neither flat support nor clear water")
 	var endpoints: Array[Vector3]=Construction.bridge_points(plan)
-	plan.construction.bridge=[endpoints[0].x,endpoints[0].z,endpoints[1].x,endpoints[1].z,1.2]
+	plan.construction.bridge=[endpoints[0].x,endpoints[0].z,endpoints[1].x,endpoints[1].z,1.2,1]
 	expect(Construction.bridge_issue(plan).is_empty(),"Existing bridge has full-width supported approaches")
 	plan.construction.bridge[0]=0;plan.construction.bridge[1]=14
 	expect(not Construction.bridge_issue(plan).is_empty(),"Floating bridge approach is rejected")

@@ -30,11 +30,32 @@ func _initialize() -> void:
 		expect(assembled.indices==expected[Mesh.ARRAY_INDEX] and assembled.uvs==expected[Mesh.ARRAY_TEX_UV],"Pole preserves triangle winding and UV layout")
 		var uploaded: Array=assembled.commit().surface_get_arrays(0)
 		expect(uploaded[Mesh.ARRAY_VERTEX].size()==points.size(),"Upload retains indexed vertices")
-	var plan:=Plan.new();plan.construction.bridge=[5.4,-.1,11.0,.1,1.2]
+	var plan:=Plan.new();plan.construction.bridge=[5.4,-.1,11.0,.1,1.2,1]
 	var bridge: Node3D=Structures.bridge(plan)
 	expect(bridge.get_meta("bridge_supports").size()==12,"Six bridge spans retain paired water supports")
 	expect(bridge.get_meta("deck_sections")==26,"Bridge retains planks at the requested span")
 	bridge.free()
+	var construction=preload("res://layout/island_construction.gd")
+	for bank_offset: float in [-.02,.8]:
+		plan.anchors.east_bank.y=bank_offset
+		for style: int in [0,1]:
+			plan.construction.bridge[5]=style
+			bridge=Structures.bridge(plan)
+			var ends: Array[Vector3]=bridge.get_meta("bridge_ends")
+			expect(is_equal_approx(ends[0].y,plan.ground_height) and is_equal_approx(ends[1].y,plan.ground_height+bank_offset),"Bridge endpoints use both real plateau heights")
+			var mesh: MeshInstance3D=bridge.get_child(0)
+			var triangles: TriangleMesh=mesh.mesh.generate_triangle_mesh()
+			var count: int=bridge.get_meta("deck_sections")
+			for i: int in [0,count/2,count-1]:
+				var a: Vector3=construction.bridge_profile(ends,style,float(i)/count)
+				var b: Vector3=construction.bridge_profile(ends,style,float(i+1)/count)
+				var center: Vector3=(a+b)*.5
+				var hit: Dictionary=triangles.intersect_segment(center+Vector3.UP*2,center-Vector3.UP*2)
+				expect(not hit.is_empty() and absf(hit.position.y-center.y)<.0001,"Real plank top follows slope and style at section %d"%i)
+			expect(construction.bridge_issue(plan).is_empty(),"Moderate bank height difference remains supported")
+			bridge.free()
+	plan.anchors.east_bank.y=3.0
+	expect(construction.bridge_issue(plan).contains("高差"),"An excessive bank slope is rejected")
 	for style: String in Plan.FENCE_STYLES:
 		var spans: Array[Dictionary]=[{"a":Vector3.ZERO,"b":Vector3(2,0,0),"height":1.0}]
 		var fence: Node3D=Fence.build(spans,style)

@@ -3,7 +3,7 @@ extends RefCounted
 
 const FarmState = preload("res://farm/farm_state.gd")
 const Decorations = preload("res://farm/decoration_state.gd")
-const VERSION: int = 21
+const VERSION: int = 22
 const MAX_BYTES: int = 524288
 const MAIN: String = "farm.json"
 const BACKUP: String = "farm.backup.json"
@@ -15,7 +15,7 @@ var _expected_main: String = ""
 var _expected_missing: bool = true
 
 
-func _init(save_directory: String = "user://farm-v21") -> void:
+func _init(save_directory: String = "user://farm-v22") -> void:
 	directory = ProjectSettings.globalize_path(save_directory).simplify_path()
 
 
