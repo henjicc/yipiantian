@@ -1,0 +1,88 @@
+{
+  "crop": "celery",
+  "stage": "mature",
+  "task": "9fa2bf3b-ef9e-4901-a68c-d8883a8586b9",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 10501,
+      "polygons": 9671,
+      "quads": 5003,
+      "triangles": 14674,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 6416,
+      "non_manifold_edges": 6468,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "min_godot": [
+    -0.20610161125659943,
+    0.0,
+    -0.19851000607013702
+  ],
+  "max_godot": [
+    0.21143625676631927,
+    0.41999998688697815,
+    0.19686858355998993
+  ],
+  "root_transform": [
+    [
+      0.42020517587661743,
+      0.0,
+      0.0,
+      0.0026673180982470512
+    ],
+    [
+      0.0,
+      0.42020517587661743,
+      0.0,
+      0.0008207132341340184
+    ],
+    [
+      0.0,
+      0.0,
+      0.42020517587661743,
+      0.20999999344348907
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 10501,
+      "polygons": 9671,
+      "quads": 5003,
+      "triangles": 14674,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 6416,
+      "non_manifold_edges": 6468,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.0191841721534729,
+    0.020825598388910294
+  ],
+  "triangles": 14674,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/celery/celery_mature.glb"
+}

@@ -54,12 +54,19 @@
 - 另以 [Takii 茼蒿栽培手册](https://www.takii.co.jp/tsk/manual/shungiku.html)区分大叶浅裂、中叶与小叶类型。本次统一中叶裂叶株型，不混入观赏菊花或大叶圆叶品种，不把日本播期套用江南。
 - 苗为两片光滑椭圆子叶、两片大小不同的初生裂叶；中期为短茎上疏松的羽状裂叶；成熟主茎与短侧枝承载更多叶片，表示未开花的采收状态。中期、成熟首图偏平面，出图阶段先修订朝向、叶片前后遮挡与中期茎节，完整提示词留于各阶段 `image-record.json`。
 
+### 芹菜 Apium graveolens Secalinum Group，中国细梗类型
+
+- 查询：`celery seedlings cotyledons first true leaves photo`、`Chinese celery young plant Apium graveolens secalinum growing`。沿用原游戏中国芹菜类型，不改成粗白梗西芹或根芹。
+- 苗参考种植者 [Wired Homestead](https://wiredhomestead.com/how-to-tell-if-seedlings-are-ready-to-transplant/)（Chris Larson，2026-02）的[子叶](https://wiredhomestead.com/wp-content/uploads/2026/02/celery-seedlings-e1770487128164-1024x768.jpg)与[初生真叶](https://wiredhomestead.com/wp-content/uploads/2026/02/celery-seedlings-with-1-true-leaf-e1770487060614-1024x768.jpg)照片：狭长椭圆子叶、最初三浅裂齿叶；并查看 [Home Microgreens真叶实拍](https://homemicrogreens.com/what-are-true-leaves/)核对初生叶形，其芹菜照片不包含可辨认子叶，不能混作子叶依据。
+- 幼株参考 [Succeed Heirlooms中国芹菜](https://www.succeedheirlooms.com.au/heirloom-vegetable-seed/heirloom-celery-celeriac-seeds/chinese-celery.html)的[幼株照片](https://www.succeedheirlooms.com.au/images/chinese-celery-plant.jpg)，细长绿叶柄与上端分裂锯齿小叶；该页面主产品图也是同株缩图，不把它当另一张成熟实拍。成熟补看 [Johnny's cutting celery](https://www.johnnyseeds.com/herbs/herbs-for-salad-mix/cutting-celery-herb-seed-922.11.html)的[采收叶丛照片](https://www.johnnyseeds.com/dw/image/v2/BJGJ_PRD/on/demandware.static/-/Sites-jss-master/default/dw0a482041/images/products/herbs/00922_01_cuttingcelery.jpg?sh=800&sw=800)；表达开花前的叶柄／叶丛，不加入花序。
+- 实拍已逐张查看，本地副本 `.local/crop-research-20260919/celery-*`，只作形态研究。国外播期、移栽或反复采叶操作不作为江南播期或新玩法依据。三张工笔参考已独立生成，首轮叶面过于正对镜头，已修订叶片朝向、杯状弯曲与前后遮挡；苗另收窄子叶。提示词与原件路径见 `celery/<stage>/image-record.json`；三阶段P2及运行检查已完成，见下方接入节点。
+
 ## 制作状态
 
 - 菠菜三个阶段已完成独立参考／P2生成、Blender整理及游戏接入，见下方节点；用户审美反馈待收集。
 - 白萝卜三个阶段已独立生成并接入；成熟首版因侧面过扁弃用，第二版经外叶姿态和根部接地整理后采用，见下方节点。
 - 青菜幼苗与中期已独立生成并接入，成熟株原文件与材质保留。
-- 生菜、香菜、茼蒿各三个阶段已独立生成并接入，通过定向与实景／风动检查；当前累计17／35个新阶段。芹菜、雪里蕻、乌塌菜、胡萝卜、小葱、青蒜共18阶段未完成；藤蔓玩法与整体光照未开始实现。
+- 生菜、香菜、茼蒿、芹菜各三个阶段已独立生成并接入，通过定向与实景／风动检查；当前累计20／35个新阶段。雪里蕻、乌塌菜、胡萝卜、小葱、青蒜共15阶段未完成；藤蔓玩法与整体光照未开始实现。
 - 本批工作前存在模型目录／检查页及开发说明等其他改动，不属于本批，不覆盖或混入提交。当前仓库未配置远端。
 
 ## 菠菜接入节点 · 20260919-spinach-p2-stages
@@ -165,3 +172,23 @@
 验证：`tests/crop_assets_test.gd -- --crop=chrysanthemum` 93项通过；12张四向单体、14张实际农田正反面／昼夜与全景聚焦在 `.local/verification/p2-stages/chrysanthemum/`，截图进程正常退出。成熟固定相机两帧风动11383像素变化，关闭后0，证明风动生效而非审美认可。实景未见大片穿土；夜景仍采用既有照明，后续全场灯光优化未完成。
 
 原始FBX不可变，参考、任务、预览、可编辑blend、GLB及审计齐全。重建：Blender运行 `prepare.py -- chrysanthemum <sprout|young|mature> --install` 后Godot Import。本地素材节点 `制作留档/03_处理与验证/20260919_茼蒿三阶段P2重制/README.md`；没有新录像或独立包更新，用户审美反馈待收集。
+
+## 芹菜接入节点 · 20260919-celery-p2-stages
+
+按上方实拍分别制作子叶与初生齿叶苗、较矮的疏松幼株、细绿长叶柄与分层复叶的未开花成熟株。参考先修订平面构图，再分别生成一次P2；三项各120积分，共360，全批累计2520积分。完整任务、种子及整理参数见 [celery/stages.json](celery/stages.json)。
+
+| 阶段 | 三角形 | 高度 | 处理 |
+|---|---:|---:|---|
+| 苗 | 3197 | .085米 | 保留狭椭圆子叶与初生浅裂齿叶 |
+| 中期 | 6643 | .200米 | 种植中心按中央茎丛定位，排除低垂外叶影响 |
+| 成熟 | 14674 | .420米 | 保留细绿叶柄与多方向薄叶，宽.418／深.395米 |
+
+三株全部原始面、UV与4K色图保留，无减面、非等比变形或额外扶正旋转，0零面积面／孤点。诊断开边885／3401／6416、非流形边887／3415／6468，包含薄叶开口及细小边缘缺口，不宣称水密；四向与实景检查未见大片缺叶，不盲目补洞。生成模型预览中的窄条须换方向确认叶面，不能仅以单张正面图判断脱落或删除小组件。
+
+接土半径苗.009／.009、中期.014／.014、成熟.0192／.0208米。中期最低点位于外叶，自动切片会把种植中心偏到一侧；根据实际中央茎基部指定原坐标中心(-.0466,-.0310)。茎基部比最低叶尖高约2.8毫米，正反实景中与现有土粒相接，没有继续埋深整株。审计同时保留受低叶影响的整网格12毫米切片范围(.1054／.0750)，避免把它误作根部半径。
+
+三阶段保留工笔原色，绕过旧增绿压暗，不套青菜色温校正，禁用额外自动LOD。芹菜独立微风固定下部35%，主摆最多4.5毫米、叶缘1.4毫米，幼苗按株高2.5%／0.8%限幅；使用通用风速。没有分件、骨骼、额外粒子或付费后处理。
+
+验证：`tests/crop_assets_test.gd -- --crop=celery` 93项通过，导出重导入通过；12张四向单体与14张实景正反昼夜／全景聚焦在 `.local/verification/p2-stages/celery/`。已查看所有单体方向、三阶段日间正反面及夜间代表视角；成熟近景重点检查根部，顶部全貌结合单体和聚焦图判断。风动固定两帧18169像素变化，关闭后0；截图与风动进程正常退出。夜景仍偏暗，全场灯光优化尚未完成，不将本次材质检查写成夜间照明验收。
+
+重建：Blender运行 `prepare.py -- celery <sprout|young|mature> --install` 后Godot Import。原始FBX、任务、参考／提示词、可编辑blend、GLB和审计按阶段保存。本地素材节点 `制作留档/03_处理与验证/20260919_芹菜三阶段P2重制/README.md`，无新录像或独立包更新，待用户审美反馈。

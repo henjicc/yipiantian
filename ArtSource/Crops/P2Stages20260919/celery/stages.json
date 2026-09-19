@@ -1,0 +1,73 @@
+{
+  "species": "Apium graveolens Secalinum Group, green Chinese leaf celery before flowering",
+  "stages": {
+    "sprout": {
+      "task_id": "7bac15f5-8220-41fb-9a60-6d8efe13372e",
+      "height": 0.085,
+      "max_width": 0.13,
+      "face_request": 2000,
+      "seed": 2026091919,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120,
+      "soil_radius": [
+        0.009,
+        0.009
+      ]
+    },
+    "young": {
+      "task_id": "8b5aba4d-687b-4a6d-9ec1-8ad48b485d33",
+      "height": 0.2,
+      "max_width": 0.28,
+      "face_request": 4500,
+      "seed": 2026091920,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120,
+      "collar_center_xy": [
+        -0.0466,
+        -0.031
+      ],
+      "soil_radius": [
+        0.014,
+        0.014
+      ],
+      "anchor_note": "Lowest point is an outer leaflet; XY is anchored to the central basal crown. Stem base is about 2.8 mm above the lowest leaf tip and meets existing soil detail in opposite farm views."
+    },
+    "mature": {
+      "task_id": "9fa2bf3b-ef9e-4901-a68c-d8883a8586b9",
+      "height": 0.42,
+      "max_width": 0.44,
+      "face_request": 9000,
+      "seed": 2026091921,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    }
+  },
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "quad": true,
+  "delight": false,
+  "pbr": false,
+  "texture_alignment": "original_image",
+  "enable_image_autofix": false,
+  "adoption": "Adopted in development: independent three stages; round-trip, crop assets, four-view, farm and wind checks passed; user visual feedback pending.",
+  "not_used": [
+    "semantic segmentation",
+    "rigging",
+    "paid retopology",
+    "paid retexturing",
+    "decimation"
+  ]
+}
