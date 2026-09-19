@@ -15,6 +15,16 @@ const DuckPreview=preload("res://presentation/duck_layout_preview.gd")
 var duck_preview: DuckPreview
 const BridgePreview=preload("res://presentation/bridge_layout_preview.gd")
 var bridge_preview: BridgePreview
+const Plants=preload("res://layout/plantings.gd")
+const PlantPreview=preload("res://presentation/plant_layout_preview.gd")
+var plant_preview: PlantPreview
+var _plant_actions: HBoxContainer
+var _plant_mode: String="point"
+var _plant_buttons: Dictionary={}
+var _plant_last:=Vector2.INF
+var _plant_message: String=""
+var _plant_selected: Array[int]=[]
+var _plant_rotate: Button
 const Buildings=preload("res://layout/building_layout.gd")
 var building_preview: BuildingPreview
 var _building_actions: HBoxContainer
@@ -77,13 +87,20 @@ func _ready() -> void:
 	choices=Choices.new();content.add_child(choices);_tools=choices.items
 	choices.item_selected.connect(choose)
 	choices.category_selected.connect(func(_category: String) -> void: choose(""))
-	for entry: Array in [["columns","田块列数",2,8,1],["rows","田块行数",2,8,1],["length","架长",2,6,.1],["width","架宽",.8,2,.1],["height","架高",1.6,3,.1],["bridge_width","桥宽",.8,1.8,.1],["count","鸭子数量",0,12,1]]:
+	for entry: Array in [["columns","田块列数",2,8,1],["rows","田块行数",2,8,1],["length","架长",2,6,.1],["width","架宽",.8,2,.1],["height","架高",1.6,3,.1],["bridge_width","桥宽",.8,1.8,.1],["count","鸭子数量",0,12,1],["radius","笔刷半径",.3,3,.1],["density","疏密（1–3）",1,3,1]]:
 		var row:=HBoxContainer.new();content.add_child(row);_rows[entry[0]]=row
 		var label:=Label.new();label.text=entry[1];label.size_flags_horizontal=Control.SIZE_EXPAND_FILL;row.add_child(label)
 		var spin:=SpinBox.new();spin.name=entry[0];spin.min_value=entry[2];spin.max_value=entry[3];spin.step=entry[4];spin.custom_minimum_size.x=106
-		if entry[0] not in ["count","columns","rows"]: spin.suffix="米"
+		if entry[0] not in ["count","columns","rows","density"]: spin.suffix="米"
 		row.add_child(spin);_values[entry[0]]=spin
 		spin.value_changed.connect(_parameter_changed)
+	_values.radius.set_value_no_signal(1.5);_values.density.set_value_no_signal(2)
+	_plant_actions=HBoxContainer.new();content.add_child(_plant_actions)
+	for mode: String in ["point","brush","move","erase"]:
+		var button: Button=_button(_plant_actions,{"point":"点放","brush":"涂刷","move":"移动","erase":"擦除"}[mode],_select_plant_mode.bind(mode))
+		button.add_theme_font_size_override("font_size",17)
+		button.toggle_mode=true;button.button_pressed=mode==_plant_mode;button.name="Plant"+mode.capitalize();_plant_buttons[mode]=button
+	_plant_rotate=_button(content,"旋转选中的植物",_rotate_plants);_plant_rotate.name="RotatePlants"
 	_field_actions=HBoxContainer.new();content.add_child(_field_actions)
 	_button(_field_actions,"添田",func() -> void: _field_action("new")).name="AddField"
 	_button(_field_actions,"旋转",func() -> void: _field_action("rotate")).name="RotateField"
@@ -127,15 +144,19 @@ func begin(scene: Node3D, selected: String = "land") -> void:
 func choose(id: String) -> void:
 	if busy: return
 	if not id.is_empty() and (Catalog.item(id).is_empty() or Catalog.item(id).editor.is_empty()): return
+	if id in Plants.KINDS and tool in Plants.KINDS and id!=tool:
+		_focus_lost();tool=id;_plant_selected.clear();_plant_message="";choices.select_item(id);_refresh();return
 	# End the previous controller before activating another; no invisible draft survives.
 	tool=""
 	if main.decoration_layout.active: main.decoration_layout.finish_mode()
 	_clear_preview()
 	_new_field=false;_field_gesture=""
 	tool=id;draft=main.farm_state.snapshot().layout;_start=Vector2.INF;_drag_snapshot={};_last_cell=Vector2.INF
-	_pending_land=Vector2.INF;_brush_last=Vector2.INF;_brush_message=""
+	_pending_land=Vector2.INF;_brush_last=Vector2.INF;_brush_message="";_plant_message="";_plant_last=Vector2.INF;_plant_selected.clear()
 	choices.select_item(id);choices.present(main.decoration_state.snapshot(),busy)
-	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id=="ducks" and key=="count") or (id=="fields" and key in ["columns","rows"])
+	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id=="ducks" and key=="count") or (id=="fields" and key in ["columns","rows"]) or (id in Plants.KINDS and key in ["radius","density"])
+	_plant_actions.visible=id in Plants.KINDS
+	_plant_rotate.visible=id in Plants.KINDS and _plant_mode=="move"
 	_field_actions.visible=id=="fields"
 	_trellis_actions.visible=id=="trellis"
 	_building_actions.visible=Buildings.BASE.has(id)
@@ -155,6 +176,71 @@ func choose(id: String) -> void:
 
 func _is_decoration() -> bool:
 	return Catalog.Decorations.ITEMS.has(tool)
+
+func _select_plant_mode(mode: String) -> void:
+	if busy: return
+	_focus_lost();_plant_mode=mode;_plant_message="";_plant_selected.clear()
+	_plant_rotate.visible=mode=="move"
+	for id: String in _plant_buttons: _plant_buttons[id].button_pressed=id==mode
+	_refresh()
+
+func _ensure_plant_preview() -> void:
+	if is_instance_valid(plant_preview): return
+	plant_preview=PlantPreview.new();main.add_child(plant_preview);plant_preview.configure(main)
+
+func _paint_plants(point: Vector2) -> void:
+	_ensure_plant_preview()
+	var plan: RefCounted=Plan.from_snapshot(draft)
+	if plan==null: return
+	var from: Vector2=_plant_last if _plant_last.is_finite() else point
+	var steps: int=mini(100,maxi(1,ceili(from.distance_to(point)/.3)))
+	var samples:=PackedVector2Array([point])
+	if _plant_mode!="point":
+		samples.clear()
+		for i: int in steps+1: samples.append(from.lerp(point,float(i)/steps))
+	_plant_message=""
+	var next_id: int=1
+	for entry: Dictionary in draft.plants: next_id=maxi(next_id,int(entry.id)+1)
+	for sample: Vector2 in samples:
+		if _plant_mode=="erase":
+			for i: int in range(draft.plants.size()-1,-1,-1):
+				var entry: Dictionary=draft.plants[i]
+				if entry.kind==tool and Plants.position(entry).distance_to(sample)<=_values.radius.value: draft.plants.remove_at(i)
+			continue
+		var points: PackedVector2Array=Plants.brush_points(sample,_values.radius.value,int(_values.density.value),tool) if _plant_mode=="brush" else PackedVector2Array([sample])
+		for at: Vector2 in points:
+			if draft.plants.size()>=Plants.MAX_CLUMPS: _plant_message="已达到 %d 簇，可擦除部分植物再布置。"%Plants.MAX_CLUMPS;break
+			var near: bool=false
+			for entry: Dictionary in draft.plants:
+				if Plants.position(entry).distance_to(at)<(.32 if tool=="trapa" and entry.kind=="trapa" else .5): near=true;break
+			if near: continue
+			var entry: Dictionary=Plants.make_entry(next_id,tool,at)
+			var message: String=plant_preview.entry_issue(entry,plan)
+			if not message.is_empty(): _plant_message=message;continue
+			draft.plants.append(entry);next_id+=1
+	_plant_last=point;_refresh()
+
+func _move_plants(point: Vector2) -> void:
+	draft=_drag_snapshot.duplicate(true)
+	var delta: Vector2=(point-_start).snapped(Vector2.ONE*.05)
+	for entry: Dictionary in draft.plants:
+		if entry.id not in _plant_selected: continue
+		entry.pose[0]+=delta.x;entry.pose[1]+=delta.y
+	draft.plants=Plants.canonical(draft.plants)
+	_plant_last=point;_refresh()
+
+func _rotate_plants() -> void:
+	if busy or _plant_selected.is_empty(): return
+	var center:=Vector2.ZERO;var count: int=0
+	for entry: Dictionary in draft.plants:
+		if entry.id in _plant_selected: center+=Plants.position(entry);count+=1
+	if count==0: return
+	center/=count
+	for entry: Dictionary in draft.plants:
+		if entry.id not in _plant_selected: continue
+		var at: Vector2=center+(Plants.position(entry)-center).rotated(-PI/12)
+		entry.pose=[at.x,at.y,fposmod(entry.pose[2]+15,360),entry.pose[3]]
+	draft.plants=Plants.canonical(draft.plants);_refresh()
 
 func _decoration_changed() -> void:
 	if not active or not _is_decoration(): return
@@ -294,6 +380,15 @@ func accept_bridge(plan: RefCounted) -> void:
 		_clear_preview();active=false;_start=Vector2.INF;hide();closed.emit()
 	else: choose(tool)
 
+func accept_plants(plan: RefCounted) -> void:
+	plant_preview.accept(plan);plant_preview.free();plant_preview=null
+	var close_now: bool=close_after_commit
+	set_busy(false);previous=main.previous_layout.duplicate(true)
+	draft=plan.snapshot();candidate=plan
+	if close_now:
+		_clear_preview();active=false;_start=Vector2.INF;hide();closed.emit()
+	else: choose(tool)
+
 func _focus_lost() -> void:
 	if active and not busy:
 		if _is_decoration():
@@ -361,12 +456,15 @@ func handle(event: InputEvent) -> void:
 		if _pan!=Vector2.INF:
 			main.camera.drag(event.relative,event.shift_pressed);_pan=event.position
 		elif _start!=Vector2.INF: _drag(event.position)
+		elif tool in Plants.KINDS:
+			_plant_last=world_point(event.position);_render_preview(true)
 	get_viewport().set_input_as_handled()
 
 func world_point(screen: Vector2) -> Vector2:
 	var from: Vector3=main.camera.project_ray_origin(screen);var direction: Vector3=main.camera.project_ray_normal(screen)
 	if direction.y>=-.001: return Vector2.INF
-	var distance: float=(main.courtyard_plan.ground_height-from.y)/direction.y
+	var level: float=-.25 if tool in Plants.KINDS else main.courtyard_plan.ground_height
+	var distance: float=(level-from.y)/direction.y
 	if distance<0 or distance>200: return Vector2.INF
 	var point: Vector3=from+direction*distance
 	return Vector2(point.x,point.z)
@@ -414,10 +512,22 @@ func _press(screen: Vector2) -> void:
 	_start=point;_drag_snapshot=draft.duplicate(true);_last_cell=Vector2.INF
 	if tool=="land":
 		_brush_last=point;_pending_land=point;_flush_land()
+	elif tool in Plants.KINDS:
+		_plant_last=point
+		if _plant_mode=="move":
+			_plant_selected.clear()
+			for entry: Dictionary in draft.plants:
+				if entry.kind==tool and Plants.position(entry).distance_to(point)<=_values.radius.value: _plant_selected.append(entry.id)
+			_refresh()
+		else: _paint_plants(point)
 
 func _drag(screen: Vector2) -> void:
 	var point: Vector2=world_point(screen)
 	if not point.is_finite(): return
+	if tool in Plants.KINDS:
+		if _plant_mode=="move": _move_plants(point)
+		elif _plant_mode!="point": _paint_plants(point)
+		return
 	if tool=="fields":
 		_drag_field(point)
 		return
@@ -470,12 +580,16 @@ func _drag(screen: Vector2) -> void:
 
 func issue() -> String:
 	if candidate==null:
+		if tool in Plants.KINDS: return "植物位置超出布置范围，请移回小岛附近。"
 		if Buildings.BASE.has(tool): return "建筑位置超出可布置范围，请移回岛内。"
 		if tool=="fields": return "田块位置或大小超出范围。最多 12 块田、384 个田格，每块田最多 8 行 × 8 列；可取消后重新调整。"
 		if tool=="ducks": return "水域至少 2 × 2 米，每只鸭子需约 3 平方米。请扩大水域或减少数量。"
 		if tool=="bridge": return "桥长需在 2 至 9 米之间，请调整桥头。"
 		if tool=="trellis": return "请把菜架尺寸调回允许范围。"
 		return "从现有岸边涂抹，让新土地保持连通。"
+	var plants_issue: String=Plants.terrain_issue(candidate)
+	if not plants_issue.is_empty(): return plants_issue
+	if tool in Plants.KINDS and is_instance_valid(plant_preview): return plant_preview.message
 	if tool=="ducks" and is_instance_valid(duck_preview):
 		if not duck_preview.message.is_empty(): return duck_preview.message
 		if duck_preview.pending: return "正在校对活动水域…"
@@ -513,6 +627,8 @@ func _refresh() -> void:
 	if (tool in ["trellis","bridge"] or Buildings.BASE.has(tool)) and candidate!=null: draft=candidate.snapshot()
 	if tool.is_empty():
 		_status.text="";_confirm.disabled=true;_undo.disabled=not _has_undo();return
+	if tool in Plants.KINDS and candidate!=null:
+		_ensure_plant_preview();plant_preview.update(candidate)
 	if tool=="ducks" and candidate!=null and draft!=main.farm_state.snapshot().layout:
 		if not is_instance_valid(duck_preview):
 			duck_preview=DuckPreview.new();main.add_child(duck_preview);duck_preview.configure(main)
@@ -543,9 +659,15 @@ func _refresh() -> void:
 	_undo.disabled=busy or not _has_undo()
 	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架移动；圆点调长度和方向。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}.get(tool,"")
 	if tool=="land" and not _brush_message.is_empty(): _status.text=_brush_message
+	if tool in Plants.KINDS and message.is_empty():
+		_status.text=_plant_message if not _plant_message.is_empty() else "点放或按住左键涂刷；擦除仅作用于当前植物。已布置 %d / %d 簇。"%[draft.plants.size(),Plants.MAX_CLUMPS]
+		if _plant_mode=="move": _status.text="按住拖动范围内的同种植物。调小半径可单独移动；选中后可旋转。"
+	_plant_rotate.disabled=_plant_selected.is_empty() or busy
 	_render_preview(message.is_empty())
 
-func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trellis: bool=false, keep_building: bool=false, keep_ducks: bool=false, keep_bridge: bool=false) -> void:
+func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trellis: bool=false, keep_building: bool=false, keep_ducks: bool=false, keep_bridge: bool=false, keep_plants: bool=false) -> void:
+	if not keep_plants and is_instance_valid(plant_preview):
+		plant_preview.free();plant_preview=null
 	if not keep_bridge and is_instance_valid(bridge_preview):
 		bridge_preview.retire();bridge_preview=null
 	if not keep_ducks and is_instance_valid(duck_preview):
@@ -562,7 +684,7 @@ func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trelli
 
 func _render_preview(valid: bool) -> void:
 	var changed: bool=candidate!=null and draft!=main.farm_state.snapshot().layout
-	_clear_preview(tool=="land" and changed,tool=="fields",tool=="trellis" and changed,Buildings.BASE.has(tool) and changed,tool=="ducks" and changed,tool=="bridge" and changed)
+	_clear_preview(tool=="land" and changed,tool=="fields",tool=="trellis" and changed,Buildings.BASE.has(tool) and changed,tool=="ducks" and changed,tool=="bridge" and changed,tool in Plants.KINDS)
 	_preview=Node3D.new();_preview.name="ConstructionPreview";main.add_child(_preview)
 	var tint:=Color("88b779") if valid else Color("d77d62")
 	var plan: RefCounted=candidate if candidate!=null else main.courtyard_plan
@@ -571,7 +693,14 @@ func _render_preview(valid: bool) -> void:
 			if not is_instance_valid(_shore):
 				_shore=ShorePreview.new();main.add_child(_shore);_shore.configure(main.get_node("Environment"))
 			_shore.update(plan)
-	if tool=="fields" and candidate!=null:
+	if tool in Plants.KINDS and _plant_last.is_finite():
+		var circle:=PackedVector2Array()
+		var radius: float=.35 if _plant_mode=="point" else _values.radius.value
+		for i: int in 32: circle.append(_plant_last+Vector2.from_angle(i*TAU/32)*radius)
+		_outline(circle,-.205,tint,false)
+		for entry: Dictionary in draft.plants:
+			if entry.id in _plant_selected: _outline(Plants.footprint(entry),-.20,tint,false)
+	elif tool=="fields" and candidate!=null:
 		for index: int in candidate.fields.size():
 			_outline(candidate.field_polygon(index),candidate.ground_height+.16,tint if index==selected_field else Color("b8b293"),false)
 		var field: Dictionary=candidate.fields[selected_field]

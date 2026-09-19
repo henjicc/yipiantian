@@ -121,6 +121,7 @@ func get_settings() -> Dictionary:
 
 
 func _apply_quality() -> void:
+	_environment.get_node("PlayerPlants").set_low_detail(_quality=="low")
 	_environment.get_node("NeighborIslets").set_low_detail_enabled(_quality == "low")
 	_environment.get_node("LivingDetails").set_lamp_shadows(_quality != "low")
 	# Sun shadows and selected crop detail stay intact at every quality level.

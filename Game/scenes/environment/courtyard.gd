@@ -101,7 +101,7 @@ func _refresh_shore_obstacles() -> void:
 			await get_tree().process_frame;slice=Time.get_ticks_usec()
 		if not is_instance_valid(child): continue
 		if not child.has_meta("shore_stone") and not String(child.name).begins_with("BankReeds") and not String(child.name).begins_with("Lotus"): continue
-		if child.get_meta("bridge_dressing_hidden",false):
+		if child.get_meta("bridge_dressing_hidden",false) or child.get_meta("player_dressing_hidden",false):
 			layout_obstacles.erase(String(child.name));continue
 		var polygon: PackedVector2Array=Space.cached_footprint(child,.23+rise,.75+rise)
 		if polygon.size()>=3: layout_obstacles[String(child.name)]=polygon
@@ -170,7 +170,8 @@ func _circulation_obstacles() -> Dictionary:
 	var result: Dictionary = {}
 	var rise: float=plan.ground_height-.13
 	for node: Node3D in get_children():
-		if node.name in ["WaterSurface","DistantLandscape","NeighborIslets","DecorationSlots","OsmanthusLeaves","LivingDetails","GardenPaths"]: continue
+		if node.get_meta("player_dressing_hidden",false): continue
+		if node.name in ["WaterSurface","DistantLandscape","NeighborIslets","DecorationSlots","OsmanthusLeaves","LivingDetails","GardenPaths","PlayerPlants"]: continue
 		if node.has_meta("bank_role") or String(node.name).begins_with("BankGrass"): continue
 		if node.name=="EntranceTrellis" and not plan.construction.trellis.is_empty():
 			result.EntranceTrellis=Construction.trellis_footprint(plan);continue
@@ -183,6 +184,7 @@ func _circulation_obstacles() -> Dictionary:
 		if prop is Node3D and plan.props.has(String(prop.name)) and prop.position.y<.3+rise:
 			var polygon: PackedVector2Array = Space.footprint(prop,.05+rise,.70+rise)
 			if polygon.size()>=3: result[String(prop.name)] = polygon
+	result.merge(preload("res://layout/plantings.gd").footprints(plan.plants))
 	return result
 
 func _process(delta: float) -> void:
@@ -360,8 +362,11 @@ func _fit_bridge_stone(stone: Node3D) -> void:
 	stone.set_meta("bridge_dressing_stone",true)
 	var bridge_polygon: PackedVector2Array=Space.cached_footprint(get_bridge(),plan.ground_height-.08,plan.ground_height+.75)
 	var hidden: bool=not Geometry2D.intersect_polygons(bridge_polygon,Space.cached_footprint(stone,plan.ground_height+.10,plan.ground_height+.62)).is_empty()
-	stone.set_meta("bridge_dressing_hidden",hidden);stone.visible=not hidden
-	if hidden: _shore_sources.erase(stone)
+	var player_hidden: bool=not plan.plants.is_empty() and preload("res://layout/plantings.gd").overlaps_player(Space.cached_footprint(stone,-.55,.55),plan.plants)
+	stone.set_meta("player_dressing_hidden",player_hidden)
+	stone.set_meta("bridge_dressing_hidden",hidden);stone.visible=not hidden and not player_hidden
+	if not stone.visible: _shore_sources.erase(stone)
+	elif stone.get_parent()==self and stone not in _shore_sources: _shore_sources.append(stone)
 
 func _build_plants() -> void:
 	_rng.seed=87311
@@ -394,6 +399,27 @@ func _build_plants() -> void:
 			var lotus: Node3D=_asset("lotus","Lotus%d_%d"%[i,j],lily_coves[i]+Vector3(cos(angle)*.72,0,sin(angle)*.6),i*41+j*79,_rng.randf_range(.82,1.15))
 			_floaters.append(lotus);_floater_origins.append(lotus.position)
 			lotus.set_meta("navigation_anchor",lotus.position)
+
+	var player_plants:=preload("res://presentation/player_plants.gd").new()
+	player_plants.name="PlayerPlants";add_child(player_plants);player_plants.update(plan.plants)
+	fit_player_dressing(plan,true)
+
+func fit_player_dressing(candidate: RefCounted, publish: bool=false, include_rocks: bool=true) -> void:
+	var index:=preload("res://layout/island_space.gd").new()
+	for entry: Dictionary in candidate.plants: index.add(str(entry.id),preload("res://layout/plantings.gd").footprint(entry))
+	for lotus: Node3D in _floaters:
+		var hidden: bool=not candidate.plants.is_empty() and not index.collisions(Space.cached_footprint(lotus,-.55,.55)).is_empty()
+		lotus.visible=not hidden
+		if publish: lotus.set_meta("player_dressing_hidden",hidden)
+	if not include_rocks: return
+	for stone: Node3D in get_children():
+		if not stone.get_meta("bridge_dressing_stone",false): continue
+		var hidden: bool=not candidate.plants.is_empty() and not index.collisions(Space.cached_footprint(stone,-.55,.55)).is_empty()
+		stone.visible=not hidden and not stone.get_meta("bridge_dressing_hidden",false)
+		if publish:
+			stone.set_meta("player_dressing_hidden",hidden)
+			if not stone.visible: _shore_sources.erase(stone)
+			elif stone not in _shore_sources: _shore_sources.append(stone)
 
 func _grass_patch(at: Vector3, index: int) -> void:
 	# Small opaque curved blades fill the soil contact below the existing flower assets.
@@ -430,6 +456,7 @@ func preview_shore_plants(candidate: RefCounted) -> void:
 		_floaters[index].set_meta("navigation_anchor",_floater_origins[index])
 	for index: int in candidate.reeds.size(): get_node("BankReeds%d"%index).position=candidate.reeds[index]
 	get_node("NeighborIslets").preview_expansion(candidate.scenery_expansion.max(candidate.shore_expansion))
+	fit_player_dressing(candidate,false,false)
 
 func _build_slots() -> void:
 	_slots=Node3D.new();_slots.name="DecorationSlots";add_child(_slots)

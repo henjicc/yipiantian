@@ -1,6 +1,7 @@
 extends RefCounted
 ## Stable original shore samples; only newly exposed/submerged edges change.
 const Marsh=preload("res://scenes/environment/marsh_plants.gd")
+const Plants=preload("res://layout/plantings.gd")
 
 static func _new_land(point: Vector2, plan: RefCounted) -> bool:
 	for patch: Array in plan.construction.land:
@@ -73,6 +74,9 @@ static func plants(plan: RefCounted) -> Node3D:
 		placements.trapa.append(Transform3D(Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3(size,.32,size)),Vector3(at.x,-.263,at.y)))
 	var builder:=Marsh.new()
 	for species: String in placements:
+		for i: int in range(placements[species].size()-1,-1,-1):
+			var footprint: PackedVector2Array=Plants.Space.footprint(Plants.EXTENTS[species],placements[species][i],.06)
+			if Plants.overlaps_player(footprint,plan.plants): placements[species].remove_at(i)
 		if not placements[species].is_empty(): builder._batch(holder,species,"low",placements[species])
 	builder.free()
 	return holder

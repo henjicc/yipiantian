@@ -708,8 +708,17 @@ func _begin_construction(tool: String = "land") -> void:
 
 func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	if not island_builder.active or island_builder.busy: return
+	var requested_plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
+	if requested_plan==null: return
+	var plants_issue: String=CourtyardPlan.Plants.terrain_issue(requested_plan)
+	if not plants_issue.is_empty(): island_builder.set_busy(false,plants_issue);return
 	var current: Dictionary=farm_state.snapshot().layout
 	var unchanged: Dictionary=snapshot.duplicate(true)
+	unchanged.plants=current.plants.duplicate(true)
+	if unchanged==current and snapshot!=current:
+		_apply_plants(snapshot,undo)
+		return
+	unchanged=snapshot.duplicate(true)
 	unchanged.construction.bridge=current.construction.bridge.duplicate(true)
 	if unchanged==current and snapshot!=current:
 		_apply_bridge(snapshot,undo)
@@ -780,6 +789,27 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	farm_state=candidate
 	island_builder.set_busy(true,"已保存，正在更新小岛…")
 	_reload_saved_scene()
+
+func _apply_plants(snapshot: Dictionary, undo: bool) -> void:
+	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
+	if not is_instance_valid(island_builder.plant_preview):
+		island_builder._clear_preview();island_builder._ensure_plant_preview()
+	var preview: Node3D=island_builder.plant_preview
+	preview.update(plan)
+	if not preview.message.is_empty(): island_builder.set_busy(false,preview.message);return
+	island_builder.set_busy(true)
+	var started: int=Time.get_ticks_msec()
+	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	if not candidate.apply_layout(snapshot,clock.call()).ok:
+		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok: island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
+	previous_layout={} if undo else farm_state.snapshot().layout
+	previous_decorations={};farm_state=candidate
+	island_builder.accept_plants(plan)
+	_refresh_hud()
+	$Environment.refresh_terrain.call_deferred(true)
+	print("PLANTS_COMMIT_MS ",Time.get_ticks_msec()-started)
 
 func _apply_bridge(snapshot: Dictionary, undo: bool) -> void:
 	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
@@ -985,6 +1015,10 @@ func _begin_courtyard_edit() -> void:
 
 func _apply_courtyard(snapshot: Dictionary, undo: bool) -> void:
 	if not _layout_active() or courtyard_edit.editor.busy: return
+	var requested_plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
+	if requested_plan==null: return
+	var plants_issue: String=CourtyardPlan.Plants.terrain_issue(requested_plan)
+	if not plants_issue.is_empty(): courtyard_edit.editor.set_busy(false,plants_issue);return
 	var candidate:=FarmState.new()
 	candidate.restore_snapshot(farm_state.snapshot())
 	var result: Dictionary=candidate.apply_layout(snapshot,clock.call())

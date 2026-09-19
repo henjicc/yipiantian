@@ -47,7 +47,7 @@ func _run() -> void:
 	expect(builder.tool.is_empty() and builder._confirm.disabled,"Browsing a category does not keep the old brush active")
 	await shot("01-plants")
 	await click(builder.choices.items.lotus)
-	expect(builder.tool.is_empty() and builder.choices.items.lotus.disabled,"Unavailable plant tool cannot perform a different operation")
+	expect(builder.tool=="lotus" and not builder.choices.items.lotus.disabled,"Plant category opens the available planting tool")
 	root.size=Vector2i(960,640);await frames()
 	for category: String in Catalog.CATEGORIES:
 		await click(builder.choices.categories[category])

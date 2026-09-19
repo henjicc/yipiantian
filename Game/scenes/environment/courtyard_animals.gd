@@ -71,7 +71,11 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 			slice=Time.get_ticks_usec()
 		if not is_instance_valid(child): continue
 		if not child is Node3D or child == self: continue
-		if child.get_meta("bridge_dressing_hidden",false): continue
+		if child.name=="PlayerPlants":
+			if update_water:
+				for polygon: PackedVector2Array in preload("res://layout/plantings.gd").footprints(environment.plan.plants).values(): water.block(polygon)
+			continue
+		if child.get_meta("bridge_dressing_hidden",false) or child.get_meta("player_dressing_hidden",false): continue
 		var path: String = child.scene_file_path
 		var bank_role: String = child.get_meta("bank_role", "")
 		if update_water and child.has_meta("bridge_supports"):

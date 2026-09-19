@@ -81,7 +81,7 @@ func update(plan: RefCounted) -> void:
 	contacts.collect(structure,[plan.ground_height+.002])
 	_obstacles=environment.layout_obstacles.duplicate(true);_obstacles.erase(String(_source.name))
 	for entry: Dictionary in _dressing:
-		entry.node.visible=not IslandSpace.overlaps(footprint,entry.footprint)
+		entry.node.visible=not IslandSpace.overlaps(footprint,entry.footprint) and not entry.node.get_meta("player_dressing_hidden",false)
 		_obstacles.erase(String(entry.node.name))
 		if entry.node.visible: _obstacles[String(entry.node.name)]=entry.footprint
 	_obstacles.merge(main.decoration_layout.ground_footprints())
@@ -163,7 +163,7 @@ func accept(plan: RefCounted) -> void:
 	environment.remove_child(_source);_source.queue_free();structure.reparent(environment)
 	environment._contact_sources.append(structure);environment._shore_sources.append(structure)
 	for entry: Dictionary in _dressing:
-		entry.node.set_meta("bridge_dressing_hidden",not entry.node.visible)
+		entry.node.set_meta("bridge_dressing_hidden",IslandSpace.overlaps(footprint,entry.footprint))
 		environment._shore_sources.erase(entry.node)
 		if entry.node.visible: environment._shore_sources.append(entry.node)
 	for pair: Array in [[contacts,environment,"BridgeContacts"],[core,environment.get_node("GroundCover"),"CoreGrass"],[expansion,environment,"ExpansionGrass"],[paths,environment,"GardenPaths"]]:

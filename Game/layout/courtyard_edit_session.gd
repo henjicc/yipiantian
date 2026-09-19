@@ -41,6 +41,11 @@ func _check(snapshot: Dictionary, revision: int) -> void:
 		editor.checked(revision,null,_blocks,issues,"田格总数最多 384 格，每块田最多 8 行 × 8 列。")
 		return
 	# Draw feedback before potentially rebuilding shore-bound model footprints.
+	var plant_issue: String=Plan.Plants.terrain_issue(plan)
+	if not plant_issue.is_empty():
+		issues.append("player_plants")
+		editor.checked(revision,plan,_blocks,issues,plant_issue)
+		return
 	editor.set_busy(true,"正在校对位置与通路…")
 	await get_tree().process_frame
 	await get_tree().process_frame

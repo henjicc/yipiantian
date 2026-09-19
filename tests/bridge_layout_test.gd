@@ -167,11 +167,13 @@ func edge_checks(builder: Node) -> void:
 	await drag(ends[1]+Vector3.UP*.12,Vector3(11,.13,.1))
 	await drag(Construction.bridge_points(builder.candidate)[0]+Vector3.UP*.12,Vector3(5.4,.13,-.1))
 	var wanted: Dictionary=builder.draft.duplicate(true)
-	# Wait only for the real worker to start, then cancel before adopting it.
+	# Start a fresh real check in this frame. The input helper's frame waits can
+	# already finish an earlier worker on a headless/fast renderer.
+	builder._values.bridge_width.value=1.1
 	var pending: Node=builder.bridge_preview
+	pending._due=0;pending._process(0)
 	var started: int=Time.get_ticks_msec()
-	while pending.pending and pending._worker==null and Time.get_ticks_msec()-started<2000: await process_frame
-	expect(pending._worker!=null,"Cancellation exercises a running bridge worker")
+	expect(pending._worker!=null and pending._worker.is_alive(),"Cancellation exercises a running bridge worker")
 	started=Time.get_ticks_msec();builder.cancel_draft()
 	print("BRIDGE_CANCEL_MS ",Time.get_ticks_msec()-started)
 	expect(original_bridge.visible and scene.farm_state.snapshot()==original,"Cancel restores scene without publishing bridge state")

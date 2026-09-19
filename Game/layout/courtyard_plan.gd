@@ -6,6 +6,8 @@ const FENCE_STYLES: Array[String] = ["bamboo", "crossed", "picket"]
 const BankGeometry = preload("res://layout/bank_geometry.gd")
 const Construction = preload("res://layout/island_construction.gd")
 const IslandSpace = preload("res://layout/island_space.gd")
+const Plants = preload("res://layout/plantings.gd")
+var plants: Array=[]
 var construction: Dictionary = Construction.initial()
 var scenery_expansion := Vector2.ZERO
 const DECORATION_SCENERY={"ground_01":"YardWaterVats","ground_02":"YardMelonPile","ground_03":"YardGroundTrays","ground_04":"YardBasketStack"}
@@ -126,12 +128,13 @@ func snapshot() -> Dictionary:
 	for field: Dictionary in fields:
 		encoded.append({"id":field.id,"position":[field.position.x,field.position.y,field.position.z],"yaw":field.yaw,
 			"size":[field.size.x,field.size.y],"columns":field.columns,"rows":field.rows,"cells":field.cells.duplicate(),"seed":field.seed})
-	return {"shore":[shore_expansion.x,shore_expansion.y],"terrain":[ground_height,bank_width],"fields":encoded,"fence_style":fence_style,"construction":construction.duplicate(true)}
+	return {"shore":[shore_expansion.x,shore_expansion.y],"terrain":[ground_height,bank_width],"fields":encoded,"fence_style":fence_style,"construction":construction.duplicate(true),"plants":plants.duplicate(true)}
 
 static func from_snapshot(data: Dictionary) -> RefCounted:
 	# This is the disk/edit admission boundary. Reject malformed layouts before any
 	# geometry or crop state is rebuilt; JSON must never allocate unbounded meshes.
-	if data.size()!=5 or not _numbers(data.get("shore"),2) or not data.get("fields") is Array: return null
+	if not Plants.valid(data.get("plants")): return null
+	if data.size()!=6 or not _numbers(data.get("shore"),2) or not data.get("fields") is Array: return null
 	if not Construction.valid(data.get("construction")): return null
 	if not _numbers(data.get("terrain"),2): return null
 	if data.terrain[0]<.08 or data.terrain[0]>.38 or data.terrain[1]<.8 or data.terrain[1]>1.2: return null
@@ -168,6 +171,7 @@ static func from_snapshot(data: Dictionary) -> RefCounted:
 	plan.set_terrain(data.terrain[0],data.terrain[1])
 	plan.fields = decoded
 	plan.fence_style=data.fence_style
+	plan.plants=Plants.canonical(data.plants)
 	if not plan.apply_construction(data.construction): return null
 	return plan
 
