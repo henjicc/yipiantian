@@ -23,7 +23,7 @@ var preview_turn: int = 0
 var preview_position := Vector2.INF
 var snap_to_grid: bool = true
 var _grab_offset := Vector2.ZERO
-var _outline: MeshInstance3D
+var _outline: Node3D
 var _instances: Dictionary = {}
 var _attachment_previews: Dictionary = {}
 var _rings: Dictionary = {}
@@ -184,14 +184,10 @@ func _update_preview_feedback() -> void:
 	if is_instance_valid(_outline): _outline.free()
 	if Catalog.ITEMS[selected_item].type=="ground":
 		var polygon: PackedVector2Array=Space.cached_footprint(_preview,environment.plan.ground_height-.08,environment.plan.ground_height+1.17)
-		var mesh:=ImmediateMesh.new();mesh.surface_begin(Mesh.PRIMITIVE_LINES)
-		for i: int in polygon.size():
-			for p: Vector2 in [polygon[i],polygon[(i+1)%polygon.size()]]: mesh.surface_add_vertex(Vector3(p.x,_preview.global_position.y+.02,p.y))
-		mesh.surface_end()
-		_outline=MeshInstance3D.new();_outline.mesh=mesh
-		var material:=StandardMaterial3D.new();material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
-		material.albedo_color=Color("b4c589") if issue.is_empty() else Color("dc876b")
-		_outline.material_override=material;add_child(_outline)
+		var world:=PackedVector3Array()
+		for p: Vector2 in polygon: world.append(Vector3(p.x,_preview.global_position.y+.02,p.y))
+		_outline=preload("res://ui/construction_marks.gd").new();add_child(_outline)
+		_outline.outline(world,Color("88b779") if issue.is_empty() else Color("d77d62"))
 	_update_grass()
 	_refresh()
 

@@ -6,6 +6,7 @@ signal decoration_undo_requested
 const Plan = preload("res://layout/courtyard_plan.gd")
 const Construction = preload("res://layout/island_construction.gd")
 const ThemeFactory = preload("res://ui/farm_theme.gd")
+const Marks=preload("res://ui/construction_marks.gd")
 const ShorePreview=preload("res://presentation/island_shore_preview.gd")
 const IslandSpace=preload("res://layout/island_space.gd")
 const LandSupport=preload("res://layout/land_support.gd")
@@ -76,6 +77,7 @@ var previous: Dictionary = {}
 var _preview: Node3D
 var _panel: PanelContainer
 var _status: Label
+var _finish: Button
 var _confirm: Button
 var _undo: Button
 var _values: Dictionary = {}
@@ -99,6 +101,17 @@ func _ready() -> void:
 	layer=15
 	var root:=Control.new();root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter=Control.MOUSE_FILTER_IGNORE;root.theme=ThemeFactory.create();add_child(root)
+	var entry_style:=ThemeFactory.paper(ThemeFactory.PAPER.darkened(.025),8)
+	entry_style.content_margin_left=8;entry_style.content_margin_right=8
+	entry_style.content_margin_top=4;entry_style.content_margin_bottom=4
+	root.theme.set_stylebox("normal","LineEdit",entry_style)
+	var entry_focus: StyleBoxFlat=entry_style.duplicate()
+	entry_focus.draw_center=false;entry_focus.border_color=ThemeFactory.LEAF;entry_focus.set_border_width_all(2)
+	root.theme.set_stylebox("focus","LineEdit",entry_focus)
+	root.theme.set_color("font_color","LineEdit",ThemeFactory.INK)
+	root.theme.set_color("caret_color","LineEdit",ThemeFactory.INK)
+	root.theme.set_color("selection_color","LineEdit",ThemeFactory.LEAF)
+	root.theme.set_color("font_selected_color","LineEdit",ThemeFactory.PAPER)
 	_panel=PanelContainer.new();root.add_child(_panel)
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	_panel.grow_horizontal=Control.GROW_DIRECTION_BEGIN
@@ -158,12 +171,18 @@ func _ready() -> void:
 	_decoration_snap.toggled.connect(func(enabled: bool) -> void:
 		main.decoration_layout.snap_to_grid=enabled
 		if main.decoration_layout.preview_position.is_finite(): main.decoration_layout.preview_on_ground(main.decoration_layout.preview_position))
-	_status=Label.new();_status.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;_status.custom_minimum_size=Vector2(248,48);content.add_child(_status)
+	_status=Label.new();_status.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;_status.custom_minimum_size=Vector2(248,42);content.add_child(_status)
+	_status.add_theme_font_size_override("font_size",17)
 	_confirm=_button(content,"确认调整",_commit);_confirm.name="Confirm"
 	var actions:=HBoxContainer.new();content.add_child(actions)
 	_button(actions,"取消调整",cancel_draft).name="Cancel"
 	_undo=_button(actions,"撤销上次",_undo_last);_undo.name="Undo"
-	_button(content,"完成",finish).name="Finish"
+	_finish=_button(content,"完成",finish);_finish.name="Finish"
+	_finish.add_theme_stylebox_override("normal",ThemeFactory.paper(ThemeFactory.LEAF))
+	_finish.add_theme_stylebox_override("hover",ThemeFactory.paper(ThemeFactory.LEAF.lightened(.08)))
+	_finish.add_theme_stylebox_override("pressed",ThemeFactory.paper(ThemeFactory.LEAF.darkened(.1)))
+	for state: String in ["font_color","font_hover_color","font_focus_color","font_pressed_color"]:
+		_finish.add_theme_color_override(state,ThemeFactory.PAPER)
 	get_window().focus_exited.connect(_focus_lost)
 	hide()
 
@@ -442,7 +461,7 @@ func _layout_check_pending() -> bool:
 	return tool=="trellis" and is_instance_valid(trellis_preview) and trellis_preview.pending and trellis_preview.message.is_empty()
 
 func set_busy(value: bool, message: String = "") -> void:
-	busy=value
+	busy=value;_finish.disabled=value
 	if not value: close_after_commit=false
 	_confirm.disabled=value or candidate==null or draft==main.farm_state.snapshot().layout
 	_undo.disabled=value or not _has_undo()
@@ -593,7 +612,7 @@ func _flush_land() -> void:
 	if patches.size()>=Construction.MAX_PATCHES: _brush_message="本岛地形笔迹已达到上限。可取消当前调整。"
 	if patches.size()!=before: _refresh()
 	elif is_instance_valid(_preview):
-		for child: Node in _preview.get_children(): child.free()
+		_preview.clear_marks()
 		_draw_brush(Color("88b779"))
 		if not _brush_message.is_empty(): _status.text=_brush_message
 
@@ -631,6 +650,13 @@ func handle(event: InputEvent) -> void:
 		elif _start!=Vector2.INF: _drag(event.position)
 		elif tool in Plants.KINDS:
 			_plant_last=world_point(event.position);_render_preview(true)
+		elif tool=="land":
+			var point: Vector2=world_point(event.position)
+			if point.is_finite():
+				_land_island=_nearest_island(point,candidate if candidate!=null else main.courtyard_plan)
+				_last_cell=world_point(event.position)
+				if not is_instance_valid(_preview): _preview=Marks.new();main.add_child(_preview)
+				_preview.clear_marks();_draw_brush(Color("88b779"))
 	get_viewport().set_input_as_handled()
 
 func world_point(screen: Vector2) -> Vector2:
@@ -644,6 +670,13 @@ func world_point(screen: Vector2) -> Vector2:
 	if distance<0 or distance>200: return Vector2.INF
 	var point: Vector3=from+direction*distance
 	return Vector2(point.x,point.z)
+
+func _nearest_island(point: Vector2, plan: RefCounted) -> int:
+	var distances: Array[float]=[]
+	for island: int in 2:
+		var shore: PackedVector2Array=plan.plateau(island)
+		distances.append(0.0 if Geometry2D.is_point_in_polygon(point,shore) else point.distance_to(Construction.nearest_edge(point,shore)))
+	return 1 if distances[1]<distances[0] else 0
 
 func _press(screen: Vector2) -> void:
 	if tool.is_empty(): return
@@ -694,11 +727,7 @@ func _press(screen: Vector2) -> void:
 		_press_route(point)
 	elif tool=="land":
 		var plan: RefCounted=candidate if candidate!=null else main.courtyard_plan
-		var distances: Array[float]=[]
-		for island: int in 2:
-			var shore: PackedVector2Array=plan.plateau(island)
-			distances.append(0.0 if Geometry2D.is_point_in_polygon(point,shore) else point.distance_to(Construction.nearest_edge(point,shore)))
-		_land_island=1 if distances[1]<distances[0] else 0
+		_land_island=_nearest_island(point,plan)
 		point=world_point(screen);_start=point
 		_brush_last=point;_pending_land=point;_flush_land()
 	elif tool in Plants.KINDS:
@@ -866,7 +895,7 @@ func _refresh() -> void:
 	var message: String=issue()
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
 	_undo.disabled=busy or not _has_undo()
-	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架移动；圆点调长度和方向。"}.get(tool,"")
+	_status.text=message if not message.is_empty() else {"fields":"拖动田块移动，圆点调整大小与方向。","land":"沿岸拖动缩地，保留已有内容。" if _land_erase else "沿岸拖动添地，景物随岸线调整。","trellis":"拖动菜架移动；圆点调长度和方向。"}.get(tool,"")
 	if tool in Routes.KINDS and message.is_empty():
 		_status.text=_route_message
 	if tool=="land" and not _brush_message.is_empty(): _status.text=_brush_message
@@ -898,7 +927,7 @@ func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trelli
 func _render_preview(valid: bool) -> void:
 	var changed: bool=candidate!=null and draft!=main.farm_state.snapshot().layout
 	_clear_preview(tool=="land" and changed,tool=="fields",tool=="trellis" and changed,Buildings.BASE.has(tool) and changed,tool in Flocks.TOOLS and changed,tool=="bridge" and changed,tool in Plants.KINDS,tool in Routes.KINDS)
-	_preview=Node3D.new();_preview.name="ConstructionPreview";main.add_child(_preview)
+	_preview=Marks.new();_preview.name="ConstructionPreview";main.add_child(_preview)
 	var tint:=Color("88b779") if valid else Color("d77d62")
 	var plan: RefCounted=candidate if candidate!=null else main.courtyard_plan
 	if candidate!=null and draft!=main.farm_state.snapshot().layout:
@@ -1010,23 +1039,18 @@ func _draw_brush(tint: Color) -> void:
 	_outline(circle,main.courtyard_plan.ground_height+.06+(main.courtyard_plan.anchors.east_bank.y if _land_island==1 else 0.0),tint,false)
 
 func _handle(at: Vector3, tint: Color) -> void:
-	var node:=MeshInstance3D.new();var sphere:=SphereMesh.new();sphere.radius=.12;sphere.height=.24;node.mesh=sphere;node.position=at
-	var material:=StandardMaterial3D.new();material.albedo_color=tint;material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
-	node.material_override=material;node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;_preview.add_child(node)
+	_preview.handle(at,tint)
 
 func _outline(points: PackedVector2Array, height: float, tint: Color, grid: bool) -> void:
-	var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_LINES)
-	for i: int in points.size():
-		for p: Vector2 in [points[i],points[(i+1)%points.size()]]: surface.add_vertex(Vector3(p.x,height,p.y))
+	var world:=PackedVector3Array()
+	for p: Vector2 in points: world.append(Vector3(p.x,height,p.y))
+	_preview.outline(world,tint,points.size()>2)
 	if grid:
 		var p: Vector2=points[0];var end: Vector2=points[2]
 		for x: int in range(1,roundi((end.x-p.x)/Construction.CELL)):
-			surface.add_vertex(Vector3(p.x+x*Construction.CELL,height,p.y));surface.add_vertex(Vector3(p.x+x*Construction.CELL,height,end.y))
+			_preview.outline(PackedVector3Array([Vector3(p.x+x*Construction.CELL,height,p.y),Vector3(p.x+x*Construction.CELL,height,end.y)]),tint,false)
 		for y: int in range(1,roundi((end.y-p.y)/Construction.CELL)):
-			surface.add_vertex(Vector3(p.x,height,p.y+y*Construction.CELL));surface.add_vertex(Vector3(end.x,height,p.y+y*Construction.CELL))
-	var node:=MeshInstance3D.new();node.mesh=surface.commit()
-	var material:=StandardMaterial3D.new();material.albedo_color=tint;material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
-	node.material_override=material;node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;_preview.add_child(node)
+			_preview.outline(PackedVector3Array([Vector3(p.x,height,p.y+y*Construction.CELL),Vector3(end.x,height,p.y+y*Construction.CELL)]),tint,false)
 
 func _sync_field_controls() -> void:
 	if draft.is_empty(): return
