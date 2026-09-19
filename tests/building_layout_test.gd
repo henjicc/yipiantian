@@ -185,6 +185,9 @@ func _run() -> void:
 func edge_checks(builder: Node, original_house: Transform3D) -> void:
 	var env: Node3D=scene.get_node("Environment")
 	var house: Node3D=env.get_node("MainHouse")
+	var roof: Vector2=scene.camera.unproject_position(house.global_position+Vector3.UP*2.4)
+	await mouse(roof,true);await mouse(roof,false)
+	expect(builder.draft==scene.farm_state.snapshot().layout and not is_instance_valid(builder.building_preview),"A stationary roof click does not create a building edit")
 	var pose: Transform3D=Buildings.pose(builder.candidate,"house")
 	await drag(builder._building_handle(builder.candidate),Transform3D(Basis(Vector3.UP,deg_to_rad(15)),pose.origin)*Vector3(0,.08,4.3))
 	expect(builder.candidate.angles.house==15,"Actual outer handle rotates building")

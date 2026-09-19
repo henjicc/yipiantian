@@ -410,13 +410,14 @@ func _drag(screen: Vector2) -> void:
 		"house","kitchen":
 			var plan: RefCounted=Plan.from_snapshot(_drag_snapshot)
 			var parameters: Array=Buildings.parameters(plan,tool)
+			var original: Array=parameters.duplicate()
 			if _building_gesture=="move":
 				var delta: Vector2=(point-_start).snapped(Vector2.ONE*(.5 if _building_snap.button_pressed else .05))
 				parameters[0]+=delta.x;parameters[1]+=delta.y
 			else:
 				var center:=Vector2(parameters[0],parameters[1])
 				parameters[2]=wrapf(parameters[2]+snappedf(rad_to_deg((_start-center).angle()-(point-center).angle()),15),-180,180)
-			draft.construction.buildings[tool]=parameters
+			if parameters!=original: draft.construction.buildings[tool]=parameters
 		"ducks":
 			var start: Vector2=IslandSpace.snap(_start)
 			var low: Vector2=start.min(point);var size: Vector2=(start-point).abs()
