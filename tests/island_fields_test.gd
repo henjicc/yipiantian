@@ -24,8 +24,15 @@ func _run() -> void:
 	var house_id: int=scene.get_node("Environment/MainHouse").get_instance_id()
 	var water_id: int=scene.get_node("Environment/CourtyardAnimals").water.get_instance_id()
 	var original: Dictionary=scene.farm_state.snapshot()
+	var original_paths: Node3D=scene.get_node("Environment/GardenPaths")
+	var original_fences: Array[Node3D]=[]
+	for node: Node in scene.get_node("Environment").get_children():
+		if node is Node3D and node.has_meta("fence_spans") and node.visible: original_fences.append(node)
 	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("fields")
+	expect(original_paths.is_visible_in_tree(),"Opening field tools retains the existing visible paths")
+	for node: Node3D in original_fences: expect(node.is_visible_in_tree(),"Opening field tools retains existing fence and contact shadows")
+	expect(not scene.island_builder.field_preview.pending,"Unchanged field layout needs no repeated navigation build")
 	await click(scene.island_builder._field_actions.get_node("AddField"))
 	await drag(Vector3(-1.5,.13,7),Vector3(1,.13,9))
 	var builder: Node=scene.island_builder
@@ -50,6 +57,7 @@ func _run() -> void:
 	expect(not builder.active and scene.farm_state.snapshot().layout==wanted,"Finish commits the visible field and exits")
 	expect(scene.get_node("Environment/MainHouse").get_instance_id()==house_id,"Field completion retains the island scene")
 	expect(scene.farm.fields.size()==7,"New field joins normal farming")
+	for node: Node3D in original_fences: expect(is_instance_valid(node) and node.is_visible_in_tree(),"Field-only save preserves unchanged fence instances and shadows")
 	var id: String=scene.farm.field_id(6)
 	start=Time.get_ticks_msec()
 	while scene.get_node("Environment")._terrain_refreshing:

@@ -9,6 +9,7 @@ var folder: String
 var failures: int=0
 var measurements: Array[Dictionary]=[]
 var construction_mode: bool=OS.get_cmdline_user_args().has("--construction")
+var construction_completed: bool=false
 var actions: Array[Dictionary]=[]
 var _sample: Dictionary={}
 var _sample_tick: int=0
@@ -111,6 +112,8 @@ func run() -> void:
 	if construction_mode:
 		RenderingServer.frame_post_draw.connect(_collect_frame)
 		await construction_checks()
+		check(construction_completed,"All capacity construction stages reached their final checks")
+		RenderingServer.frame_post_draw.disconnect(_collect_frame);_sample={}
 	else:
 		scene.atmosphere.set_preview_hour(14);await measure("overview-day")
 		scene._focus_field(10);await create_timer(1).timeout;await measure("field-day")
@@ -175,6 +178,8 @@ func construction_checks() -> void:
 	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
 	await choose("trapa")
 	var builder: Node=scene.island_builder
+	check(builder.active and builder.tool=="trapa" and builder.draft.has("plants"),"Real UI opens the plant brush")
+	if not builder.active or builder.tool!="trapa" or not builder.draft.has("plants"): await shot("failed-tool-entry");return
 	await click(builder._plant_buttons.brush);builder._values.radius.value=3;builder._values.density.value=3
 	begin_sample("dense-plant-brush")
 	for point: Vector2 in [Vector2(17,7),Vector2(21,7),Vector2(24,4),Vector2(-4,18),Vector2(0,18),Vector2(4,17)]:
@@ -229,6 +234,21 @@ func construction_checks() -> void:
 	check(scene.courtyard_plan.construction.east_land==original_east,"Large-scene terrain undo succeeds")
 	for id: String in ["fields","trellis","house","bridge","ducks","trapa"]:
 		begin_sample("select-"+id);await choose(id);end_sample()
+		if id=="fields":
+			scene.camera._move_to(Vector3(18,.4,-2),Vector3(24,65,25));await create_timer(1).timeout
+			var before_move: Dictionary=builder.draft.duplicate(true)
+			var center: Vector3=scene.courtyard_plan.fields[-1].position
+			begin_sample("capacity-field-drag-and-check")
+			await stroke(center,center+Vector3(0,0,.5),12)
+			var waiting: int=Time.get_ticks_msec()
+			while builder.field_preview.pending:
+				await process_frame
+				if Time.get_ticks_msec()-waiting>60000: check(false,"Capacity field validation finishes");break
+			end_sample()
+			check(builder.draft!=before_move and builder.issue().is_empty(),"A fully planted field can move in the capacity scene: "+builder.issue())
+			await shot("capacity-field-preview")
+			begin_sample("capacity-field-cancel");await click(builder._panel.find_child("Cancel",true,false));end_sample()
+			check(builder.draft==before_move,"Capacity field cancel restores the layout")
 		if id=="fields" and OS.get_cmdline_user_args().has("--profile"):
 			var timings: Dictionary={}
 			var started: int=Time.get_ticks_usec()
@@ -242,3 +262,4 @@ func construction_checks() -> void:
 	check(scene.farm_state.snapshot().fields==saved_fields and scene.farm_state.snapshot().inventory==saved_inventory,"Capacity construction preserves every crop and inventory")
 	scene.atmosphere.set_preview_hour(11);await measure("capacity-overview-day")
 	scene.atmosphere.set_preview_hour(21);await measure("capacity-overview-night")
+	construction_completed=true

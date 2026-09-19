@@ -23,6 +23,9 @@ var _hidden: Array[Node3D]=[]
 var _due: int=0
 var _accepted: bool=false
 var _retiring: bool=false
+var _shown_paths: Array=[]
+var _shown_fences: Array=[]
+var _shown_fence_style: String=""
 
 func configure(scene: Node3D) -> void:
 	main=scene
@@ -32,11 +35,14 @@ func configure(scene: Node3D) -> void:
 	core.copy_tiles(main.get_node("Environment/GroundCover/CoreGrass"))
 	expansion=Cover.new();add_child(expansion)
 	expansion.copy_tiles(main.get_node("Environment/ExpansionGrass"))
-	for node: Node3D in [main.farm, main.get_node("Environment/GroundCover/CoreGrass"), main.get_node("Environment/ExpansionGrass"), main.get_node("Environment/GardenPaths")]:
+	for node: Node3D in [main.farm, main.get_node("Environment/GroundCover/CoreGrass"), main.get_node("Environment/ExpansionGrass")]:
 		if node.visible: _hidden.append(node);node.hide()
-	for node: Node in main.get_node("Environment").get_children():
-		if node is Node3D and node.has_meta("fence_spans") and node.visible: _hidden.append(node);node.hide()
-	show_ground(main.courtyard_plan)
+	# Opening the tool has not changed any land, paths or fence contacts.
+	# Keep the existing ground dressing until a validated edit changes it.
+	validated=main.courtyard_plan;routes=main.get_node("Environment").circulation
+	_wanted=validated.snapshot()
+	_shown_paths=validated.paths.duplicate(true)
+	_shown_fences=validated.fences.duplicate(true);_shown_fence_style=validated.fence_style
 
 func update(plan: RefCounted) -> void:
 	var snapshot: Dictionary=plan.snapshot()
@@ -58,10 +64,19 @@ func update(plan: RefCounted) -> void:
 	checked.emit()
 
 func show_ground(plan: RefCounted) -> void:
-	if is_instance_valid(paths): paths.hide();paths.queue_free()
-	if is_instance_valid(fence): fence.hide();fence.queue_free()
-	paths=main.get_node("Environment").make_paths(plan);add_child(paths)
-	fence=Fence.build(plan.fences,plan.fence_style);add_child(fence)
+	var environment: Node3D=main.get_node("Environment")
+	if plan.paths!=_shown_paths:
+		if is_instance_valid(paths): paths.hide();paths.queue_free()
+		var original: Node3D=environment.get_node("GardenPaths")
+		if original.visible: _hidden.append(original);original.hide()
+		paths=environment.make_paths(plan);add_child(paths)
+		_shown_paths=plan.paths.duplicate(true)
+	if plan.fences!=_shown_fences or plan.fence_style!=_shown_fence_style:
+		if is_instance_valid(fence): fence.hide();fence.queue_free()
+		for node: Node in environment.get_children():
+			if node is Node3D and node.has_meta("fence_spans") and node.visible: _hidden.append(node);node.hide()
+		fence=Fence.build(plan.fences,plan.fence_style);add_child(fence)
+		_shown_fences=plan.fences.duplicate(true);_shown_fence_style=plan.fence_style
 	core.update_tiles(plan,false);expansion.update_expansion(plan)
 
 static func _build(snapshot: Dictionary, obstacles: Dictionary) -> Dictionary:
@@ -101,13 +116,16 @@ func accept(plan: RefCounted) -> void:
 	main.remove_child(old_farm);old_farm.queue_free()
 	for body: StaticBody3D in farm.fields: body.collision_layer=1
 	farm.reparent(main);farm.name="Farm";farm.plan=plan;main.farm=farm
-	for pair: Array in [[core,environment.get_node("GroundCover"),"CoreGrass"],[expansion,environment,"ExpansionGrass"],[paths,environment,"GardenPaths"]]:
+	var replacements: Array=[[core,environment.get_node("GroundCover"),"CoreGrass"],[expansion,environment,"ExpansionGrass"]]
+	if is_instance_valid(paths): replacements.append([paths,environment,"GardenPaths"])
+	for pair: Array in replacements:
 		var old: Node=pair[1].get_node(pair[2]);old.get_parent().remove_child(old);old.queue_free()
 		pair[0].reparent(pair[1]);pair[0].name=pair[2]
-	for node: Node in environment.get_children():
-		if node.has_meta("fence_spans"):
-			environment._contact_sources.erase(node);environment.remove_child(node);node.queue_free()
-	fence.reparent(environment);environment._contact_sources.append(fence)
+	if is_instance_valid(fence):
+		for node: Node in environment.get_children():
+			if node.has_meta("fence_spans"):
+				environment._contact_sources.erase(node);environment.remove_child(node);node.queue_free()
+		fence.reparent(environment);environment._contact_sources.append(fence)
 	environment.plan=plan;environment.circulation=routes
 	main.courtyard_plan=plan
 	_hidden.clear()
