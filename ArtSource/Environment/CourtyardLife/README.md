@@ -2,6 +2,14 @@
 
 ## 场景内建设验证 · 20260919-island-construction
 
+2026-09-20 密集植物笔刷占地筛选：`island_space`内部索引使用多边形包围格取得候选，再以原多边形精确判交；`covered_cells`仍返回真实相交格，草地差异范围不扩大。`animal_space.footprint`使用当前变换乘整组顶点，再按原高度带筛选和取凸包，不冻结船的摇摆姿态。Godot 4.7 的[整组顶点变换接口](https://docs.godotengine.org/en/4.7/classes/class_transform3d.html#class-transform3d-operator-mul-packedvector3array)已核验；实际高低船模、隐藏网格、程序顶点、非均匀缩放及空高度带共96组与原逐点算法精确一致，源顶点不变。8次船足迹样本逐点6.3–8.4ms、整组4.1–4.9ms，仅代表几何步骤。
+
+复核：`island_space_test.gd`32项（`island-bounded-index-fixed.log`）包含864次索引／穷举精确判交对照和凹形覆盖格；`bank_layout_test.gd -- --footprint-only`为上述足迹对照（`footprint-bulk.log`）；`player_routes_test.gd`30项（`routes-bounded-index.log`）。这些使用headless，仅证明规则和几何。`plant_layout_test.gd`真实渲染70项通过（`plant-layout-bounded-index.log`，目录1789854968），包含四物种布置、移转擦除、保存失败重试、撤销保留库存和重开；`-- --clearance`4项通过（`plants-bounded-clearance.log`），包含2500个动态动物位置及后来新增／删除道路，静态检查缓存不会掩盖后来的冲突。已查看保存画面。
+
+满额复核使用`life_capacity_scene_test.gd -- --construction --dev-preview --profile`，不加`--preplanted`，实际从零刷到160簇；12田384株地栽、10株架上作物、28只动物。性能夹具用合法放养区域限制鸭鹅位置，并检查真实连通空间容量，动物照常活动；它避免随机水禽进入未提交笔迹造成测量依赖运气，动态碰撞由上述独立场景检查。旧自由放养批次`dense-plants-bounded-index.log`因动物挡住提交产生2项失败，不作完整通过证据。
+
+最终`dense-plants-regions.log`（目录2946983）零失败，RTX4090／3840×2160／标准画质，操作样本均前台：密集笔刷64帧中位50.1ms、p95 55.2ms、最长55.8ms，植物完成含后台最长131.3ms，拖地最长75.4ms，完成125.8ms、撤销154.4ms，田块拖动72.8ms。单步植物避让筛选约2.4ms，早前诊断约13.3ms；放养区域已改变，不用前后整段时序计算严格优化比例。已查看满额日景。第15项仍未完成：密集预览和完成／撤销长帧仍需优化；原文档未变，无新增模型费用。
+
 2026-09-20 岸线预览复用未变化草格：`ground_cover.preview_tiles`保留原草格实例，只隐藏被笔迹替换的原格并生成变化部分；取消恢复原格可见性，保存后把新增草格移入原草地节点、释放被替换的旧格。原岛和新增草地分别处理，保持原生成种子、排除范围、材质与草叶几何。其他结构预览仍沿用原`copy_tiles`。草地签名整体替换、不原地修改，预览可以浅复制签名字典；权威草格映射只在保存成功后替换。
 
 两岸实景`multi_island_land_test.gd`69项通过（`shore-borrowed-grass.log`，目录1789853837），两岸交替／主岛缩地取消`-- --edges`42项通过（`shore-borrowed-grass-edges.log`，目录1789853972），主岛缩地保存／撤销／重开27项通过（`shore-borrowed-grass-shrink.log`，目录1789854064）。实际草叶几何与完整重建一致；预览、保存失败重试、取消与保存后检查每个草格恰好显示一次，东岸编辑保留全部未变化主岛草格。已查看东岸重开两侧和主岛缩地重开侧面。旧添地／缩地检查改为核验可见草格被直接接管，不再绑定临时容器身份；建筑排草检查同步包含借用的草格，已做语法检查，未重复建筑整套实景。

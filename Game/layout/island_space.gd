@@ -35,7 +35,7 @@ static func water_clear(polygon: PackedVector2Array, banks: Array[PackedVector2A
 		if overlaps(polygon, bank): return false
 	return true
 
-static func covered_cells(polygon: PackedVector2Array) -> Array[Vector2i]:
+static func _bounding_cells(polygon: PackedVector2Array) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	if polygon.size() < 3: return result
 	var bounds := Rect2(polygon[0], Vector2.ZERO)
@@ -44,29 +44,35 @@ static func covered_cells(polygon: PackedVector2Array) -> Array[Vector2i]:
 	var end: Vector2i = cell_at(bounds.end)
 	for y: int in range(first.y, end.y + 1):
 		for x: int in range(first.x, end.x + 1):
-			var cell := Vector2i(x, y)
-			if overlaps(polygon, rectangle(Vector2(cell) * CELL, Vector2.ONE * CELL)):
-				result.append(cell)
+			result.append(Vector2i(x,y))
+	return result
+
+static func covered_cells(polygon: PackedVector2Array) -> Array[Vector2i]:
+	var result: Array[Vector2i]=[]
+	for cell: Vector2i in _bounding_cells(polygon):
+		if overlaps(polygon,rectangle(Vector2(cell)*CELL,Vector2.ONE*CELL)): result.append(cell)
 	return result
 
 func add(id: String, polygon: PackedVector2Array) -> void:
 	remove(id)
 	if polygon.size() < 3: return
 	_polygons[id] = polygon
-	for cell: Vector2i in covered_cells(polygon):
+	# The index only finds candidates. Bounding cells avoid clipping every
+	# footprint against every cell; collisions still tests the exact polygons.
+	for cell: Vector2i in _bounding_cells(polygon):
 		if not _cells.has(cell): _cells[cell] = []
 		_cells[cell].append(id)
 
 func remove(id: String) -> void:
 	if not _polygons.has(id): return
-	for cell: Vector2i in covered_cells(_polygons[id]):
+	for cell: Vector2i in _bounding_cells(_polygons[id]):
 		_cells[cell].erase(id)
 		if _cells[cell].is_empty(): _cells.erase(cell)
 	_polygons.erase(id)
 
 func collisions(polygon: PackedVector2Array, excluded: Array[String] = []) -> Array[String]:
 	var nearby: Dictionary = {}
-	for cell: Vector2i in covered_cells(polygon):
+	for cell: Vector2i in _bounding_cells(polygon):
 		for id: String in _cells.get(cell, []): nearby[id] = true
 	var result: Array[String] = []
 	for id: String in nearby:

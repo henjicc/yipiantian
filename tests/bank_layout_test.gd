@@ -12,6 +12,10 @@ func expect(ok: bool, message: String) -> void:
 
 func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
+	if OS.get_cmdline_user_args().has("--footprint-only"):
+		footprint_checks()
+		for message: String in failures: push_error(message)
+		print("FOOTPRINT_GEOMETRY failures=",failures.size());quit(0 if failures.is_empty() else 1);return
 	# A sloping stone must return sub-cell heights, not quantized grid samples.
 	var sample_space:=preload("res://scenes/environment/animal_space.gd").new()
 	sample_space.floor_level=.08
@@ -229,3 +233,49 @@ func _shot(filename: String) -> void:
 	await create_timer(.6).timeout
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(output.path_join(filename))
+
+func scalar_footprint(node: Node3D,bottom: float,top: float,visible_only: bool) -> PackedVector2Array:
+	var space=preload("res://scenes/environment/animal_space.gd")
+	var vertices:=PackedVector2Array()
+	var meshes: Array[Node]=node.find_children("*","MeshInstance3D",true,false)
+	if node is MeshInstance3D: meshes.append(node)
+	for mesh: MeshInstance3D in meshes:
+		if (visible_only and not mesh.is_visible_in_tree()) or mesh.mesh==null: continue
+		for points: PackedVector3Array in space.mesh_vertices(mesh):
+			for vertex: Vector3 in points:
+				var point: Vector3=mesh.global_transform*vertex
+				if point.y>=bottom and point.y<=top: vertices.append(Vector2(point.x,point.z))
+	return Geometry2D.convex_hull(vertices) if vertices.size()>=3 else PackedVector2Array()
+
+func footprint_checks() -> void:
+	var space=preload("res://scenes/environment/animal_space.gd")
+	var boat:=Node3D.new();root.add_child(boat)
+	for tier: String in ["high","low"]:
+		var model: Node3D=load("res://art/environment/boat/boat_%s.glb"%tier).instantiate()
+		boat.add_child(model);model.visible=tier=="high"
+	var direct:=MeshInstance3D.new();direct.mesh=BoxMesh.new();root.add_child(direct)
+	# Procedural construction exposes its CPU vertices through this same API.
+	var points:=PackedVector3Array([Vector3(-1,-.55,-1),Vector3(1,-.55,-1),Vector3(1,.55,1),Vector3(-1,.55,1),Vector3(0,2,0)])
+	direct.set_meta("construction_vertices",points)
+	var missing:=MeshInstance3D.new();boat.add_child(missing)
+	var samples: int=0;var matches: bool=true
+	var scalar_ms: Array[float]=[];var bulk_ms: Array[float]=[]
+	for i: int in 8:
+		boat.rotation=Vector3(sin(i*.55+.4)*.005,.3+i*.15,sin(i*.73)*.009+sin(i*.39)*.003)
+		boat.scale=Vector3(.85,.8+i*.02,.95)
+		boat.position=Vector3(9,sin(i*.81)*.021,4)
+		direct.position=Vector3(-2,i*.01,3);direct.rotation=Vector3(0,i*.3,0)
+		for node: Node3D in [boat,direct]:
+			for band: Vector2 in [Vector2(-.55,.55),Vector2(.05,.75),Vector2(10,11)]:
+				for visible_only: bool in [true,false]:
+					var tick: int=Time.get_ticks_usec()
+					var expected: PackedVector2Array=scalar_footprint(node,band.x,band.y,visible_only)
+					if node==boat and band==Vector2(-.55,.55) and not visible_only: scalar_ms.append((Time.get_ticks_usec()-tick)/1000.0)
+					tick=Time.get_ticks_usec()
+					var actual: PackedVector2Array=space.footprint(node,band.x,band.y,visible_only)
+					if node==boat and band==Vector2(-.55,.55) and not visible_only: bulk_ms.append((Time.get_ticks_usec()-tick)/1000.0)
+					matches=matches and actual==expected;samples+=1
+	expect(matches,"Bulk footprints exactly match scalar hulls across %d moving/scaled/hidden/empty/procedural cases"%samples)
+	expect(direct.get_meta("construction_vertices")==points,"Footprint sampling never mutates source CPU vertices")
+	print("FOOTPRINT_TIMING ",JSON.stringify({"scalar_ms":scalar_ms,"bulk_ms":bulk_ms}))
+	boat.free();direct.free()

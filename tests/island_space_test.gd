@@ -14,6 +14,7 @@ func expect(ok: bool, message: String) -> void:
 	if not ok: failures.append(message);push_error(message)
 
 func _run() -> void:
+	index_equivalence()
 	expect(Space.cell_at(Vector2(-.01,-.51))==Vector2i(-1,-2),"Negative coordinates use the same floor grid as terrain painting")
 	var occupied:=Space.new()
 	var a: PackedVector2Array=Space.rectangle(Vector2(.01,.01),Vector2(.1,.1))
@@ -101,3 +102,31 @@ func meshes(cover: Node3D) -> Dictionary:
 	for cell: Vector2i in cover._tiles:
 		result[cell]=cover._tiles[cell].mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	return result
+
+func index_equivalence() -> void:
+	var index:=Space.new();var shapes: Dictionary={}
+	var bay:=PackedVector2Array([Vector2(0,0),Vector2(4,0),Vector2(4,4),Vector2(3,4),Vector2(3,1),Vector2(1,1),Vector2(1,4),Vector2(0,4)])
+	shapes.bay=bay;index.add("bay",bay)
+	expect(not Space.covered_cells(bay).has(Vector2i(3,5)) and Space.covered_cells(bay).has(Vector2i(0,5)),"Exact covered cells still exclude a concave opening")
+	for i: int in 24:
+		var at:=Vector3((i%6)-3.0,0,floori(i/6.0)-2.0)
+		var polygon: PackedVector2Array=Space.footprint(Vector2(1.6,.015 if i%3==0 else .35),Transform3D(Basis(Vector3.UP,i*.37),at))
+		shapes[str(i)]=polygon;index.add(str(i),polygon)
+	for stage: int in 3:
+		var matches: bool=true;var queries: int=0
+		for y: int in range(-6,10):
+			for x: int in range(-8,10):
+				var query: PackedVector2Array=Space.footprint(Vector2(.3,.07),Transform3D(Basis(Vector3.UP,(x+y)*.11),Vector3(x*.5,0,y*.5)))
+				var excluded: Array[String]=[]
+				if (x+y)%2==0: excluded.append("3")
+				var expected: Array[String]=[]
+				for key: String in shapes:
+					if key not in excluded and Space.overlaps(query,shapes[key]): expected.append(key)
+				expected.sort();matches=matches and index.collisions(query,excluded)==expected;queries+=1
+		expect(matches,"Indexed collisions equal exhaustive geometry for %d rotated/thin/negative-coordinate queries at stage %d"%[queries,stage])
+		if stage==0:
+			shapes["3"]=Space.rectangle(Vector2(3.5,-1.5),Vector2(.5,.5));index.add("3",shapes["3"])
+			index.add("empty",PackedVector2Array())
+		else:
+			index.remove("bay");shapes.erase("bay")
+			index.remove("3");shapes.erase("3")

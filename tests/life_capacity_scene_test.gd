@@ -5,6 +5,7 @@ const Circulation=preload("res://layout/courtyard_circulation.gd")
 const Farm=preload("res://farm/farm_state.gd")
 const Store=preload("res://farm/farm_store.gd")
 const Plants=preload("res://layout/plantings.gd")
+const Flocks=preload("res://layout/flock_layout.gd")
 var scene: Node
 var folder: String
 var failures: int=0
@@ -70,7 +71,14 @@ func run() -> void:
 	check(routes.issues.is_empty(),"Capacity layout keeps all entrances and fields connected: "+str(routes.issues))
 	if construction_mode:
 		for kind: String in ["duck","goose","hen"]:
-			plan.construction.flocks[kind].count=preload("res://layout/flock_layout.gd").SPECIES[kind].limit
+			plan.construction.flocks[kind].count=Flocks.SPECIES[kind].limit
+		# Keep all 28 animals moving in legal player-selectable areas. Random
+		# swimmers entering an uncommitted brush made this performance fixture
+		# wait for chance instead of measuring completion. Dynamic placement
+		# clearance remains covered separately by plant_layout_test --clearance.
+		plan.construction.flocks.duck.area=[-20.0,7.0,4.0,10.0]
+		plan.construction.flocks.goose.area=[-6.0,-13.0,12.0,3.0]
+		check(Flocks.valid(plan.construction.flocks) and Flocks.terrain_issue(plan).is_empty(),"Capacity animal areas are valid and clear of both banks")
 	if preplanted:
 		# Animals spawn with these real plant obstacles, so field measurements
 		# do not depend on an animal walking out of an uncommitted plant brush.
@@ -103,6 +111,9 @@ func run() -> void:
 	check(scene.farm.fields.size()==12,"All fields presented")
 	for field: Node3D in scene.farm.fields: check(field.get_node("Crops").get_child_count()==32,"Each field renders 32 plants")
 	check(scene.get_node("Environment/CourtyardAnimals").birds.size()==(28 if construction_mode else 7),"All animals coexist with capacity planting")
+	if construction_mode:
+		for kind: String in Flocks.KINDS:
+			check(Flocks.space_issue(kind,Flocks.SPECIES[kind].limit,scene.get_node("Environment/CourtyardAnimals").flock_spaces[kind]).is_empty(),"Capacity animal regions retain enough connected usable space: "+kind)
 	check(scene.get_node("Environment").circulation.issues.is_empty(),"Actual scene retains traversable circulation")
 	var neighbors: Node3D=scene.get_node("Environment/NeighborIslets")
 	var footprint: PackedVector2Array=preload("res://scenes/environment/animal_space.gd").footprint(neighbors.get_node("WillowNeighbor").get_child(0),-.55,.55,false)

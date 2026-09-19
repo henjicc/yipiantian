@@ -213,8 +213,10 @@ static func footprint(node: Node3D, bottom: float, top: float, visible_only: boo
 	for mesh: MeshInstance3D in meshes:
 		if (visible_only and not mesh.is_visible_in_tree()) or mesh.mesh == null: continue
 		for points: PackedVector3Array in mesh_vertices(mesh):
-			for vertex: Vector3 in points:
-				var p: Vector3 = mesh.global_transform * vertex
+			# Native packed-array transformation keeps the same current mesh pose
+			# without one script-to-node transform lookup for every hull vertex.
+			var world: PackedVector3Array=mesh.global_transform*points
+			for p: Vector3 in world:
 				if p.y >= bottom and p.y <= top: vertices.append(Vector2(p.x, p.z))
 	return Geometry2D.convex_hull(vertices) if vertices.size() >= 3 else PackedVector2Array()
 
