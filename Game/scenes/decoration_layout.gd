@@ -262,6 +262,10 @@ func _collect_environment_meshes(node: Node) -> void:
 	for child: Node in node.get_children():
 		_collect_environment_meshes(child)
 
+func refresh_path_geometry() -> void:
+	_environment_meshes.assign(_environment_meshes.filter(func(mesh: Variant) -> bool: return is_instance_valid(mesh)))
+	_collect_environment_meshes(environment.get_node("GardenPaths"))
+
 
 func _slot_visible(slot_id: String) -> bool:
 	var target: Vector3 = _rings[slot_id].global_position
@@ -274,6 +278,7 @@ func world_point_visible(target: Vector3,excluded: Node=null) -> bool:
 	# Stop just before the marker to avoid treating its own hook/support as a wall.
 	var endpoint: Vector3 = target.move_toward(camera.global_position, 0.06)
 	for instance: MeshInstance3D in _environment_meshes:
+		if not is_instance_valid(instance): continue
 		if not instance.is_visible_in_tree():
 			continue
 		# The selectable site replaces this object; it must not occlude its own marker.

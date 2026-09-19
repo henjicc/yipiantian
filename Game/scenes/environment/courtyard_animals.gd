@@ -27,8 +27,9 @@ var _navigation_worker: Thread
 func _exit_tree() -> void:
 	if _navigation_worker!=null and _navigation_worker.is_started(): _navigation_worker.wait_to_finish()
 
-static func _bake_spaces(water_space: RefCounted,yard_space: RefCounted) -> void:
-	water_space.bake();yard_space.bake()
+static func _bake_spaces(water_space: RefCounted,yard_space: RefCounted,update_water: bool) -> void:
+	if update_water: water_space.bake()
+	yard_space.bake()
 
 func set_decorations(instances: Dictionary) -> void:
 	_decorations=instances.duplicate()
@@ -72,6 +73,9 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 		if update_water and child.has_meta("bridge_supports"):
 			for p: Vector2 in child.get_meta("bridge_supports"):
 				water.block(PackedVector2Array([p+Vector2(-.055,-.055),p+Vector2(.055,-.055),p+Vector2(.055,.055),p+Vector2(-.055,.055)]))
+		if child.has_meta("garden_paths"):
+			yard.add_floor(child,false)
+			continue
 		if child.has_meta("fence_spans"):
 			for span: Dictionary in child.get_meta("fence_spans"):
 				var a := Vector2(span.a.x,span.a.z)
@@ -106,12 +110,12 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 	if progressive:
 		# Birds remain paused; these private grids have one owner until joined.
 		_navigation_worker=Thread.new()
-		if _navigation_worker.start(_bake_spaces.bind(water,yard))==OK:
+		if _navigation_worker.start(_bake_spaces.bind(water,yard,update_water))==OK:
 			while _navigation_worker.is_alive(): await get_tree().process_frame
 			_navigation_worker.wait_to_finish()
 		else:
 			push_error("Terrain navigation worker could not start")
-			_bake_spaces(water,yard)
+			_bake_spaces(water,yard,update_water)
 		_navigation_worker=null
 	else:
 		if update_water: water.bake()
@@ -129,9 +133,9 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 	if update_water:
 		for p: Vector2 in environment.plan.animal_rest.water: water.resting.append(water.nearest(p))
 	for p: Vector2 in environment.plan.animal_rest.yard: yard.resting.append(yard.nearest(p))
-	duck_space=water
+	if update_water: duck_space=water
 	var area: Array=environment.plan.construction.ducks.area
-	if not area.is_empty():
+	if update_water and not area.is_empty():
 		duck_space=Space.new()
 		var rect:=Rect2(area[0],area[1],area[2],area[3])
 		duck_space.configure(rect,.46)

@@ -41,28 +41,36 @@ var layout_obstacles: Dictionary = {}
 var layout_probe: bool = false
 var _terrain_refreshing: bool=false
 var _terrain_pending: bool=false
+var _water_pending: bool=false
 var _water_worker: Thread
 
 func _exit_tree() -> void:
 	if _water_worker!=null and _water_worker.is_started(): _water_worker.wait_to_finish()
 
-func refresh_terrain() -> void:
+func refresh_terrain(water_changed: bool=true) -> void:
 	_terrain_pending=true
+	_water_pending=_water_pending or water_changed
 	var animals: Node3D=get_node("CourtyardAnimals")
 	animals.ready_for_motion=false
 	if _terrain_refreshing: return
 	_terrain_refreshing=true
 	while _terrain_pending:
 		_terrain_pending=false
+		var update_water: bool=_water_pending
+		_water_pending=false
 		animals.ready_for_motion=false
 		await get_tree().process_frame
 		var started: int=Time.get_ticks_msec()
-		await animals.rebuild_spaces(true,true)
+		await animals.rebuild_spaces(update_water,true)
 		print("TERRAIN_NAV_MS ",Time.get_ticks_msec()-started)
-		if _terrain_pending: continue
+		if _terrain_pending:
+			_water_pending=_water_pending or update_water
+			continue
 		animals.ready_for_motion=true
+		if not update_water: continue
 		await _refresh_shore_obstacles()
-		if _terrain_pending: continue
+		if _terrain_pending:
+			_water_pending=true;continue
 		started=Time.get_ticks_msec()
 		var data: Array[Dictionary]=WaterContacts.capture(_shore_sources)
 		print("TERRAIN_WATER_CAPTURE_MS ",Time.get_ticks_msec()-started)
@@ -75,7 +83,8 @@ func refresh_terrain() -> void:
 			push_error("Terrain water worker could not start")
 			distances=WaterContacts.bake_data(data,_water.position.y)
 		_water_worker=null
-		if _terrain_pending: continue
+		if _terrain_pending:
+			_water_pending=true;continue
 		_water.material_override.set_shader_parameter("shore_distance",WaterContacts.texture(distances))
 	animals.ready_for_motion=true
 	_terrain_refreshing=false
@@ -139,7 +148,7 @@ func _circulation_obstacles() -> Dictionary:
 	var result: Dictionary = {}
 	var rise: float=plan.ground_height-.13
 	for node: Node3D in get_children():
-		if node.name in ["WaterSurface","DistantLandscape","NeighborIslets","DecorationSlots","OsmanthusLeaves","LivingDetails"]: continue
+		if node.name in ["WaterSurface","DistantLandscape","NeighborIslets","DecorationSlots","OsmanthusLeaves","LivingDetails","GardenPaths"]: continue
 		if node.has_meta("bank_role") or String(node.name).begins_with("BankGrass"): continue
 		# Include shoreline rocks and flower clumps too: a route through them
 		# would look open in layout data but still be blocked to the actual hens.
@@ -251,11 +260,16 @@ func _build_ground() -> void:
 	if not plan.construction.land.is_empty(): add_child(preload("res://presentation/shore_dressing.gd").plants(plan))
 
 func _build_paths() -> void:
+	add_child(make_paths(plan))
+
+func make_paths(layout: RefCounted) -> Node3D:
+	var holder:=Node3D.new();holder.name="GardenPaths"
+	holder.set_meta("garden_paths",true)
 	# A separate seed makes a route change independent of all surrounding foliage.
 	var road_rng := RandomNumberGenerator.new()
 	road_rng.seed=931772
 	var placed := PackedVector2Array()
-	var routes: Array[PackedVector3Array] = plan.paths
+	var routes: Array[PackedVector3Array] = layout.paths
 	for route in routes:
 		for k in range(route.size()-1):
 			var a:Vector3=route[k];var b:Vector3=route[k+1];var count:int=maxi(1,ceili(a.distance_to(b)/.40))
@@ -268,9 +282,13 @@ func _build_paths() -> void:
 				if duplicate: continue
 				placed.append(point)
 				var shape: int = 1 if road_rng.randf()<.65 else 2
-				var stone: Node3D = _module("stone_%d"%shape,p,road_rng.randf_range(-180,180),Vector3(.40,.28,.40))
+				var stone: Node3D=(load(ROOT+"modules/stone_%d.glb"%shape) as PackedScene).instantiate()
+				holder.add_child(stone);stone.position=p;stone.rotation.y=deg_to_rad(road_rng.randf_range(-180,180));stone.scale=Vector3(.40,.28,.40)
+				_apply_pigment(stone,"stone_%d"%shape)
 				stone.set_meta("path_stone",true)
 				_tint_stone(stone,Color("93907e")*road_rng.randf_range(.90,1.08))
+
+	return holder
 
 func _tint_stone(node: Node, color: Color) -> void:
 	if node is MeshInstance3D:

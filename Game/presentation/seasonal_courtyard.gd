@@ -47,7 +47,7 @@ func configure(courtyard: Node3D) -> void:
 		living._ring(covers,at+Vector3.UP*.287,.03,.009,living._rope)
 	living._merge_static_group(covers)
 	_rain_covers.append(covers)
-	for child: Node in courtyard.get_children():
+	for child: Node in courtyard.get_node("GardenPaths").get_children():
 		if child.has_meta("path_stone"):
 			if child is MeshInstance3D: child.set_layer_mask_value(2,true)
 			for mesh: MeshInstance3D in child.find_children("*","MeshInstance3D",true,false): mesh.set_layer_mask_value(2,true)
@@ -69,6 +69,20 @@ func set_season(id: String) -> void:
 	_autumn.visible=id=="drying"
 	for bundle: Node3D in _ordinary_bundles: bundle.visible=id!="drying"
 	for material: ShaderMaterial in _ground_materials: material.set_shader_parameter("rain_dampness",1.0 if id=="after_rain" else 0.0)
+
+func refresh_paths(courtyard: Node3D) -> void:
+	if is_instance_valid(_wet): _wet.free()
+	_build_wet_ground(courtyard.plan)
+	_ground_materials.clear()
+	for mesh: MeshInstance3D in courtyard.find_children("*","MeshInstance3D",true,false):
+		if mesh.mesh==null: continue
+		if courtyard.get_node("GardenPaths").is_ancestor_of(mesh): mesh.set_layer_mask_value(2,true)
+		for index: int in mesh.mesh.get_surface_count():
+			var material: Material=mesh.get_active_material(index)
+			if material is ShaderMaterial and material.shader==courtyard.PIGMENT:
+				if material.get_shader_parameter("ground_treatment")==1.0 or material.get_shader_parameter("stone_treatment")==1.0:
+					if not _ground_materials.has(material): _ground_materials.append(material)
+	set_season(season)
 
 func _build_wet_ground(plan: RefCounted) -> void:
 	_wet=Node3D.new(); _wet.name="DampGround"; add_child(_wet)

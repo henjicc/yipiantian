@@ -91,7 +91,7 @@ func select_cell(index: int, cell_id: String) -> void:
 func show_field(field: Dictionary) -> void:
 	var definition: Dictionary = _definitions[field.id]
 	for cell_id: String in definition.cells:
-		var cell: Dictionary = field.cells[cell_id]
+		var cell: Dictionary = field.cells.get(cell_id, {"crop_id":"", "stage":"empty", "watered":false, "ground":"ready"})
 		var identity: String = field.id + "/" + cell_id
 		var key: String = "%s/%s/%s/%s" % [cell.crop_id, cell.stage, cell.watered,cell.ground]
 		if _visual_keys.get(identity) == key:
@@ -197,45 +197,105 @@ func _mesh(parent: Node3D, resource: Mesh, point: Vector3, material: Material) -
 	return instance
 
 
-func _make_fields() -> void:
+func copy_from(source: FarmLayout) -> void:
+	# Reuse already-built soil/coping meshes when entering construction. Only a
+	# resized/new field needs to generate geometry; crops remain state-derived.
+	plan=Plan.from_snapshot(source.plan.snapshot())
+	_visual_keys=source._visual_keys.duplicate();_planted=source._planted.duplicate()
+	for index: int in source.fields.size():
+		var original: StaticBody3D=source.fields[index]
+		# External crop observers belong to the authoritative farm only.
+		var body: StaticBody3D=original.duplicate(0)
+		add_child(body);fields.append(body)
+		var id: String=plan.fields[index].id
+		_definitions[id]=plan.fields[index]
+		_crop_roots[id]=body.get_node("Crops");_soil_meshes[id]={};_cell_crops[id]={}
+		for cell: String in plan.fields[index].cells:
+			var identity: String=id+"/"+cell
+			var patch: MeshInstance3D=body.get_node("Soil_"+cell)
+			_soil_meshes[id][cell]=patch
+			patch.set_instance_shader_parameter("planted",1.0 if _planted.get(identity,false) else 0.0)
+			if source._cell_crops[id].has(cell): _cell_crops[id][cell]=body.get_node("Crops/"+cell)
+			if source._untended.has(identity):
+				var entry: Dictionary=source._untended[identity]
+				_untended[identity]={"ground":entry.ground,"mesh":body.get_node("Crops").get_child(entry.mesh.get_index()) if is_instance_valid(entry.mesh) else null}
+
+func sync_plan(next: RefCounted, state: FarmState) -> void:
+	var old: Dictionary = {}
+	for field: StaticBody3D in fields: old[field.get_meta("field_id")] = field
+	plan = next
+	var reordered: Array[StaticBody3D] = []
 	for index: int in plan.fields.size():
 		var definition: Dictionary = plan.fields[index]
-		_definitions[definition.id] = definition
-		var inner_half: Vector2 = (definition.size-Vector2(.20,.29))*.5
-		var span: Vector2 = Plan.cell_span(definition)
-		var body := StaticBody3D.new()
-		body.name = "Field%d" % (index + 1)
+		var id: String = definition.id
+		var before: Dictionary = _definitions.get(id, {}).duplicate(true)
+		var shape: Dictionary = definition.duplicate(true)
+		for key: String in ["position", "yaw"]: before.erase(key); shape.erase(key)
+		var body: StaticBody3D = old.get(id)
+		if body != null and before != shape:
+			_drop_field(body); body = null
+		if body == null: body = _make_field(index, definition)
 		body.transform = plan.field_transform(index)
-		body.collision_layer = 1
-		body.collision_mask = 0
 		body.set_meta("field_index", index)
-		body.set_meta("field_id", plan.fields[index].id)
-		body.set_meta("field_size", definition.size)
-		add_child(body)
-		fields.append(body)
-		# Logical patches share continuous heights/normals, not tile-edge grooves.
-		_mesh(body, _earthen_bank(inner_half), Vector3.ZERO, _ridge)
-		_mesh(body, _coping_kerb(definition.seed,definition.size), Vector3.ZERO, _coping)
-		_soil_meshes[field_id(index)] = {}
-		_cell_crops[field_id(index)] = {}
-		for cell_id: String in definition.cells:
-			var center: Vector3 = Plan.cell_position(definition,cell_id)
-			var patch: MeshInstance3D = _mesh(body, TilledSoil.patch(center, span, definition.seed,inner_half), center, _soil)
-			patch.name = "Soil_" + cell_id
-			patch.extra_cull_margin = .09
-			patch.set_instance_shader_parameter("cell_center", Vector2(center.x, center.z))
-			patch.set_instance_shader_parameter("cell_half_span", span*.5)
-			patch.set_instance_shader_parameter("field_half_extent", inner_half)
-			_soil_meshes[field_id(index)][cell_id] = patch
-		var crops := Node3D.new()
-		crops.name = "Crops"
-		body.add_child(crops)
-		_crop_roots[field_id(index)] = crops
-		var collision := CollisionShape3D.new()
-		var shape := BoxShape3D.new()
-		shape.size = Vector3(definition.size.x,.16,definition.size.y)
-		collision.shape = shape
-		body.add_child(collision)
+		_definitions[id] = definition
+		reordered.append(body); old.erase(id)
+		var cells: Dictionary = state.get_field(id).cells if id in state.field_ids() else {}
+		show_field({"id":id, "cells":cells})
+	for body: StaticBody3D in old.values(): _drop_field(body)
+	fields = reordered
+
+func _drop_field(body: StaticBody3D) -> void:
+	var id: String = body.get_meta("field_id")
+	for cell: String in _definitions[id].cells:
+		var identity: String = id + "/" + cell
+		if _planting_tweens.has(identity):
+			_planting_tweens[identity].kill(); _planting_tweens.erase(identity)
+		for values: Dictionary in [_visual_keys, _planted, _untended]: values.erase(identity)
+	for values: Dictionary in [_definitions, _crop_roots, _soil_meshes, _cell_crops]: values.erase(id)
+	body.free()
+
+
+func _make_fields() -> void:
+	for index: int in plan.fields.size():
+		fields.append(_make_field(index, plan.fields[index]))
+
+func _make_field(index: int, definition: Dictionary) -> StaticBody3D:
+	_definitions[definition.id] = definition
+	var inner_half: Vector2 = (definition.size-Vector2(.20,.29))*.5
+	var span: Vector2 = Plan.cell_span(definition)
+	var body := StaticBody3D.new()
+	body.name = "Field%d" % (index + 1)
+	body.transform = plan.field_transform(index)
+	body.collision_layer = 1
+	body.collision_mask = 0
+	body.set_meta("field_index", index)
+	body.set_meta("field_id", definition.id)
+	body.set_meta("field_size", definition.size)
+	add_child(body)
+	# Logical patches share continuous heights/normals, not tile-edge grooves.
+	_mesh(body, _earthen_bank(inner_half), Vector3.ZERO, _ridge)
+	_mesh(body, _coping_kerb(definition.seed,definition.size), Vector3.ZERO, _coping)
+	_soil_meshes[definition.id] = {}
+	_cell_crops[definition.id] = {}
+	for cell_id: String in definition.cells:
+		var center: Vector3 = Plan.cell_position(definition,cell_id)
+		var patch: MeshInstance3D = _mesh(body, TilledSoil.patch(center, span, definition.seed,inner_half), center, _soil)
+		patch.name = "Soil_" + cell_id
+		patch.extra_cull_margin = .09
+		patch.set_instance_shader_parameter("cell_center", Vector2(center.x, center.z))
+		patch.set_instance_shader_parameter("cell_half_span", span*.5)
+		patch.set_instance_shader_parameter("field_half_extent", inner_half)
+		_soil_meshes[definition.id][cell_id] = patch
+	var crops := Node3D.new()
+	crops.name = "Crops"
+	body.add_child(crops)
+	_crop_roots[definition.id] = crops
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(definition.size.x,.16,definition.size.y)
+	collision.shape = shape
+	body.add_child(collision)
+	return body
 
 
 func _coping_kerb(layout_seed: int, size: Vector2 = Vector2(2.6,2.05)) -> ArrayMesh:

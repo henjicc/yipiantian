@@ -30,17 +30,6 @@ func build(courtyard: Node3D) -> void:
 	root_soil.fill_from = Vector2(.5,.5); root_soil.fill_to = Vector2(.98,.5)
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var grass_bounds := Rect2(_rim[0], Vector2.ZERO)
-	for p: Vector2 in _rim: grass_bounds = grass_bounds.expand(p)
-	# Each world cell has its own seed: extending one bank never reshuffles old grass.
-	for z: int in range(floori(grass_bounds.position.y),ceili(grass_bounds.end.y)):
-		for x: int in range(floori(grass_bounds.position.x),ceili(grass_bounds.end.x)):
-			_rng.seed=hash(Vector2i(x,z))+943172
-			for attempt: int in 80:
-				var p:=Vector2(x+_rng.randf(),z+_rng.randf())
-				var patch: float=(sin(p.x*2.7+p.y*.6)+sin(p.y*3.2-p.x*.8))*.25+.5
-				var density: float=_rng.randf();var height: float=_rng.randf_range(.045,.13)
-				if _allowed(p,courtyard) and density<=lerpf(.12,.7,patch): _tuft(surface,Vector3(p.x,courtyard.plan.ground_height-.002,p.y),height,4)
 	# Dense short collars hide the generated meshes' abrupt root/ground seam.
 	for child: Node in courtyard.get_children():
 		if not child is Node3D or not (str(child.name).begins_with("Bamboo") or str(child.name).begins_with("Flowers") or str(child.name).ends_with("Tree")): continue
@@ -69,6 +58,10 @@ func build(courtyard: Node3D) -> void:
 	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	grass.extra_cull_margin = .04
 	add_child(grass)
+	var core:=get_script().new() as Node3D
+	core.name="CoreGrass";add_child(core)
+	core._exclusions=_exclusions.duplicate()
+	core.update_tiles(courtyard.plan,false)
 	var expansion:=get_script().new() as Node3D
 	expansion.name="ExpansionGrass";courtyard.add_child(expansion)
 	expansion.update_expansion(courtyard.plan)
@@ -76,8 +69,18 @@ func build(courtyard: Node3D) -> void:
 var _tiles: Dictionary={}
 var _tile_shapes: Dictionary={}
 
+func copy_tiles(source: Node3D) -> void:
+	_tile_shapes=source._tile_shapes.duplicate(true)
+	_exclusions=source._exclusions.duplicate()
+	for cell: Vector2i in source._tiles:
+		var tile: Node3D=source._tiles[cell].duplicate()
+		add_child(tile);_tiles[cell]=tile
+
 func update_expansion(plan: RefCounted) -> void:
-	if plan.construction.land.is_empty():
+	update_tiles(plan,true)
+
+func update_tiles(plan: RefCounted, expansion_only: bool) -> void:
+	if expansion_only and plan.construction.land.is_empty():
 		for tile: Node3D in _tiles.values(): tile.free()
 		_tiles.clear();_tile_shapes.clear();return
 	var base: PackedVector2Array=plan.unpainted().plateau()
@@ -85,12 +88,17 @@ func update_expansion(plan: RefCounted) -> void:
 	var bounds: Rect2=plan.land_bounds()
 	var fields: Array[PackedVector2Array]=[]
 	for index: int in plan.fields.size(): fields.append(plan.field_polygon(index,.07))
+	fields.append_array(_exclusions)
+	for id: String in plan.slots:
+		if not id.begins_with("ground"): continue
+		var at: Vector3=plan.slots[id]
+		fields.append(IslandSpace.rectangle(Vector2(at.x,at.z)-Vector2.ONE*.46,Vector2.ONE*.92))
 	var wanted: Dictionary={}
 	for z: int in range(floori(bounds.position.y),ceili(bounds.end.y)):
 		for x: int in range(floori(bounds.position.x),ceili(bounds.end.x)):
 			var cell:=Vector2i(x,z)
 			var rect:=PackedVector2Array([Vector2(x,z),Vector2(x+1,z),Vector2(x+1,z+1),Vector2(x,z+1)])
-			var pieces: Array[PackedVector2Array]=Geometry2D.clip_polygons(rect,base)
+			var pieces: Array[PackedVector2Array]=Geometry2D.clip_polygons(rect,base) if expansion_only else Geometry2D.intersect_polygons(rect,base)
 			if pieces.is_empty(): continue
 			var shape: Array[PackedVector2Array]=[]
 			for piece: PackedVector2Array in pieces: shape.append_array(Geometry2D.intersect_polygons(piece,plateau))
@@ -197,25 +205,6 @@ func _build_trellis_bed(plan: RefCounted) -> void:
 	soil.set_shader_parameter("bank",true)
 	bed.material_override = soil
 	add_child(bed)
-
-func _allowed(p: Vector2, courtyard: Node3D) -> bool:
-	if not Geometry2D.is_point_in_polygon(p,_rim): return false
-	for polygon: PackedVector2Array in _exclusions:
-		if Geometry2D.is_point_in_polygon(p,polygon): return false
-	for index: int in courtyard.plan.fields.size():
-		var local: Vector3 = courtyard.plan.field_transform(index).affine_inverse() * Vector3(p.x,0,p.y)
-		var half: Vector2 = courtyard.plan.fields[index].size * .5 + Vector2(.07,.065)
-		if absf(local.x) < half.x and absf(local.z) < half.y: return false
-	for route: PackedVector3Array in courtyard.plan.paths:
-		for i: int in range(route.size() - 1):
-			var a := Vector2(route[i].x,route[i].z)
-			var b := Vector2(route[i+1].x,route[i+1].z)
-			if Geometry2D.get_closest_point_to_segment(p,a,b).distance_to(p) < .23: return false
-	for id: String in courtyard.plan.slots:
-		if id.begins_with("ground"):
-			var at: Vector3 = courtyard.plan.slots[id]
-			if p.distance_to(Vector2(at.x,at.z))<.46: return false
-	return true
 
 func _tuft(surface: SurfaceTool, at: Vector3, height: float, count: int) -> void:
 	var tint: float = _rng.randf_range(.82,1.15)

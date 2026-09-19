@@ -9,6 +9,13 @@ const ThemeFactory = preload("res://ui/farm_theme.gd")
 const Assets = preload("res://scenes/environment/courtyard_assets.gd")
 const ShorePreview=preload("res://presentation/island_shore_preview.gd")
 const IslandSpace=preload("res://layout/island_space.gd")
+const FieldPreview=preload("res://presentation/field_layout_preview.gd")
+var field_preview: FieldPreview
+var selected_field: int=0
+var _new_field: bool=false
+var _field_gesture: String=""
+var _field_actions: HBoxContainer
+var _next_field_id: int=1
 var main: Node3D
 var active: bool = false
 var busy: bool = false
@@ -48,17 +55,21 @@ func _ready() -> void:
 	var content:=VBoxContainer.new();content.add_theme_constant_override("separation",8);_panel.add_child(content)
 	var title:=Label.new();title.text="布置小岛";title.add_theme_font_size_override("font_size",23);content.add_child(title)
 	var choices:=GridContainer.new();choices.columns=2;content.add_child(choices)
-	for entry: Array in [["land","添地"],["trellis","菜架"],["bridge","桥梁"],["ducks","鸭群"]]:
+	for entry: Array in [["land","添地"],["fields","田块"],["trellis","菜架"],["bridge","桥梁"],["ducks","鸭群"]]:
 		var id: String=entry[0]
 		var button: Button=_button(choices,entry[1],func() -> void: choose(id))
 		button.name=id.capitalize();button.toggle_mode=true;_tools[id]=button
-	for entry: Array in [["length","架长",2,6,.1],["width","架宽",.8,2,.1],["height","架高",1.6,3,.1],["bridge_width","桥宽",.8,1.8,.1],["count","鸭子数量",0,12,1]]:
+	for entry: Array in [["columns","田块列数",2,8,1],["rows","田块行数",2,8,1],["length","架长",2,6,.1],["width","架宽",.8,2,.1],["height","架高",1.6,3,.1],["bridge_width","桥宽",.8,1.8,.1],["count","鸭子数量",0,12,1]]:
 		var row:=HBoxContainer.new();content.add_child(row);_rows[entry[0]]=row
 		var label:=Label.new();label.text=entry[1];label.size_flags_horizontal=Control.SIZE_EXPAND_FILL;row.add_child(label)
 		var spin:=SpinBox.new();spin.name=entry[0];spin.min_value=entry[2];spin.max_value=entry[3];spin.step=entry[4];spin.custom_minimum_size.x=106
-		if entry[0]!="count": spin.suffix="米"
+		if entry[0] not in ["count","columns","rows"]: spin.suffix="米"
 		row.add_child(spin);_values[entry[0]]=spin
 		spin.value_changed.connect(_parameter_changed)
+	_field_actions=HBoxContainer.new();content.add_child(_field_actions)
+	_button(_field_actions,"添田",func() -> void: _field_action("new")).name="AddField"
+	_button(_field_actions,"旋转",func() -> void: _field_action("rotate")).name="RotateField"
+	_button(_field_actions,"移除",func() -> void: _field_action("remove")).name="RemoveField"
 	_status=Label.new();_status.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;_status.custom_minimum_size=Vector2(224,72);content.add_child(_status)
 	_confirm=_button(content,"确认调整",_commit);_confirm.name="Confirm"
 	var actions:=HBoxContainer.new();content.add_child(actions)
@@ -75,14 +86,21 @@ func _button(parent: Node, label: String, action: Callable) -> Button:
 
 func begin(scene: Node3D, selected: String = "land") -> void:
 	main=scene;active=true;busy=false;close_after_commit=false;previous=main.previous_layout.duplicate(true)
+	for field: Dictionary in main.farm_state.snapshot().layout.fields:
+		_next_field_id=maxi(_next_field_id,int(field.id.trim_prefix("field_"))+1)
 	show();choose(selected)
 
 func choose(id: String) -> void:
 	if busy: return
+	_clear_preview()
+	_new_field=false;_field_gesture=""
 	tool=id;draft=main.farm_state.snapshot().layout;_start=Vector2.INF;_drag_snapshot={};_last_cell=Vector2.INF
 	_pending_land=Vector2.INF;_brush_last=Vector2.INF;_brush_message=""
 	for key: String in _tools: _tools[key].set_pressed_no_signal(key==id)
-	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id=="ducks" and key=="count")
+	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id=="ducks" and key=="count") or (id=="fields" and key in ["columns","rows"])
+	_field_actions.visible=id=="fields"
+	selected_field=mini(selected_field,draft.fields.size()-1)
+	_sync_field_controls()
 	var size: Vector3=Construction.trellis_size(main.courtyard_plan)
 	_values.length.set_value_no_signal(size.x);_values.width.set_value_no_signal(size.y);_values.height.set_value_no_signal(size.z)
 	_values.count.set_value_no_signal(draft.construction.ducks.count)
@@ -91,7 +109,14 @@ func choose(id: String) -> void:
 
 func _parameter_changed(_value: float) -> void:
 	if not active or busy: return
-	if tool=="trellis": draft.construction.trellis=[_values.length.value,_values.width.value,_values.height.value]
+	if tool=="fields":
+		var plan: RefCounted=Plan.from_snapshot(draft)
+		if plan==null: return
+		var field: Dictionary=plan.fields[selected_field]
+		var columns: int=int(_values.columns.value);var rows: int=int(_values.rows.value)
+		plan.fields[selected_field]=Plan.resized_field(field,columns,rows,Plan.cell_span(field)*Vector2(columns,rows)+Vector2(.2,.29))
+		draft=plan.snapshot()
+	elif tool=="trellis": draft.construction.trellis=[_values.length.value,_values.width.value,_values.height.value]
 	elif tool=="bridge":
 		var points: Array[Vector3]=Construction.bridge_points(main.courtyard_plan) if draft.construction.bridge.is_empty() else Construction.bridge_points(candidate if candidate!=null else main.courtyard_plan)
 		draft.construction.bridge=[points[0].x,points[0].z,points[1].x,points[1].z,_values.bridge_width.value]
@@ -139,6 +164,15 @@ func accept_land(plan: RefCounted) -> void:
 	previous=main.previous_layout.duplicate(true)
 	choose(tool)
 	if close_now: finish()
+
+func accept_fields(plan: RefCounted) -> void:
+	field_preview.accept(plan);field_preview.free();field_preview=null
+	var close_now: bool=close_after_commit
+	set_busy(false);previous=main.previous_layout.duplicate(true)
+	draft=plan.snapshot();candidate=plan
+	if close_now:
+		_clear_preview();active=false;_start=Vector2.INF;hide();closed.emit()
+	else: choose("fields")
 
 func _focus_lost() -> void:
 	if active and not busy:
@@ -216,6 +250,9 @@ func _press(screen: Vector2) -> void:
 	var point: Vector2=world_point(screen)
 	if not point.is_finite(): return
 	_bridge_end=-1
+	if tool=="fields":
+		_press_field(point,screen)
+		return
 	if tool=="bridge":
 		var points: Array[Vector3]=Construction.bridge_points(candidate if candidate!=null else main.courtyard_plan)
 		var nearest: float=60
@@ -233,6 +270,9 @@ func _press(screen: Vector2) -> void:
 func _drag(screen: Vector2) -> void:
 	var point: Vector2=world_point(screen)
 	if not point.is_finite(): return
+	if tool=="fields":
+		_drag_field(point)
+		return
 	if tool=="land":
 		_pending_land=point
 		return
@@ -260,10 +300,14 @@ func _drag(screen: Vector2) -> void:
 
 func issue() -> String:
 	if candidate==null:
+		if tool=="fields": return "田块位置或大小超出范围。最多 12 块田、384 个田格，每块田最多 8 行 × 8 列；可取消后重新调整。"
 		if tool=="ducks": return "水域至少 2 × 2 米，每只鸭子需约 3 平方米。请扩大水域或减少数量。"
 		if tool=="bridge": return "桥长需在 2 至 9 米之间，请调整桥头。"
 		if tool=="trellis": return "请把菜架尺寸调回允许范围。"
 		return "从现有岸边涂抹，让新土地保持连通。"
+	if tool=="fields" and is_instance_valid(field_preview):
+		if not field_preview.message.is_empty(): return field_preview.message
+		if field_preview.pending: return "正在校对田边通路…"
 	var bridge: String=Construction.bridge_issue(candidate)
 	if not bridge.is_empty(): return bridge
 	var water_issue: String=Construction.water_area_issue(candidate)
@@ -292,14 +336,21 @@ func issue() -> String:
 
 func _refresh() -> void:
 	candidate=Plan.from_snapshot(draft)
+	if tool=="fields" and candidate!=null:
+		if not is_instance_valid(field_preview):
+			field_preview=FieldPreview.new();main.add_child(field_preview);field_preview.configure(main)
+			field_preview.checked.connect(_field_checked)
+		field_preview.update(candidate)
 	var message: String=issue()
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
 	_undo.disabled=busy or previous.is_empty()
-	_status.text=message if not message.is_empty() else {"land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架调整长度，也可调节长宽高。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}[tool]
+	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架调整长度，也可调节长宽高。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}[tool]
 	if tool=="land" and not _brush_message.is_empty(): _status.text=_brush_message
 	_render_preview(message.is_empty())
 
-func _clear_preview(keep_shore: bool=false) -> void:
+func _clear_preview(keep_shore: bool=false, keep_fields: bool=false) -> void:
+	if not keep_fields and is_instance_valid(field_preview):
+		field_preview.retire();field_preview=null
 	if not keep_shore and is_instance_valid(_shore):
 		_shore.restore();_shore.free();_shore=null
 	for node: Node3D in _hidden:
@@ -311,7 +362,7 @@ func _hide_node(node: Node3D) -> void:
 	if node!=null and node.visible: node.hide();_hidden.append(node)
 
 func _render_preview(valid: bool) -> void:
-	_clear_preview(tool=="land" and candidate!=null and draft!=main.farm_state.snapshot().layout)
+	_clear_preview(tool=="land" and candidate!=null and draft!=main.farm_state.snapshot().layout,tool=="fields")
 	_preview=Node3D.new();_preview.name="ConstructionPreview";main.add_child(_preview)
 	var tint:=Color("88b779") if valid else Color("d77d62")
 	var plan: RefCounted=candidate if candidate!=null else main.courtyard_plan
@@ -326,7 +377,14 @@ func _render_preview(valid: bool) -> void:
 			for child: Node in main.get_node("Environment").get_children():
 				if child is Node3D and (child.name=="AdaptiveBridge" or child.scene_file_path.ends_with("stone_bridge.glb")): _hide_node(child)
 			_preview.add_child(Structures.bridge(plan))
-	if tool=="land" and _last_cell.is_finite():
+	if tool=="fields" and candidate!=null:
+		for index: int in candidate.fields.size():
+			_outline(candidate.field_polygon(index),candidate.ground_height+.16,tint if index==selected_field else Color("b8b293"),false)
+		var field: Dictionary=candidate.fields[selected_field]
+		var pose: Transform3D=candidate.field_transform(selected_field)
+		_handle(pose*Vector3(field.size.x*.5,.12,field.size.y*.5),tint)
+		_handle(pose*Vector3(0,.12,-field.size.y*.5-.55),tint)
+	elif tool=="land" and _last_cell.is_finite():
 		_draw_brush(tint)
 	elif tool=="ducks" and not draft.construction.ducks.area.is_empty():
 		var rect: Array=draft.construction.ducks.area
@@ -368,3 +426,82 @@ func _outline(points: PackedVector2Array, height: float, tint: Color, grid: bool
 	var node:=MeshInstance3D.new();node.mesh=surface.commit()
 	var material:=StandardMaterial3D.new();material.albedo_color=tint;material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
 	node.material_override=material;node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;_preview.add_child(node)
+
+func _sync_field_controls() -> void:
+	if draft.is_empty(): return
+	_values.columns.set_value_no_signal(draft.fields[selected_field].columns)
+	_values.rows.set_value_no_signal(draft.fields[selected_field].rows)
+
+func _field_action(action: String) -> void:
+	if busy: return
+	if action=="new":
+		_new_field=true;_status.text="在空地按住左键，拖出一块新田。";return
+	var plan: RefCounted=Plan.from_snapshot(draft)
+	if plan==null: return
+	if action=="rotate": plan.fields[selected_field].yaw=wrapf(plan.fields[selected_field].yaw+15,-180,180)
+	elif action=="remove" and plan.fields.size()>1:
+		plan.fields.remove_at(selected_field);selected_field=mini(selected_field,plan.fields.size()-1)
+	draft=plan.snapshot();_sync_field_controls();_refresh()
+
+func _field_checked() -> void:
+	if active and tool=="fields":
+		var message: String=issue()
+		_status.text=message if not message.is_empty() else "拖动田块移动，圆点调整大小和方向。完成后保存。"
+		_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
+		_render_preview(message.is_empty())
+
+func _press_field(point: Vector2, screen: Vector2) -> void:
+	var plan: RefCounted=Plan.from_snapshot(draft)
+	if plan==null: return
+	_drag_snapshot=draft.duplicate(true);_start=point;_last_cell=Vector2.INF
+	_field_gesture="move"
+	if _new_field:
+		if plan.fields.size()>=12: _start=Vector2.INF;_status.text="最多布置 12 块田。";return
+		var field: Dictionary=Plan.new().fields[0].duplicate(true)
+		var next_id: int=_next_field_id
+		_next_field_id+=1
+		field.id="field_%02d"%next_id;field.seed=91744+next_id*7919
+		field.position=Vector3(point.x,plan.ground_height+.07,point.y)
+		plan.fields.append(field);selected_field=plan.fields.size()-1
+		draft=plan.snapshot();_field_gesture="new";_new_field=false
+		_drag_field(point);return
+	var field: Dictionary=plan.fields[selected_field]
+	var pose: Transform3D=plan.field_transform(selected_field)
+	var handles: Array[Vector3]=[pose*Vector3(field.size.x*.5,.12,field.size.y*.5),pose*Vector3(0,.12,-field.size.y*.5-.55)]
+	for i: int in handles.size():
+		if main.camera.unproject_position(handles[i]).distance_to(screen)<18:
+			_field_gesture="resize" if i==0 else "rotate";return
+	var found: bool=false
+	for i: int in plan.fields.size():
+		if Geometry2D.is_point_in_polygon(point,plan.field_polygon(i)):
+			selected_field=i;found=true;break
+	if not found: _start=Vector2.INF;_drag_snapshot={};return
+	_sync_field_controls();_refresh()
+
+func _drag_field(point: Vector2) -> void:
+	point=point.snapped(Vector2.ONE*.05)
+	if point==_last_cell: return
+	_last_cell=point
+	var plan: RefCounted=Plan.from_snapshot(draft if _field_gesture=="new" else _drag_snapshot)
+	if plan==null: return
+	var field: Dictionary=plan.fields[selected_field]
+	var span: Vector2=Plan.cell_span(field)
+	if _field_gesture=="move":
+		var delta: Vector2=IslandSpace.snap(point-_start)
+		field.position+=Vector3(delta.x,0,delta.y)
+	elif _field_gesture in ["new","resize"]:
+		var size: Vector2=(point-_start).abs() if _field_gesture=="new" else Vector2.ZERO
+		if _field_gesture=="resize":
+			var local: Vector3=plan.field_transform(selected_field).affine_inverse()*Vector3(point.x,0,point.y)
+			size=Vector2(local.x,local.z).max(Vector2.ZERO)*2
+		var columns: int=clampi(roundi((size.x-.2)/span.x),2,8)
+		var rows: int=clampi(roundi((size.y-.29)/span.y),2,8)
+		field=Plan.resized_field(field,columns,rows,span*Vector2(columns,rows)+Vector2(.2,.29))
+		if _field_gesture=="new":
+			var center: Vector2=_start+field.size*.5*Vector2(1 if point.x>=_start.x else -1,1 if point.y>=_start.y else -1)
+			field.position=Vector3(center.x,plan.ground_height+.07,center.y)
+		plan.fields[selected_field]=field
+	elif _field_gesture=="rotate":
+		var center:=Vector2(field.position.x,field.position.z)
+		field.yaw=wrapf(field.yaw+snappedf(rad_to_deg((_start-center).angle()-(point-center).angle()),15),-180,180)
+	draft=plan.snapshot();_sync_field_controls();_refresh()

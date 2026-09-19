@@ -678,6 +678,8 @@ func _begin_construction(tool: String = "land") -> void:
 	if not _loaded or _save_failed: return
 	if decoration_layout.active: decoration_layout.finish_mode()
 	_cancel_tool();_cancel_input();field_menu.dismiss();hud.hide_time_preview()
+	selected_field=-1;selected_cell="";hover_field=-1;hover_cell=""
+	farm.select_field(-1);farm.select_cell(-1,"");focus_detail.set_focus()
 	camera.cancel_zoom()
 	camera.set_construction_framing(true,_construction_resume.is_empty())
 	_construction_resume={}
@@ -687,6 +689,11 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	if not island_builder.active or island_builder.busy: return
 	var current: Dictionary=farm_state.snapshot().layout
 	var unchanged: Dictionary=snapshot.duplicate(true)
+	unchanged.fields=current.fields.duplicate(true)
+	if unchanged==current:
+		_apply_fields(snapshot,undo)
+		return
+	unchanged=snapshot.duplicate(true)
 	unchanged.construction.land=current.construction.land.duplicate(true)
 	if unchanged==current:
 		_apply_land(snapshot,undo)
@@ -767,6 +774,38 @@ func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 	island_builder.accept_land(plan)
 	_refresh_hud()
 	print("LAND_COMMIT_MS ",Time.get_ticks_msec()-started)
+
+func _apply_fields(snapshot: Dictionary, undo: bool) -> void:
+	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
+	if plan==null: return
+	island_builder.set_busy(true,"正在校对田边通路…")
+	if not is_instance_valid(island_builder.field_preview):
+		island_builder._clear_preview()
+		island_builder.field_preview=preload("res://presentation/field_layout_preview.gd").new()
+		add_child(island_builder.field_preview);island_builder.field_preview.configure(self)
+	var preview: Node3D=island_builder.field_preview
+	preview.update(plan)
+	while preview.pending:
+		await get_tree().process_frame
+		if _exiting: return
+	if preview.validated==null:
+		island_builder.set_busy(false,preview.message);return
+	var started: int=Time.get_ticks_msec()
+	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	if not candidate.apply_layout(snapshot,clock.call()).ok:
+		island_builder.set_busy(false,"这些田格里还有作物，请保留它们，或先收获。");return
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok:
+		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
+	previous_layout={} if undo else farm_state.snapshot().layout
+	farm_state=candidate
+	plan=preview.validated
+	island_builder.accept_fields(plan)
+	decoration_layout.refresh_path_geometry()
+	refresh_farm()
+	seasonal_courtyard.refresh_paths($Environment)
+	$Environment.refresh_terrain.call_deferred(false)
+	print("FIELD_COMMIT_MS ",Time.get_ticks_msec()-started)
 
 func _begin_courtyard_edit() -> void:
 	if not _loaded or _save_failed or _layout_active(): return

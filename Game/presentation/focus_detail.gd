@@ -75,6 +75,20 @@ func set_focus(field: Node3D = null) -> void:
 		refresh_field(candidate)
 	# Focus changes detail priority, never the appearance or continuity of DOF.
 
+func replace_fields(fields: Array) -> void:
+	_target=null
+	for field: Node3D in _fields:
+		var crops: Node=field.get_node("Crops")
+		crops.child_entered_tree.disconnect(_on_crop_added.bind(field))
+		crops.child_exiting_tree.disconnect(_on_crop_removed)
+	_fields=fields.duplicate()
+	_foreground._fields=_fields.duplicate()
+	_field_bounds.clear();_bounds_dirty=true
+	for field: Node3D in _fields:
+		field.get_node("Crops").child_entered_tree.connect(_on_crop_added.bind(field))
+		field.get_node("Crops").child_exiting_tree.connect(_on_crop_removed)
+		refresh_field(field)
+
 
 func set_quality(value: String) -> bool:
 	if value not in ["standard", "low", "high"]:
