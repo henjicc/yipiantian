@@ -5,7 +5,6 @@ signal closed
 signal decoration_undo_requested
 const Plan = preload("res://layout/courtyard_plan.gd")
 const Construction = preload("res://layout/island_construction.gd")
-const Structures = preload("res://layout/garden_structures.gd")
 const ThemeFactory = preload("res://ui/farm_theme.gd")
 const ShorePreview=preload("res://presentation/island_shore_preview.gd")
 const IslandSpace=preload("res://layout/island_space.gd")
@@ -14,6 +13,8 @@ const TrellisPreview=preload("res://presentation/trellis_layout_preview.gd")
 const BuildingPreview=preload("res://presentation/building_layout_preview.gd")
 const DuckPreview=preload("res://presentation/duck_layout_preview.gd")
 var duck_preview: DuckPreview
+const BridgePreview=preload("res://presentation/bridge_layout_preview.gd")
+var bridge_preview: BridgePreview
 const Buildings=preload("res://layout/building_layout.gd")
 var building_preview: BuildingPreview
 var _building_actions: HBoxContainer
@@ -44,7 +45,6 @@ var draft: Dictionary = {}
 var candidate: RefCounted
 var previous: Dictionary = {}
 var _preview: Node3D
-var _hidden: Array[Node3D] = []
 var _panel: PanelContainer
 var _status: Label
 var _confirm: Button
@@ -206,6 +206,7 @@ func _commit() -> void:
 	commit_requested.emit(draft.duplicate(true),false)
 
 func _layout_check_pending() -> bool:
+	if tool=="bridge": return is_instance_valid(bridge_preview) and bridge_preview.pending and bridge_preview.message.is_empty()
 	if tool=="ducks": return is_instance_valid(duck_preview) and duck_preview.pending and duck_preview.message.is_empty()
 	if Buildings.BASE.has(tool): return is_instance_valid(building_preview) and building_preview.pending and building_preview.message.is_empty()
 	return tool=="trellis" and is_instance_valid(trellis_preview) and trellis_preview.pending and trellis_preview.message.is_empty()
@@ -277,6 +278,15 @@ func accept_building(plan: RefCounted) -> void:
 
 func accept_ducks(plan: RefCounted) -> void:
 	duck_preview.accept(plan);duck_preview.free();duck_preview=null
+	var close_now: bool=close_after_commit
+	set_busy(false);previous=main.previous_layout.duplicate(true)
+	draft=plan.snapshot();candidate=plan
+	if close_now:
+		_clear_preview();active=false;_start=Vector2.INF;hide();closed.emit()
+	else: choose(tool)
+
+func accept_bridge(plan: RefCounted) -> void:
+	bridge_preview.accept(plan);bridge_preview.free();bridge_preview=null
 	var close_now: bool=close_after_commit
 	set_busy(false);previous=main.previous_layout.duplicate(true)
 	draft=plan.snapshot();candidate=plan
@@ -470,6 +480,9 @@ func issue() -> String:
 		if not duck_preview.message.is_empty(): return duck_preview.message
 		if duck_preview.pending: return "正在校对活动水域…"
 		return ""
+	if tool=="bridge" and is_instance_valid(bridge_preview):
+		if not bridge_preview.message.is_empty(): return bridge_preview.message
+		if bridge_preview.pending: return "正在校对桥头通路…"
 	if tool=="fields" and is_instance_valid(field_preview):
 		if not field_preview.message.is_empty(): return field_preview.message
 		if field_preview.pending: return "正在校对田边通路…"
@@ -497,7 +510,7 @@ func issue() -> String:
 func _refresh() -> void:
 	if _is_decoration(): _decoration_changed();return
 	candidate=Plan.from_snapshot(draft)
-	if (tool=="trellis" or Buildings.BASE.has(tool)) and candidate!=null: draft=candidate.snapshot()
+	if (tool in ["trellis","bridge"] or Buildings.BASE.has(tool)) and candidate!=null: draft=candidate.snapshot()
 	if tool.is_empty():
 		_status.text="";_confirm.disabled=true;_undo.disabled=not _has_undo();return
 	if tool=="ducks" and candidate!=null and draft!=main.farm_state.snapshot().layout:
@@ -505,6 +518,11 @@ func _refresh() -> void:
 			duck_preview=DuckPreview.new();main.add_child(duck_preview);duck_preview.configure(main)
 			duck_preview.checked.connect(_duck_checked)
 		duck_preview.update(candidate)
+	if tool=="bridge" and candidate!=null and draft!=main.farm_state.snapshot().layout:
+		if not is_instance_valid(bridge_preview):
+			bridge_preview=BridgePreview.new();main.add_child(bridge_preview);bridge_preview.configure(main)
+			bridge_preview.checked.connect(_bridge_checked)
+		bridge_preview.update(candidate)
 	if tool=="fields" and candidate!=null:
 		if not is_instance_valid(field_preview):
 			field_preview=FieldPreview.new();main.add_child(field_preview);field_preview.configure(main)
@@ -527,7 +545,9 @@ func _refresh() -> void:
 	if tool=="land" and not _brush_message.is_empty(): _status.text=_brush_message
 	_render_preview(message.is_empty())
 
-func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trellis: bool=false, keep_building: bool=false, keep_ducks: bool=false) -> void:
+func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trellis: bool=false, keep_building: bool=false, keep_ducks: bool=false, keep_bridge: bool=false) -> void:
+	if not keep_bridge and is_instance_valid(bridge_preview):
+		bridge_preview.retire();bridge_preview=null
 	if not keep_ducks and is_instance_valid(duck_preview):
 		duck_preview.retire();duck_preview=null
 	if not keep_building and is_instance_valid(building_preview):
@@ -538,16 +558,11 @@ func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trelli
 		field_preview.retire();field_preview=null
 	if not keep_shore and is_instance_valid(_shore):
 		_shore.restore();_shore.free();_shore=null
-	for node: Node3D in _hidden:
-		if is_instance_valid(node): node.show()
-	_hidden.clear()
 	if is_instance_valid(_preview): _preview.free()
 
-func _hide_node(node: Node3D) -> void:
-	if node!=null and node.visible: node.hide();_hidden.append(node)
-
 func _render_preview(valid: bool) -> void:
-	_clear_preview(tool=="land" and candidate!=null and draft!=main.farm_state.snapshot().layout,tool=="fields",tool=="trellis" and candidate!=null and draft!=main.farm_state.snapshot().layout,Buildings.BASE.has(tool) and candidate!=null and draft!=main.farm_state.snapshot().layout,tool=="ducks" and candidate!=null and draft!=main.farm_state.snapshot().layout)
+	var changed: bool=candidate!=null and draft!=main.farm_state.snapshot().layout
+	_clear_preview(tool=="land" and changed,tool=="fields",tool=="trellis" and changed,Buildings.BASE.has(tool) and changed,tool=="ducks" and changed,tool=="bridge" and changed)
 	_preview=Node3D.new();_preview.name="ConstructionPreview";main.add_child(_preview)
 	var tint:=Color("88b779") if valid else Color("d77d62")
 	var plan: RefCounted=candidate if candidate!=null else main.courtyard_plan
@@ -556,10 +571,6 @@ func _render_preview(valid: bool) -> void:
 			if not is_instance_valid(_shore):
 				_shore=ShorePreview.new();main.add_child(_shore);_shore.configure(main.get_node("Environment"))
 			_shore.update(plan)
-		elif tool=="bridge" and not plan.construction.bridge.is_empty():
-			for child: Node in main.get_node("Environment").get_children():
-				if child is Node3D and (child.name=="AdaptiveBridge" or child.scene_file_path.ends_with("stone_bridge.glb")): _hide_node(child)
-			_preview.add_child(Structures.bridge(plan))
 	if tool=="fields" and candidate!=null:
 		for index: int in candidate.fields.size():
 			_outline(candidate.field_polygon(index),candidate.ground_height+.16,tint if index==selected_field else Color("b8b293"),false)
@@ -594,6 +605,13 @@ func _building_handle(plan: RefCounted) -> Vector3:
 
 func _duck_checked() -> void:
 	if not active or tool!="ducks": return
+	var message: String=issue()
+	_status.text=message
+	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
+	_render_preview(message.is_empty())
+
+func _bridge_checked() -> void:
+	if not active or tool!="bridge": return
 	var message: String=issue()
 	_status.text=message
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout

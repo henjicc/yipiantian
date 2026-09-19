@@ -4,6 +4,7 @@ const SHADER = preload("res://scenes/environment/meadow.gdshader")
 const Space = preload("res://scenes/environment/animal_space.gd")
 const IslandSpace = preload("res://layout/island_space.gd")
 const BUILDING_EXCLUSIONS={"MainHouse":0,"Kitchen":1,"PorchDeck":3,"SidePorchDryingRack":4,"YardFirewood":5}
+const BRIDGE_EXCLUSION: int=6
 var _rim: PackedVector2Array
 var _exclusions: Array[PackedVector2Array] = []
 var object_footprints: Array[PackedVector2Array] = []
@@ -25,6 +26,7 @@ func build(courtyard: Node3D) -> void:
 	_exclusions.append(porch)
 	for key: String in ["SidePorchDryingRack","YardFirewood"]:
 		_exclusions.append(Space.footprint(courtyard.get_node("LivingDetails/"+key),courtyard.plan.ground_height-.13,courtyard.plan.ground_height+.57))
+	_exclusions.append(Space.footprint(courtyard.get_bridge(),courtyard.plan.ground_height-.08,courtyard.plan.ground_height+.75))
 	var soil_gradient := Gradient.new()
 	soil_gradient.colors = PackedColorArray([Color(.33,.28,.16,.52),Color(.40,.36,.20,0)])
 	var root_soil := GradientTexture2D.new()

@@ -101,6 +101,8 @@ func _refresh_shore_obstacles() -> void:
 			await get_tree().process_frame;slice=Time.get_ticks_usec()
 		if not is_instance_valid(child): continue
 		if not child.has_meta("shore_stone") and not String(child.name).begins_with("BankReeds") and not String(child.name).begins_with("Lotus"): continue
+		if child.get_meta("bridge_dressing_hidden",false):
+			layout_obstacles.erase(String(child.name));continue
 		var polygon: PackedVector2Array=Space.cached_footprint(child,.23+rise,.75+rise)
 		if polygon.size()>=3: layout_obstacles[String(child.name)]=polygon
 		else: layout_obstacles.erase(String(child.name))
@@ -336,17 +338,30 @@ func _build_architecture() -> void:
 	if plan.construction.bridge.is_empty(): _module("stone_bridge",plan.anchors.bridge,plan.angles.bridge)
 	else:
 		var bridge: Node3D=Structures.bridge(plan);add_child(bridge);_contact_sources.append(bridge)
+		_shore_sources.append(bridge)
+	for child: Node in get_children():
+		if child.has_meta("shore_stone"): _fit_bridge_stone(child)
 	_boat=_asset("boat","CoveredBoat",plan.anchors.boat,plan.angles.boat,.85)
 	# Opposite landing is a small bank, with irregular rock margins, not a floating bridge end.
 	_bank("east", plan.east_rim, plan.anchors.east_bank, plan.angles.east_bank)
 	for index: int in 7:
 		var point: Vector3 = plan.east_path[0].lerp(plan.east_path[1],index/6.0)
-		_tint_stone(_module("stone_1",point,24+index*13,Vector3(.82,.25,.65)),Color("93907e"))
+		var landing: Node3D=_module("stone_1",point,24+index*13,Vector3(.82,.25,.65))
+		_fit_bridge_stone(landing)
+		_tint_stone(landing,Color("93907e"))
 	for i in 7:
 		var position_on_bank: Vector3 = plan.east_stones[i]
-		_tint_stone(_module("stone_%d"%(i%5),position_on_bank,i*39,Vector3(.85,2.8+(i%3)*.7,.8)),Color("829184"))
+		var rock: Node3D=_module("stone_%d"%(i%5),position_on_bank,i*39,Vector3(.85,2.8+(i%3)*.7,.8))
+		_fit_bridge_stone(rock);_tint_stone(rock,Color("829184"))
 	# The right bay contains the harvest table; the old bench occupied its legs
 	# and was partly buried in the raised veranda platform.
+
+func _fit_bridge_stone(stone: Node3D) -> void:
+	stone.set_meta("bridge_dressing_stone",true)
+	var bridge_polygon: PackedVector2Array=Space.cached_footprint(get_bridge(),plan.ground_height-.08,plan.ground_height+.75)
+	var hidden: bool=not Geometry2D.intersect_polygons(bridge_polygon,Space.cached_footprint(stone,plan.ground_height+.10,plan.ground_height+.62)).is_empty()
+	stone.set_meta("bridge_dressing_hidden",hidden);stone.visible=not hidden
+	if hidden: _shore_sources.erase(stone)
 
 func _build_plants() -> void:
 	_rng.seed=87311
@@ -457,6 +472,7 @@ func _build_contact_shading() -> void:
 	var ground: float=plan.ground_height+.002
 	var deck: float=plan.anchors.veranda.y+.28
 	var owned: Array[Node3D]=[]
+	owned.append(get_bridge())
 	for id: String in Buildings.BASE: owned.append_array(building_contact_sources(id))
 	for source: Node3D in _contact_sources:
 		if source.name=="EntranceTrellis": continue
@@ -476,6 +492,15 @@ func _build_contact_shading() -> void:
 	var trellis_contacts:=ContactShading.new();trellis_contacts.name="TrellisContacts";add_child(trellis_contacts)
 	trellis_contacts.configure_bounds(plan.land_bounds().grow(.6))
 	trellis_contacts.collect(get_node("EntranceTrellis"),[ground]);trellis_contacts.bake()
+	var bridge_contacts:=ContactShading.new();bridge_contacts.name="BridgeContacts";add_child(bridge_contacts)
+	var bridge_end: Vector3=Construction.bridge_points(plan)[1]
+	bridge_contacts.configure_bounds(plan.land_bounds().expand(Vector2(bridge_end.x,bridge_end.z)).grow(.6))
+	bridge_contacts.collect(get_bridge(),[ground]);bridge_contacts.bake()
+
+func get_bridge() -> Node3D:
+	for child: Node in get_children():
+		if child is Node3D and (child.name=="AdaptiveBridge" or child.scene_file_path.ends_with("/stone_bridge.glb")): return child
+	return null
 
 func building_contact_sources(id: String) -> Array[Node3D]:
 	var result: Array[Node3D]=[]

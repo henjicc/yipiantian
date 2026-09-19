@@ -3,13 +3,15 @@ extends RefCounted
 const Construction = preload("res://layout/island_construction.gd")
 const Poles = preload("res://layout/fence_geometry.gd")
 const PIGMENT = preload("res://scenes/environment/pigment.gdshader")
+const ConstructionMesh=preload("res://layout/construction_mesh.gd")
+static var _plank_arrays: Array=[]
 
-static func _surface() -> SurfaceTool:
-	var result:=SurfaceTool.new();result.begin(Mesh.PRIMITIVE_TRIANGLES)
-	return result
+static func _surface() -> ConstructionMesh:
+	return ConstructionMesh.new()
 
-static func _finish(parent: Node3D, surface: SurfaceTool, tint: Color) -> void:
+static func _finish(parent: Node3D, surface: ConstructionMesh, tint: Color) -> void:
 	var mesh:=MeshInstance3D.new();mesh.mesh=surface.commit()
+	mesh.set_meta("construction_vertices",surface.vertices)
 	var material:=ShaderMaterial.new();material.shader=PIGMENT
 	material.set_shader_parameter("base_color",tint)
 	material.set_shader_parameter("wash_scale",3.5)
@@ -20,7 +22,7 @@ static func trellis(plan: RefCounted) -> Node3D:
 	var root:=Node3D.new();root.name="EntranceTrellis"
 	root.transform=Construction.trellis_pose(plan)
 	var size: Vector3=Construction.trellis_size(plan)
-	var bamboo: SurfaceTool=_surface();var joints: SurfaceTool=_surface()
+	var bamboo: ConstructionMesh=_surface();var joints: ConstructionMesh=_surface()
 	var bays: int=ceili(size.x/1.2)
 	for i: int in bays+1:
 		var z: float=-size.x*.5+size.x*i/bays
@@ -50,13 +52,16 @@ static func bridge(plan: RefCounted) -> Node3D:
 	var basis:=Basis(side,Vector3.UP,direction)
 	# Positive determinant: local X points across, local Z along the bridge.
 	if basis.determinant()<0: basis.x=-basis.x
-	var deck: SurfaceTool=_surface();var rails: SurfaceTool=_surface()
+	var deck: ConstructionMesh=_surface();var rails: ConstructionMesh=_surface()
 	var pieces: int=ceili(length/.22)
+	if _plank_arrays.is_empty():
+		var shape:=BoxMesh.new();shape.size=Vector3.ONE
+		_plank_arrays=shape.get_mesh_arrays()
+	var plank_basis: Basis=basis*Basis.from_scale(Vector3(width,.075,length/pieces-.008))
 	for i: int in pieces:
 		var t: float=(i+.5)/pieces
 		var p: Vector3=ends[0].lerp(ends[1],t)+Vector3.UP*(.04+sin(t*PI)*.22)
-		var shape:=BoxMesh.new();shape.size=Vector3(width,.075,length/pieces-.008)
-		deck.append_from(shape,0,Transform3D(basis,p))
+		deck.append(_plank_arrays,Transform3D(plank_basis,p))
 	var spans: int=ceili(length/.9)
 	var supports:=PackedVector2Array()
 	for edge: float in [-1.0,1.0]:

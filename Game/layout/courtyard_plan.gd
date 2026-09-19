@@ -178,7 +178,8 @@ func apply_construction(value: Dictionary) -> bool:
 		for i: int in values.size(): values[i]=float(values[i])
 	# Canonical decimal precision survives JSON without retaining float32 noise
 	# from the scene's Vector3 anchors and dimension handles.
-	for i: int in construction.trellis.size(): construction.trellis[i]=float("%.4f"%construction.trellis[i])
+	for values: Array in [construction.trellis,construction.bridge]:
+		for i: int in values.size(): values[i]=float("%.4f"%values[i])
 	if not construction.trellis.is_empty(): construction.trellis[5]=wrapf(construction.trellis[5],-180,180)
 	Construction.Buildings.apply(self)
 	var combined: PackedVector2Array=Construction.land_outline(rim,construction.land)

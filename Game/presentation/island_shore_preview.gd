@@ -7,14 +7,16 @@ var _surface: MeshInstance3D
 var _rocks: Dictionary={}
 var _plants: Node3D
 var _hidden: Array[Node3D]=[]
+var _originals: Array[Node3D]=[]
 var _grass: Node3D
 var _fence: Node3D
 
 func configure(courtyard: Node3D) -> void:
 	environment=courtyard
 	for child: Node in environment.get_children():
-		if child is Node3D and (child.name=="MainBank" or child.has_meta("shore_stone") or child.name in ["NewShorePlants","ExpansionGrass"] or child.has_meta("fence_spans")) and child.visible:
-			_hidden.append(child);child.hide()
+		if child is Node3D and (child.name=="MainBank" or child.has_meta("shore_stone") or child.name in ["NewShorePlants","ExpansionGrass"] or child.has_meta("fence_spans")):
+			_originals.append(child)
+			if child.visible: _hidden.append(child);child.hide()
 	_surface=MeshInstance3D.new();_surface.name="LiveBank"
 	_surface.material_override=environment.get_node("MainBank").get_child(0).get_active_material(0)
 	_surface.set_layer_mask_value(2,true);add_child(_surface)
@@ -37,6 +39,7 @@ func update(plan: RefCounted) -> void:
 		environment._apply_pigment(rock,entry.asset);environment._tint_stone(rock,entry.color)
 		_rocks[key]=rock
 		rock.set_meta("shore_stone",true)
+		environment._fit_bridge_stone(rock)
 	for key: String in _rocks.keys():
 		if not wanted.has(key): _rocks[key].free();_rocks.erase(key)
 	if is_instance_valid(_plants): _plants.free()
@@ -58,14 +61,16 @@ func accept(plan: RefCounted) -> void:
 	var bank: Node3D=environment.get_node("MainBank")
 	bank.get_child(0).mesh=_surface.mesh;bank.show()
 	bank.remove_meta("navigation_footprints")
-	for node: Node3D in _hidden:
+	for node: Node3D in _originals:
 		if node==bank: continue
 		environment._shore_sources.erase(node);environment._contact_sources.erase(node)
 		environment.layout_obstacles.erase(String(node.name))
 		node.free()
 	_hidden.clear()
+	_originals.clear()
 	for rock: Node3D in _rocks.values():
-		rock.reparent(environment);environment._shore_sources.append(rock)
+		rock.reparent(environment)
+		if rock.visible: environment._shore_sources.append(rock)
 	_rocks.clear()
 	_plants.reparent(environment);_grass.reparent(environment);_fence.reparent(environment)
 	environment._contact_sources.append(_fence)

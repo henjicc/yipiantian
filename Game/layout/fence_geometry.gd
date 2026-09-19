@@ -1,15 +1,15 @@
 extends RefCounted
 ## Same dimensions and colours as the authored bamboo module; joints share posts.
+const ConstructionMesh=preload("res://layout/construction_mesh.gd")
+static var _pole_arrays: Array=[]
 static func build(spans: Array[Dictionary], style: String = "bamboo") -> Node3D:
 	assert(style in preload("res://layout/courtyard_plan.gd").FENCE_STYLES)
 	var holder := Node3D.new()
 	holder.name = "BoundaryFence"
 	holder.set_meta("fence_spans",spans)
 	holder.set_meta("fence_style",style)
-	var bamboo := SurfaceTool.new()
-	var joints := SurfaceTool.new()
-	bamboo.begin(Mesh.PRIMITIVE_TRIANGLES)
-	joints.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var bamboo := ConstructionMesh.new()
+	var joints := ConstructionMesh.new()
 	var posts: Dictionary = {}
 	for span: Dictionary in spans:
 		for p: Vector3 in [span.a,span.b]:
@@ -41,13 +41,11 @@ static func build(spans: Array[Dictionary], style: String = "bamboo") -> Node3D:
 		holder.add_child(mesh)
 	return holder
 
-static func _pole(surface: SurfaceTool,a: Vector3,b: Vector3,radius: float) -> void:
+static func _pole(surface: ConstructionMesh,a: Vector3,b: Vector3,radius: float) -> void:
 	var direction: Vector3 = b-a
-	var shape := CylinderMesh.new()
-	shape.top_radius=radius
-	shape.bottom_radius=radius
-	shape.height=direction.length()
-	shape.radial_segments=10
-	shape.rings=1
-	var basis := Basis(Quaternion(Vector3.UP,direction.normalized()))
-	surface.append_from(shape,0,Transform3D(basis,(a+b)*.5))
+	if _pole_arrays.is_empty():
+		var shape:=CylinderMesh.new();shape.top_radius=1.0;shape.bottom_radius=1.0
+		shape.height=1.0;shape.radial_segments=10;shape.rings=1
+		_pole_arrays=shape.get_mesh_arrays()
+	var basis := Basis(Quaternion(Vector3.UP,direction.normalized()))*Basis.from_scale(Vector3(radius,direction.length(),radius))
+	surface.append(_pole_arrays,Transform3D(basis,(a+b)*.5))

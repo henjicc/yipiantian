@@ -153,12 +153,21 @@ static func footprint(node: Node3D, bottom: float, top: float, visible_only: boo
 	if node is MeshInstance3D: meshes.append(node)
 	for mesh: MeshInstance3D in meshes:
 		if (visible_only and not mesh.is_visible_in_tree()) or mesh.mesh == null: continue
-		for surface: int in mesh.mesh.get_surface_count():
-			var arrays: Array = mesh.mesh.surface_get_arrays(surface)
-			for vertex: Vector3 in arrays[Mesh.ARRAY_VERTEX]:
+		for points: PackedVector3Array in mesh_vertices(mesh):
+			for vertex: Vector3 in points:
 				var p: Vector3 = mesh.global_transform * vertex
 				if p.y >= bottom and p.y <= top: vertices.append(Vector2(p.x, p.z))
 	return Geometry2D.convex_hull(vertices) if vertices.size() >= 3 else PackedVector2Array()
+
+static func mesh_vertices(instance: MeshInstance3D) -> Array[PackedVector3Array]:
+	# Construction keeps its original CPU vertices so pointer edits do not read
+	# the mesh back from the rendering device for each footprint/contact pass.
+	if instance.has_meta("construction_vertices"): return [instance.get_meta("construction_vertices")]
+	var result: Array[PackedVector3Array]=[]
+	for surface: int in instance.mesh.get_surface_count():
+		var arrays: Array=instance.mesh.surface_get_arrays(surface)
+		if not arrays.is_empty() and arrays[Mesh.ARRAY_VERTEX]!=null: result.append(arrays[Mesh.ARRAY_VERTEX])
+	return result
 
 static func cached_footprint(node: Node3D, bottom: float, top: float) -> PackedVector2Array:
 	# Courtyard geometry is static between structural edits. Brush edits invalidate

@@ -33,11 +33,7 @@ func collect(node: Node3D, planes: Array) -> void:
 		if mesh == null:
 			continue
 		var placement: Transform3D = mesh_instance.global_transform
-		for surface: int in mesh.get_surface_count():
-			var arrays: Array = mesh.surface_get_arrays(surface)
-			if arrays.is_empty() or arrays[Mesh.ARRAY_VERTEX] == null:
-				continue
-			var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		for vertices: PackedVector3Array in preload("res://scenes/environment/animal_space.gd").mesh_vertices(mesh_instance):
 			for plane: float in planes:
 				_gather(vertices, placement, float(plane))
 
@@ -64,10 +60,18 @@ func _gather(vertices: PackedVector3Array, placement: Transform3D, plane: float)
 
 
 func bake() -> void:
-	for plane: float in _levels:
-		var texture: ImageTexture = _paint(_levels[plane])
-		if texture == null:
-			continue
+	apply_pixels(paint_levels(_levels,_origin,_extent))
+
+static func paint_levels(levels: Dictionary, origin: Vector2, extent: Vector2) -> Dictionary:
+	var result: Dictionary={}
+	for plane: float in levels:
+		var pixels: PackedByteArray=_paint_data(levels[plane],origin,extent)
+		if not pixels.is_empty(): result[plane]=pixels
+	return result
+
+func apply_pixels(levels: Dictionary) -> void:
+	for plane: float in levels:
+		var texture:=ImageTexture.create_from_image(Image.create_from_data(RESOLUTION,RESOLUTION,false,Image.FORMAT_RGBA8,levels[plane]))
 		var decal := Decal.new()
 		decal.name = "ContactPool%d" % roundi(plane * 100.0)
 		decal.texture_albedo = texture
@@ -82,12 +86,12 @@ func bake() -> void:
 		add_child(decal)
 
 
-func _paint(cells: Dictionary) -> ImageTexture:
+static func _paint_data(cells: Dictionary, origin: Vector2, extent: Vector2) -> PackedByteArray:
 	if cells.is_empty():
-		return null
+		return PackedByteArray()
 	var data := PackedByteArray()
 	data.resize(RESOLUTION * RESOLUTION * 4)
-	var scale: Vector2 = Vector2(RESOLUTION, RESOLUTION) / _extent
+	var scale: Vector2 = Vector2(RESOLUTION, RESOLUTION) / extent
 	var red: int = roundi(TINT.r * 255.0)
 	var green: int = roundi(TINT.g * 255.0)
 	var blue: int = roundi(TINT.b * 255.0)
@@ -101,7 +105,7 @@ func _paint(cells: Dictionary) -> ImageTexture:
 		var radius: float = clampf(spread * 0.5 + 0.125, 0.14, 0.44)
 		var strength: float = lerpf(0.66, 0.26, smoothstep(0.10, 0.75, spread))
 		var pixel_radius: Vector2 = Vector2(radius, radius) * scale
-		var middle: Vector2 = (centre - _origin) * scale
+		var middle: Vector2 = (centre - origin) * scale
 		var min_x: int = maxi(0, floori(middle.x - pixel_radius.x))
 		var max_x: int = mini(RESOLUTION - 1, ceili(middle.x + pixel_radius.x))
 		var min_y: int = maxi(0, floori(middle.y - pixel_radius.y))
@@ -121,5 +125,5 @@ func _paint(cells: Dictionary) -> ImageTexture:
 				data[index + 2] = blue
 				data[index + 3] = alpha
 	if not painted:
-		return null
-	return ImageTexture.create_from_image(Image.create_from_data(RESOLUTION, RESOLUTION, false, Image.FORMAT_RGBA8, data))
+		return PackedByteArray()
+	return data

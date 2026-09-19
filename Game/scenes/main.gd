@@ -710,6 +710,11 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	if not island_builder.active or island_builder.busy: return
 	var current: Dictionary=farm_state.snapshot().layout
 	var unchanged: Dictionary=snapshot.duplicate(true)
+	unchanged.construction.bridge=current.construction.bridge.duplicate(true)
+	if unchanged==current and snapshot!=current:
+		_apply_bridge(snapshot,undo)
+		return
+	unchanged=snapshot.duplicate(true)
 	unchanged.construction.ducks=current.construction.ducks.duplicate(true)
 	if unchanged==current and snapshot!=current:
 		_apply_ducks(snapshot,undo)
@@ -775,6 +780,39 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	farm_state=candidate
 	island_builder.set_busy(true,"已保存，正在更新小岛…")
 	_reload_saved_scene()
+
+func _apply_bridge(snapshot: Dictionary, undo: bool) -> void:
+	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
+	if plan==null: return
+	island_builder.set_busy(true,"正在校对桥头通路…")
+	if not is_instance_valid(island_builder.bridge_preview):
+		island_builder._clear_preview()
+		island_builder.bridge_preview=preload("res://presentation/bridge_layout_preview.gd").new()
+		add_child(island_builder.bridge_preview);island_builder.bridge_preview.configure(self)
+	var preview: Node3D=island_builder.bridge_preview
+	preview.update(plan)
+	while preview.pending:
+		await get_tree().process_frame
+		if _exiting: return
+	if preview.validated==null:
+		island_builder.set_busy(false,preview.message);return
+	var issue: String=preview.animal_issue()
+	if not issue.is_empty(): island_builder.set_busy(false,issue);return
+	var started: int=Time.get_ticks_msec()
+	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	if not candidate.apply_layout(snapshot,clock.call()).ok:
+		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok:
+		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
+	previous_layout={} if undo else farm_state.snapshot().layout
+	previous_decorations={};farm_state=candidate
+	plan=preview.validated
+	island_builder.accept_bridge(plan)
+	decoration_layout.refresh_path_geometry()
+	refresh_farm();seasonal_courtyard.refresh_paths($Environment)
+	$Environment.refresh_terrain.call_deferred(true)
+	print("BRIDGE_COMMIT_MS ",Time.get_ticks_msec()-started)
 
 func _apply_ducks(snapshot: Dictionary, undo: bool) -> void:
 	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
