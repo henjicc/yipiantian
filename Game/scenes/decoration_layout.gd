@@ -4,8 +4,10 @@ extends Node3D
 signal confirmed
 signal change_requested(candidate: Dictionary)
 signal mode_changed(active: bool)
+signal preview_changed
 
 const Catalog = preload("res://farm/decoration_catalog.gd")
+const ConstructionCatalog = preload("res://layout/construction_catalog.gd")
 const State = preload("res://farm/decoration_state.gd")
 const DecorHUD = preload("res://scenes/decoration_hud.gd")
 var active: bool = false
@@ -105,7 +107,7 @@ func cancel_preview() -> void:
 
 
 func select_item(item_id: String) -> void:
-	if not active or camera.is_transitioning():
+	if not active:
 		return
 	cancel_preview()
 	if not state.snapshot()[item_id].unlocked:
@@ -208,9 +210,25 @@ func refresh_confirmed() -> void:
 
 func lantern_anchors() -> Array[Node3D]:
 	var anchors: Array[Node3D] = []
-	if _instances.has("lantern"):
-		anchors.append(_instances.lantern)
+	for id: String in _instances:
+		if ConstructionCatalog.has_capability(id,"light"): anchors.append(_instances[id])
 	return anchors
+
+func show_save_issue() -> void:
+	_message="未能保存，可重试或取消调整。"
+	_refresh()
+
+func restoration_issue(candidate: Dictionary) -> String:
+	var issue: String=_restoration_issue(candidate)
+	if not issue.is_empty(): return issue
+	for id: String in candidate:
+		var entry: Dictionary=candidate[id]
+		if entry.slot_id.is_empty() or entry==state.snapshot()[id]: continue
+		var node: Node3D=_instantiate(id,entry.slot_id,entry.quarter_turn)
+		issue=placement_issue(node,id,entry.slot_id)
+		remove_child(node);node.queue_free()
+		if not issue.is_empty(): return issue
+	return ""
 
 
 func handle_input(event: InputEvent) -> void:
@@ -429,3 +447,4 @@ func _refresh() -> void:
 	for slot_id: String in _rings:
 		_rings[slot_id].visible = active and not selected_item.is_empty() and state.can_place(selected_item, slot_id, 0,true).ok and _slot_visible(slot_id)
 	hud.present(state.snapshot(), selected_item, preview_slot, not preview_slot.is_empty(), _message, camera.is_transitioning())
+	preview_changed.emit()

@@ -25,7 +25,7 @@ func _run() -> void:
 	var water_id: int=scene.get_node("Environment/CourtyardAnimals").water.get_instance_id()
 	var original: Dictionary=scene.farm_state.snapshot()
 	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
-	await click(scene.island_builder._tools.fields)
+	await choose_tool("fields")
 	await click(scene.island_builder._field_actions.get_node("AddField"))
 	await drag(Vector3(-1.5,.13,7),Vector3(1,.13,9))
 	var builder: Node=scene.island_builder

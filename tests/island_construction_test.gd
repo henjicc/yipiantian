@@ -27,6 +27,11 @@ func click(control: Control) -> void:
 	root.push_input(motion,true);await frames()
 	await mouse(p,true);await mouse(p,false)
 
+func choose_tool(id: String) -> void:
+	var category: String=preload("res://layout/construction_catalog.gd").item(id).category
+	await click(scene.island_builder.choices.categories[category])
+	await click(scene.island_builder._tools[id])
+
 func drag(a: Vector3,b: Vector3) -> void:
 	var start: Vector2=scene.camera.unproject_position(a);var end: Vector2=scene.camera.unproject_position(b)
 	var hover:=InputEventMouseMotion.new();hover.position=start;hover.window_id=root.get_window_id();root.push_input(hover,true);await frames()
@@ -97,7 +102,7 @@ func _run() -> void:
 	expect(scene.courtyard_plan.land_bounds().end.y>=8.5,"Committed land reaches dragged shore")
 	expect(scene.farm_state.snapshot().fields==crops,"Construction preserves crop state")
 	await shot("03-land-built")
-	await click(scene.island_builder._tools.trellis)
+	await choose_tool("trellis")
 	scene.island_builder._values.width.value=.8
 	scene.island_builder._values.height.value=2.4
 	await drag(Vector3(-5.8,.13,3.375),Vector3(-5.8,.13,3.5))
@@ -107,7 +112,7 @@ func _run() -> void:
 	var trellis: Node3D=scene.get_node("Environment/EntranceTrellis")
 	expect(trellis.has_meta("post_count") and trellis.get_meta("post_count")==12,"Longer trellis adds real posts")
 	await shot("05-trellis-built")
-	await click(scene.island_builder._tools.bridge)
+	await choose_tool("bridge")
 	var ends: Array[Vector3]=Construction.bridge_points(scene.courtyard_plan)
 	await drag(ends[1],Vector3(8,.13,3))
 	expect(scene.island_builder._confirm.disabled,"Unsupported bridge endpoint cannot be committed")
@@ -119,7 +124,7 @@ func _run() -> void:
 	if not await apply(): await finish();return
 	expect(scene.has_node("Environment/AdaptiveBridge"),"Adaptive bridge appears after save")
 	await shot("07-bridge-built")
-	await click(scene.island_builder._tools.ducks)
+	await choose_tool("ducks")
 	scene.island_builder._values.count.value=6
 	await drag(Vector3(-12,.13,4),Vector3(-8,.13,10))
 	print("DUCK_ISSUE "+scene.island_builder.issue())

@@ -44,6 +44,7 @@ var _construction_resume: Dictionary = {}
 # One-step undo is session history, carried across a spatial scene rebuild.
 # It reverses layout only, never harvests, elapsed growth or subsequent planting.
 var previous_layout: Dictionary = {}
+var previous_decorations: Dictionary = {}
 var _presentation_resume: Dictionary = {}
 
 @onready var farm: FarmLayout = $Farm
@@ -267,6 +268,7 @@ func _ready() -> void:
 	decoration_layout.hud.courtyard_requested.connect(_begin_courtyard_edit)
 	island_builder=IslandBuilder.new();island_builder.name="IslandBuilder";add_child(island_builder)
 	island_builder.commit_requested.connect(_apply_construction)
+	island_builder.decoration_undo_requested.connect(_undo_decoration)
 	island_builder.closed.connect(func() -> void:
 		camera.set_construction_framing(false);hud.show();_cancel_input();_refresh_hud())
 	hud.construction_requested.connect(_begin_construction)
@@ -647,7 +649,7 @@ func _apply_season() -> void:
 	atmosphere.set_season(id)
 	farm_audio.set_season(id)
 
-func _change_decoration(candidate: Dictionary) -> void:
+func _change_decoration(candidate: Dictionary, undo: bool = false) -> void:
 	if not _loaded or _save_failed: return
 	var replacement:=DecorationState.new()
 	if not replacement.restore_snapshot(candidate): return
@@ -655,15 +657,31 @@ func _change_decoration(candidate: Dictionary) -> void:
 	if replacement.snapshot()!=decoration_state.snapshot(): candidate_farm.remember("arrange",clock.call())
 	var saved: Dictionary=store.save(candidate_farm.snapshot(),replacement.snapshot())
 	if not saved.ok:
+		if island_builder.active:
+			decoration_layout.show_save_issue()
+			island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 		_save_failed=true
 		decoration_layout.finish_mode()
 		hud.show_storage_issue(saved.kind,true)
 		_refresh_hud()
 		return
+	previous_decorations={} if undo else decoration_state.snapshot()
+	previous_layout={}
+	island_builder.previous={}
 	decoration_state=replacement
 	farm_state.restore_snapshot(candidate_farm.snapshot())
 	decoration_layout.accept_state(replacement)
 	_refresh_hud()
+	if island_builder.active: island_builder._refresh()
+
+func _undo_decoration() -> void:
+	if previous_decorations.is_empty(): return
+	var candidate: Dictionary=previous_decorations.duplicate(true)
+	for id: String in candidate: candidate[id].unlocked=decoration_state.snapshot()[id].unlocked
+	var issue: String=decoration_layout.restoration_issue(candidate)
+	if not issue.is_empty():
+		island_builder.set_busy(false,issue);return
+	_change_decoration(candidate,true)
 
 func _view_neighbor(id: String) -> void:
 	var scene_view: Dictionary=$Environment/NeighborIslets.story_view(id)
@@ -740,6 +758,7 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	if not saved.ok:
 		island_builder.set_busy(false,"未能保存，岛屿保持原样。可再次确认重试，或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
+	previous_decorations={}
 	farm_state=candidate
 	island_builder.set_busy(true,"已保存，正在更新小岛…")
 	_reload_saved_scene()
@@ -763,6 +782,7 @@ func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
 	if not saved.ok: island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
+	previous_decorations={}
 	farm_state=candidate
 	plan.paths=courtyard_plan.paths.duplicate();plan.garden_fences=courtyard_plan.garden_fences.duplicate(true)
 	# Undo can target a different mesh than the current draft.
@@ -798,6 +818,7 @@ func _apply_fields(snapshot: Dictionary, undo: bool) -> void:
 	if not saved.ok:
 		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
+	previous_decorations={}
 	farm_state=candidate
 	plan=preview.validated
 	island_builder.accept_fields(plan)
@@ -834,6 +855,7 @@ func _apply_courtyard(snapshot: Dictionary, undo: bool) -> void:
 		courtyard_edit.editor.set_busy(false,"未能保存，本次整理还没有生效。可以重试，或取消保留原来的小院。")
 		return
 	previous_layout={} if undo else farm_state.snapshot().layout
+	previous_decorations={}
 	farm_state=candidate
 	_reload_saved_scene()
 
@@ -859,7 +881,7 @@ func _on_decoration_mode_changed(active: bool) -> void:
 	farm.select_cell(-1, "")
 	if focus_detail != null:
 		focus_detail.set_focus()
-	camera.set_decoration_framing(active)
+	if island_builder==null or not island_builder.active: camera.set_decoration_framing(active)
 	_refresh_hud()
 
 
@@ -1089,7 +1111,9 @@ func _notification(what: int) -> void:
 			camera.cancel_zoom()
 		selected_tool = ""
 		selected_palette = ""
-		if decoration_layout != null and decoration_layout.active:
+		if island_builder!=null and island_builder.active:
+			island_builder._focus_lost()
+		elif decoration_layout != null and decoration_layout.active:
 			if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
 				decoration_layout.finish_mode()
 			else:

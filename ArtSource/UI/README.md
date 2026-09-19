@@ -42,6 +42,12 @@ Create a single polished Windows indie farming game application icon for 我有�
 
 ## 界面贡献
 
+### 小岛建设目录缩略图 · 20260919
+
+`Game/art/ui/construction/` 的九张透明 PNG 是 Godot 4.7.2 离线渲染的现有资产缩略图：民居、竹篱、荷花、芦苇、香蒲、菱叶，以及当前程序菜架、分段木桥和道路。没有新增 Tripo 模型或图像生成费用。其他目录项复用已有动物、摆件和操作图标；图标不改变模型真实尺寸。
+
+重建入口：`scripts/godot.ps1 -Action Run -ExtraArgs @('--script','res://../scripts/render-construction-icons.gd')`，随后运行项目 Import。输出为256×192透明图，脚本直接引用正式模型及结构／道路生成入口，不依赖开发模型查看器。运行时仅加载 PNG，不保留缩略图用的三维视口。实景目录、摆件操作与小窗口检查入口为 `tests/construction_catalog_test.gd`。
+
 ### 除草与开垦图标 · 20260918
 
 两张独立内置 imagegen 透明图标：短柄镰刀用于除草、木柄铁锄用于开垦。原始1254方图保存在 `Game/art/ui/crops/weed.png` 与 `till.png`，Godot导入512像素，工具卡片和持物硬件鼠标共用资源。完整实际提示词及生成文件名见 [tending-icons.json](tending-icons.json)。未调用Tripo，图像工具没有返回费用；草丛复用院落既有曲面草叶生成方法，动作声音复用已有收获／松土声，不冒称新生成模型或实录音效。实际鼠标流程、小窗口截图及保存失败重试见 `.local/verification/tending-scene-1843431/`。
