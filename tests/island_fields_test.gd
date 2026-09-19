@@ -61,6 +61,14 @@ func grass_reuse_checks() -> void:
 		reference._exclusions=shown._exclusions.duplicate();reference.object_footprints=shown.object_footprints.duplicate()
 		reference.update_tiles(preview.validated,expansion)
 		expect(grass_appearance(shown)==grass_appearance(reference),"Local field/path grass update matches full generated geometry on "+("added land" if expansion else "original land"))
+		var source: Node3D=scene.get_node("Environment/ExpansionGrass" if expansion else "Environment/GroundCover/CoreGrass")
+		var visible: Array[Node3D]=[]
+		for parent: Node3D in [source,shown]:
+			for tile: Node3D in parent.get_children():
+				if tile.is_visible_in_tree(): visible.append(tile)
+		var complete: bool=visible.size()==shown._tiles.size()
+		for tile: Node3D in shown._tiles.values(): complete=complete and tile in visible
+		expect(complete,"Field grass preview shows each final tile once with no stale original grass")
 		reference.free()
 
 func _run() -> void:
@@ -85,6 +93,9 @@ func _run() -> void:
 	var water_id: int=scene.get_node("Environment/CourtyardAnimals").water.get_instance_id()
 	var original: Dictionary=scene.farm_state.snapshot()
 	var original_paths: Node3D=scene.get_node("Environment/GardenPaths")
+	var original_core: Node3D=scene.get_node("Environment/GroundCover/CoreGrass")
+	var original_expansion: Node3D=scene.get_node("Environment/ExpansionGrass")
+	var opening_tiles: Dictionary=original_core._tiles.duplicate()
 	var original_fences: Array[Node3D]=[]
 	for node: Node in scene.get_node("Environment").get_children():
 		if node is Node3D and node.has_meta("fence_spans") and node.visible: original_fences.append(node)
@@ -93,6 +104,7 @@ func _run() -> void:
 	expect(original_paths.is_visible_in_tree(),"Opening field tools retains the existing visible paths")
 	for node: Node3D in original_fences: expect(node.is_visible_in_tree(),"Opening field tools retains existing fence and contact shadows")
 	expect(not scene.island_builder.field_preview.pending,"Unchanged field layout needs no repeated navigation build")
+	expect(scene.island_builder.field_preview.core._tiles==opening_tiles and original_core.is_visible_in_tree(),"Opening fields retains the actual unchanged grass tiles")
 	await click(scene.island_builder._field_actions.get_node("AddField"))
 	await drag(Vector3(-1.5,.13,7),Vector3(1,.13,9))
 	var builder: Node=scene.island_builder
@@ -118,6 +130,7 @@ func _run() -> void:
 	expect(not builder.active and scene.farm_state.snapshot().layout==wanted,"Finish commits the visible field and exits")
 	expect(scene.get_node("Environment/MainHouse").get_instance_id()==house_id,"Field completion retains the island scene")
 	expect(scene.farm.fields.size()==7,"New field joins normal farming")
+	expect(scene.get_node("Environment/GroundCover/CoreGrass")==original_core and scene.get_node("Environment/ExpansionGrass")==original_expansion,"Saving field edits keeps the original grass owners")
 	for node: Node3D in original_fences: expect(is_instance_valid(node) and node.is_visible_in_tree(),"Field-only save preserves unchanged fence instances and shadows")
 	var id: String=scene.farm.field_id(6)
 	start=Time.get_ticks_msec()
@@ -150,6 +163,7 @@ func _run() -> void:
 	expect(builder._confirm.disabled and builder.issue().contains("作物"),"Shrinking away an occupied row is rejected")
 	builder.cancel_draft();await frames()
 	expect(scene.farm_state.get_cell(id,cell).crop_id=="greens","Cancel preserves the planted crop")
+	grass_reuse_checks()
 	for preview_body: StaticBody3D in builder.field_preview.farm.fields:
 		expect(preview_body.collision_layer==0,"Preview fields cannot intercept normal farm picking")
 	var before: Dictionary=scene.farm_state.snapshot()

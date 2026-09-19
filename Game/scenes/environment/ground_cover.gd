@@ -88,7 +88,7 @@ var _tile_source: Node3D
 var _source_visibility: Dictionary={}
 
 func preview_tiles(source: Node3D) -> void:
-	# Shore previews borrow unchanged grass. Only replaced source tiles are
+	# Construction previews borrow unchanged grass. Only replaced source tiles are
 	# hidden; cancellation can restore the original field without recreating it.
 	_tile_source=source
 	_tiles=source._tiles.duplicate()

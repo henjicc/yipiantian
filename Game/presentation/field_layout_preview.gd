@@ -2,7 +2,6 @@ extends Node3D
 ## Draft geometry is disposable. FarmState and the existing farm remain authoritative.
 signal checked
 const Plan=preload("res://layout/courtyard_plan.gd")
-const State=preload("res://farm/farm_state.gd")
 const Circulation=preload("res://layout/courtyard_circulation.gd")
 const Cover=preload("res://scenes/environment/ground_cover.gd")
 const Fence=preload("res://layout/fence_geometry.gd")
@@ -35,10 +34,10 @@ func configure(scene: Node3D) -> void:
 	farm=FarmLayout.new();farm.plan.fields.clear();add_child(farm);farm.copy_from(main.farm)
 	for body: StaticBody3D in farm.fields: body.collision_layer=0
 	core=Cover.new();add_child(core)
-	core.copy_tiles(main.get_node("Environment/GroundCover/CoreGrass"))
+	core.preview_tiles(main.get_node("Environment/GroundCover/CoreGrass"))
 	expansion=Cover.new();add_child(expansion)
-	expansion.copy_tiles(main.get_node("Environment/ExpansionGrass"))
-	for node: Node3D in [main.farm, main.get_node("Environment/GroundCover/CoreGrass"), main.get_node("Environment/ExpansionGrass")]:
+	expansion.preview_tiles(main.get_node("Environment/ExpansionGrass"))
+	for node: Node3D in [main.farm]:
 		if node.visible: _hidden.append(node);node.hide()
 	# Opening the tool has not changed any land, paths or fence contacts.
 	# Keep the existing ground dressing until a validated edit changes it.
@@ -64,7 +63,7 @@ func update(plan: RefCounted) -> void:
 	obstacles.merge(main.decoration_layout.ground_footprints())
 	message=""
 	if not Circulation.field_placement_issues(plan,obstacles).is_empty(): message="田块需要落在空地上，并与岸边、景物和其他田块留出间距。"
-	var state:=State.new();state.restore_snapshot(main.farm_state.snapshot())
+	var state: RefCounted=main.farm_state.copy()
 	if not state.apply_layout(snapshot,main.clock.call()).ok: message="缩小或移除的田格里还有作物，请先收获，或保留这些田格。"
 	pending=message.is_empty();_due=Time.get_ticks_msec()+120
 	checked.emit()
@@ -147,11 +146,10 @@ func accept(plan: RefCounted) -> void:
 	main.remove_child(old_farm);old_farm.queue_free()
 	for body: StaticBody3D in farm.fields: body.collision_layer=1
 	farm.reparent(main);farm.name="Farm";farm.plan=plan;main.farm=farm
-	var replacements: Array=[[core,environment.get_node("GroundCover"),"CoreGrass"],[expansion,environment,"ExpansionGrass"]]
-	if is_instance_valid(paths): replacements.append([paths,environment,"GardenPaths"])
-	for pair: Array in replacements:
-		var old: Node=pair[1].get_node(pair[2]);old.get_parent().remove_child(old);old.queue_free()
-		pair[0].reparent(pair[1]);pair[0].name=pair[2]
+	core.accept_tiles();expansion.accept_tiles()
+	if is_instance_valid(paths):
+		var old: Node=environment.get_node("GardenPaths");environment.remove_child(old);old.queue_free()
+		paths.reparent(environment);paths.name="GardenPaths"
 	if is_instance_valid(fence):
 		for node: Node in environment.get_children():
 			if node.has_meta("fence_spans"):
@@ -165,6 +163,7 @@ func retire() -> void:
 	# Cancelling must not wait for an obsolete path search. Keep the private
 	# worker owner alive, hidden, until it can join without blocking a frame.
 	_retiring=true;pending=false;hide()
+	core.restore_tiles();expansion.restore_tiles()
 	for node: Node3D in _hidden:
 		if is_instance_valid(node): node.show()
 	_hidden.clear()
@@ -173,5 +172,6 @@ func retire() -> void:
 func _exit_tree() -> void:
 	if _worker!=null and _worker.is_started(): _worker.wait_to_finish()
 	if not _accepted:
+		core.restore_tiles();expansion.restore_tiles()
 		for node: Node3D in _hidden:
 			if is_instance_valid(node): node.show()
