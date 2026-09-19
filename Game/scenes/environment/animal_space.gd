@@ -138,7 +138,7 @@ func path(start: Vector2, end: Vector2) -> PackedVector2Array:
 
 func ground_height(p: Vector2) -> float:
 	var cell := Vector2i(((p-floor_origin)/CELL).floor())
-	var height: float=floor_level
+	var height: float=-INF
 	for face: PackedVector3Array in _floor_faces.get(cell,[]):
 		var a:=Vector2(face[0].x,face[0].z)
 		var b:=Vector2(face[1].x,face[1].z)-a
@@ -149,19 +149,22 @@ func ground_height(p: Vector2) -> float:
 		var v: float=b.cross(point)/determinant
 		if u>=0 and v>=0 and u+v<=1:
 			height=maxf(height,face[0].y+u*(face[1].y-face[0].y)+v*(face[2].y-face[0].y))
-	return height
+	return height if is_finite(height) else floor_level
 
-func add_floor(node: Node3D, visible_only: bool=true) -> void:
+func add_floor(node: Node3D, visible_only: bool=true, height_range: Vector2=Vector2.INF) -> void:
 	# Index real low triangles per spatial cell; feet sample the triangle at their
 	# exact XZ rather than snapping to a neighbouring grid point on a stone edge.
-	for mesh: MeshInstance3D in node.find_children("*", "MeshInstance3D", true, false):
+	if height_range==Vector2.INF: height_range=Vector2(floor_level-.04,floor_level+.11)
+	var meshes: Array[Node]=node.find_children("*", "MeshInstance3D", true, false)
+	if node is MeshInstance3D: meshes.append(node)
+	for mesh: MeshInstance3D in meshes:
 		if visible_only and not mesh.is_visible_in_tree(): continue
 		var faces: PackedVector3Array = mesh.mesh.get_faces()
 		for i: int in range(0, faces.size(), 3):
 			var a: Vector3 = mesh.global_transform * faces[i]
 			var b: Vector3 = mesh.global_transform * faces[i + 1]
 			var c: Vector3 = mesh.global_transform * faces[i + 2]
-			if minf(a.y, minf(b.y, c.y)) < floor_level-.04 or maxf(a.y, maxf(b.y, c.y)) > floor_level+.11: continue
+			if minf(a.y, minf(b.y, c.y)) < height_range.x or maxf(a.y, maxf(b.y, c.y)) > height_range.y: continue
 			var av := Vector2(a.x, a.z)
 			var bv := Vector2(b.x, b.z)
 			var cv := Vector2(c.x, c.z)

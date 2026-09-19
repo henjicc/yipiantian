@@ -358,6 +358,7 @@ func _build_architecture() -> void:
 	for index: int in 7:
 		var point: Vector3 = plan.east_path[0].lerp(plan.east_path[1],index/6.0)
 		var landing: Node3D=_module("stone_1",point,24+index*13,Vector3(.82,.25,.65))
+		landing.set_meta("authored_bridge_path",true)
 		_fit_bridge_stone(landing)
 		_tint_stone(landing,Color("93907e"))
 	for i in 7:
@@ -370,7 +371,8 @@ func _build_architecture() -> void:
 func _fit_bridge_stone(stone: Node3D) -> void:
 	stone.set_meta("bridge_dressing_stone",true)
 	var bridge_polygon: PackedVector2Array=Space.cached_footprint(get_bridge(),plan.ground_height-.08,plan.ground_height+.75)
-	var hidden: bool=not Geometry2D.intersect_polygons(bridge_polygon,Space.cached_footprint(stone,plan.ground_height+.10,plan.ground_height+.62)).is_empty()
+	var hidden: bool=preload("res://layout/bridge_passage.gd").dressing_overlap(plan,bridge_polygon,Space.cached_footprint(stone,plan.ground_height+.10,plan.ground_height+.62))
+	hidden=hidden or (stone.get_meta("authored_bridge_path",false) and not plan.construction.bridge.is_empty())
 	var player_hidden: bool=not plan.plants.is_empty() and preload("res://layout/plantings.gd").overlaps_player(Space.cached_footprint(stone,-.55,.55),plan.plants)
 	stone.set_meta("player_dressing_hidden",player_hidden)
 	stone.set_meta("bridge_dressing_hidden",hidden);stone.visible=not hidden and not player_hidden
@@ -391,7 +393,9 @@ func _build_plants() -> void:
 	var bamboo_positions: Array[Vector3] = plan.bamboo_positions
 	for i in bamboo_positions.size():_life_asset("bamboo","Bamboo%d"%i,bamboo_positions[i]-Vector3.UP*.025,_rng.randf_range(0,360),_rng.randf_range(.70,1.05),"bamboo")
 	var reeds: Array[Vector3] = plan.reeds
-	for i in reeds.size():_life_asset("bamboo","BankReeds%d"%i,reeds[i],i*53,_rng.randf_range(.30,.43),"bamboo")
+	for i in reeds.size():
+		var reed: Node3D=_life_asset("bamboo","BankReeds%d"%i,reeds[i],i*53,_rng.randf_range(.30,.43),"bamboo")
+		_fit_bridge_reed(reed,plan,true)
 	var flower_centres: Array[Vector3] = plan.flower_centres
 	for i in flower_centres.size():
 		_grass_patch(flower_centres[i]-Vector3(0,.01,0),i)
@@ -455,7 +459,15 @@ func _grass_patch(at: Vector3, index: int) -> void:
 	mesh.material_override=material;add_child(mesh)
 	_plant_wind.apply(mesh,"grass")
 
-func preview_shore_plants(candidate: RefCounted) -> void:
+func _fit_bridge_reed(reed: Node3D, candidate: RefCounted, publish: bool) -> void:
+	var hidden: bool=false
+	if not candidate.construction.bridge.is_empty():
+		var deck: PackedVector2Array=Space.cached_footprint(get_bridge(),candidate.ground_height-.08,candidate.ground_height+.75)
+		hidden=preload("res://layout/bridge_passage.gd").dressing_overlap(candidate,deck,Space.cached_footprint(reed,candidate.ground_height+.10,candidate.ground_height+.62))
+	reed.visible=not hidden
+	if publish: reed.set_meta("bridge_dressing_hidden",hidden)
+
+func preview_shore_plants(candidate: RefCounted, publish: bool=false) -> void:
 	for index: int in _floaters.size():
 		var parts: PackedStringArray=String(_floaters[index].name).trim_prefix("Lotus").split("_")
 		var cove: int=int(parts[0]);var member: int=int(parts[1])
@@ -463,7 +475,9 @@ func preview_shore_plants(candidate: RefCounted) -> void:
 		_floater_origins[index]=candidate.lily_coves[cove]+Vector3(cos(angle)*.72,0,sin(angle)*.6)
 		_floaters[index].position=_floater_origins[index]
 		_floaters[index].set_meta("navigation_anchor",_floater_origins[index])
-	for index: int in candidate.reeds.size(): get_node("BankReeds%d"%index).position=candidate.reeds[index]
+	for index: int in candidate.reeds.size():
+		var reed: Node3D=get_node("BankReeds%d"%index);reed.position=candidate.reeds[index]
+		_fit_bridge_reed(reed,candidate,publish)
 	get_node("NeighborIslets").preview_expansion(candidate.scenery_expansion.max(candidate.shore_expansion))
 	fit_player_dressing(candidate,false,false)
 

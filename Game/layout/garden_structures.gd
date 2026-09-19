@@ -3,6 +3,7 @@ extends RefCounted
 const Construction = preload("res://layout/island_construction.gd")
 const Poles = preload("res://layout/fence_geometry.gd")
 const PIGMENT = preload("res://scenes/environment/pigment.gdshader")
+const Passage=preload("res://layout/bridge_passage.gd")
 const ConstructionMesh=preload("res://layout/construction_mesh.gd")
 static var _plank_arrays: Array=[]
 
@@ -78,14 +79,16 @@ static func bridge(plan: RefCounted) -> Node3D:
 				Poles._pole(rails,previous,top,.03)
 				Poles._pole(rails,previous-Vector3.UP*.32,top-Vector3.UP*.32,.022)
 			previous=top
-			if i>0 and i<spans:
-				Poles._pole(rails,Vector3(bottom.x,-.8,bottom.z),bottom,.052)
-				supports.append(Vector2(bottom.x,bottom.z))
+	for bottom: Vector3 in Passage.supports(plan):
+		Poles._pole(rails,Vector3(bottom.x,-.8,bottom.z),bottom,.052)
+		supports.append(Vector2(bottom.x,bottom.z))
 	root.set_meta("bridge_ends",ends)
 	root.set_meta("bridge_style",style)
 	root.set_meta("bridge_supports",supports)
+	root.set_meta("bridge_water_shapes",Passage.water_shapes(plan))
 	root.set_meta("deck_sections",pieces)
-	_finish(root,deck,Color("867354"));_finish(root,rails,Color("61543c"))
+	_finish(root,deck,Color("867354"));root.get_child(0).name="Deck"
+	_finish(root,rails,Color("61543c"))
 	return root
 
 static func trellis_support(plan: RefCounted) -> Node3D:

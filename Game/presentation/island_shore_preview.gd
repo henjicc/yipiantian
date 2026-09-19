@@ -76,6 +76,7 @@ func accept(plan: RefCounted) -> void:
 	environment._contact_sources.append(_fence)
 	plan.fences.assign(_fence.get_meta("fence_spans"))
 	environment.plan=plan
+	environment.preview_shore_plants(plan,true)
 	environment.fit_player_dressing(plan,true)
 	environment.refresh_terrain.call_deferred()
 

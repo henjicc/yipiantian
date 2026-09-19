@@ -32,11 +32,11 @@ func _initialize() -> void:
 		expect(uploaded[Mesh.ARRAY_VERTEX].size()==points.size(),"Upload retains indexed vertices")
 	var plan:=Plan.new();plan.construction.bridge=[5.4,-.1,11.0,.1,1.2,1]
 	var bridge: Node3D=Structures.bridge(plan)
-	expect(bridge.get_meta("bridge_supports").size()==12,"Six bridge spans retain paired water supports")
+	expect(bridge.get_meta("bridge_supports").size()==6,"Paired supports leave wider water passages between posts")
 	expect(bridge.get_meta("deck_sections")==26,"Bridge retains planks at the requested span")
 	bridge.free()
 	var construction=preload("res://layout/island_construction.gd")
-	for bank_offset: float in [-.02,.8]:
+	for bank_offset: float in [-.02,.35]:
 		plan.anchors.east_bank.y=bank_offset
 		for style: int in [0,1]:
 			plan.construction.bridge[5]=style

@@ -202,6 +202,15 @@ func edge_checks(builder: Node) -> void:
 	if not await ready_draft() or not await apply(): return
 	await terrain_ready()
 	var bridge: Node3D=environment.get_bridge()
+	# Shore vegetation follows the same full-width exit after a later terrain edit.
+	var reed: Node3D=environment.get_node("BankReeds9")
+	expect(not reed.visible and reed.get_meta("bridge_dressing_hidden",false),"Committed bridge clears the automatic reed at its exit")
+	var shore_candidate: RefCounted=Plan.from_snapshot(scene.courtyard_plan.snapshot())
+	shore_candidate.reeds[9]+=Vector3(2,0,0)
+	environment.preview_shore_plants(shore_candidate)
+	expect(reed.visible and reed.get_meta("bridge_dressing_hidden",false),"Moving shore preview restores a clear reed without publishing navigation")
+	environment.preview_shore_plants(environment.plan)
+	expect(not reed.visible,"Cancelling shore preview restores reed exclusion")
 	# Later terrain edits must not bring hidden rocks back through the bridge.
 	await choose_tool("land")
 	await drag(Vector3(0,.13,6),Vector3(3,.13,7.5))

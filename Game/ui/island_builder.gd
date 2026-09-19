@@ -762,6 +762,9 @@ func issue() -> String:
 		if building_preview.pending: return "正在校对屋前通路…"
 	var bridge: String=Construction.bridge_issue(candidate)
 	if not bridge.is_empty(): return bridge
+	if tool=="land" and not candidate.construction.bridge.is_empty():
+		var passage: String=preload("res://layout/bridge_passage.gd").plan_water_issue(candidate,main.get_node("Environment").layout_obstacles)
+		if not passage.is_empty(): return passage
 	var flock_issue: String=Construction.Flocks.terrain_issue(candidate)
 	if not flock_issue.is_empty(): return flock_issue
 	if tool=="trellis" and is_instance_valid(trellis_preview):

@@ -135,8 +135,25 @@ static func bridge_parameters(plan: RefCounted) -> Array:
 	var ends: Array[Vector3]=bridge_points(plan)
 	return [ends[0].x,ends[0].z,ends[1].x,ends[1].z,1.2,bridge_style(plan)]
 
+static func bridge_crown(ends: Array[Vector3]) -> float:
+	return maxf(.42,maxf(ends[0].y,ends[1].y)+.22)
+
 static func bridge_profile(ends: Array[Vector3], style: int, t: float) -> Vector3:
-	return ends[0].lerp(ends[1],t)+Vector3.UP*(sin(PI*t)*.22 if style==1 else 0.0)
+	var point: Vector3=ends[0].lerp(ends[1],t)
+	var crown: float=bridge_crown(ends)
+	if style==1: point.y+=sin(PI*t)*(crown-(ends[0].y+ends[1].y)*.5)
+	else:
+		if t<.3: point.y=lerpf(ends[0].y,crown,t/.3)
+		elif t>.7: point.y=lerpf(crown,ends[1].y,(t-.7)/.3)
+		else: point.y=crown
+	return point
+
+static func bridge_approaches(plan: RefCounted) -> Array[PackedVector2Array]:
+	var ends: Array[Vector3]=bridge_points(plan)
+	var direction:=Vector3(ends[1].x-ends[0].x,0,ends[1].z-ends[0].z).normalized()
+	var basis:=Basis(Vector3.UP,atan2(-direction.z,direction.x))
+	var width: float=bridge_parameters(plan)[4]+.16
+	return [IslandSpace.footprint(Vector2(.6,width),Transform3D(basis,ends[0]-direction*.3)),IslandSpace.footprint(Vector2(.6,width),Transform3D(basis,ends[1]+direction*.3))]
 
 static func bridge_issue(plan: RefCounted) -> String:
 	if plan.construction.bridge.is_empty(): return ""
@@ -144,13 +161,11 @@ static func bridge_issue(plan: RefCounted) -> String:
 	var east: PackedVector2Array=bridge_support(plan,1)
 	var main: PackedVector2Array=bridge_support(plan,0)
 	var horizontal:=Vector2(ends[1].x-ends[0].x,ends[1].z-ends[0].z)
-	var rise: float=absf(ends[1].y-ends[0].y)+(.22*PI if bridge_style(plan)==1 else 0.0)
+	var crown: float=bridge_crown(ends)
+	var rise: float=absf(ends[1].y-ends[0].y)+PI*(crown-(ends[0].y+ends[1].y)*.5) if bridge_style(plan)==1 else maxf(crown-ends[0].y,crown-ends[1].y)/.3
 	if rise/horizontal.length()>.5: return "两岸高差太大，请拉长桥梁或改用平桥。"
-	var direction:=Vector3(horizontal.x,0,horizontal.y).normalized()
-	var width: float=float(plan.construction.bridge[4])+.16
-	var basis:=Basis(Vector3.UP,atan2(-direction.z,direction.x))
-	var approach_a: PackedVector2Array=IslandSpace.footprint(Vector2(.16,width),Transform3D(basis,ends[0]-direction*.08))
-	var approach_b: PackedVector2Array=IslandSpace.footprint(Vector2(.16,width),Transform3D(basis,ends[1]+direction*.08))
+	var approaches: Array[PackedVector2Array]=bridge_approaches(plan)
+	var approach_a: PackedVector2Array=approaches[0];var approach_b: PackedVector2Array=approaches[1]
 	if not IslandSpace.supported(approach_a,main): return "左桥头需要完整落在主岛平地上"
 	if not IslandSpace.supported(approach_b,east): return "右桥头需要完整落在对岸平地上"
 	return ""

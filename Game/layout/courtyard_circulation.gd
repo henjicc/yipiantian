@@ -2,6 +2,8 @@ extends RefCounted
 ## Derived paths and fence spans. No saved nodes, crops or per-frame navigation.
 const Space = preload("res://scenes/environment/animal_space.gd")
 const IslandSpace = preload("res://layout/island_space.gd")
+const Passage=preload("res://layout/bridge_passage.gd")
+const Construction=preload("res://layout/island_construction.gd")
 const Routes=preload("res://layout/player_routes.gd")
 var road := Space.new()
 var endpoints: Dictionary = {}
@@ -31,14 +33,18 @@ func build(plan: RefCounted, obstacles: Dictionary) -> void:
 	issues.clear()
 	endpoints.clear()
 	_network.clear()
-	var inner: Array[PackedVector2Array] = Geometry2D.offset_polygon(plan.plateau(),-.25)
+	var approach_message: String=Passage.approach_issue(plan,obstacles)
+	if not approach_message.is_empty(): issues.append(approach_message);return
+	var water_message: String=Passage.plan_water_issue(plan,obstacles)
+	if not water_message.is_empty(): issues.append(water_message);return
+	var inner: PackedVector2Array=Passage.outline(plan,.25)
 	if inner.is_empty():
 		issues.append("island_too_small")
 		return
 	road = Space.new()
-	road.configure(plan.land_bounds(),.22,inner[0])
+	road.configure(Passage.bounds(plan),.22,inner)
 	for key: String in obstacles:
-		if not key.begins_with("player_road_"): road.block(obstacles[key])
+		if not key.begins_with("player_road_") and key!="AdaptiveBridge": road.block(obstacles[key])
 	for i: int in plan.fields.size(): road.block(plan.field_polygon(i,.035))
 	road.bake()
 	if road.points.is_empty():
@@ -93,9 +99,26 @@ func build(plan: RefCounted, obstacles: Dictionary) -> void:
 		else:
 			endpoints[field.id] = best[-1]
 			_add_route(best)
+	_bridge_connection()
 	_build_fences(obstacles)
 	var flock_issue: String=preload("res://layout/flock_layout.gd").land_issue(plan,obstacles)
 	if not flock_issue.is_empty(): issues.append(flock_issue)
+
+func _bridge_connection() -> void:
+	if _plan.construction.bridge.is_empty(): return
+	var ends: Array[Vector3]=Construction.bridge_points(_plan)
+	var end:=Vector2(ends[1].x,ends[1].z)
+	var landing: Vector2=road.nearest(end)
+	var target:=Vector2(_plan.anchors.east_bank.x,_plan.anchors.east_bank.z)
+	var destination: Vector2=road.nearest(target)
+	if landing.distance_to(end)>.2 or destination.distance_to(target)>.6 or road.path(endpoints.house,landing).is_empty():
+		issues.append("桥梁没有接通两岸，请调整桥头出口。");return
+	var route: PackedVector2Array=road.path(landing,destination)
+	if route.is_empty(): issues.append("对岸的通路被挡住了，请调整桥头出口。");return
+	endpoints.bridge_east=landing;endpoints.east_bank=destination
+	var world:=PackedVector3Array()
+	for point: Vector2 in route: world.append(Vector3(point.x,ends[1].y-.015,point.y))
+	if world.size()>1: _plan.paths.append(world)
 
 func _connect(target: Vector2, key: String, tolerance: float) -> void:
 	var snapped: Vector2 = road.nearest(target)

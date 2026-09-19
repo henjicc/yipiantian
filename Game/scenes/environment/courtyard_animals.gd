@@ -2,6 +2,7 @@ extends Node3D
 const Gait = preload("res://scenes/environment/bird_gait.gd")
 ## Goal selection, safe routes, local yielding and distance-driven skeletal movement.
 const Assets = preload("res://scenes/environment/courtyard_assets.gd")
+const Passage=preload("res://layout/bridge_passage.gd")
 const Space = preload("res://scenes/environment/animal_space.gd")
 const Pose = preload("res://scenes/environment/bird_pose.gd")
 const Interaction=preload("res://scenes/environment/bird_interaction.gd")
@@ -59,6 +60,19 @@ func _build() -> void:
 			placed.append(point);_spawn(kind,Flocks.id(kind,i),point,Flocks.size(kind,i))
 	ready_for_motion = true
 
+static func water_shapes(node: Node3D, plan: RefCounted) -> Array[PackedVector2Array]:
+	if node.get_meta("bridge_dressing_hidden",false) or node.get_meta("player_dressing_hidden",false): return []
+	if node.has_meta("bridge_water_shapes"): return node.get_meta("bridge_water_shapes")
+	if node.name=="PlayerPlants":
+		var planted: Array[PackedVector2Array]=[];planted.assign(preload("res://layout/plantings.gd").footprints(plan.plants).values());return planted
+	if node.name=="NeighborIslets":
+		var islands: Array[PackedVector2Array]=[]
+		for island: Node3D in node.waterline_sources(): islands.append(Space.cached_footprint(island,-.55,.55))
+		return islands
+	if node.has_meta("bank_role"): return [Space.cached_footprint(node,-.35,.16)]
+	if node.scene_file_path.contains("stone_") or node.name=="CoveredBoat" or String(node.name).begins_with("Lotus"): return [Space.cached_footprint(node,-.55,.55)]
+	return []
+
 func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 	if update_water: water_ready=false;water = Space.new()
 	yard_ready=false;yard = Space.new()
@@ -66,8 +80,11 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 	var rise: float=environment.plan.ground_height-.13
 	yard.floor_level=environment.plan.ground_height
 	if update_water: water.configure(environment.plan.animal_areas.water, .46)
-	var safe_plateaus: Array[PackedVector2Array] = Geometry2D.offset_polygon(environment.plan.plateau(), -.21)
-	yard.configure(environment.plan.animal_areas.yard, .21, safe_plateaus[0])
+	var walkable: PackedVector2Array=Passage.outline(environment.plan,.21)
+	yard.configure(Passage.bounds(environment.plan),.21,walkable)
+	if walkable.is_empty():
+		push_error("Bridge and banks have no connected walkable surface")
+		yard.block(preload("res://layout/island_space.gd").rectangle(yard.bounds.position,yard.bounds.size))
 	var slice: int=Time.get_ticks_usec()
 	for child: Node in environment.get_children():
 		if progressive and Time.get_ticks_usec()-slice>2000:
@@ -75,21 +92,21 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 			slice=Time.get_ticks_usec()
 		if not is_instance_valid(child): continue
 		if not child is Node3D or child == self: continue
+		if update_water:
+			for polygon: PackedVector2Array in water_shapes(child,environment.plan): water.block(polygon)
+		if child.has_meta("bridge_water_shapes"):
+			yard.add_floor(child.get_node("Deck"),false,Vector2(-INF,INF))
+			continue
 		if child.name=="PlayerRoutes":
 			yard.add_floor(child.get_node("Roads"),false)
 			for key: String in environment.plan.route_footprints():
 				if key.begins_with("player_fence_"): yard.block(environment.plan.route_footprints()[key])
 			continue
-		if child.name=="PlayerPlants":
-			if update_water:
-				for polygon: PackedVector2Array in preload("res://layout/plantings.gd").footprints(environment.plan.plants).values(): water.block(polygon)
-			continue
+		if child.name=="PlayerPlants": continue
 		if child.get_meta("bridge_dressing_hidden",false) or child.get_meta("player_dressing_hidden",false): continue
 		var path: String = child.scene_file_path
 		var bank_role: String = child.get_meta("bank_role", "")
-		if update_water and child.has_meta("bridge_supports"):
-			for p: Vector2 in child.get_meta("bridge_supports"):
-				water.block(PackedVector2Array([p+Vector2(-.055,-.055),p+Vector2(.055,-.055),p+Vector2(.055,.055),p+Vector2(-.055,.055)]))
+
 		if child.has_meta("garden_paths"):
 			yard.add_floor(child,false)
 			continue
@@ -100,13 +117,10 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 				var side := Vector2(-(b-a).y,(b-a).x).normalized()*.064
 				yard.block(PackedVector2Array([a-side,b-side,b+side,a+side]))
 			continue
-		if update_water and child.name == "NeighborIslets":
-			for island: Node3D in child.waterline_sources(): water.block(Space.cached_footprint(island, -.55, .55))
-		if update_water and not bank_role.is_empty():
-			water.block(Space.cached_footprint(child, -.35, .16))
-		elif update_water and (path.contains("stone_") or child.name == "CoveredBoat" or String(child.name).begins_with("Lotus")):
-			water.block(Space.cached_footprint(child, -.55, .55))
-		if bank_role == "main" or path.contains("stone_"): yard.add_floor(child,false)
+		if not bank_role.is_empty():
+			var height: float=environment.plan.ground_height+child.position.y
+			yard.add_floor(child,false,Vector2(height-.04,height+.11))
+		elif path.contains("stone_"): yard.add_floor(child,false)
 		if child.name in ["WaterSurface", "GroundCover", "ExpansionGrass", "NewShorePlants", "DistantLandscape", "NeighborIslets", "ContactShading", "DecorationSlots", "OsmanthusLeaves"]: continue
 		if not bank_role.is_empty() or String(child.name).begins_with("BankGrass"): continue
 		if child.name == "LivingDetails":
