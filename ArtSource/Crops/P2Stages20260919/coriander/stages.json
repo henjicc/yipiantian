@@ -1,0 +1,97 @@
+{
+  "species": "Coriandrum sativum, leafy harvest before bolting",
+  "stages": {
+    "sprout": {
+      "task_id": "dc139ef3-fc68-4520-975b-d8bdf2623a14",
+      "height": 0.085,
+      "max_width": 0.14,
+      "face_request": 1800,
+      "seed": 2026091913,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    },
+    "young": {
+      "task_id": "416dd43b-e917-47de-9501-897c1ea286ec",
+      "height": 0.17,
+      "max_width": 0.28,
+      "face_request": 3500,
+      "seed": 2026091914,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120,
+      "remove_artifacts": [
+        {
+          "vertices": 42,
+          "triangles": 80,
+          "max": [
+            0.2445,
+            0.496,
+            0.0135
+          ],
+          "reason": "Detached generated sphere behind foliage",
+          "min": [
+            0.2126,
+            0.464,
+            -0.0184
+          ]
+        },
+        {
+          "vertices": 42,
+          "triangles": 80,
+          "max": [
+            -0.2389,
+            0.3485,
+            0.0253
+          ],
+          "reason": "Second detached generated sphere behind foliage",
+          "min": [
+            -0.2704,
+            0.317,
+            -0.0043
+          ]
+        }
+      ]
+    },
+    "mature": {
+      "task_id": "d2078174-6b7e-42e8-b7af-c8945a5c8c9f",
+      "height": 0.3,
+      "max_width": 0.4,
+      "face_request": 7500,
+      "seed": 2026091915,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120,
+      "soil_radius": [
+        0.0142,
+        0.0142
+      ],
+      "anchor_note": "Root is lowest component; low outer leaves inflate the full 12 mm soil slice. Footprint follows basal crown only."
+    }
+  },
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "quad": true,
+  "delight": false,
+  "pbr": false,
+  "texture_alignment": "original_image",
+  "enable_image_autofix": false,
+  "adoption": "installed and technically checked; user aesthetic acceptance pending",
+  "not_used": [
+    "semantic segmentation",
+    "rigging",
+    "paid retopology",
+    "paid retexturing",
+    "decimation"
+  ]
+}

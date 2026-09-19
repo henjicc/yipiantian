@@ -1,0 +1,121 @@
+{
+  "crop": "coriander",
+  "stage": "young",
+  "task": "416dd43b-e917-47de-9501-897c1ea286ec",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 3791,
+      "polygons": 3771,
+      "quads": 1351,
+      "triangles": 5122,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 2465,
+      "non_manifold_edges": 2466,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "removed_artifacts": [
+    {
+      "vertices": 42,
+      "triangles": 80,
+      "max": [
+        0.2445,
+        0.496,
+        0.0135
+      ],
+      "reason": "Detached generated sphere behind foliage",
+      "min": [
+        0.2126,
+        0.464,
+        -0.0184
+      ]
+    },
+    {
+      "vertices": 42,
+      "triangles": 80,
+      "max": [
+        -0.2389,
+        0.3485,
+        0.0253
+      ],
+      "reason": "Second detached generated sphere behind foliage",
+      "min": [
+        -0.2704,
+        0.317,
+        -0.0043
+      ]
+    }
+  ],
+  "removed_artifact_triangles": 160,
+  "min_godot": [
+    -0.15144221484661102,
+    0.0,
+    -0.13735458254814148
+  ],
+  "max_godot": [
+    0.11825497448444366,
+    0.16999998688697815,
+    0.13992828130722046
+  ],
+  "root_transform": [
+    [
+      0.277418315410614,
+      0.0,
+      0.0,
+      -0.016593623906373978
+    ],
+    [
+      0.0,
+      0.277418315410614,
+      0.0,
+      -0.001286852522753179
+    ],
+    [
+      0.0,
+      0.0,
+      0.277418315410614,
+      0.08499999344348907
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 3707,
+      "polygons": 3675,
+      "quads": 1287,
+      "triangles": 4962,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 2465,
+      "non_manifold_edges": 2466,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.01259760744869709,
+    0.014358565211296082
+  ],
+  "triangles": 4962,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/coriander/coriander_young.glb"
+}

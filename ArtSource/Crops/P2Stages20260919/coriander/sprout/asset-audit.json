@@ -1,0 +1,88 @@
+{
+  "crop": "coriander",
+  "stage": "sprout",
+  "task": "dc139ef3-fc68-4520-975b-d8bdf2623a14",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 1936,
+      "polygons": 2153,
+      "quads": 1710,
+      "triangles": 3863,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 30,
+      "non_manifold_edges": 39,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "min_godot": [
+    -0.0501319020986557,
+    0.0,
+    -0.07362481951713562
+  ],
+  "max_godot": [
+    0.008617490530014038,
+    0.08364436030387878,
+    0.06637518107891083
+  ],
+  "root_transform": [
+    [
+      0.1400683969259262,
+      0.0,
+      0.0,
+      -0.02075720578432083
+    ],
+    [
+      0.0,
+      0.1400683969259262,
+      0.0,
+      0.0036248168908059597
+    ],
+    [
+      0.0,
+      0.0,
+      0.1400683969259262,
+      0.04182218015193939
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 1936,
+      "polygons": 2153,
+      "quads": 1710,
+      "triangles": 3863,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 30,
+      "non_manifold_edges": 39,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.009,
+    0.009
+  ],
+  "triangles": 3863,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/coriander/coriander_sprout.glb"
+}

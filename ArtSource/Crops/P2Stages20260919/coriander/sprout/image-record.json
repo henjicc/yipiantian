@@ -1,0 +1,13 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "inputs": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    ".local/crop-research-20260919/coriander-sprout.jpg",
+    ".local/crop-research-20260919/coriander-young.jpg"
+  ],
+  "prompt": "Use case: stylized-concept. ONE isolated Coriandrum sativum cilantro plant for image-to-3D in a Chinese Jiangnan miniature farm. Image 1 is STYLE ONLY: approved gongbi fine-line and light-colour painting, do not copy bok choy anatomy. Remaining images are real botanical anatomy references. Thin flat delicate leaves, slender connected GREEN petioles, fresh muted jade/sage greens with watercolor pigment mottling and CLEAR fine moss-green structural contour and vein lines which must survive 3D texturing. Natural matte surfaces, no inflated thick rubber leaves, no yellow vintage-paper wash, no neon green, no photographic noise. Plain neutral light-gray background, even neutral diffuse light, no cast shadow, no soil, pot, base disk, roots, text or extra objects. A single connected plant from short basal stem at soil line to all leaves, all joins visible/plausible, full silhouette framed with margin. Elevated three-quarter view 35 degrees down showing front/back volume, NOT a flat frontal fan or top-down herb diagram. Very young seedling: TWO opposite long narrow lanceolate cotyledons (about 5 times longer than wide, unnotched and simple smooth margins) on a short slender upright hypocotyl, ONE small emerging first true leaf with three broad rounded scalloped lobes, on its own slender green petiole from the central crown. Three leaves total. The real seedling photo shows two adjacent plants, but depict ONE plant only. First true leaf smaller than the cotyledon length, rounded cilantro lobes, not spiky parsley, not broad spinach oval. Gently curve one cotyledon forward and the other to the far side, slender yet continuously connected stem.",
+  "output_original": "%USERPROFILE%/.codex/generated_images/01a0b678-f598-7d00-915f-051f5aa8efc6/exec-4da44e58-e48a-44f0-830e-884ee9241e40.png",
+  "review": "Species and stage reviewed against real photographs; model still requires side-volume and connection checks.",
+  "model_seed_cost": "not returned"
+}

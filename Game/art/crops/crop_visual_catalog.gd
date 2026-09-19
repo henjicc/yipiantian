@@ -15,7 +15,7 @@ const ROOT_RADII := {
 	"garlic": Vector2(0.04260, 0.03028),
 }
 const STAGES: Array[String] = ["sprout", "young", "mature"]
-const P2_STAGE_CROPS: Array[String] = ["spinach", "radish", "lettuce"]
+const P2_STAGE_CROPS: Array[String] = ["spinach", "radish", "lettuce", "coriander"]
 
 
 static func is_p2_stage(crop_id: String, stage: String) -> bool:
@@ -66,6 +66,8 @@ static func planting_depth(crop_id: String, stage: String) -> float:
 
 
 static func soil_radius(crop_id: String, stage: String) -> Vector2:
+	if crop_id == "coriander":
+		return {"sprout": Vector2(.009,.009), "young": Vector2(.0126,.0144), "mature": Vector2(.0142,.0142)}.get(stage, Vector2(.0142,.0142))
 	if crop_id == "lettuce":
 		return {"sprout": Vector2(.009,.009), "young": Vector2(.0158,.0298), "mature": Vector2(.0265,.0207)}.get(stage, Vector2(.0265,.0207))
 	if crop_id == "radish" and P2_STAGE_CROPS.has(crop_id):

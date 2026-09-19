@@ -54,6 +54,26 @@ for obj in objects:
     obj.matrix_world.identity()
 report = dict(crop=crop, stage=stage, task=config['task_id'], blender=bpy.app.version_string,
               source=[inspect(o) for o in objects], rotation_degrees=config['rotation_degrees'])
+if config.get('remove_artifacts'):
+    removed_triangles = 0
+    for artifact in config['remove_artifacts']:
+        removed_vertices = 0
+        triangles = 0
+        for obj in objects:
+            bm = bmesh.new()
+            bm.from_mesh(obj.data)
+            selected = {v for v in bm.verts if all(artifact['min'][i] <= v.co[i] <= artifact['max'][i] for i in range(3))}
+            faces = {f for v in selected for f in v.link_faces}
+            assert all(all(v in selected for v in f.verts) for f in faces), 'Artifact selection cuts a connected surface'
+            removed_vertices += len(selected)
+            triangles += sum(len(f.verts)-2 for f in faces)
+            bmesh.ops.delete(bm, geom=list(selected), context='VERTS')
+            bm.to_mesh(obj.data)
+            bm.free()
+        assert removed_vertices == artifact['vertices'] and triangles == artifact['triangles'], 'Reviewed artifact changed'
+        removed_triangles += triangles
+    report['removed_artifacts'] = config['remove_artifacts']
+    report['removed_artifact_triangles'] = removed_triangles
 if config.get('remove_degenerate_triangles', 0):
     removed = 0
     for obj in objects:
@@ -158,7 +178,7 @@ if 'soil_radius' in config:
 print('P2_STAGE_GEOMETRY ' + json.dumps(report), flush=True)
 assert all(m['zero_area_faces'] == 0 and m['loose_vertices'] == 0 and m['uv_layers'] > 0 for m in report['meshes'])
 report['triangles'] = sum(m['triangles'] for m in report['meshes'])
-assert report['triangles'] == sum(m['triangles'] for m in report['source']) - report.get('removed_degenerate_triangles', 0), 'All non-degenerate high geometry must survive'
+assert report['triangles'] == sum(m['triangles'] for m in report['source']) - report.get('removed_degenerate_triangles', 0) - report.get('removed_artifact_triangles', 0), 'All unselected high geometry must survive'
 bpy.context.scene.unit_settings.system = 'METRIC'
 bpy.ops.object.select_all(action='DESELECT')
 for obj in objects:
