@@ -1,0 +1,114 @@
+{
+  "crop": "mustard",
+  "stage": "mature",
+  "task": "4425135a-9976-45da-9dd0-eaf91ee97fea",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 10027,
+      "polygons": 10468,
+      "quads": 4441,
+      "triangles": 14909,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 5187,
+      "non_manifold_edges": 5242,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "reposed_leaf_positions": 1014,
+  "leaf_repose": {
+    "pivot": [
+      -0.05,
+      -0.03,
+      -0.373
+    ],
+    "rotation_degrees": [
+      -10,
+      0,
+      0
+    ],
+    "component_bounds": {
+      "max": [
+        0.39771,
+        -0.00073,
+        -0.0354
+      ],
+      "vertices": 1014,
+      "min": [
+        -0.06616,
+        -0.49976,
+        -0.39673
+      ]
+    }
+  },
+  "min_godot": [
+    -0.14875257015228271,
+    0.0,
+    -0.2168457806110382
+  ],
+  "max_godot": [
+    0.20116502046585083,
+    0.3400000035762787,
+    0.22286033630371094
+  ],
+  "root_transform": [
+    [
+      0.43992093205451965,
+      0.0,
+      0.0,
+      0.026206227019429207
+    ],
+    [
+      0.0,
+      0.43992093205451965,
+      0.0,
+      -0.0030072720255702734
+    ],
+    [
+      0.0,
+      0.0,
+      0.43992093205451965,
+      0.16547082364559174
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 10027,
+      "polygons": 10468,
+      "quads": 4441,
+      "triangles": 14909,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 5187,
+      "non_manifold_edges": 5242,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.024380384013056755,
+    0.024380384013056755
+  ],
+  "triangles": 14909,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/mustard/mustard_mature.glb"
+}

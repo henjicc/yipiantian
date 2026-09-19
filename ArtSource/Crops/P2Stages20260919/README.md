@@ -6,8 +6,8 @@
 
 1. 按具体品种搜索真实照片，区分子叶、真叶、叶柄、株型及可采收形态。照片只作形态研究；记录直接来源，不将照片直接当游戏纹理。
 2. 固定青菜v1、全景v1风格参考；图片工具分别生成每个阶段单体，检查物种与阶段特征、工笔细线、淡彩、完整连接、薄叶体积。错误先修参考，不能靠三维生成猜补。
-3. P2-20260801独立生成每阶段，v3.5-20260815 detailed色图、quad=true、delight=false、original_image、pbr=false。面数按实际叶片复杂度请求，保留原模和服务回显、任务及实付费用，不机械统一预算。先实测代表株再扩大。
-4. Blender整理副本，保留原始四边面源和可编辑blend；按根颈→生长中心视觉扶正，统一土面锚点及阶段尺度。不得复用青菜-20°为通用角度，不得以缩小成熟株代替中期；审计几何、UV、纹理并重导入。
+3. P2-20260801独立生成每阶段，v3.5-20260815 detailed色图、delight=false、original_image、pbr=false。拓扑与面数按阶段记录：多数采用quad=true，雪里蕻中期／成熟采用三角输出。保留原模、服务回显、任务及实付费用，不把拓扑格式或面数当作质量保证。先实测代表株再扩大。
+4. Blender整理副本，保留原始FBX／GLB和可编辑blend；按根颈→生长中心视觉扶正，统一土面锚点及阶段尺度。不得复用青菜-20°为通用角度，不得以缩小成熟株代替中期；审计几何、UV、纹理并重导入。
 5. Godot替换对应资源，保留笔触，按各阶段实际接地设置土面和风动约束；正侧背、昼夜、阶段切换和目标镜头检查。模型成功不等于画面通过。
 6. 每阶段保留参考、完整提示词及输入顺序、原始模型、任务与费用、处理参数、审计、正式落点、证据与采用状态。已有截图可重现，不为节点自动录屏。
 
@@ -61,12 +61,28 @@
 - 幼株参考 [Succeed Heirlooms中国芹菜](https://www.succeedheirlooms.com.au/heirloom-vegetable-seed/heirloom-celery-celeriac-seeds/chinese-celery.html)的[幼株照片](https://www.succeedheirlooms.com.au/images/chinese-celery-plant.jpg)，细长绿叶柄与上端分裂锯齿小叶；该页面主产品图也是同株缩图，不把它当另一张成熟实拍。成熟补看 [Johnny's cutting celery](https://www.johnnyseeds.com/herbs/herbs-for-salad-mix/cutting-celery-herb-seed-922.11.html)的[采收叶丛照片](https://www.johnnyseeds.com/dw/image/v2/BJGJ_PRD/on/demandware.static/-/Sites-jss-master/default/dw0a482041/images/products/herbs/00922_01_cuttingcelery.jpg?sh=800&sw=800)；表达开花前的叶柄／叶丛，不加入花序。
 - 实拍已逐张查看，本地副本 `.local/crop-research-20260919/celery-*`，只作形态研究。国外播期、移栽或反复采叶操作不作为江南播期或新玩法依据。三张工笔参考已独立生成，首轮叶面过于正对镜头，已修订叶片朝向、杯状弯曲与前后遮挡；苗另收窄子叶。提示词与原件路径见 `celery/<stage>/image-record.json`；三阶段P2及运行检查已完成，见下方接入节点。
 
+### 雪里蕻 Brassica juncea var. multiceps，绿色锯齿叶类型
+
+- 查询：`雪里蕻 幼苗 子叶 真叶 图片`、`green in snow mustard seedlings`。品种名与绿色锯齿叶形核对 [RHS资料](https://www.rhs.org.uk/plants/362085/brassica-juncea-var-multiceps/details)，不采用其英国播期作为江南依据。
+- 子叶近照取种植者Todd Marsh的 [Home Microgreens说明](https://homemicrogreens.com/what-are-true-leaves/)及[原图](https://homemicrogreens.com/wp-content/uploads/2019/03/what-are-true-leaves-cover-1024x683.jpg)，为Purple Wave叶用芥菜，**不是雪里蕻专属品种实拍**；只借其成对心肾形有缺口子叶与初生齿叶结构，不复制紫色或成熟叶形。
+- 幼株依据 [央广网2024-11-20镇远雪里蕻补苗报道](https://gz.cnr.cn/dishizhibo/20241120/t20241120_526982134.shtml)中镇远县融媒体中心两张现场照片，查看前景少叶、细叶柄的低矮开展株型。图片说明用了“丰收”，但画面和正文实为移栽幼株，不能当成熟株依据。仅采用形态，不新增移栽玩法。
+- 长叶轮廓核对 [Seeds of Scotland Green in Snow](https://www.seedsofscotland.com/products/mustard-green-green-in-snow)的[六片采下叶照片](https://www.seedsofscotland.com/cdn/shop/files/mustard-green-in-snow-new-2024-25-salad-222.webp?v=1723991956&width=1000)：长椭圆至披针形、浅裂与不规则锯齿、浅色主脉。研究副本名为 `mustard-young.webp`，实际是离体叶片，不能声称是独立幼株实拍。
+- 成熟叶丛参考种子生产者 [Meraki Seeds](https://merakiseeds.com/green-in-snow-mustard)的[植株照片](https://merakiseeds.com/images/thumbs/0003979_green-in-snow-mustard_510.jpeg)，保留绿色、多层叶丛与锯齿叶缘，排除花薹。以上实拍均已查看，本地 `.local/crop-research-20260919/mustard-*` 只作研究，不作为游戏贴图发布。
+- [Shu Suehiro雪里红生长序列](https://www.botanic.jp/plants-sa/seturi.htm)文字可读，但本机图片下载累计五次连接失败后停止，未将其照片写成已查看证据。三个阶段工笔参考独立生成，首版偏平，图片工具修订杯状弯曲、叶背和侧向朝向；提示词与输入在 `mustard/<stage>/image-record.json`。P2及运行验收进行中。
+
+### 乌塌菜 Brassica rapa subsp. narinosa，照片调查
+
+- 查询 `tatsoi seedling cotyledons young plant photo grow`、`乌塌菜 幼苗 莲座 生长 图片`。已查看种植者Todd Marsh的[育苗过程](https://homemicrogreens.com/how-to-grow-tatsoi-mustard-microgreens/)及[子叶实拍](https://homemicrogreens.com/wp-content/uploads/2023/06/tatsoi-mustard-microgreens-tray-side-view.jpg)：成对心肾形子叶带浅缺口、细绿茎；育苗盘密播的徒长高度不直接复制到农田苗。
+- 已查看 [Plantura幼株照片](https://plantura.garden/uk/wp-content/uploads/sites/2/2022/03/young-tatsoi-plant-1024x683.jpg)（Pengejar Senja／Shutterstock，来源[文章](https://plantura.garden/uk/vegetables/tatsoi/tatsoi-overview)）：圆匙形深绿真叶、细长浅绿叶柄从短茎基部放射展开；盆栽图只用于形态，不复制土袋。
+- 已查看 [Botanical Interests产品实拍](https://shop.epicgardening.com/products/rosette-tatsoi-bok-choy-seeds)（Kelly Roy）：成熟叶丛匙形叶、皱缩表面、密集放射排列；现有图较近，正式生成前还需补看完整成熟株轮廓。页面的手绘苗图未冒充实拍。
+- 本地照片与原图URL在 `.local/crop-research-20260919/tatsoi-*`；只作研究，未作为游戏贴图发布。三个阶段参考及模型尚未生成；此处不采纳国外播期作为江南9月依据。
+
 ## 制作状态
 
 - 菠菜三个阶段已完成独立参考／P2生成、Blender整理及游戏接入，见下方节点；用户审美反馈待收集。
 - 白萝卜三个阶段已独立生成并接入；成熟首版因侧面过扁弃用，第二版经外叶姿态和根部接地整理后采用，见下方节点。
 - 青菜幼苗与中期已独立生成并接入，成熟株原文件与材质保留。
-- 生菜、香菜、茼蒿、芹菜各三个阶段已独立生成并接入，通过定向与实景／风动检查；当前累计20／35个新阶段。雪里蕻、乌塌菜、胡萝卜、小葱、青蒜共15阶段未完成；藤蔓玩法与整体光照未开始实现。
+- 生菜、香菜、茼蒿、芹菜、雪里蕻各三个阶段已独立生成并接入，通过定向与实景／风动检查；当前累计23／35个新阶段。乌塌菜、胡萝卜、小葱、青蒜共12阶段未完成；藤蔓玩法与整体光照未开始实现。
 - 本批工作前存在模型目录／检查页及开发说明等其他改动，不属于本批，不覆盖或混入提交。当前仓库未配置远端。
 
 ## 菠菜接入节点 · 20260919-spinach-p2-stages
@@ -192,3 +208,25 @@
 验证：`tests/crop_assets_test.gd -- --crop=celery` 93项通过，导出重导入通过；12张四向单体与14张实景正反昼夜／全景聚焦在 `.local/verification/p2-stages/celery/`。已查看所有单体方向、三阶段日间正反面及夜间代表视角；成熟近景重点检查根部，顶部全貌结合单体和聚焦图判断。风动固定两帧18169像素变化，关闭后0；截图与风动进程正常退出。夜景仍偏暗，全场灯光优化尚未完成，不将本次材质检查写成夜间照明验收。
 
 重建：Blender运行 `prepare.py -- celery <sprout|young|mature> --install` 后Godot Import。原始FBX、任务、参考／提示词、可编辑blend、GLB和审计按阶段保存。本地素材节点 `制作留档/03_处理与验证/20260919_芹菜三阶段P2重制/README.md`，无新录像或独立包更新，待用户审美反馈。
+
+## 雪里蕻接入节点 · 20260919-mustard-p2-stages
+
+按上方实拍区分肾形子叶／初生齿叶苗、少叶幼株、未抽薹的密集长齿叶丛，各自生成工笔参考及P2模型。现役任务及整理参数见 [mustard/stages.json](mustard/stages.json)。苗一次生成；中期和成熟各三次，七项均120积分，共840，全批累计3360积分。本次局部舒展没有新增生成或后处理费用。
+
+| 阶段 | 运行三角形 | 高度 | 最终处理 |
+|---|---:|---:|---|
+| 苗 | 5272 | .085米 | 四边面FBX源，完整几何，子叶与初生齿叶独立于其他菜苗 |
+| 中期 | 9322 | .190米 | 三角GLB源，整体X／Y各−3°校正基部；舒展两片下卷外叶 |
+| 成熟 | 14362 | .340米 | 三角GLB源，移除1个严格零面积面；舒展两片下卷外叶 |
+
+前两轮中期／成熟因轮廓未满足目标弃用，原件、参考、参数、blend与审计留在 `mustard/rejected-first/`、`rejected-second/`，不能用现役重建命令覆盖历史结果。第二轮与最终轮使用相同参考／种子，但同时改变拓扑格式和面数预算，因此不能把差异归因于单一开关。没有付费重贴图、语义分割、绑定或减面。
+
+**卷叶诊断纠正：** 最终三角候选部分侧视图曾被判作大片破洞；提取连通单叶并从四个方向观察，确认主要疑似大洞是完整叶片过度下卷形成的拱形空隙。不能凭单张侧视图或PCA平面轮廓盲目补洞、删叶或再付费生成。当前中期／成熟各精确选择两片外叶，按原始组件顶点数与包围盒断言定位，以平滑权重降低远端的垂直弯曲，保留根部／叶柄连接、UV、原面和锯齿叶缘。没有复制别株或别阶段的叶片，也没有把网格焊合写回源模型。
+
+苗／中期／成熟诊断开边0／3920／6671，非流形边0／3926／6709，整理后0零面积面／孤点；仍有薄叶开口和少量原生边缘小缺口，不宣称水密。三阶段保留4K色图及原工笔颜色，不套青菜的色温校正，禁用额外自动LOD。中期宽.204／深.228米，成熟宽.398／深.451米。接土半径分别.009／.0098、.012／.012、.0259／.0229米，中期锚点按真正中央基部确定，舒展后外叶不再抢占最低接土切片。
+
+雪里蕻细叶柄、薄叶沿用有界 `autumn_crop` 微风：主摆最多5毫米、叶缘1.5毫米、下部20%固定，幼苗另按株高2.5%／0.8%限幅。最终风动两帧14203像素变化，关闭后0；没有骨骼或额外粒子。
+
+验证：93项定向资产检查及Blender导出重导入通过。最终四向单体在 `.local/verification/p2-stages/mustard/relaxed-views/`，14张农场昼夜／正反面／全景聚焦在 `relaxed-farm/`，最终风动在 `relaxed-wind/`；已查看各阶段日间正反面、全部中期／成熟四向、夜间代表和聚焦。近景检查基部，成熟顶部全貌结合单体／聚焦判断。`young-part-angles.png`、`mature-part-angles.png` 是原生成单叶诊断，`final-farm/` 名称虽含final，实际是舒展前候选，不作最终采用证据。夜景仍偏暗，灯笼与整体光照优化尚未完成。
+
+重建：Blender运行 `prepare.py -- mustard <sprout|young|mature> --install` 后Godot Import。源参考／提示词、原始模型、任务费用、可编辑blend、GLB及审计均已保存。本地节点 `制作留档/03_处理与验证/20260919_雪里蕻三阶段P2重制/README.md`；无新录像或独立包更新，用户审美反馈待收集。

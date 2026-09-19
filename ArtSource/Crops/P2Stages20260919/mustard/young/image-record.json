@@ -1,0 +1,12 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "inputs": [
+    "../rejected-first/young/reference.png",
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png"
+  ],
+  "prompt": "Edit the plant reference. Preserve species green snow mustard (雪里蕻 Brassica juncea var. multiceps), its growth stage, leaf number, handpainted Chinese gongbi fine moss-green vein lines, muted fresh jade and sage pigment washes. Correct ONLY geometry readability for image-to-3D: unfold the strongly rolled and downward-hooked leaves into broad continuous intact gently curved blades, with modest coarse serrations on the outside edge. Every blade has NO HOLES, NO TEARS, NO INTERNAL CUTOUTS, no spiral curl, no extreme paper-thin edge-on view. Keep leaves botanically elongated oblong-lanceolate, substantial blade area either side of the midrib. All leaf tips lie ABOVE the single compact basal crown, which is the lowest point. Arrange leaves radially in a three-dimensional open rosette with some front/back overlap, but keep attachment stalks legible. Slim green petioles, never thick white bok choy stems. Three-quarter view from 25 degrees above. The second image is painting STYLE ONLY; don't copy its round bok-choy leaves or swollen stems. Whole isolated plant, neutral solid light-gray background, no ground, roots, soil, pedestal, cast shadow, labels or other objects. Keep 12 percent margins. Surface is matte painted with structural fine veins and restrained washes, not photoreal.",
+  "output_original": "exec-d18b1e7b-c56c-4c79-8dc7-f15527024692.png",
+  "review": "Unfurled blade surfaces; six-leaf juvenile and denser mature clump distinct. Mild downward arch remains; root placement must be checked after reconstruction.",
+  "model_seed_cost": "not returned"
+}

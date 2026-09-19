@@ -1,0 +1,85 @@
+{
+  "species": "Brassica juncea var. multiceps, green serrated-leaf snow mustard before flowering",
+  "stages": {
+    "sprout": {
+      "task_id": "e5093ba7-2308-47b4-a081-fe20117329e0",
+      "height": 0.085,
+      "max_width": 0.13,
+      "face_request": 2500,
+      "seed": 2026091922,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    },
+    "young": {
+      "task_id": "cb7ed39b-bfe7-46e6-aa03-50682d501fba",
+      "height": 0.19,
+      "max_width": 0.29,
+      "face_request": 4500,
+      "seed": 2026091923,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    },
+    "mature": {
+      "task_id": "4425135a-9976-45da-9dd0-eaf91ee97fea",
+      "height": 0.34,
+      "max_width": 0.46,
+      "face_request": 8500,
+      "seed": 2026091924,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120,
+      "leaf_repose": {
+        "pivot": [
+          -0.05,
+          -0.03,
+          -0.373
+        ],
+        "rotation_degrees": [
+          -10,
+          0,
+          0
+        ],
+        "component_bounds": {
+          "max": [
+            0.39771,
+            -0.00073,
+            -0.0354
+          ],
+          "vertices": 1014,
+          "min": [
+            -0.06616,
+            -0.49976,
+            -0.39673
+          ]
+        }
+      }
+    }
+  },
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "quad": true,
+  "delight": false,
+  "pbr": false,
+  "texture_alignment": "original_image",
+  "enable_image_autofix": false,
+  "adoption": "P2 submitted; source and runtime checks pending",
+  "not_used": [
+    "semantic segmentation",
+    "rigging",
+    "paid retopology",
+    "paid retexturing",
+    "decimation"
+  ]
+}

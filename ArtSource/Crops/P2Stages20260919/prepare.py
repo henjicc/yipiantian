@@ -1,4 +1,4 @@
-"""Blender 5.2 batch-stage authoring. Raw P2 FBX is immutable.
+"""Blender 5.2 batch-stage authoring. Raw P2 FBX/GLB is immutable.
 
 Usage: blender --background --python-exit-code 1 --python prepare.py -- spinach sprout
 Exports beside the source for inspection; only --install copies a checked stage to Game.
@@ -44,16 +44,62 @@ def inspect(obj):
 
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-raw_files = list((folder / 'raw').rglob('model.fbx'))
-assert len(raw_files) == 1, 'Expected exactly one immutable FBX for this stage'
-bpy.ops.import_scene.fbx(filepath=str(raw_files[0]), use_image_search=False)
+raw_files = [p for p in (folder / 'raw').iterdir() if p.name in ('model.fbx', 'model.glb')]
+assert len(raw_files) == 1, 'Expected exactly one immutable FBX or GLB for this stage'
+if raw_files[0].suffix == '.fbx':
+    bpy.ops.import_scene.fbx(filepath=str(raw_files[0]), use_image_search=False)
+else:
+    bpy.ops.import_scene.gltf(filepath=str(raw_files[0]))
 objects = [o for o in bpy.context.scene.objects if o.type == 'MESH']
 assert objects
 for obj in objects:
     obj.data.transform(obj.matrix_world)
     obj.matrix_world.identity()
 report = dict(crop=crop, stage=stage, task=config['task_id'], blender=bpy.app.version_string,
-              source=[inspect(o) for o in objects], rotation_degrees=config['rotation_degrees'])
+              source_format=raw_files[0].suffix[1:], source=[inspect(o) for o in objects],
+              rotation_degrees=config['rotation_degrees'])
+if config.get('leaf_unroll'):
+    # Selected outer blades are intact but curl back toward the soil. Ease their
+    # distal portions toward an inclined blade plane, preserving root and UVs.
+    assert len(objects) == 1, 'Reviewed leaf component selectors require one mesh'
+    obj = objects[0]
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-5)
+    remaining = set(bm.verts)
+    components = []
+    while remaining:
+        group = {remaining.pop()}
+        pending = list(group)
+        while pending:
+            for edge in pending.pop().link_edges:
+                for vertex in edge.verts:
+                    if vertex in remaining:
+                        remaining.remove(vertex)
+                        group.add(vertex)
+                        pending.append(vertex)
+        components.append(group)
+    records = []
+    for correction in config['leaf_unroll']:
+        matches = [group for group in components if len(group) == correction['component_vertices']
+                   and all(abs(min(v.co[a] for v in group)-correction['min'][a]) < 1e-6
+                           and abs(max(v.co[a] for v in group)-correction['max'][a]) < 1e-6 for a in range(3))]
+        assert len(matches) == 1, 'Reviewed outer leaf component changed'
+        positions = {tuple(v.co) for v in matches[0]}
+        selected = [v for v in obj.data.vertices if tuple(v.co) in positions]
+        assert len({tuple(v.co) for v in selected}) == len(positions)
+        cx, cy = correction['root_xy']
+        start, end = correction['radius_range']
+        assert end > start >= 0
+        for vertex in selected:
+            radius = math.hypot(vertex.co.x-cx, vertex.co.y-cy)
+            t = max(0.0, min(1.0, (radius-start)/(end-start)))
+            target_z = correction['root_height'] + correction['blade_slope'] * radius
+            vertex.co.z += (target_z-vertex.co.z) * correction['strength'] * t*t*(3.0-2.0*t)
+        records.append(dict(correction, selected_vertices=len(selected)))
+    bm.free()
+    obj.data.update()
+    report['leaf_unroll'] = records
 if config.get('remove_artifacts'):
     removed_triangles = 0
     for artifact in config['remove_artifacts']:

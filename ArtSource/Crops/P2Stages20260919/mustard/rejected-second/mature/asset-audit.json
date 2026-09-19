@@ -1,0 +1,90 @@
+{
+  "crop": "mustard",
+  "stage": "mature",
+  "task": "4886ad0d-7626-4dd7-bf67-8b2ce5d7a921",
+  "blender": "5.2.2 LTS",
+  "source": [
+    {
+      "vertices": 11618,
+      "polygons": 12323,
+      "quads": 5079,
+      "triangles": 17402,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 5994,
+      "non_manifold_edges": 6120,
+      "loose_vertices": 1,
+      "zero_area_faces": 2
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "removed_degenerate_triangles": 2,
+  "removed_loose_vertices": 1,
+  "min_godot": [
+    -0.2004706710577011,
+    0.0,
+    -0.23105092346668243
+  ],
+  "max_godot": [
+    0.1956479698419571,
+    0.3400000035762787,
+    0.21767891943454742
+  ],
+  "root_transform": [
+    [
+      0.44894906878471375,
+      0.0,
+      0.0,
+      -0.0024113475810736418
+    ],
+    [
+      0.0,
+      0.44894906878471375,
+      0.0,
+      0.0066860090009868145
+    ],
+    [
+      0.0,
+      0.0,
+      0.44894906878471375,
+      0.17000000178813934
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 11617,
+      "polygons": 12321,
+      "quads": 5079,
+      "triangles": 17400,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 5995,
+      "non_manifold_edges": 6122,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.0310186967253685,
+    0.02696325071156025
+  ],
+  "triangles": 17400,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/mustard/mustard_mature.glb"
+}

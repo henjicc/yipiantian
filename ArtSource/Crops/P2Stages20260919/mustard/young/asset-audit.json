@@ -1,0 +1,145 @@
+{
+  "crop": "mustard",
+  "stage": "young",
+  "task": "6506f504-a43f-4fe8-8e9b-5b0ba831bbce",
+  "blender": "5.2.2 LTS",
+  "source_format": "glb",
+  "source": [
+    {
+      "vertices": 12838,
+      "polygons": 9322,
+      "quads": 0,
+      "triangles": 9322,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 3920,
+      "non_manifold_edges": 3926,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    -3,
+    -3,
+    0
+  ],
+  "leaf_unroll": [
+    {
+      "component_vertices": 1259,
+      "min": [
+        -0.050048828125,
+        -0.499755859375,
+        -0.4421387016773224
+      ],
+      "max": [
+        0.445068359375,
+        0.024169938638806343,
+        -0.012451188638806343
+      ],
+      "root_xy": [
+        0,
+        0
+      ],
+      "radius_range": [
+        0.16,
+        0.36
+      ],
+      "root_height": -0.4,
+      "blade_slope": 0.6,
+      "strength": 0.8,
+      "selected_vertices": 2227
+    },
+    {
+      "component_vertices": 1074,
+      "min": [
+        -0.054443359375,
+        -0.006591780576854944,
+        -0.395263671875
+      ],
+      "max": [
+        0.400146484375,
+        0.469970703125,
+        -0.0739745944738388
+      ],
+      "root_xy": [
+        0,
+        0
+      ],
+      "radius_range": [
+        0.16,
+        0.36
+      ],
+      "root_height": -0.4,
+      "blade_slope": 0.6,
+      "strength": 0.8,
+      "selected_vertices": 1975
+    }
+  ],
+  "min_godot": [
+    -0.09828761219978333,
+    0.0,
+    -0.11677420139312744
+  ],
+  "max_godot": [
+    0.10570048540830612,
+    0.1899999976158142,
+    0.11161279678344727
+  ],
+  "root_transform": [
+    [
+      0.22539134323596954,
+      0.0006182059878483415,
+      -0.011796072125434875,
+      0.004260537680238485
+    ],
+    [
+      0.0,
+      0.22539134323596954,
+      0.011812260374426842,
+      0.0024003672879189253
+    ],
+    [
+      0.011812260374426842,
+      -0.011796072125434875,
+      0.22508245706558228,
+      0.09384703636169434
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 12838,
+      "polygons": 9322,
+      "quads": 0,
+      "triangles": 9322,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 3920,
+      "non_manifold_edges": 3926,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.012,
+    0.012
+  ],
+  "whole_mesh_soil_slice_radius": [
+    0.012655116617679596,
+    0.011669189669191837
+  ],
+  "triangles": 9322,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/mustard/mustard_young.glb"
+}
