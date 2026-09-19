@@ -45,6 +45,13 @@ func _init(now_utc_seconds: float = 0.0, layout: Dictionary = {}) -> void:
 func snapshot() -> Dictionary:
 	return _data.duplicate(true)
 
+func copy() -> RefCounted:
+	# This owner's state has already passed admission or gameplay rules. Copy
+	# it privately for a transaction; external snapshots still use restore.
+	var result: RefCounted=new()
+	result._data=_data.duplicate(true)
+	return result
+
 func set_season(id: String) -> bool:
 	if not Seasons.valid(id): return false
 	_data.season = id

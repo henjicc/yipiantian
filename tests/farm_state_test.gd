@@ -10,6 +10,7 @@ var checks: int = 0
 
 func _initialize() -> void:
 	_test_initial_state_and_isolation()
+	_test_copy_isolation()
 	_test_mixed_cells()
 	_test_stages_and_actions()
 	_test_elapsed_time_equivalence()
@@ -49,6 +50,28 @@ func _test_initial_state_and_isolation() -> void:
 	farm.water("field_03", "cell_06", START)
 	_expect(Crops.definition("greens").duration_seconds == 1800.0 and is_equal_approx(farm.get_cell("field_03", "cell_06").progress, 0.2), "Definition edits and player actions cannot rewrite crop configuration")
 
+
+func _test_copy_isolation() -> void:
+	var source:=Farm.new(START)
+	_expect(source.harvest("field_03","cell_06",START).ok,"Copy fixture has a real harvested basket")
+	var before: Dictionary=source.snapshot()
+	var candidate: RefCounted=source.copy()
+	_expect(candidate!=source and candidate.snapshot()==before,"Copy retains the entire current state without reinitializing it")
+	var bird: String=Farm.Companions.IDS[0]
+	_expect(candidate.settle(START+300).ok,"Candidate advances its own crop clocks")
+	_expect(candidate.animal_action(bird,"feed","greens",before.animals[bird].revision).ok,"Candidate feeding updates its own animal and inventory")
+	_expect(candidate.remember("arrange",START+300),"Candidate records its own construction memory")
+	_expect(source.snapshot()==before,"Uncommitted crop, inventory, animal and memory changes cannot leak into the source")
+	var candidate_before: Dictionary=candidate.snapshot()
+	_expect(source.animal_action(bird,"name","小团",before.animals[bird].revision).ok,"Source changes remain possible after copying")
+	_expect(candidate.snapshot()==candidate_before,"Later source edits cannot change the private candidate")
+	var layout: Dictionary=candidate.snapshot().layout
+	var field: Dictionary=layout.fields[0]
+	field.position[0]+=.5
+	_expect(candidate.apply_layout(layout,START+300).ok and source.snapshot().layout==before.layout,"A candidate layout edit preserves the source layout")
+	var invalid: Dictionary=candidate.snapshot();invalid.inventory.greens=-1
+	var valid: Dictionary=candidate.snapshot()
+	_expect(not candidate.restore_snapshot(invalid) and candidate.snapshot()==valid,"Copy does not bypass validation of later external snapshots")
 
 func _test_mixed_cells() -> void:
 	var farm := Farm.new(START)

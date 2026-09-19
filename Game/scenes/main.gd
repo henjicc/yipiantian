@@ -829,7 +829,7 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 		remove_child(probe);probe.free()
 	if not message.is_empty():
 		island_builder.set_busy(false,message);return
-	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: RefCounted=farm_state.copy()
 	var result: Dictionary=candidate.apply_layout(snapshot,clock.call())
 	if not result.ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
@@ -851,7 +851,7 @@ func _apply_plants(snapshot: Dictionary, undo: bool) -> void:
 	if not preview.message.is_empty(): island_builder.set_busy(false,preview.message);return
 	island_builder.set_busy(true)
 	var started: int=Time.get_ticks_msec()
-	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
 	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
@@ -879,7 +879,7 @@ func _apply_routes(snapshot: Dictionary, undo: bool) -> void:
 	if preview.validated==null:
 		island_builder.set_busy(false,preview.message);return
 	var started: int=Time.get_ticks_msec()
-	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
 	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
@@ -912,7 +912,7 @@ func _apply_bridge(snapshot: Dictionary, undo: bool) -> void:
 	var issue: String=preview.animal_issue()
 	if not issue.is_empty(): island_builder.set_busy(false,issue);return
 	var started: int=Time.get_ticks_msec()
-	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
 	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
@@ -943,7 +943,7 @@ func _apply_flock(snapshot: Dictionary, undo: bool, kind: String) -> void:
 	if preview.validated==null:
 		island_builder.set_busy(false,preview.message);return
 	var started: int=Time.get_ticks_msec()
-	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"范围不合适，请调整后再试。");return
 	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
@@ -975,7 +975,7 @@ func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 	if not preload("res://layout/courtyard_circulation.gd").field_placement_issues(plan,{}).is_empty(): message="请保留田地周围的平地。"
 	if not message.is_empty(): island_builder.set_busy(false,message);return
 	island_builder.set_busy(true)
-	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: RefCounted=farm_state.copy()
 	var result: Dictionary=candidate.apply_layout(snapshot,clock.call())
 	if not result.ok: island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
 	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
@@ -1011,7 +1011,7 @@ func _apply_fields(snapshot: Dictionary, undo: bool) -> void:
 	if preview.validated==null:
 		island_builder.set_busy(false,preview.message);return
 	var started: int=Time.get_ticks_msec()
-	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"这些田格里还有作物，请保留它们，或先收获。");return
 	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
@@ -1046,7 +1046,7 @@ func _apply_trellis(snapshot: Dictionary, undo: bool) -> void:
 	var animal_issue: String=preview.animal_issue(plan)
 	if not animal_issue.is_empty(): island_builder.set_busy(false,animal_issue);return
 	var started: int=Time.get_ticks_msec()
-	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
 	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
@@ -1080,7 +1080,7 @@ func _apply_building(snapshot: Dictionary, undo: bool, id: String) -> void:
 	var animal_issue: String=preview.animal_issue()
 	if not animal_issue.is_empty(): island_builder.set_busy(false,animal_issue);return
 	var started: int=Time.get_ticks_msec()
-	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
 	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
