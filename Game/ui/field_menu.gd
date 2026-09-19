@@ -7,6 +7,7 @@ var active: bool = false
 var veil: Control
 var cards: Control
 var anchor: Vector2
+var _trellis: bool=false
 
 class Petal extends Button:
 	var polygon := PackedVector2Array()
@@ -45,6 +46,7 @@ func _ready() -> void:
 	veil.hide()
 
 func present(point: Vector2, cell: Dictionary) -> void:
+	_trellis=cell.get("field_id","")=="trellis"
 	_clear()
 	active = true
 	veil.show()
@@ -89,8 +91,8 @@ func present(point: Vector2, cell: Dictionary) -> void:
 	veil.add_child(cancel)
 	cancel.pressed.connect(dismiss)
 
-func present_seeds(point: Vector2) -> void:
-	present(point, {"crop_id":"", "ground":"ready"})
+func present_seeds(point: Vector2, trellis: bool=false) -> void:
+	present(point, {"crop_id":"", "ground":"ready", "field_id":"trellis" if trellis else ""})
 	_show_seeds()
 
 func present_tools(point: Vector2) -> void:
@@ -98,8 +100,8 @@ func present_tools(point: Vector2) -> void:
 	_choice_fan(["water", "harvest", "weed", "till"], false)
 
 func _show_seeds(page: int = 0) -> void:
-	_choice_fan(Crops.crop_ids().slice(page * 4, page * 4 + 4), true)
-	var pages: int = ceili(Crops.crop_ids().size() / 4.0)
+	_choice_fan(Crops.seeds(_trellis).slice(page * 4, page * 4 + 4), true)
+	var pages: int = ceili(Crops.seeds(_trellis).size() / 4.0)
 	for step: int in [-1, 1]:
 		var button := Button.new()
 		button.name = "Previous" if step < 0 else "Next"

@@ -61,6 +61,7 @@ func _hide(node: Node3D) -> void:
 func update(plan: RefCounted) -> void:
 	if plan.snapshot()==_wanted: return
 	_wanted=plan.snapshot();validated=null;routes=null
+	main.trellis_crops.preview_plan=plan;main.refresh_trellis()
 	var dimensions: Vector3=Construction.trellis_size(plan)
 	var original: bool=plan.construction.trellis.is_empty()
 	if not is_instance_valid(structure) or dimensions!=_dimensions or original!=_original_geometry:
@@ -108,6 +109,7 @@ func update(plan: RefCounted) -> void:
 	checked.emit()
 
 func _placement_issue(plan: RefCounted) -> String:
+	if not main.farm_state.trellis_retains_crops(plan): return "架上还有作物，请保留种植位或先收获。"
 	var footprint: PackedVector2Array=_footprint(plan)
 	if not IslandSpace.supported(footprint,plan.plateau()): return "菜架需要完整落在平地上。"
 	for key: String in _obstacles:
@@ -178,6 +180,7 @@ func _show_ground(plan: RefCounted) -> void:
 
 func accept(plan: RefCounted) -> void:
 	_accepted=true
+	main.trellis_crops.preview_plan=null
 	for pair: Array in [[structure,environment,"EntranceTrellis"],[support,environment,"TrellisSupport"],[contacts,environment,"TrellisContacts"],[bed,environment.get_node("GroundCover"),"ClimbingBed"],[core,environment.get_node("GroundCover"),"CoreGrass"],[expansion,environment,"ExpansionGrass"],[paths,environment,"GardenPaths"]]:
 		var old: Node=pair[1].get_node(pair[2]);environment._contact_sources.erase(old)
 		if pair[2]=="EntranceTrellis": main.focus_detail.replace_structure(old,structure)
@@ -208,6 +211,8 @@ func retire() -> void:
 func _restore() -> void:
 	if _accepted or _restored: return
 	_restored=true
+	if is_instance_valid(main) and is_instance_valid(main.trellis_crops):
+		main.trellis_crops.preview_plan=null;main.refresh_trellis()
 	for node: Node3D in _hidden:
 		if is_instance_valid(node): node.show()
 	_hidden.clear()

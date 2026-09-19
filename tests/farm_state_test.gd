@@ -26,14 +26,15 @@ func _initialize() -> void:
 func _test_initial_state_and_isolation() -> void:
 	var farm := Farm.new(START)
 	var initial: Dictionary = farm.snapshot()
-	_expect(initial.fields.size() == 6, "Six stable fields")
-	_expect(Crops.total_harvested(initial.harvested) == 0 and initial.harvested.size() == 12, "Tutorial crops do not award baskets automatically")
+	_expect(initial.fields.size() == 7 and farm.field_ids().size() == 6, "Six beds and one trellis planting area")
+	_expect(Crops.total_harvested(initial.harvested) == 0 and initial.harvested.size() == 13, "Tutorial crops do not award baskets automatically")
 	_expect(farm.get_cell("field_01", "cell_06").stage == "empty" and farm.get_cell("field_02", "cell_06").stage == "empty", "Two initial empty fields")
 	_expect(farm.get_cell("field_03", "cell_06").stage == "mature", "First harvest available immediately")
 	_expect(is_equal_approx(farm.get_cell("field_04", "cell_06").progress, 0.2), "Initial greens progress")
 	_expect(is_equal_approx(farm.get_cell("field_05", "cell_06").progress, 0.1) and is_equal_approx(farm.get_cell("field_06", "cell_06").progress, 0.6), "Initial radish progress")
-	for field: Dictionary in initial.fields.values():
-		_expect(field.cells.size() == 16, "Sixteen stable cells in every field")
+	for id: String in farm.field_ids():
+		var field: Dictionary=initial.fields[id]
+		_expect(field.cells.size() == 16, "Sixteen stable cells in every ground bed")
 		for cell: Dictionary in field.cells.values():
 			_expect(not cell.watered and cell.last_settled_utc_seconds == START, "Fresh cells share injected baseline and are unwatered")
 	initial.fields.field_03.cells.cell_06.crop_id = "invalid"
@@ -79,11 +80,11 @@ func _test_mixed_cells() -> void:
 	view.cells.cell_02.crop_id = "greens"
 	_expect(farm.get_cell("field_01", "cell_02").crop_id == "radish", "Field view is deeply isolated")
 	var settled: Dictionary = farm.settle(START + 86400.0)
-	_expect(settled.changed_fields.size() == 6, "96 changed cell clocks emit six unique field IDs")
+	_expect(settled.changed_fields.size() == 7, "Changed clocks include the trellis planting area")
 
 
 func _test_stages_and_actions() -> void:
-	for crop_id: String in Crops.crop_ids():
+	for crop_id: String in Crops.seeds(false):
 		var farm := Farm.new(START)
 		var duration: float = Crops.definition(crop_id).duration_seconds
 		_expect(farm.sow("field_01", "cell_06", crop_id, START).ok, "Sow %s with unlimited seeds" % crop_id)

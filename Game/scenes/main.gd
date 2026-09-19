@@ -14,6 +14,8 @@ const DecorationLayout = preload("res://scenes/decoration_layout.gd")
 const FarmAudio = preload("res://audio/farm_audio.gd")
 const DayNight = preload("res://atmosphere/day_night.gd")
 const WindowActivity = preload("res://atmosphere/window_activity.gd")
+const TrellisCrops=preload("res://presentation/trellis_crops.gd")
+const TrellisSlots=preload("res://layout/trellis_slots.gd")
 const FocusDetail = preload("res://presentation/focus_detail.gd")
 const HUD = preload("res://scenes/farm_hud.gd")
 const SettingsStore = preload("res://settings/settings_store.gd")
@@ -57,6 +59,7 @@ var decoration_layout: DecorationLayout
 var farm_audio: FarmAudio
 var atmosphere: DayNight
 var window_activity: WindowActivity
+var trellis_crops: TrellisCrops
 var focus_detail: FocusDetail
 var store: FarmStore
 var hud: HUD
@@ -199,6 +202,7 @@ func _ready() -> void:
 	camera.motion_finished.connect(_refresh_hud)
 	camera.motion_finished.connect(func() -> void:
 		if not camera.neighbor_view and focus_detail!=null: focus_detail.protect_neighbor(null))
+	trellis_crops=TrellisCrops.new();trellis_crops.name="TrellisCrops";add_child(trellis_crops)
 	_load_game(_startup_state)
 	_startup_state = {}
 	# The courtyard owns all slot transforms and art; no duplicate fallback layout.
@@ -247,7 +251,7 @@ func _ready() -> void:
 	focus_detail = FocusDetail.new()
 	focus_detail.name = "FocusDetail"
 	add_child(focus_detail)
-	focus_detail.configure(camera, farm.fields, courtyard, decoration_layout)
+	focus_detail.configure(camera, farm.fields+[trellis_crops.body], courtyard, decoration_layout)
 	focus_detail.quality_changed.connect(atmosphere.set_quality)
 	_setup_settings()
 	desktop_wallpaper = DesktopWallpaper.new()
@@ -310,6 +314,7 @@ func _load_game(initial: Dictionary = {}) -> void:
 	if not result.ok:
 		_loaded = false
 		farm.visible = false
+		trellis_crops.visible=false
 		hud.show_storage_issue(result.kind, false)
 		return
 	if result.kind == "missing":
@@ -335,6 +340,7 @@ func _load_game(initial: Dictionary = {}) -> void:
 	_refresh_neighbor_stories()
 	kitchen_display.refresh(farm_state.snapshot().kitchen)
 	farm.visible = true
+	trellis_crops.visible=true
 	if seasonal_courtyard!=null: _apply_season()
 	settle_farm()
 	_save_farm()
@@ -456,13 +462,33 @@ func settle_farm() -> void:
 func refresh_farm() -> void:
 	for field_id: String in farm_state.field_ids():
 		farm.show_field(farm_state.get_field(field_id))
+	refresh_trellis()
 	_refresh_hud()
+
+
+func refresh_trellis() -> void:
+	if trellis_crops.show_state(courtyard_plan,farm_state.get_field(TrellisSlots.FIELD_ID)) and focus_detail!=null:
+		focus_detail._bounds_dirty=true
+
+
+func _planting_id(index: int) -> String:
+	return TrellisSlots.FIELD_ID if index==TrellisCrops.INDEX else farm.field_id(index)
+
+
+func _select_field_visual(index: int) -> void:
+	farm.select_field(-1 if index==TrellisCrops.INDEX else index)
+	trellis_crops.select(trellis_crops._selected,index==TrellisCrops.INDEX)
+
+
+func _select_cell_visual(index: int,id: String) -> void:
+	farm.select_cell(-1 if index==TrellisCrops.INDEX else index,id)
+	trellis_crops.select(id if index==TrellisCrops.INDEX else "",selected_field==TrellisCrops.INDEX)
 
 
 func _refresh_hud() -> void:
 	if hud == null or not _loaded:
 		return
-	var cell: Dictionary = {} if hover_field < 0 or hover_cell.is_empty() else farm_state.get_cell(farm.field_id(hover_field), hover_cell)
+	var cell: Dictionary = {} if hover_field < 0 or hover_cell.is_empty() else farm_state.get_cell(_planting_id(hover_field), hover_cell)
 	var state: Dictionary=farm_state.snapshot()
 	hud.show_state(cell, state.harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed or camera.free_view or _basket_active() or (camera_tuning != null and camera_tuning.visible), selected_field, selected_palette, state.inventory)
 	hud.show_decoration_mode(decoration_layout != null and decoration_layout.active)
@@ -563,7 +589,7 @@ func _open_scene_entry(id: String) -> void:
 		if tool=="sow":
 			_cancel_tool()
 			_menu_target = {}
-			field_menu.present_seeds(_pointer_position)
+			field_menu.present_seeds(_pointer_position,selected_field==TrellisCrops.INDEX)
 		else: _select_tool(tool)
 		return
 	if id in ["willow","bamboo","ferry"]:
@@ -699,7 +725,7 @@ func _begin_construction(tool: String = "land") -> void:
 	if decoration_layout.active: decoration_layout.finish_mode()
 	_cancel_tool();_cancel_input();field_menu.dismiss();hud.hide_time_preview()
 	selected_field=-1;selected_cell="";hover_field=-1;hover_cell=""
-	farm.select_field(-1);farm.select_cell(-1,"");focus_detail.set_focus()
+	_select_field_visual(-1);_select_cell_visual(-1,"");focus_detail.set_focus()
 	camera.cancel_zoom()
 	camera.construction_bounds=courtyard_plan.land_bounds()
 	camera.set_construction_framing(true,_construction_resume.is_empty())
@@ -1099,8 +1125,8 @@ func _on_decoration_mode_changed(active: bool) -> void:
 	selected_palette = ""
 	selected_field = -1
 	selected_cell = ""
-	farm.select_field(-1)
-	farm.select_cell(-1, "")
+	_select_field_visual(-1)
+	_select_cell_visual(-1, "")
 	if focus_detail != null:
 		focus_detail.set_focus()
 	if island_builder==null or not island_builder.active: camera.set_decoration_framing(active)
@@ -1178,7 +1204,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 	if selected_tool == "sow" and event is InputEventMouseButton and event.pressed and not event.canceled and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN] and not hud.is_time_preview_open():
-		var ids: Array[String] = Crops.crop_ids()
+		var ids: Array[String] = Crops.seeds(selected_field==TrellisCrops.INDEX)
 		_select_crop(ids[posmod(ids.find(selected_crop) + (1 if event.button_index == MOUSE_BUTTON_WHEEL_DOWN else -1), ids.size())])
 		get_viewport().set_input_as_handled()
 		return
@@ -1369,7 +1395,12 @@ func _farm_hit(screen_point: Vector2) -> Dictionary:
 	if index < 0:
 		return {}
 	# Only the actual top soil plane can select a cell; bed sides still focus its field.
-	var cell_id: String = farm.cell_at(index, hit.position) if camera.focused and index == selected_field and hit.normal.y > 0.9 else ""
+	var cell_id: String=""
+	if camera.focused and index==selected_field:
+		if index==TrellisCrops.INDEX:
+			cell_id=str(hit.collider.get_meta("trellis_cell",""))
+			if cell_id.is_empty(): cell_id=trellis_crops.cell_at(hit.position)
+		elif hit.normal.y>.9: cell_id=farm.cell_at(index,hit.position)
 	return {"field": index, "cell": cell_id}
 
 
@@ -1379,19 +1410,26 @@ func _focus_field(index: int) -> void:
 	selected_palette = ""
 	selected_field = index
 	selected_cell = ""
-	farm.select_field(index)
-	farm.select_cell(-1, "")
-	focus_detail.set_focus(farm.fields[index])
-	camera.focus_field(farm.fields[index].global_position,farm.fields[index].get_meta("field_size"))
+	_select_field_visual(index)
+	_select_cell_visual(-1, "")
+	var body: Node3D=trellis_crops.body if index==TrellisCrops.INDEX else farm.fields[index]
+	focus_detail.set_focus(body)
+	var center: Vector3=body.global_position
+	var framing: Vector2=body.get_meta("field_size")
+	if index==TrellisCrops.INDEX:
+		var dimensions: Vector3=TrellisSlots.Construction.trellis_size(courtyard_plan)
+		center.y+=dimensions.z*.35
+		framing=Vector2(dimensions.y+.8,maxf(dimensions.z,dimensions.x*.65))
+	camera.focus_field(center,framing)
 	_refresh_hud()
 
 
 func _select_cell(cell_id: String) -> void:
-	if selected_field < 0 or (not cell_id.is_empty() and not farm.cell_ids(selected_field).has(cell_id)):
+	if selected_field < 0 or (not cell_id.is_empty() and not farm_state.cell_ids(_planting_id(selected_field)).has(cell_id)):
 		return
 	_cancel_input()
 	selected_cell = cell_id
-	farm.select_cell(selected_field, cell_id)
+	_select_cell_visual(selected_field, cell_id)
 	_refresh_hud()
 
 
@@ -1424,7 +1462,7 @@ func _open_palette(palette: String) -> void:
 	selected_tool = ""
 	selected_palette = ""
 	_menu_target = {}
-	if palette == "sow": field_menu.present_seeds(_pointer_position)
+	if palette == "sow": field_menu.present_seeds(_pointer_position,selected_field==TrellisCrops.INDEX)
 	else: field_menu.present_tools(_pointer_position)
 	farm_audio.play_ui()
 	_refresh_hud()
@@ -1475,8 +1513,8 @@ func _update_hover() -> void:
 	if index != hover_field or cell_id != hover_cell:
 		hover_field = index
 		hover_cell = cell_id
-		farm.select_cell(index, cell_id)
-		farm.select_field(index if index >= 0 and cell_id.is_empty() else selected_field)
+		_select_cell_visual(index, cell_id)
+		_select_field_visual(index if index >= 0 and cell_id.is_empty() else selected_field)
 		_refresh_hud()
 	tool_cursor.show_tool("" if blocked else selected_tool, selected_crop)
 
@@ -1487,8 +1525,8 @@ func _present_field_menu(index: int, cell_id: String, point: Vector2) -> void:
 	selected_field = index
 	selected_cell = cell_id
 	_menu_target = {"field":index,"cell":cell_id}
-	farm.select_cell(index,cell_id)
-	field_menu.present(point,farm_state.get_cell(farm.field_id(index),cell_id))
+	_select_cell_visual(index,cell_id)
+	field_menu.present(point,farm_state.get_cell(_planting_id(index),cell_id))
 	_refresh_hud()
 
 
@@ -1513,7 +1551,7 @@ func _field_menu_action(tool: String, crop: String) -> void:
 func _apply_tool() -> void:
 	if not _can_work_cell() or selected_tool.is_empty():
 		return
-	var field_id: String = farm.field_id(selected_field)
+	var field_id: String = _planting_id(selected_field)
 	var now: float = clock.call()
 	var candidate:=FarmState.new()
 	candidate.restore_snapshot(farm_state.snapshot())
@@ -1564,8 +1602,8 @@ func _return_overview() -> void:
 	selected_palette = ""
 	selected_field = -1
 	selected_cell = ""
-	farm.select_field(-1)
-	farm.select_cell(-1, "")
+	_select_field_visual(-1)
+	_select_cell_visual(-1, "")
 	focus_detail.set_focus()
 	camera.return_overview()
 	_refresh_hud()

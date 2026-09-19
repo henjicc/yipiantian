@@ -2,13 +2,14 @@ extends RefCounted
 ## September Jiangnan choices; durations and water benefits are game tuning.
 
 const YOUNG_PROGRESS: float = 0.35
-const GROUPS := {"leaf":"叶菜", "root":"根菜", "aromatic":"香辛菜", "stem":"茎菜"}
+const GROUPS := {"leaf":"叶菜", "root":"根菜", "aromatic":"香辛菜", "stem":"茎菜", "fruit":"瓜果"}
 const CROP_GROUPS := {
 	"greens":"leaf", "radish":"root", "spinach":"leaf", "lettuce":"leaf",
 	"chrysanthemum":"leaf", "coriander":"aromatic", "celery":"stem", "mustard":"leaf",
-	"tatsoi":"leaf", "carrot":"root", "scallion":"aromatic", "garlic":"aromatic",
+	"tatsoi":"leaf", "carrot":"root", "scallion":"aromatic", "garlic":"aromatic", "luffa":"fruit",
 }
 const CROPS := {
+	"luffa": {"name": "丝瓜", "minutes": 75, "water": .20},
 	"greens": {"name": "青菜", "minutes": 30, "water": .20},
 	"radish": {"name": "白萝卜", "minutes": 90, "water": .20},
 	"spinach": {"name": "菠菜", "minutes": 45, "water": .24},
@@ -53,3 +54,12 @@ static func total_harvested(harvested: Dictionary) -> int:
 	for count: int in harvested.values():
 		total += count
 	return total
+
+static func seeds(trellis: bool) -> Array[String]:
+	var result: Array[String]=[]
+	for id: String in crop_ids():
+		if supports(id,trellis): result.append(id)
+	return result
+
+static func supports(crop_id: String, trellis: bool) -> bool:
+	return CROPS.has(crop_id) and ((crop_id=="luffa")==trellis)

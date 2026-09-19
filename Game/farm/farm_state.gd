@@ -1,6 +1,7 @@
 extends RefCounted
 ## The sole mutable owner of planting state. No scene, clock reading or disk I/O.
 
+const Trellis=preload("res://layout/trellis_slots.gd")
 const Crops = preload("res://farm/crop_catalog.gd")
 const Plan = preload("res://layout/courtyard_plan.gd")
 const Neighbors = preload("res://farm/neighbor_catalog.gd")
@@ -26,7 +27,7 @@ func _init(now_utc_seconds: float = 0.0, layout: Dictionary = {}) -> void:
 	for crop_id: String in Crops.crop_ids():
 		_data.harvested[crop_id] = 0
 		_data.inventory[crop_id] = 0
-	for definition: Dictionary in plan.fields:
+	for definition: Dictionary in _planting_areas(plan):
 		var field_id: String = definition.id
 		_data.fields[field_id] = {"cells": {}}
 		for cell_id: String in definition.cells:
@@ -50,15 +51,24 @@ func set_season(id: String) -> bool:
 	return true
 
 func field_ids() -> Array[String]:
+	# Ground-bed consumers use this list; the separate trellis view uses FIELD_ID.
 	var result: Array[String] = []
 	for field: Dictionary in _data.layout.fields: result.append(field.id)
 	return result
 
 func cell_ids(field_id: String) -> Array[String]:
 	var result: Array[String] = []
+	if field_id==Trellis.FIELD_ID:
+		result.assign(_data.fields[field_id].cells.keys());return result
 	for field: Dictionary in _data.layout.fields:
 		if field.id == field_id: result.assign(field.cells)
 	return result
+
+func trellis_retains_crops(plan: RefCounted) -> bool:
+	var slots: Dictionary=Trellis.slots(plan)
+	for id: String in _data.fields[Trellis.FIELD_ID].cells:
+		if not slots.has(id) and not _data.fields[Trellis.FIELD_ID].cells[id].crop_id.is_empty(): return false
+	return true
 
 func apply_layout(layout: Dictionary, now_utc_seconds: float) -> Dictionary:
 	if not _valid_time(now_utc_seconds): return _result(false,"invalid_time")
@@ -66,7 +76,7 @@ func apply_layout(layout: Dictionary, now_utc_seconds: float) -> Dictionary:
 	if plan == null: return _result(false,"invalid_layout")
 	var candidate: Dictionary = _data.duplicate(true)
 	var fields: Dictionary = {}
-	for definition: Dictionary in plan.fields:
+	for definition: Dictionary in _planting_areas(plan):
 		var previous: Dictionary = _data.fields.get(definition.id,{}).get("cells",{})
 		var cells: Dictionary = {}
 		for id: String in definition.cells:
@@ -225,6 +235,7 @@ func _act(action: String, field_id: String, cell_id: String, crop_id: String, no
 			return _result(false,"wrong_ground")
 		field.ground = "rough" if action=="weed" else "ready"
 	elif action == "sow":
+		if not Crops.supports(crop_id,field_id==Trellis.FIELD_ID): return _result(false,"wrong_support")
 		if field.ground != "ready": return _result(false,"unprepared")
 		if not field.crop_id.is_empty():
 			return _result(false, "occupied")
@@ -310,7 +321,7 @@ static func _valid_snapshot(data: Dictionary) -> bool:
 			if not data.animals.has(Companions.Flocks.id(kind,i)): return false
 	var fields: Dictionary = data.fields
 	var harvested: Dictionary = data.harvested
-	if fields.size() != plan.fields.size() or harvested.size() != Crops.crop_ids().size():
+	if fields.size() != plan.fields.size()+1 or harvested.size() != Crops.crop_ids().size():
 		return false
 	for crop_id: String in Crops.crop_ids():
 		var stock: Variant = data.inventory.get(crop_id)
@@ -318,7 +329,7 @@ static func _valid_snapshot(data: Dictionary) -> bool:
 		var count: Variant = harvested.get(crop_id)
 		if not _is_number(count) or float(count) < 0.0 or float(count) > MAX_HARVEST_COUNT or float(count) != floorf(float(count)):
 			return false
-	for definition: Dictionary in plan.fields:
+	for definition: Dictionary in _planting_areas(plan):
 		var field_id: String = definition.id
 		if not fields.get(field_id) is Dictionary:
 			return false
@@ -328,6 +339,9 @@ static func _valid_snapshot(data: Dictionary) -> bool:
 		for cell_id: String in definition.cells:
 			if not field.cells.get(cell_id) is Dictionary or not valid_cell_snapshot(field.cells[cell_id]):
 				return false
+			var cell: Dictionary=field.cells[cell_id]
+			if field_id==Trellis.FIELD_ID and cell.ground!="ready": return false
+			if not cell.crop_id.is_empty() and not Crops.supports(cell.crop_id,field_id==Trellis.FIELD_ID): return false
 	return true
 
 
@@ -350,3 +364,8 @@ static func valid_cell_snapshot(field: Dictionary) -> bool:
 		if field.watered and float(growth) < crop.duration_seconds * crop.water_progress:
 			return false
 	return true
+
+static func _planting_areas(plan: RefCounted) -> Array:
+	var result: Array=plan.fields.duplicate()
+	result.append(Trellis.definition(plan))
+	return result

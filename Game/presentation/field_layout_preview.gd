@@ -97,7 +97,7 @@ func accept(plan: RefCounted) -> void:
 	_accepted=true
 	var environment: Node3D=main.get_node("Environment")
 	var old_farm: FarmLayout=main.farm
-	main.focus_detail.replace_fields(farm.fields)
+	main.focus_detail.replace_fields(farm.fields+[main.trellis_crops.body])
 	main.remove_child(old_farm);old_farm.queue_free()
 	for body: StaticBody3D in farm.fields: body.collision_layer=1
 	farm.reparent(main);farm.name="Farm";farm.plan=plan;main.farm=farm
