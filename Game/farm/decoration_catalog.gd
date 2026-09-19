@@ -1,5 +1,6 @@
 extends RefCounted
 ## Stable decoration and slot identities; spatial transforms belong to the courtyard.
+const Crops=preload("res://farm/crop_catalog.gd")
 
 const IDS: Array[String] = ["pot", "flowerpot", "lantern", "bench", "drying_rack", "tea_table"]
 const ITEMS: Dictionary = {
@@ -7,7 +8,7 @@ const ITEMS: Dictionary = {
 	"flowerpot": {"name": "花盆", "type": "ground", "total": 8, "varieties": 2},
 	"lantern": {"name": "灯笼", "type": "hanging", "total": 16, "varieties": 3},
 	"bench": {"name": "竹长凳", "type": "ground", "total": 0, "varieties": 0},
-	"drying_rack": {"name": "小晒架", "type": "ground", "total": 0, "varieties": 0},
+	"drying_rack": {"name": "小晒架", "type": "ground", "total": 0, "varieties": 0, "shared_meals":1},
 	"tea_table": {"name": "茶桌", "type": "ground", "total": 0, "varieties": 0},
 }
 const SLOT_TYPES: Dictionary = {
@@ -26,4 +27,11 @@ static func allowed_turns(slot_id: String) -> Array[int]:
 
 static func requirement(item_id: String) -> String:
 	var item: Dictionary = ITEMS[item_id]
+	if item.has("shared_meals"): return "向邻居分享1份做好的菜 · 摆放后多一处晾晒位置"
 	return "累计收获 %d 篮 · %d 种菜" % [item.total,item.varieties]
+
+static func earned(item_id: String,harvested: Dictionary,kitchen: Dictionary={}) -> bool:
+	var rule: Dictionary=ITEMS[item_id]
+	var shared: int=0
+	for record: Dictionary in kitchen.get("records",{}).values(): shared+=int(record.shared)
+	return Crops.total_harvested(harvested)>=rule.total and Crops.varieties(harvested)>=rule.varieties and shared>=rule.get("shared_meals",0)

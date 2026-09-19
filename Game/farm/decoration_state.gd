@@ -2,13 +2,12 @@ extends RefCounted
 ## Owns unlocks and confirmed placements. Previews never enter persistent state.
 
 const Catalog = preload("res://farm/decoration_catalog.gd")
-const Crops = preload("res://farm/crop_catalog.gd")
 var _items: Dictionary = {}
 
 
 func _init() -> void:
 	for item_id: String in Catalog.IDS:
-		_items[item_id] = {"unlocked": Catalog.ITEMS[item_id].total==0, "slot_id": "", "quarter_turn": 0, "position": []}
+		_items[item_id] = {"unlocked": Catalog.earned(item_id,{}), "slot_id": "", "quarter_turn": 0, "position": []}
 
 
 func snapshot() -> Dictionary:
@@ -47,11 +46,10 @@ func restore_snapshot(data: Dictionary) -> bool:
 	return true
 
 
-func unlock(harvested: Dictionary) -> Array[String]:
+func unlock(harvested: Dictionary,kitchen: Dictionary={}) -> Array[String]:
 	var unlocked: Array[String] = []
 	for item_id: String in Catalog.IDS:
-		var rule: Dictionary = Catalog.ITEMS[item_id]
-		if not _items[item_id].unlocked and Crops.total_harvested(harvested)>=rule.total and Crops.varieties(harvested)>=rule.varieties:
+		if not _items[item_id].unlocked and Catalog.earned(item_id,harvested,kitchen):
 			_items[item_id].unlocked = true
 			unlocked.append(item_id)
 	return unlocked

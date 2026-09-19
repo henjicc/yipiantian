@@ -7,6 +7,7 @@ const ItemCard=preload("res://ui/item_card.gd")
 var recipe: String="leaf_stir"
 var crop: String="greens"
 var recipient: String="willow"
+var selected_station: String=""
 var _timers: Array[Dictionary]=[]
 
 func render(book: Node, data: Dictionary, journal: bool, now: float) -> void:
@@ -15,10 +16,13 @@ func render(book: Node, data: Dictionary, journal: bool, now: float) -> void:
 	var state: Dictionary=data.kitchen
 	if journal:
 		_journal(book,page,state)
+		_construction(book,page)
 		return
+	_construction(book,page)
 	var stations:=HBoxContainer.new()
 	page.add_child(stations)
 	for station: String in Kitchen.STATIONS:
+		if station=="garden_rack" and not Kitchen.extra_rack_placed(book.decorations): continue
 		var column:=VBoxContainer.new()
 		column.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		stations.add_child(column)
@@ -54,6 +58,15 @@ func render(book: Node, data: Dictionary, journal: bool, now: float) -> void:
 	book._label(details,rule.name,26)
 	book._label(details,rule.method,21)
 	book._label(details,"一篮食材 · 一份成品 · 约%d秒"%rule.seconds,19)
+	var available: Array[String]=[rule.station]
+	if rule.station=="rack" and Kitchen.extra_rack_placed(book.decorations): available.append("garden_rack")
+	if selected_station not in available: selected_station=available[0]
+	if available.size()>1:
+		var station_choice:=OptionButton.new();station_choice.name="CookingStation"
+		station_choice.custom_minimum_size.y=40;details.add_child(station_choice)
+		for id: String in available: station_choice.add_item(Kitchen.STATION_NAMES[id]+(" · 制作中" if not state.jobs[id].is_empty() else " · 空闲"))
+		station_choice.select(available.find(selected_station))
+		station_choice.item_selected.connect(func(index: int) -> void: selected_station=available[index];book._render())
 	var eligible: Array[String]=[]
 	for id: String in Crops.crop_ids():
 		if Kitchen.accepts(recipe,id): eligible.append(id)
@@ -78,22 +91,33 @@ func render(book: Node, data: Dictionary, journal: bool, now: float) -> void:
 		ingredient_cards[id]=card
 	var start: Button=book._button(details,"开始制作")
 	start.name="StartCooking"
-	start.disabled=data.inventory[crop]<1 or not state.jobs[rule.station].is_empty()
+	start.disabled=data.inventory[crop]<1 or not state.jobs[selected_station].is_empty()
 	for id: String in ingredient_cards:
 		ingredient_cards[id].pressed.connect(func() -> void:
 			crop=id
 			for key: String in ingredient_cards: ingredient_cards[key].set_pressed_no_signal(key==id)
-			start.disabled=data.inventory[crop]<1 or not state.jobs[rule.station].is_empty())
+			start.disabled=data.inventory[crop]<1 or not state.jobs[selected_station].is_empty())
 	var selected_recipe: String=recipe
-	start.pressed.connect(func() -> void: book.kitchen_requested.emit("start",{"recipe":selected_recipe,"crop":crop},int(state.revision)))
+	start.pressed.connect(func() -> void: book.kitchen_requested.emit("start",{"recipe":selected_recipe,"crop":crop,"station":selected_station},int(state.revision)))
 	var views:=HBoxContainer.new()
 	page.add_child(views)
 	for station: String in ["stove","rack","jar","table"]:
 		var see: Button=book._button(views,{"stove":"看看厨房","rack":"看看晒架","jar":"看看陶罐","table":"看看餐桌"}[station])
 		see.name="ViewKitchen_"+station
 		see.pressed.connect(func() -> void: book.begin_kitchen_view(station))
+	if Kitchen.extra_rack_placed(book.decorations):
+		var see: Button=book._button(views,"看看小晒架");see.name="ViewKitchen_garden_rack"
+		see.pressed.connect(func() -> void: book.begin_kitchen_view("garden_rack"))
 	_stock(book,page,state)
 	tick(now)
+
+func _construction(book: Node,page: VBoxContainer) -> void:
+	var item: Dictionary=book.decorations.get("drying_rack",{})
+	if not item.get("unlocked",false):
+		book._label(page,"分享一份做好的菜，邻居会送来小晒架；摆好后可多晾晒一份。",19)
+	elif not Kitchen.extra_rack_placed(book.decorations):
+		var place: Button=book._button(page,"摆放小晒架 · 多一处晾晒位置");place.name="BuildDryingRack"
+		place.pressed.connect(func() -> void: book.construction_requested.emit("drying_rack"))
 
 func tick(now: float) -> void:
 	for entry: Dictionary in _timers:

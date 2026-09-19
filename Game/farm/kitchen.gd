@@ -2,9 +2,10 @@ extends RefCounted
 ## Recipes and kitchen transactions. UTC completion never depends on animations.
 const Crops=preload("res://farm/crop_catalog.gd")
 const Neighbors=preload("res://farm/neighbor_catalog.gd")
+const Decorations=preload("res://farm/decoration_state.gd")
 const LIMIT: int=2147483646
-const STATIONS: Array[String]=["stove","jar","rack"]
-const STATION_NAMES := {"stove":"灶上","jar":"陶罐","rack":"晒架"}
+const STATIONS: Array[String]=["stove","jar","rack","garden_rack"]
+const STATION_NAMES := {"stove":"灶上","jar":"陶罐","rack":"廊下晒架","garden_rack":"小晒架"}
 const RECIPES := {
 	"leaf_stir":{"name":"清炒时蔬","groups":["leaf"],"station":"stove","seconds":20,"asset":"stir_fry","method":"择洗 → 切段 → 清炒","entry":"菜刚离田，洗去泥土，热锅轻炒。叶子软下来，仍留一点脆。"},
 	"stem_stir":{"name":"清炒芹菜","groups":["stem"],"station":"stove","seconds":25,"asset":"stir_fry","method":"择洗 → 切段 → 清炒","entry":"芹菜切成小段，沿锅边翻几回。把清脆和香气一起盛出来。"},
@@ -28,7 +29,17 @@ static func accepts(recipe: String, crop: String) -> bool:
 static func ready(job: Dictionary, now: float) -> bool:
 	return not job.is_empty() and now>=job.finish_utc
 
-static func act(state: Dictionary, inventory: Dictionary, action: String, request: Dictionary, revision: int, now: float) -> Dictionary:
+static func extra_rack_placed(decorations: Dictionary) -> bool:
+	var item: Dictionary=decorations.get("drying_rack",{})
+	return item.get("unlocked",false) and Decorations.is_placed(item)
+
+static func supports(station: String,recipe: String) -> bool:
+	return RECIPES.has(recipe) and (station==RECIPES[recipe].station or (station=="garden_rack" and RECIPES[recipe].station=="rack"))
+
+static func placement_valid(state: Dictionary,decorations: Dictionary) -> bool:
+	return state.jobs.garden_rack.is_empty() or extra_rack_placed(decorations)
+
+static func act(state: Dictionary, inventory: Dictionary, action: String, request: Dictionary, revision: int, now: float, decorations: Dictionary={}) -> Dictionary:
 	if not is_finite(now) or now<0: return {"ok":false,"reason":"invalid_time"}
 	if revision!=state.revision: return {"ok":false,"reason":"stale_kitchen"}
 	if revision>=LIMIT: return {"ok":false,"reason":"inventory_limit"}
@@ -38,11 +49,17 @@ static func act(state: Dictionary, inventory: Dictionary, action: String, reques
 			var crop: String=request.get("crop","") if request.get("crop","") is String else ""
 			if not accepts(recipe,crop): return {"ok":false,"reason":"wrong_crop"}
 			var rule: Dictionary=RECIPES[recipe]
-			if not state.jobs[rule.station].is_empty(): return {"ok":false,"reason":"station_busy"}
+			var station: Variant=request.get("station",rule.station)
+			if not station is String or not supports(station,recipe): return {"ok":false,"reason":"invalid_station"}
+			if station=="garden_rack" and not extra_rack_placed(decorations): return {"ok":false,"reason":"station_unavailable"}
+			if not state.jobs[station].is_empty(): return {"ok":false,"reason":"station_busy"}
 			if inventory[crop]<1: return {"ok":false,"reason":"insufficient_food"}
-			if state.records[recipe].made>=LIMIT: return {"ok":false,"reason":"inventory_limit"}
+			var reserved: int=0
+			for job: Dictionary in state.jobs.values():
+				if job.get("recipe","")==recipe: reserved+=1
+			if state.records[recipe].made+reserved>=LIMIT: return {"ok":false,"reason":"inventory_limit"}
 			inventory[crop]-=1
-			state.jobs[rule.station]={"recipe":recipe,"crop":crop,"start_utc":now,"finish_utc":now+rule.seconds}
+			state.jobs[station]={"recipe":recipe,"crop":crop,"start_utc":now,"finish_utc":now+rule.seconds}
 		"collect":
 			var station: Variant=request.get("station")
 			if station not in STATIONS: return {"ok":false,"reason":"invalid_station"}
@@ -100,9 +117,14 @@ static func valid(state: Dictionary) -> bool:
 		var job: Dictionary=state.jobs[station]
 		if job.is_empty(): continue
 		if job.size()!=4 or not job.get("recipe") is String or not job.get("crop") is String: return false
-		if not accepts(job.recipe,job.crop) or RECIPES[job.recipe].station!=station: return false
+		if not accepts(job.recipe,job.crop) or not supports(station,job.recipe): return false
 		for key: String in ["start_utc","finish_utc"]:
 			if not (job.get(key) is int or job.get(key) is float) or not is_finite(float(job[key])) or job[key]<0: return false
 		if not is_equal_approx(job.finish_utc-job.start_utc,float(RECIPES[job.recipe].seconds)): return false
 		if state.records[job.recipe].made>=LIMIT: return false
+	for recipe: String in RECIPES:
+		var reserved: int=0
+		for job: Dictionary in state.jobs.values():
+			if job.get("recipe","")==recipe: reserved+=1
+		if state.records[recipe].made+reserved>LIMIT: return false
 	return true

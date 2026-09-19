@@ -140,8 +140,8 @@ func share_basket(neighbor: String, round_index: int, basket: Dictionary) -> Dic
 	visit.pending=true
 	return _result(true,"")
 
-func kitchen_action(action: String, request: Dictionary, revision: int, now: float) -> Dictionary:
-	return Kitchen.act(_data.kitchen,_data.inventory,action,request,revision,now)
+func kitchen_action(action: String, request: Dictionary, revision: int, now: float,decorations: Dictionary={}) -> Dictionary:
+	return Kitchen.act(_data.kitchen,_data.inventory,action,request,revision,now,decorations)
 
 func animal_action(id: String,action: String,value: Variant,revision: int) -> Dictionary:
 	return Companions.act(_data.animals,_data.inventory,id,action,value,revision)

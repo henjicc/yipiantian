@@ -13,7 +13,7 @@ const ITEMS: Dictionary = {
 	"fence": {"name":"竹篱", "category":"routes", "editor":"layout", "placement":"line", "capabilities":["obstacle"], "icon":"res://art/ui/construction/fence.png"},
 	"bridge": {"name":"桥梁", "category":"routes", "editor":"layout", "placement":"endpoints", "capabilities":["passage","parametric"], "icon":"res://art/ui/construction/bridge.png"},
 	"fields": {"name":"田块", "category":"growing", "editor":"layout", "placement":"grid", "capabilities":["planting","parametric"], "icon":"res://art/ui/crops/till.png"},
-	"trellis": {"name":"菜架", "category":"growing", "editor":"layout", "placement":"free", "capabilities":["parametric","attachments"], "icon":"res://art/ui/construction/trellis.png"},
+	"trellis": {"name":"菜架", "category":"growing", "editor":"layout", "placement":"free", "capabilities":["planting","parametric","attachments"], "icon":"res://art/ui/construction/trellis.png"},
 	"lotus": {"name":"荷花", "category":"plants", "editor":"layout", "placement":"water", "capabilities":["decoration"], "icon":"res://art/ui/construction/lotus.png"},
 	"reed": {"name":"芦苇", "category":"plants", "editor":"layout", "placement":"shore", "capabilities":["decoration"], "icon":"res://art/ui/construction/reed.png"},
 	"cattail": {"name":"香蒲", "category":"plants", "editor":"layout", "placement":"shore", "capabilities":["decoration"], "icon":"res://art/ui/construction/cattail.png"},

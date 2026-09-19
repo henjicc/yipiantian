@@ -11,6 +11,7 @@ signal memory_view_requested(id: String)
 signal photo_requested
 signal photo_action_requested(action: String, photo: Dictionary)
 signal season_requested(id: String)
+signal construction_requested(id: String)
 const Seasons = preload("res://farm/season_catalog.gd")
 const ItemCard = preload("res://ui/item_card.gd")
 const MemoryPage=preload("res://ui/memory_page.gd")
@@ -27,6 +28,7 @@ var active: bool = false
 var tab: String = "food"
 var neighbor: String = "willow"
 var _data: Dictionary = {}
+var decorations: Dictionary={}
 var _root: Control
 var _content: VBoxContainer
 var _tabs: Dictionary = {}
@@ -221,11 +223,10 @@ func _food() -> void:
 		var mark: String="待初收" if harvested==0 else ("初收" if harvested<3 else "常种")
 		_label(item,"累计 %d 篮 · %s"%[harvested,mark],17)
 		_label(item,"可分享 · "+Crops.GROUPS[Crops.definition(id).group],17)
-	var earned: int=Crops.total_harvested(_data.harvested)
-	var kinds: int=Crops.varieties(_data.harvested)
 	for id: String in Decorations.IDS:
 		var rule: Dictionary=Decorations.ITEMS[id]
-		_label(_content,"%s　%s"%[rule.name,"已解锁" if earned>=rule.total and kinds>=rule.varieties else Decorations.requirement(id)],18)
+		var earned: bool=decorations.get(id,{}).get("unlocked",Decorations.earned(id,_data.harvested,_data.kitchen))
+		_label(_content,"%s　%s"%[rule.name,"已解锁" if earned else Decorations.requirement(id)],18)
 
 func _neighbors() -> void:
 	var houses:=HBoxContainer.new()

@@ -3,7 +3,7 @@ extends RefCounted
 
 const FarmState = preload("res://farm/farm_state.gd")
 const Decorations = preload("res://farm/decoration_state.gd")
-const VERSION: int = 23
+const VERSION: int = 24
 const MAX_BYTES: int = 524288
 const MAIN: String = "farm.json"
 const BACKUP: String = "farm.backup.json"
@@ -15,7 +15,7 @@ var _expected_main: String = ""
 var _expected_missing: bool = true
 
 
-func _init(save_directory: String = "user://farm-v23") -> void:
+func _init(save_directory: String = "user://farm-v24") -> void:
 	directory = ProjectSettings.globalize_path(save_directory).simplify_path()
 
 
@@ -61,6 +61,7 @@ func save(farm: Dictionary, decorations: Dictionary) -> Dictionary:
 	var decoration_validator := Decorations.new()
 	if not decoration_validator.restore_snapshot(decorations):
 		return _failure("invalid_decorations")
+	if not FarmState.Kitchen.placement_valid(farm.kitchen,decorations): return _failure("invalid_decorations")
 	if not _safe_paths():
 		return _failure("unsafe_path")
 	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(directory)
@@ -154,6 +155,7 @@ func _read(filename: String) -> Dictionary:
 	var decoration_validator := Decorations.new()
 	if not data.get("decorations") is Dictionary or not decoration_validator.restore_snapshot(data.decorations):
 		return {"kind": "corrupt"}
+	if not FarmState.Kitchen.placement_valid(farm_data.kitchen,data.decorations): return {"kind":"corrupt"}
 	return {"kind": "valid", "version": int(version), "text": text, "farm": validator.snapshot(), "decorations": decoration_validator.snapshot()}
 
 

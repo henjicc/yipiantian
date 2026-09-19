@@ -61,7 +61,11 @@ func run() -> void:
 	group.free()
 	var fixture: Dictionary=scene.farm_state.snapshot()
 	fixture.harvested.greens=20;fixture.harvested.radish=20;fixture.harvested.spinach=20;fixture.inventory.radish=4
-	scene.farm_state.restore_snapshot(fixture);scene.decoration_state.unlock(fixture.harvested)
+	scene.farm_state.restore_snapshot(fixture)
+	scene.farm_state.kitchen_action("start",{"recipe":"root_dry","crop":"radish"},0,1000)
+	scene.farm_state.kitchen_action("collect",{"station":"rack"},1,1090)
+	scene.farm_state.kitchen_action("share",{"recipe":"root_dry","neighbor":"willow"},2,1090)
+	scene.decoration_state.unlock(fixture.harvested,scene.farm_state.snapshot().kitchen)
 	scene._save_farm()
 	var decor: Node=scene.decoration_layout
 	decor.bind_state(scene.decoration_state)
@@ -106,7 +110,7 @@ func run() -> void:
 	await create_timer(1).timeout
 	# Start drying through the actual authoritative kitchen transaction.
 	scene._open_basket()
-	scene._kitchen_action("start",{"recipe":"root_dry","crop":"radish"},int(scene.farm_state.snapshot().kitchen.revision))
+	scene._kitchen_action("start",{"recipe":"root_dry","crop":"radish","station":"garden_rack"},int(scene.farm_state.snapshot().kitchen.revision))
 	scene.harvest_book.dismiss()
 	expect(decor._instances.drying_rack.get_node("Harvest").visible,"Drying job appears on placed rack")
 	expect(not decor._instances.tea_table.get_node("Tea").visible,"Day table stays clear")

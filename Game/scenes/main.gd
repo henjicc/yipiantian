@@ -160,9 +160,16 @@ func _ready() -> void:
 	harvest_book.gift_requested.connect(func(id: String, visit: int, crop: String) -> void: _exchange(id,visit,{},crop))
 	harvest_book.view_requested.connect(_view_neighbor)
 	harvest_book.kitchen_requested.connect(_kitchen_action)
+	harvest_book.construction_requested.connect(func(id: String) -> void:
+		harvest_book.dismiss();_begin_construction(id))
 	harvest_book.season_requested.connect(_change_season)
 	harvest_book.kitchen_view_requested.connect(func(station: String) -> void:
-		var framing: Dictionary=kitchen_display.viewpoint(station)
+		var framing: Dictionary
+		if station=="garden_rack":
+			var rack: Node3D=decoration_layout._instances.get("drying_rack")
+			if not is_instance_valid(rack): harvest_book.end_view();return
+			framing={"subject":rack,"point":rack.global_position+Vector3.UP*.65,"view":Vector3(22,34,5.5)}
+		else: framing=kitchen_display.viewpoint(station)
 		focus_detail.protect_neighbor(framing.subject)
 		camera.view_neighbor(framing.point,framing.view)
 		hud.hide())
@@ -330,7 +337,7 @@ func _load_game(initial: Dictionary = {}) -> void:
 		farm_state.restore_snapshot(result.farm)
 		decoration_state = DecorationState.new()
 		decoration_state.restore_snapshot(result.decorations)
-	decoration_state.unlock(farm_state.snapshot().harvested)
+	decoration_state.unlock(farm_state.snapshot().harvested,farm_state.snapshot().kitchen)
 	$Environment/CourtyardAnimals.interaction.profiles=farm_state.snapshot().animals
 	if decoration_layout != null:
 		decoration_layout.bind_state(decoration_state)
@@ -560,6 +567,7 @@ func _open_basket() -> void:
 	camera.cancel_zoom()
 	camera.free_input_enabled=false
 	harvest_book.update_time(clock.call())
+	harvest_book.decorations=decoration_state.snapshot()
 	harvest_book.present(farm_state.snapshot())
 	_refresh_hud()
 
@@ -571,7 +579,7 @@ func _scene_entry_at(point: Vector2) -> String:
 	for item: String in ["drying_rack","tea_table","pot"]:
 		var placed: Node=decoration_layout._instances.get(item)
 		if placed!=null and (placed==hit or placed.is_ancestor_of(hit)):
-			return {"drying_rack":"rack","tea_table":"table","pot":"jar"}[item]
+			return {"drying_rack":"garden_rack","tea_table":"table","pot":"jar"}[item]
 	var courtyard: Node3D=$Environment
 	for pair: Array in [["Kitchen","stove"],["LivingDetails/SidePorchDryingRack","rack"],
 		["LivingDetails/YardJarCluster","jar"],["LivingDetails/PorchHarvestTable","table"],
@@ -596,10 +604,11 @@ func _open_scene_entry(id: String) -> void:
 		harvest_book.tab="neighbors"
 		harvest_book.neighbor=id
 		harvest_book._history_open=false
-	elif id in ["stove","rack","jar","table"]:
+	elif id in ["stove","rack","garden_rack","jar","table"]:
 		harvest_book.tab="kitchen"
-		var choices: Dictionary={"stove":"leaf_stir","rack":"root_dry","jar":"leaf_pickle"}
+		var choices: Dictionary={"stove":"leaf_stir","rack":"root_dry","garden_rack":"root_dry","jar":"leaf_pickle"}
 		if choices.has(id): harvest_book.kitchen_page.recipe=choices[id]
+		harvest_book.kitchen_page.selected_station=id
 	else: return
 	_open_basket()
 
@@ -633,11 +642,13 @@ func _kitchen_action(action: String, request: Dictionary, revision: int) -> void
 	if not _basket_active() or not _loaded or _save_failed: return
 	var candidate:=FarmState.new()
 	candidate.restore_snapshot(farm_state.snapshot())
-	var result: Dictionary=candidate.kitchen_action(action,request,revision,clock.call())
+	var result: Dictionary=candidate.kitchen_action(action,request,revision,clock.call(),decoration_state.snapshot())
 	if not result.ok:
 		harvest_book.refresh(farm_state.snapshot())
 		return
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var decorations:=DecorationState.new();decorations.restore_snapshot(decoration_state.snapshot())
+	decorations.unlock(candidate.snapshot().harvested,candidate.snapshot().kitchen)
+	var saved: Dictionary=store.save(candidate.snapshot(),decorations.snapshot())
 	if not saved.ok:
 		_save_failed=true
 		harvest_book.dismiss()
@@ -645,6 +656,9 @@ func _kitchen_action(action: String, request: Dictionary, revision: int) -> void
 		_refresh_hud()
 		return
 	farm_state.restore_snapshot(candidate.snapshot())
+	if decorations.snapshot()!=decoration_state.snapshot():
+		decoration_state=decorations;decoration_layout.bind_state(decorations)
+	harvest_book.decorations=decorations.snapshot()
 	kitchen_display.refresh(farm_state.snapshot().kitchen)
 	decoration_layout.update_life(farm_state.snapshot().kitchen)
 	if action=="share": harvest_book.tab="journal"
@@ -681,6 +695,10 @@ func _change_decoration(candidate: Dictionary, undo: bool = false) -> void:
 	if not _loaded or _save_failed: return
 	var replacement:=DecorationState.new()
 	if not replacement.restore_snapshot(candidate): return
+	if not FarmState.Kitchen.placement_valid(farm_state.snapshot().kitchen,candidate):
+		decoration_layout._message="晒架上还有食材，请先收起成品。";decoration_layout._refresh()
+		if island_builder.active: island_builder.set_busy(false,decoration_layout._message)
+		return
 	var candidate_farm:=FarmState.new();candidate_farm.restore_snapshot(farm_state.snapshot())
 	if replacement.snapshot()!=decoration_state.snapshot(): candidate_farm.remember("arrange",clock.call())
 	var saved: Dictionary=store.save(candidate_farm.snapshot(),replacement.snapshot())
@@ -1565,7 +1583,7 @@ func _apply_tool() -> void:
 	if result.ok:
 		var decorations:=DecorationState.new()
 		decorations.restore_snapshot(decoration_state.snapshot())
-		decorations.unlock(candidate.snapshot().harvested)
+		decorations.unlock(candidate.snapshot().harvested,candidate.snapshot().kitchen)
 		var saved: Dictionary=store.save(candidate.snapshot(),decorations.snapshot())
 		if not saved.ok:
 			_save_failed=true

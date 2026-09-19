@@ -470,7 +470,7 @@ func update_life(kitchen: Dictionary) -> void:
 
 func _apply_life(instance: Node3D, id: String) -> void:
 	if id=="drying_rack":
-		instance.get_node("Harvest").visible=not _kitchen.is_empty() and (not _kitchen.jobs.rack.is_empty() or _kitchen.stock.root_dry>0)
+		instance.get_node("Harvest").visible=not _kitchen.is_empty() and not _kitchen.jobs.garden_rack.is_empty()
 	if id=="tea_table": instance.get_node("Tea").visible=_night_weight>.25
 
 func set_night_weight(weight: float) -> void:

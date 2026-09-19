@@ -36,6 +36,7 @@ func sync_supports() -> void:
 
 func refresh(state: Dictionary) -> void:
 	for station: String in Kitchen.STATIONS:
+		if station=="garden_rack": continue # Its contents belong to the movable decoration.
 		var job: Dictionary=state.jobs[station]
 		_set_food(station,"" if job.is_empty() else Kitchen.RECIPES[job.recipe].asset)
 	_set_food("table","" if state.display.is_empty() else Kitchen.RECIPES[state.display].asset)
