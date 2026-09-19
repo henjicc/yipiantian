@@ -1,0 +1,89 @@
+{
+  "crop": "carrot",
+  "stage": "sprout",
+  "task": "31180845-119c-48c9-8d1d-ac096e38bf6e",
+  "blender": "5.2.2 LTS",
+  "source_format": "fbx",
+  "source": [
+    {
+      "vertices": 2369,
+      "polygons": 2551,
+      "quads": 2081,
+      "triangles": 4632,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 151,
+      "non_manifold_edges": 180,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "min_godot": [
+    -0.04183749109506607,
+    0.0,
+    -0.0720810666680336
+  ],
+  "max_godot": [
+    0.014674591831862926,
+    0.08500000089406967,
+    0.0635346844792366
+  ],
+  "root_transform": [
+    [
+      0.13568200170993805,
+      0.0,
+      0.0,
+      -0.01358145009726286
+    ],
+    [
+      0.0,
+      0.13568200170993805,
+      0.0,
+      0.004273187834769487
+    ],
+    [
+      0.0,
+      0.0,
+      0.13568200170993805,
+      0.042500000447034836
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 2369,
+      "polygons": 2551,
+      "quads": 2081,
+      "triangles": 4632,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 151,
+      "non_manifold_edges": 180,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.009,
+    0.009
+  ],
+  "triangles": 4632,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/carrot/carrot_sprout.glb"
+}

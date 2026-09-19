@@ -1,0 +1,107 @@
+{
+  "species": "Daucus carota subsp. sativus, orange storage carrot before flowering",
+  "stages": {
+    "sprout": {
+      "task_id": "31180845-119c-48c9-8d1d-ac096e38bf6e",
+      "height": 0.085,
+      "max_width": 0.14,
+      "face_request": 2200,
+      "seed": 2026091930,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120
+    },
+    "young": {
+      "task_id": "65e2a6c5-f1e1-469e-aaeb-028453967a29",
+      "height": 0.28,
+      "max_width": 0.28,
+      "face_request": 6500,
+      "seed": 2026091931,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "collar_fraction": 0.53,
+      "credits": 120,
+      "collar_center_xy": [
+        0.112,
+        -0.05
+      ],
+      "soil_radius": [
+        0.015,
+        0.015
+      ],
+      "remove_artifacts": [
+        {
+          "triangles": 30,
+          "vertices": 18,
+          "reason": "Isolated fine strand detached from the young storage root; preserve actual root and all foliage.",
+          "min": [
+            0.01,
+            -0.049,
+            -0.454
+          ],
+          "max": [
+            0.09,
+            0.035,
+            -0.421
+          ]
+        }
+      ]
+    },
+    "mature": {
+      "task_id": "1bad17a9-b200-40a8-9815-93faf68455e7",
+      "height": 0.56,
+      "max_width": 0.45,
+      "face_request": 11000,
+      "seed": 2026091932,
+      "rotation_degrees": [
+        0,
+        0,
+        0
+      ],
+      "credits": 120,
+      "collar_center_xy": [
+        0.105,
+        -0.01
+      ],
+      "soil_radius": [
+        0.028,
+        0.024
+      ],
+      "collar_height": 0.0,
+      "crown_lift": {
+        "component_top_above": 0.07,
+        "component_bottom_above": -0.06,
+        "components": 81,
+        "positions": 9970,
+        "root_xy": [
+          0.105,
+          -0.01
+        ],
+        "fixed_radius": 0.03,
+        "slope": 0.62
+      }
+    }
+  },
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "texture_quality": "detailed",
+  "quad": true,
+  "delight": false,
+  "pbr": false,
+  "texture_alignment": "original_image",
+  "enable_image_autofix": false,
+  "adoption": "Adopted in development: all three independent stages; root anchoring, raised mature foliage, roundtrip, 93 crop checks, four views, day/night farm and wind switch verified.",
+  "not_used": [
+    "semantic segmentation",
+    "rigging",
+    "paid retopology",
+    "paid retexturing",
+    "decimation"
+  ]
+}

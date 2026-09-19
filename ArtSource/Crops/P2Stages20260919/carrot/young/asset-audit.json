@@ -1,0 +1,111 @@
+{
+  "crop": "carrot",
+  "stage": "young",
+  "task": "65e2a6c5-f1e1-469e-aaeb-028453967a29",
+  "blender": "5.2.2 LTS",
+  "source_format": "fbx",
+  "source": [
+    {
+      "vertices": 6819,
+      "polygons": 5982,
+      "quads": 3516,
+      "triangles": 9498,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 4115,
+      "non_manifold_edges": 4143,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "removed_artifacts": [
+    {
+      "triangles": 30,
+      "vertices": 18,
+      "reason": "Isolated fine strand detached from the young storage root; preserve actual root and all foliage.",
+      "min": [
+        0.01,
+        -0.049,
+        -0.454
+      ],
+      "max": [
+        0.09,
+        0.035,
+        -0.421
+      ]
+    }
+  ],
+  "removed_artifact_triangles": 30,
+  "min_godot": [
+    -0.16727176308631897,
+    -0.14840000867843628,
+    -0.13677187263965607
+  ],
+  "max_godot": [
+    0.10452112555503845,
+    0.13159999251365662,
+    0.10875818878412247
+  ],
+  "root_transform": [
+    [
+      0.2801367938518524,
+      0.0,
+      0.0,
+      -0.03137532249093056
+    ],
+    [
+      0.0,
+      0.2801367938518524,
+      0.0,
+      0.01400684006512165
+    ],
+    [
+      0.0,
+      0.0,
+      0.2801367938518524,
+      -0.008400000631809235
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 6801,
+      "polygons": 5967,
+      "quads": 3501,
+      "triangles": 9468,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 4109,
+      "non_manifold_edges": 4137,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.015,
+    0.015
+  ],
+  "whole_mesh_soil_slice_radius": [
+    0.012327659875154495,
+    0.013281876221299171
+  ],
+  "triangles": 9468,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/carrot/carrot_young.glb"
+}

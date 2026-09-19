@@ -15,6 +15,7 @@ const PROFILES := {
 	"chrysanthemum": Vector4(0.0055, 0.30, 0.0, 0.0015),
 	"celery": Vector4(0.0045, 0.35, 0.0, 0.0014),
 	"tatsoi": Vector4(0.0035, 0.35, 0.0, 0.001),
+	"carrot": Vector4(0.006, 0.58, 0.0, 0.0018),
 	"autumn_crop": Vector4(0.005, 0.20, 0.0, 0.0015),
 	"radish": Vector4(0.005, 0.75, 0.0, 0.0015),
 	"trellis": Vector4(0.010, 0.08, 0.0, 0.003),
@@ -41,7 +42,7 @@ func _apply_node(node: Node, kind: String, preserve_painted_color: bool) -> void
 		var centre: Vector3 = bounds.get_center()
 		var motion: Vector4 = PROFILES[kind]
 		# Sprouts receive the same relative restraint as the larger mature plants.
-		if kind in ["greens", "radish", "spinach", "chrysanthemum", "celery", "tatsoi", "autumn_crop"]:
+		if kind in ["greens", "radish", "spinach", "chrysanthemum", "celery", "tatsoi", "carrot", "autumn_crop"]:
 			motion.x = minf(motion.x, bounds.size.y * 0.025)
 			motion.w = minf(motion.w, bounds.size.y * 0.008)
 			# A buried storage root belongs to the fixed portion of the plant.

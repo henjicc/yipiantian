@@ -58,6 +58,43 @@ for obj in objects:
 report = dict(crop=crop, stage=stage, task=config['task_id'], blender=bpy.app.version_string,
               source_format=raw_files[0].suffix[1:], source=[inspect(o) for o in objects],
               rotation_degrees=config['rotation_degrees'])
+if config.get('crown_lift'):
+    # Carrot's low leaflets cross the soil. Lift the reviewed foliage with one
+    # continuous radial field so leaflet/petiole joins receive the same offset.
+    # The storage root, root hairs and central attachment remain unchanged.
+    pose = config['crown_lift']
+    assert len(objects) == 1
+    obj = objects[0]
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-5)
+    remaining = set(bm.verts)
+    selected_positions = set()
+    selected_components = 0
+    while remaining:
+        group = {remaining.pop()}
+        pending = list(group)
+        while pending:
+            for edge in pending.pop().link_edges:
+                for vertex in edge.verts:
+                    if vertex in remaining:
+                        remaining.remove(vertex)
+                        group.add(vertex)
+                        pending.append(vertex)
+        if max(v.co.z for v in group) > pose['component_top_above']:
+            assert min(v.co.z for v in group) > pose['component_bottom_above']
+            selected_positions.update(tuple(v.co) for v in group)
+            selected_components += 1
+    bm.free()
+    assert selected_components == pose['components']
+    assert len(selected_positions) == pose['positions']
+    cx, cy = pose['root_xy']
+    for vertex in obj.data.vertices:
+        if tuple(vertex.co) in selected_positions:
+            radius = math.hypot(vertex.co.x-cx, vertex.co.y-cy)
+            vertex.co.z += pose['slope'] * max(0.0, radius-pose['fixed_radius'])
+    obj.data.update()
+    report['crown_lift'] = pose
 if config.get('basal_shortening'):
     # Tatsoi's generated basal petioles are too tall for its photographed low
     # rosette. Shorten this reviewed stem region; translate the crown intact.
@@ -201,7 +238,7 @@ for obj in objects:
 lo, hi = bounds(objects)
 scale = min(config['height'] / (hi.z - lo.z), config['max_width'] / max(hi.x - lo.x, hi.y - lo.y))
 # A bottom root-collar slice avoids centering an asymmetric leaf crown on the soil.
-collar = lo.z + (hi.z - lo.z) * config.get('collar_fraction', 0.0)
+collar = config.get('collar_height', lo.z + (hi.z - lo.z) * config.get('collar_fraction', 0.0))
 root_points = [v.co for o in objects for v in o.data.vertices if abs(v.co.z - collar) < (hi.z - lo.z) * .012]
 assert root_points, 'No root collar points; author the correct collar fraction'
 center = Vector(((min(p.x for p in root_points) + max(p.x for p in root_points)) / 2,

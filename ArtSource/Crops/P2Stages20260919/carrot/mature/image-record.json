@@ -1,0 +1,32 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "research": "../../README.md#胡萝卜-daucus-carota-subsp-sativus",
+  "inputs": [
+    "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png",
+    "<REPO_ROOT>/.local/crop-research-20260919/carrot-ifas-stages.webp"
+  ],
+  "prompt": "Create exactly one isolated whole cultivated orange carrot plant (Daucus carota subsp. sativus), a botanical game model reference. Input 1 is ONLY the approved gongbi watercolor surface/style master, NOT leaf anatomy; input 2 gives miniature Jiangnan world style, NOT composition; input 3 is a real-photo growth montage for anatomy ONLY. Chinese gongbi light-colour painting adapted to a coherent three-dimensional object: clear selective fine moss-green/umber outlines and structural vein lines, restrained sage/jade green pigment washes, subtle ink mottling, rounded natural volume, matte. Keep fine organized linework visible for texture generation, avoid photorealism, plastic, glossy rubber, yellow antique filter, black ink holes. Full isolated plant with coherent three-dimensional radial volume, clear near/far overlap, weak-perspective three-quarter angle 25 degrees above the horizon, every tip visible with 15% margins, flat neutral pale-gray background. NO scene, soil, pot, hands, labels, symbols, text, collage, other plants, detached pieces or strong cast shadows. No flowers, seeds, wild-carrot white umbels or purple roots. STAGE: harvest-ready vegetative carrot before flowering, referencing panels E–H. ONE plump elongated warm orange tapered storage root with rounded shoulders and a narrow ending tip, about 5–6 times longer than its diameter, connected to ONE bushy but readable 3D radial crown of about EIGHT individually arranged pinnately divided compound green leaves. Fine slender rachises carry paired narrow sharply divided toothed leaflets, distinctly feathery carrot foliage, never broad parsley/coriander round leaves and never thick bok-choy blades. Crown leaflets are grouped into readable natural branching structures with visible gaps, not a solid green clump and not a flat fan. Foliage is about 1.4 times the root length, with several lower leaves spreading outward and upper leaves upright. Entire root visible for later burial in game, a few painted umber horizontal root-growth lines and modest shallow rings, no long tangled roots. Keep root fresh muted orange, green leaf crown, use fine gongbi vein/stem lines and pigment texture throughout. PRIORITY: true carrot leaves are finely TWICE-PINNATE: each long main rachis has many side branchlets, each branchlet has numerous tiny narrow divided lobes. DO NOT draw 5 broad celery leaflets per stalk. Use about 8 main leaves of different heights arranged around 360 degrees, at least two leaves point toward camera foreshortened, two behind. Do not present all leaves flat facing camera. Need unmistakable feathery carrot silhouette.",
+  "output_original": "exec-e6b77c1c-65bc-4579-a771-a4c8a3f73bd1.png",
+  "selected_output": "exec-48f9b9b4-94de-4291-af5f-1238a39c38f9.png",
+  "model_seed_cost": "not returned",
+  "review": "Initial broad/planar leaf candidate not submitted; revised narrow divided foliage, stage-specific root size and crown density. Geometry and soil clearance still require actual P2 checks.",
+  "revisions": [
+    {
+      "prompt": "Edit input 1 (mature carrot illustration). Preserve feathery twice-pinnate carrot leaf anatomy, handpainted fine lines/pigment, orange long tapered root and plant identity. Recompose the leaf crown as a THREE-DIMENSIONAL RADIAL BUSH viewed 40 degrees from above, NOT a flat fan with every leaf on the image plane. Eight whole compound leaves originate around one root shoulder: two shorter leaves extend strongly TOWARD VIEWER with visible foreshortening and obscure part of shoulder; two extend back, others left/right/above. Different depth, leaf faces, curved rachises and overlap. Keep spaces between individual feather branchlets; no broad celery leaves, no tangled hair, no opaque slab of green. Whole root and crown fit with 15% margins, one plant, solid pale neutral gray background. No transparent background/soil/hand/text/labels/flowers or surrounding objects.",
+      "inputs": [
+        "reference-initial.png"
+      ],
+      "output": "reference-low-leaves.png"
+    },
+    {
+      "prompt": "Edit this exact mature carrot illustration, preserve all fine divided carrot leaf anatomy, paint texture, orange root, and other leaves. Correct ONLY the two foremost leaves currently curling downward in inverted-U stems alongside the root. Uncurl these two petioles and tilt their entire fronds upward/forward until ALL green leaf tips remain at or ABOVE the horizontal level of the orange root shoulder. They should project toward the viewer with foreshortening, appearing as shorter outward fronds above the shoulder, not droop along the root. This is a planted carrot game asset: all orange root below the shoulder will be buried, and no leaf may enter that soil zone. Preserve 3D radial depth and varied orientations, natural airy feather branches. Single complete plant, whole root tip and foliage inside margins, same solid pale gray background. Do not add soil line, pot, hands, text or other objects.",
+      "inputs": [
+        "reference-low-leaves.png"
+      ],
+      "output": "reference.png",
+      "review": "Uncurled low front petioles toward shoulder level, to avoid buried foliage."
+    }
+  ]
+}

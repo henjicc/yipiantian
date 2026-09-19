@@ -1,0 +1,105 @@
+{
+  "crop": "carrot",
+  "stage": "mature",
+  "task": "1bad17a9-b200-40a8-9815-93faf68455e7",
+  "blender": "5.2.2 LTS",
+  "source_format": "fbx",
+  "source": [
+    {
+      "vertices": 11812,
+      "polygons": 9857,
+      "quads": 5638,
+      "triangles": 15495,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 7898,
+      "non_manifold_edges": 7915,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "rotation_degrees": [
+    0,
+    0,
+    0
+  ],
+  "crown_lift": {
+    "component_top_above": 0.07,
+    "component_bottom_above": -0.06,
+    "components": 81,
+    "positions": 9970,
+    "root_xy": [
+      0.105,
+      -0.01
+    ],
+    "fixed_radius": 0.03,
+    "slope": 0.62
+  },
+  "min_godot": [
+    -0.27259862422943115,
+    -0.226549431681633,
+    -0.22112198173999786
+  ],
+  "max_godot": [
+    0.1774013787508011,
+    0.27107682824134827,
+    0.21205557882785797
+  ],
+  "root_transform": [
+    [
+      0.4533202052116394,
+      0.0,
+      0.0,
+      -0.047598619014024734
+    ],
+    [
+      0.0,
+      0.4533202052116394,
+      0.0,
+      0.004533201921731234
+    ],
+    [
+      0.0,
+      0.0,
+      0.4533202052116394,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "meshes": [
+    {
+      "vertices": 11812,
+      "polygons": 9857,
+      "quads": 5638,
+      "triangles": 15495,
+      "uv_layers": 1,
+      "materials": 1,
+      "boundary_edges": 7898,
+      "non_manifold_edges": 7915,
+      "loose_vertices": 0,
+      "zero_area_faces": 0
+    }
+  ],
+  "soil_radius": [
+    0.028,
+    0.024
+  ],
+  "whole_mesh_soil_slice_radius": [
+    0.04968372359871864,
+    0.06418642401695251
+  ],
+  "triangles": 15495,
+  "textures": [
+    [
+      4096,
+      4096
+    ]
+  ],
+  "reimport_verified": true,
+  "runtime_path": "Game/art/crops/carrot/carrot_mature.glb"
+}

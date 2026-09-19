@@ -1,0 +1,25 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "research": "../../README.md#胡萝卜-daucus-carota-subsp-sativus",
+  "inputs": [
+    "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png",
+    "<REPO_ROOT>/.local/crop-research-20260919/carrot-ifas-stages.webp"
+  ],
+  "prompt": "Create exactly one isolated whole cultivated orange carrot plant (Daucus carota subsp. sativus), a botanical game model reference. Input 1 is ONLY the approved gongbi watercolor surface/style master, NOT leaf anatomy; input 2 gives miniature Jiangnan world style, NOT composition; input 3 is a real-photo growth montage for anatomy ONLY. Chinese gongbi light-colour painting adapted to a coherent three-dimensional object: clear selective fine moss-green/umber outlines and structural vein lines, restrained sage/jade green pigment washes, subtle ink mottling, rounded natural volume, matte. Keep fine organized linework visible for texture generation, avoid photorealism, plastic, glossy rubber, yellow antique filter, black ink holes. Full isolated plant with coherent three-dimensional radial volume, clear near/far overlap, weak-perspective three-quarter angle 25 degrees above the horizon, every tip visible with 15% margins, flat neutral pale-gray background. NO scene, soil, pot, hands, labels, symbols, text, collage, other plants, detached pieces or strong cast shadows. No flowers, seeds, wild-carrot white umbels or purple roots. STAGE: juvenile early storage-root growth, referencing panels C and D. ONE small slim pale-orange tapered taproot, about 4–5 times longer than its diameter, with a short slender pale tip, and FOUR sparsely arranged, individually clear compound green leaves radiating from its shoulder on thin petioles. Each leaf has a slender central rachis with small paired narrow toothed leaflets, carrot-like twice-divided ferny anatomy, not the broad round lobes of coriander or celery. The overall crown is airy with plenty of empty spaces, leaf stems upright and outward, some project forward and some behind; not a flat fan. Foliage above root is about twice the root length. Render complete root for later burial in game, with a few restrained painted horizontal fine marks and no hairlike tangled roots. No giant mature root and no dense mature foliage.",
+  "output_original": "exec-80e0d558-2918-465c-96f0-e90a7c7a7a4a.png",
+  "selected_output": "exec-f72580cc-25f9-4c30-92c1-65c8b3b43f2b.png",
+  "model_seed_cost": "not returned",
+  "review": "Initial broad/planar leaf candidate not submitted; revised narrow divided foliage, stage-specific root size and crown density. Geometry and soil clearance still require actual P2 checks.",
+  "revisions": [
+    {
+      "prompt": "Edit input 1 (juvenile carrot illustration). Input 2 is real carrot growth photos for anatomy. Preserve the thin young orange root and gongbi ink/pigment texture. Fix TWO things: 1. Replace broad celery-like leaflets with true carrot twice-pinnate feather leaves: on each of FOUR slender green main rachises, small spaced side branchlets carry tiny narrow sharply cut lobes. Open airy structure, NO big continuous lobed blade. 2. Arrange the FOUR whole compound leaves in 3D around the root shoulder: a shorter leaf points forward toward viewer and overlaps the root's shoulder, one to left/behind, one to right/behind, tallest upward. Different leaf orientations, visible foreshortening and depth, NOT flat fan or symmetrical herbarium pressing. View 40 degrees down toward crown, include full root and leaf tips with ample margin. Root remains slender juvenile, mature dense bush forbidden. Solid pale gray neutral background, no transparent background, no cast shadow, no soil/hands/text.",
+      "inputs": [
+        "reference-initial.png",
+        "<REPO_ROOT>/.local/crop-research-20260919/carrot-ifas-stages.webp"
+      ],
+      "output": "reference.png"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "date": "2026-09-19",
+  "tool": "built-in image_gen",
+  "research": "../../README.md#胡萝卜-daucus-carota-subsp-sativus",
+  "inputs": [
+    "<REPO_ROOT>/docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "<REPO_ROOT>/docs/design-baseline/images/approved/farm-gongbi-v1.png",
+    "<REPO_ROOT>/.local/crop-research-20260919/carrot-ifas-stages.webp"
+  ],
+  "prompt": "Create exactly one isolated whole cultivated orange carrot plant (Daucus carota subsp. sativus), a botanical game model reference. Input 1 is ONLY the approved gongbi watercolor surface/style master, NOT leaf anatomy; input 2 gives miniature Jiangnan world style, NOT composition; input 3 is a real-photo growth montage for anatomy ONLY. Chinese gongbi light-colour painting adapted to a coherent three-dimensional object: clear selective fine moss-green/umber outlines and structural vein lines, restrained sage/jade green pigment washes, subtle ink mottling, rounded natural volume, matte. Keep fine organized linework visible for texture generation, avoid photorealism, plastic, glossy rubber, yellow antique filter, black ink holes. Full isolated plant with coherent three-dimensional radial volume, clear near/far overlap, weak-perspective three-quarter angle 25 degrees above the horizon, every tip visible with 15% margins, flat neutral pale-gray background. NO scene, soil, pot, hands, labels, symbols, text, collage, other plants, detached pieces or strong cast shadows. No flowers, seeds, wild-carrot white umbels or purple roots. STAGE: young seedling with one slender short light-green basal stem, TWO long very narrow smooth unlobed linear cotyledons angled outward (grasslike, not oval), ONE distinctly divided tiny first true leaf on a short central petiole, plus a much smaller emerging true leaf. Match montage panel B's seedling, but only one plant. The first true leaf is small and pinnately divided with a few narrow toothed lobes; cotyledons retain their thin linear form. Above-ground plant only, no orange storage root, no visible fibrous roots. The basal stem ends at a small clean soil-level cut at the bottom. Natural open arrangement, not a mature carrot foliage tuft.",
+  "output_original": "exec-346cf861-8b0a-479a-a70b-c94cdbbb8247.png",
+  "selected_output": "exec-346cf861-8b0a-479a-a70b-c94cdbbb8247.png",
+  "model_seed_cost": "not returned",
+  "review": "Two narrow unlobed cotyledons and divided first true leaf; small emerging second leaf, no storage root. Selected for P2; 3D volume still to inspect."
+}
