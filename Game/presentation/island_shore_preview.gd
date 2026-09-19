@@ -14,17 +14,21 @@ var _core: Node3D
 var _fence: Node3D
 var _held_hens: bool=false
 var _last_land: Array=[]
+var _plateaus: Array[PackedVector2Array]=[]
+var _shown_fences: Array=[]
 
 func configure(courtyard: Node3D) -> void:
 	environment=courtyard
-	_last_land=environment.plan.construction.land.duplicate(true)
+	for island: int in 2:
+		_last_land.append(environment.plan.land_patches(island).duplicate(true))
+		_plateaus.append(environment.plan.plateau(island).duplicate())
+	_shown_fences=environment.plan.fences.duplicate(true)
 	for child: Node in environment.get_children():
-		if child is Node3D and (child.name in ["NewShorePlants","ExpansionGrass"] or child.has_meta("fence_spans")):
+		if child is Node3D and child.name in ["NewShorePlants","ExpansionGrass"]:
 			_originals.append(child)
 			if child.visible: _hidden.append(child);child.hide()
 	_grass=preload("res://scenes/environment/ground_cover.gd").new();_grass.name="ExpansionGrass";add_child(_grass)
-	_grass.object_footprints=environment.get_node("ExpansionGrass").object_footprints.duplicate()
-	_grass._exclusions=environment.get_node("ExpansionGrass")._exclusions.duplicate()
+	_grass.copy_tiles(environment.get_node("ExpansionGrass"))
 	_core=preload("res://scenes/environment/ground_cover.gd").new();add_child(_core)
 	_core.copy_tiles(environment.get_node("GroundCover/CoreGrass"))
 	var original_core: Node3D=environment.get_node("GroundCover/CoreGrass")
@@ -38,7 +42,7 @@ func update(plan: RefCounted) -> void:
 	# derives new ones. Grass must obey these same routes before and after save.
 	plan.paths=environment.plan.paths.duplicate()
 	for island: int in 2:
-		if plan.land_patches(island)==environment.plan.land_patches(island) and not _surfaces.has(island): continue
+		if plan.land_patches(island)==_last_land[island]: continue
 		if not _surfaces.has(island):
 			var bank: Node3D=environment.get_node("EastBank" if island==1 else "MainBank")
 			_originals.append(bank)
@@ -67,16 +71,24 @@ func update(plan: RefCounted) -> void:
 			if _rocks[key].get_meta("shore_island")==island and not wanted.has(key): _rocks[key].free();_rocks.erase(key)
 	if is_instance_valid(_plants): _plants.free()
 	_plants=Dressing.plants(plan);add_child(_plants)
-	_grass.update_expansion(plan)
-	var changes: Array=[]
-	for stamp: Array in plan.construction.land+_last_land:
-		if stamp in plan.construction.land and stamp in _last_land: continue
-		var bounds:=Rect2(stamp[0]*.96,stamp[1]*.96,stamp[2]*.96,stamp[3]*.96).grow(.4)
-		changes.append(preload("res://layout/island_space.gd").rectangle(bounds.position,bounds.size))
+	# Compare actual world-space ground, including the opposite island's pose.
+	# Only tiles that gained or lost support can change their deterministic grass.
+	var changes: Array[PackedVector2Array]=[]
+	for island: int in 2:
+		var plateau: PackedVector2Array=plan.plateau(island)
+		if plateau!=_plateaus[island]:
+			changes.append_array(Geometry2D.clip_polygons(plateau,_plateaus[island]))
+			changes.append_array(Geometry2D.clip_polygons(_plateaus[island],plateau))
+		_plateaus[island]=plateau.duplicate()
+		_last_land[island]=plan.land_patches(island).duplicate(true)
 	var changed: Dictionary=Cover.grass_cells(changes)
-	if not changed.is_empty(): _core.update_tiles(plan,false,changed)
-	_last_land=plan.construction.land.duplicate(true)
-	if is_instance_valid(_fence): _fence.free()
+	if not changed.is_empty():
+		_grass.update_tiles(plan,true,changed)
+		_core.update_tiles(plan,false,changed)
+	_update_fence(plan)
+	environment.preview_shore_plants(plan)
+
+func _update_fence(plan: RefCounted) -> void:
 	# Keep only the original garden fences, opening spans touched by the brush.
 	var spans: Array[Dictionary]=[]
 	for span: Dictionary in environment.plan.garden_fences:
@@ -85,8 +97,15 @@ func update(plan: RefCounted) -> void:
 			var area:=Rect2(patch[0],patch[1],patch[2],patch[3]).grow(.8)
 			if area.has_point(Vector2(span.a.x,span.a.z)) or area.has_point(Vector2(span.b.x,span.b.z)): touched=true;break
 		if not touched: spans.append(span)
+	if spans==_shown_fences: return
+	if is_instance_valid(_fence): _fence.free()
+	else:
+		for child: Node in environment.get_children():
+			if not child.has_meta("fence_spans"): continue
+			_originals.append(child)
+			if child.visible: _hidden.append(child);child.hide()
 	_fence=preload("res://layout/fence_geometry.gd").build(spans,plan.fence_style);add_child(_fence)
-	environment.preview_shore_plants(plan)
+	_shown_fences=spans.duplicate(true)
 
 func accept(plan: RefCounted) -> void:
 	for island: int in _surfaces:
@@ -104,11 +123,13 @@ func accept(plan: RefCounted) -> void:
 		rock.reparent(environment)
 		if rock.visible: environment._shore_sources.append(rock)
 	_rocks.clear()
-	_plants.reparent(environment);_grass.reparent(environment);_fence.reparent(environment)
+	_plants.reparent(environment);_grass.reparent(environment)
 	environment.get_node("GroundCover/CoreGrass").free()
 	_core.reparent(environment.get_node("GroundCover"));_core.name="CoreGrass"
-	environment._contact_sources.append(_fence)
-	plan.fences.assign(_fence.get_meta("fence_spans"))
+	if is_instance_valid(_fence):
+		_fence.reparent(environment)
+		environment._contact_sources.append(_fence)
+	plan.fences.assign(_shown_fences)
 	environment.plan=plan
 	environment.preview_shore_plants(plan,true)
 	environment.fit_player_dressing(plan,true)

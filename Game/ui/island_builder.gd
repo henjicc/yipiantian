@@ -494,8 +494,10 @@ func accept_land(plan: RefCounted) -> void:
 	var close_now: bool=close_after_commit
 	set_busy(false)
 	previous=main.previous_layout.duplicate(true)
-	choose(tool)
-	if close_now: finish()
+	draft=plan.snapshot();candidate=plan
+	if close_now:
+		_clear_preview();active=false;_start=Vector2.INF;hide();closed.emit()
+	else: choose(tool)
 
 func accept_fields(plan: RefCounted) -> void:
 	field_preview.accept(plan);field_preview.free();field_preview=null

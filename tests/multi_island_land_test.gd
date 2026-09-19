@@ -2,6 +2,20 @@ extends "res://../tests/island_fields_test.gd"
 const Support=preload("res://layout/land_support.gd")
 var now: float=2000000.0
 
+func shore_grass_checks(preview: bool=true) -> void:
+	var environment: Node3D=scene.get_node("Environment")
+	var brush: Node=scene.island_builder
+	var plan: RefCounted=brush.candidate if preview else scene.courtyard_plan
+	for expansion: bool in [false,true]:
+		var shown: Node3D
+		if preview: shown=brush._shore._grass if expansion else brush._shore._core
+		else: shown=environment.get_node("ExpansionGrass" if expansion else "GroundCover/CoreGrass")
+		var reference:=preload("res://scenes/environment/ground_cover.gd").new()
+		reference._exclusions=shown._exclusions.duplicate();reference.object_footprints=shown.object_footprints.duplicate()
+		reference.update_tiles(plan,expansion)
+		expect(grass_appearance(shown)==grass_appearance(reference),"Local shore grass matches fresh full geometry on "+("added land" if expansion else "original land"))
+		reference.free()
+
 func east_view() -> void:
 	scene.camera._move_to(Vector3(16,.4,-2),Vector3(24,65,22));await create_timer(1).timeout
 
@@ -36,6 +50,10 @@ func _run() -> void:
 	for child: Node in scene.get_node("Environment").get_children():
 		if child.has_meta("shore_stone") and child.get_meta("shore_island",0)==0: main_rock=child;break
 	var main_rock_id: int=main_rock.get_instance_id()
+	var original_fence: Node3D
+	for child: Node in scene.get_node("Environment").get_children():
+		if child.has_meta("fence_spans"): original_fence=child;break
+	var fence_id: int=original_fence.get_instance_id()
 	await mouse(scene.camera.unproject_position(Vector3(16,.11,-3.5)),true)
 	var motion:=InputEventMouseMotion.new();motion.position=scene.camera.unproject_position(Vector3(19,.11,-3.5));motion.button_mask=MOUSE_BUTTON_MASK_LEFT
 	motion.window_id=root.get_window_id();root.push_input(motion,true);await frames()
@@ -48,6 +66,8 @@ func _run() -> void:
 	expect(brush.draft==original.layout and scene.get_node("Environment/EastBank").visible,"Focus loss restores both islands")
 	await mouse(motion.position,false)
 	await grow()
+	shore_grass_checks()
+	expect(is_instance_valid(original_fence) and original_fence.visible and original_fence.get_instance_id()==fence_id,"Unchanged garden fence stays visible during east shore editing")
 	expect(brush.issue().is_empty(),"East extension respects existing support and bridge water passage: "+brush.issue())
 	if not brush.issue().is_empty(): await shot("failed-extension");await finish();return
 	expect(brush._shore._grass.get_child_count()>0,"Grass exists on the added east land before save")
@@ -63,6 +83,7 @@ func _run() -> void:
 	await click(brush._panel.find_child("Finish",true,false))
 	expect(not brush.active and scene.get_instance_id()==scene_id and scene.courtyard_plan.snapshot()==expanded,"Retry completes in the current scene")
 	expect(scene.get_node("Environment/ExpansionGrass").get_instance_id()==grass_id,"Completion adopts the visible grass")
+	expect(is_instance_valid(original_fence) and original_fence.visible and original_fence.get_instance_id()==fence_id and scene.get_node("Environment")._contact_sources.has(original_fence),"Saving east terrain retains unchanged fence geometry and contacts")
 	expect(scene.get_node("Environment/MainBank").get_child(0).mesh==original_mesh and is_instance_valid(main_rock) and main_rock.get_instance_id()==main_rock_id,"Editing east leaves main bank mesh and rocks untouched")
 	await wait_terrain()
 	expect(not scene.get_node("Environment/CourtyardAnimals").water.contains(Vector2(18,-2.5)),"Water animals cannot enter the new east land")
@@ -88,6 +109,7 @@ func _run() -> void:
 	await drag(Vector3(19.5,.11,-1),Vector3(19.5,.11,-1))
 	expect(brush.draft!=planted and brush.issue().is_empty(),"A free east edge can be trimmed")
 	if brush.draft==planted or not brush.issue().is_empty(): await shot("failed-shrink");await finish();return
+	shore_grass_checks()
 	var trimmed: Dictionary=brush.candidate.snapshot()
 	await click(brush._confirm);await wait_terrain()
 	expect(scene.courtyard_plan.snapshot()==trimmed,"East shrink adopts the live terrain")
@@ -96,6 +118,7 @@ func _run() -> void:
 	var later: Dictionary=scene.farm_state.snapshot()
 	await click(brush._undo);await wait_terrain()
 	expect(scene.courtyard_plan.snapshot()==planted and scene.farm_state.snapshot().inventory==later.inventory and scene.farm_state.snapshot().fields==later.fields,"Undo restores only east terrain and retains later harvest and crop state")
+	shore_grass_checks(false)
 	await drag(Vector3(19.5,.11,-1),Vector3(19.5,.11,-1));await click(brush._panel.find_child("Finish",true,false));await wait_terrain()
 	var final_state: Dictionary=scene.farm_state.snapshot()
 	root.remove_child(scene);scene.free();await frames()
@@ -122,15 +145,19 @@ func edge_checks() -> void:
 	expect(scene.courtyard_plan.lily_coves==coves,"Cancelling restores original water-plant anchors")
 	await grow()
 	var east: Array=brush.draft.construction.east_land.duplicate(true)
+	var east_mesh: Mesh=brush._shore._surfaces[1].mesh
 	scene.camera._move_to(Vector3(0,.4,5),Vector3(24,65,22));await create_timer(1).timeout
 	await drag(Vector3(0,.13,6),Vector3(0,.13,8))
 	expect(not brush.draft.construction.land.is_empty() and brush.draft.construction.east_land==east,"Separate strokes can edit both islands in one draft without changing the other log")
+	expect(brush._shore._surfaces[1].mesh==east_mesh,"Further main-island painting retains the unchanged east preview mesh")
+	shore_grass_checks()
 	expect(brush.issue().is_empty(),"Combined two-island draft passes support and spacing checks: "+brush.issue())
 	await click(brush._confirm);await wait_terrain()
 	var combined: Dictionary=scene.farm_state.snapshot().layout
 	expect(not combined.construction.land.is_empty() and combined.construction.east_land==east,"One confirmation persists both island edits")
 	await click(brush._undo);await wait_terrain()
 	expect(scene.courtyard_plan.snapshot()==initial,"Undo restores both banks together: "+brush._status.text)
+	shore_grass_checks(false)
 	if scene.courtyard_plan.snapshot()!=initial: await shot("failed-both-undo");return
 	await east_view();await click(brush._panel.find_child("LandErase",true,false))
 	await drag(Vector3(10,.11,0),Vector3(10,.11,0))
@@ -145,3 +172,11 @@ func edge_checks() -> void:
 	await shot("06-neighbor-protected")
 	brush.cancel_draft();await frames()
 	expect(scene.courtyard_plan.snapshot()==initial and scene.get_node("Environment/EastBank").visible,"Cancelling the neighbor conflict restores the original east shore")
+	scene.camera._move_to(Vector3(0,.4,-7),Vector3(24,65,22));await create_timer(1).timeout
+	await click(brush._panel.find_child("LandErase",true,false))
+	await drag(Vector3(0,.13,-8.5),Vector3(.5,.13,-8.5))
+	expect(brush.draft!=initial and brush.issue().is_empty(),"Main-island original ground can still be trimmed")
+	if brush.draft!=initial:
+		shore_grass_checks()
+		brush.cancel_draft();await frames();shore_grass_checks(false)
+		expect(scene.get_node("Environment/GroundCover/CoreGrass").visible,"Cancelling main shrink restores visible original grass")
