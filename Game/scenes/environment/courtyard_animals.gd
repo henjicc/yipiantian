@@ -22,6 +22,13 @@ var _rng := RandomNumberGenerator.new()
 var ready_for_motion: bool = false
 var _decorations: Dictionary={}
 var decoration_rest := PackedVector2Array()
+var _navigation_worker: Thread
+
+func _exit_tree() -> void:
+	if _navigation_worker!=null and _navigation_worker.is_started(): _navigation_worker.wait_to_finish()
+
+static func _bake_spaces(water_space: RefCounted,yard_space: RefCounted) -> void:
+	water_space.bake();yard_space.bake()
 
 func set_decorations(instances: Dictionary) -> void:
 	_decorations=instances.duplicate()
@@ -44,7 +51,7 @@ func _build() -> void:
 	for i: int in 2: _spawn("hen", "YardHen%d" % (i + 1), Vector2(-.7 + i * .8, 4.62), .88 + i * .12)
 	ready_for_motion = true
 
-func rebuild_spaces(update_water: bool=true) -> void:
+func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 	if update_water: water = Space.new()
 	yard = Space.new()
 	var environment: Node3D = get_parent()
@@ -53,7 +60,12 @@ func rebuild_spaces(update_water: bool=true) -> void:
 	if update_water: water.configure(environment.plan.animal_areas.water, .46)
 	var safe_plateaus: Array[PackedVector2Array] = Geometry2D.offset_polygon(environment.plan.plateau(), -.21)
 	yard.configure(environment.plan.animal_areas.yard, .21, safe_plateaus[0])
+	var slice: int=Time.get_ticks_usec()
 	for child: Node in environment.get_children():
+		if progressive and Time.get_ticks_usec()-slice>2000:
+			await get_tree().process_frame
+			slice=Time.get_ticks_usec()
+		if not is_instance_valid(child): continue
 		if not child is Node3D or child == self: continue
 		var path: String = child.scene_file_path
 		var bank_role: String = child.get_meta("bank_role", "")
@@ -68,18 +80,18 @@ func rebuild_spaces(update_water: bool=true) -> void:
 				yard.block(PackedVector2Array([a-side,b-side,b+side,a+side]))
 			continue
 		if update_water and child.name == "NeighborIslets":
-			for island: Node3D in child.waterline_sources(): water.block(Space.footprint(island, -.55, .55, false))
+			for island: Node3D in child.waterline_sources(): water.block(Space.cached_footprint(island, -.55, .55))
 		if update_water and not bank_role.is_empty():
-			water.block(Space.footprint(child, -.35, .16))
+			water.block(Space.cached_footprint(child, -.35, .16))
 		elif update_water and (path.contains("stone_") or child.name == "CoveredBoat" or String(child.name).begins_with("Lotus")):
-			water.block(Space.footprint(child, -.55, .55))
-		if bank_role == "main" or path.contains("stone_"): yard.add_floor(child)
-		if child.name in ["WaterSurface", "GroundCover", "DistantLandscape", "NeighborIslets", "ContactShading", "DecorationSlots", "OsmanthusLeaves"]: continue
+			water.block(Space.cached_footprint(child, -.55, .55))
+		if bank_role == "main" or path.contains("stone_"): yard.add_floor(child,false)
+		if child.name in ["WaterSurface", "GroundCover", "ExpansionGrass", "NewShorePlants", "DistantLandscape", "NeighborIslets", "ContactShading", "DecorationSlots", "OsmanthusLeaves"]: continue
 		if not bank_role.is_empty() or String(child.name).begins_with("BankGrass"): continue
 		if child.name == "LivingDetails":
 			for prop: Node in child.get_children():
-				if prop is Node3D: yard.block(Space.footprint(prop, .19+rise, .70+rise))
-		else: yard.block(Space.footprint(child, .23+rise, .70+rise))
+				if prop is Node3D: yard.block(Space.cached_footprint(prop, .19+rise, .70+rise))
+		else: yard.block(Space.cached_footprint(child, .23+rise, .70+rise))
 	var farm: Node3D = environment.get_parent().get_node_or_null("Farm")
 	if farm != null:
 		for field: Node3D in farm.fields:
@@ -90,9 +102,20 @@ func rebuild_spaces(update_water: bool=true) -> void:
 				polygon.append(Vector2(p.x, p.z))
 			yard.block(polygon)
 	for prop: Node3D in _decorations.values():
-		if is_instance_valid(prop): yard.block(Space.footprint(prop,.05+rise,1.3+rise,false))
-	if update_water: water.bake()
-	yard.bake()
+		if is_instance_valid(prop): yard.block(Space.cached_footprint(prop,.05+rise,1.3+rise))
+	if progressive:
+		# Birds remain paused; these private grids have one owner until joined.
+		_navigation_worker=Thread.new()
+		if _navigation_worker.start(_bake_spaces.bind(water,yard))==OK:
+			while _navigation_worker.is_alive(): await get_tree().process_frame
+			_navigation_worker.wait_to_finish()
+		else:
+			push_error("Terrain navigation worker could not start")
+			_bake_spaces(water,yard)
+		_navigation_worker=null
+	else:
+		if update_water: water.bake()
+		yard.bake()
 	decoration_rest.clear()
 	for id: String in ["bench","flowerpot","tea_table","pot"]:
 		if not _decorations.has(id): continue
@@ -126,6 +149,9 @@ func rebuild_spaces(update_water: bool=true) -> void:
 		entry.timer = 0.0
 		entry.velocity=Vector2.ZERO
 		entry.interest=Vector2.INF
+		if not entry.space.contains(entry.position):
+			entry.position=entry.space.nearest(entry.position)
+			entry.node.position.x=entry.position.x;entry.node.position.z=entry.position.y
 
 func _spawn(kind: String, label: String, start: Vector2, size: float) -> void:
 	var space: RefCounted = yard if kind == "hen" else (duck_space if kind=="duck" else water)

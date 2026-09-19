@@ -139,7 +139,9 @@ static func _length(route: PackedVector2Array) -> float:
 	return result
 
 func _build_fences(obstacles: Dictionary) -> void:
-	var inset: Array[PackedVector2Array] = Geometry2D.offset_polygon(_plan.plateau(),-.65)
+	_plan.garden_fences.clear()
+	# Painting land never generates a perimeter fence around the extension.
+	var inset: Array[PackedVector2Array] = Geometry2D.offset_polygon(_plan.unpainted().plateau(),-.65)
 	if inset.is_empty(): return
 	var outline: PackedVector2Array = inset[0]
 	outline.append(outline[0])
@@ -175,7 +177,13 @@ func _build_fences(obstacles: Dictionary) -> void:
 				var q := Vector2(path[j+1].x,path[j+1].z)
 				if segment_distance(a,b,p,q)<.55: opening=true
 		if not opening:
-			_plan.fences.append({"a":Vector3(a.x,_plan.ground_height+.01,a.y),"b":Vector3(b.x,_plan.ground_height+.01,b.y),"height":.68 if (a.y+b.y)*.5>2.0 else 1.0})
+			var span: Dictionary={"a":Vector3(a.x,_plan.ground_height+.01,a.y),"b":Vector3(b.x,_plan.ground_height+.01,b.y),"height":.68 if (a.y+b.y)*.5>2.0 else 1.0}
+			_plan.garden_fences.append(span)
+			var touched: bool=false
+			for patch: Array in _plan.construction.land:
+				var area:=Rect2(patch[0],patch[1],patch[2],patch[3]).grow(.8)
+				if area.has_point(a) or area.has_point(b): touched=true;break
+			if not touched: _plan.fences.append(span)
 
 static func segment_distance(a: Vector2,b: Vector2,p: Vector2,q: Vector2) -> float:
 	if Geometry2D.segment_intersects_segment(a,b,p,q)!=null: return 0

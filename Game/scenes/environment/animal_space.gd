@@ -122,11 +122,11 @@ func ground_height(p: Vector2) -> float:
 			height=maxf(height,face[0].y+u*(face[1].y-face[0].y)+v*(face[2].y-face[0].y))
 	return height
 
-func add_floor(node: Node3D) -> void:
+func add_floor(node: Node3D, visible_only: bool=true) -> void:
 	# Index real low triangles per spatial cell; feet sample the triangle at their
 	# exact XZ rather than snapping to a neighbouring grid point on a stone edge.
 	for mesh: MeshInstance3D in node.find_children("*", "MeshInstance3D", true, false):
-		if not mesh.is_visible_in_tree(): continue
+		if visible_only and not mesh.is_visible_in_tree(): continue
 		var faces: PackedVector3Array = mesh.mesh.get_faces()
 		for i: int in range(0, faces.size(), 3):
 			var a: Vector3 = mesh.global_transform * faces[i]
@@ -159,3 +159,16 @@ static func footprint(node: Node3D, bottom: float, top: float, visible_only: boo
 				var p: Vector3 = mesh.global_transform * vertex
 				if p.y >= bottom and p.y <= top: vertices.append(Vector2(p.x, p.z))
 	return Geometry2D.convex_hull(vertices) if vertices.size() >= 3 else PackedVector2Array()
+
+static func cached_footprint(node: Node3D, bottom: float, top: float) -> PackedVector2Array:
+	# Courtyard geometry is static between structural edits. Brush edits invalidate
+	# MainBank explicitly; moved reeds/islets invalidate by their world transform.
+	var cache: Dictionary=node.get_meta("navigation_footprints",{})
+	var band:=Vector2(bottom,top)
+	# Small visual wave drift is covered by clearance; only the lily's anchor
+	# invalidates navigation, not its animated pitch and roll every frame.
+	var pose: Variant=node.get_meta("navigation_anchor",node.global_transform)
+	if not cache.has(band) or cache[band].pose!=pose:
+		cache[band]={"pose":pose,"polygon":footprint(node,bottom,top,false)}
+		node.set_meta("navigation_footprints",cache)
+	return cache[band].polygon

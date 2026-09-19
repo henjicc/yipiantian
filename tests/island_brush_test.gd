@@ -54,10 +54,68 @@ func _run() -> void:
 	var persisted: Dictionary=brush.candidate.snapshot()
 	var planned_plants: Array[Vector3]=brush.candidate.lily_coves.duplicate()
 	await shot("05-brush-ready")
-	if not await apply(): await finish();return
-	expect(scene.courtyard_plan.snapshot()==persisted,"Brush shape survives actual saved scene rebuild")
+	var house_id: int=scene.get_node("Environment/MainHouse").get_instance_id()
+	var grass: Node3D=brush._shore._grass
+	expect(grass.get_child_count()>0,"Grass is visible before saving")
+	var grass_id: int=grass.get_instance_id()
+	start=Time.get_ticks_msec()
+	await click(brush._panel.find_child("Finish",true,false))
+	var elapsed: int=Time.get_ticks_msec()-start
+	print("FINISH_INPUT_MS ",elapsed)
+	expect(elapsed<700 and not brush.active,"Finish saves and closes without a scene reload")
+	expect(scene.get_node("Environment/MainHouse").get_instance_id()==house_id,"Existing scene objects are retained")
+	expect(scene.get_node("Environment/ExpansionGrass").get_instance_id()==grass_id,"Preview grass becomes final grass without regeneration")
+	expect(scene.courtyard_plan.snapshot()==persisted,"Finish persists the painted shape")
 	expect(scene.courtyard_plan.lily_coves==planned_plants,"Confirmed plants match the live candidate")
 	expect(scene.farm_state.snapshot().fields==original.fields,"Painting retains every crop")
+	for span: Dictionary in scene.courtyard_plan.fences:
+		expect(span.a.z<6.8 and span.b.z<6.8,"No fence is generated on the new land")
+	var refresh_start: int=Time.get_ticks_msec()
+	var previous_frame: int=refresh_start
+	var max_frame: int=0
+	while scene.get_node("Environment")._terrain_refreshing:
+		await process_frame
+		var now: int=Time.get_ticks_msec()
+		max_frame=maxi(max_frame,now-previous_frame);previous_frame=now
+		if now-refresh_start>30000: expect(false,"Terrain refresh completes");break
+	print("REFRESH_MS ",Time.get_ticks_msec()-refresh_start," MAX_FRAME_MS ",max_frame)
+	expect(max_frame<250,"Background shore updates do not stall a frame")
+	expect(not scene.get_node("Environment/CourtyardAnimals").water.contains(Vector2(0,8)),"Animals cannot swim through painted land")
 	await shot("06-saved")
+	scene._begin_construction("land");await create_timer(1).timeout
+	await drag(Vector3(2.5,.13,8.5),Vector3(4,.13,8.5))
+	var second: Dictionary=brush.candidate.snapshot()
+	var normal_path: String=scene.store.directory
+	var blocker:=FileAccess.open(folder.path_join("blocker"),FileAccess.WRITE);blocker.store_string("file");blocker.close()
+	scene.store.directory=folder.path_join("blocker/child")
+	await click(brush._panel.find_child("Finish",true,false))
+	expect(brush.active and not brush.busy and brush._status.text.contains("未能保存"),"Failed Finish keeps the draft open and retryable")
+	expect(scene.farm_state.snapshot().layout==persisted,"Failed Finish leaves authoritative land unchanged")
+	scene.store.directory=normal_path
+	await click(brush._panel.find_child("Finish",true,false))
+	expect(not brush.active and scene.farm_state.snapshot().layout==second,"Retry saves exactly the requested second stroke")
+	# Undo while the previous background refresh is still pending: late results
+	# must not overwrite the latest shoreline or navigation.
+	scene._begin_construction("land");await create_timer(1).timeout
+	await click(brush._undo)
+	expect(scene.farm_state.snapshot().layout==persisted,"Undo restores the first painted shape in place")
+	expect(scene.get_node("Environment/MainHouse").get_instance_id()==house_id,"Undo also retains the scene")
+	brush.finish()
+	refresh_start=Time.get_ticks_msec()
+	while scene.get_node("Environment")._terrain_refreshing:
+		await process_frame
+		if Time.get_ticks_msec()-refresh_start>30000: expect(false,"Latest background refresh completes");break
+	expect(scene.get_node("Environment/CourtyardAnimals").ready_for_motion,"Animals resume after the latest terrain refresh")
+	var restored: Dictionary=Store.new(normal_path).load_state()
+	expect(restored.ok and restored.farm.layout==persisted,"Undo is durable on disk")
+	root.remove_child(scene);scene.free();await frames()
+	scene=load("res://scenes/main.tscn").instantiate();scene.name="FarmExperience"
+	scene.store=Store.new(normal_path);scene.settings_store=Settings.new(folder.path_join("settings"));scene.clock=func() -> float: return 2000000.0
+	root.add_child(scene);current_scene=scene;await frames(6)
+	expect(scene.courtyard_plan.snapshot()==persisted,"Reopening restores the same painted island")
+	expect(scene.get_node("Environment/ExpansionGrass").get_child_count()>0,"Reopening retains new-land grass")
+	for span: Dictionary in scene.courtyard_plan.fences:
+		expect(span.a.z<6.8 and span.b.z<6.8,"Reopening does not generate extension fences")
+	await shot("07-reopened")
 	print("BRUSH_EVIDENCE "+folder)
 	await finish()

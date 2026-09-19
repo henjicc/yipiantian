@@ -39,6 +39,58 @@ var _shore_sources: Array[Node3D] = []
 var circulation := Circulation.new()
 var layout_obstacles: Dictionary = {}
 var layout_probe: bool = false
+var _terrain_refreshing: bool=false
+var _terrain_pending: bool=false
+var _water_worker: Thread
+
+func _exit_tree() -> void:
+	if _water_worker!=null and _water_worker.is_started(): _water_worker.wait_to_finish()
+
+func refresh_terrain() -> void:
+	_terrain_pending=true
+	var animals: Node3D=get_node("CourtyardAnimals")
+	animals.ready_for_motion=false
+	if _terrain_refreshing: return
+	_terrain_refreshing=true
+	while _terrain_pending:
+		_terrain_pending=false
+		animals.ready_for_motion=false
+		await get_tree().process_frame
+		var started: int=Time.get_ticks_msec()
+		await animals.rebuild_spaces(true,true)
+		print("TERRAIN_NAV_MS ",Time.get_ticks_msec()-started)
+		if _terrain_pending: continue
+		animals.ready_for_motion=true
+		await _refresh_shore_obstacles()
+		if _terrain_pending: continue
+		started=Time.get_ticks_msec()
+		var data: Array[Dictionary]=WaterContacts.capture(_shore_sources)
+		print("TERRAIN_WATER_CAPTURE_MS ",Time.get_ticks_msec()-started)
+		_water_worker=Thread.new()
+		var distances: PackedFloat32Array
+		if _water_worker.start(WaterContacts.bake_data.bind(data,_water.position.y))==OK:
+			while _water_worker.is_alive(): await get_tree().process_frame
+			distances=_water_worker.wait_to_finish()
+		else:
+			push_error("Terrain water worker could not start")
+			distances=WaterContacts.bake_data(data,_water.position.y)
+		_water_worker=null
+		if _terrain_pending: continue
+		_water.material_override.set_shader_parameter("shore_distance",WaterContacts.texture(distances))
+	animals.ready_for_motion=true
+	_terrain_refreshing=false
+
+func _refresh_shore_obstacles() -> void:
+	var slice: int=Time.get_ticks_usec()
+	var rise: float=plan.ground_height-.13
+	for child: Node in get_children():
+		if Time.get_ticks_usec()-slice>2000:
+			await get_tree().process_frame;slice=Time.get_ticks_usec()
+		if not is_instance_valid(child): continue
+		if not child.has_meta("shore_stone") and not String(child.name).begins_with("BankReeds") and not String(child.name).begins_with("Lotus"): continue
+		var polygon: PackedVector2Array=Space.cached_footprint(child,.23+rise,.75+rise)
+		if polygon.size()>=3: layout_obstacles[String(child.name)]=polygon
+		else: layout_obstacles.erase(String(child.name))
 
 func _ready() -> void:
 	_rng.seed = 32026
@@ -286,6 +338,7 @@ func _build_plants() -> void:
 			var angle:float=j*2.4+i*.7
 			var lotus: Node3D=_asset("lotus","Lotus%d_%d"%[i,j],lily_coves[i]+Vector3(cos(angle)*.72,0,sin(angle)*.6),i*41+j*79,_rng.randf_range(.82,1.15))
 			_floaters.append(lotus);_floater_origins.append(lotus.position)
+			lotus.set_meta("navigation_anchor",lotus.position)
 
 func _grass_patch(at: Vector3, index: int) -> void:
 	# Small opaque curved blades fill the soil contact below the existing flower assets.
@@ -319,6 +372,7 @@ func preview_shore_plants(candidate: RefCounted) -> void:
 		var angle: float=member*2.4+cove*.7
 		_floater_origins[index]=candidate.lily_coves[cove]+Vector3(cos(angle)*.72,0,sin(angle)*.6)
 		_floaters[index].position=_floater_origins[index]
+		_floaters[index].set_meta("navigation_anchor",_floater_origins[index])
 	for index: int in candidate.reeds.size(): get_node("BankReeds%d"%index).position=candidate.reeds[index]
 	get_node("NeighborIslets").preview_expansion(candidate.scenery_expansion.max(candidate.shore_expansion))
 

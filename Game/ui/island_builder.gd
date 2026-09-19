@@ -33,6 +33,7 @@ var _shore: Node3D
 var _brush_last:=Vector2.INF
 var _pending_land:=Vector2.INF
 var _brush_message: String=""
+var close_after_commit: bool=false
 
 func _ready() -> void:
 	layer=15
@@ -72,7 +73,7 @@ func _button(parent: Node, label: String, action: Callable) -> Button:
 	return button
 
 func begin(scene: Node3D, selected: String = "land") -> void:
-	main=scene;active=true;busy=false;previous=main.previous_layout.duplicate(true)
+	main=scene;active=true;busy=false;close_after_commit=false;previous=main.previous_layout.duplicate(true)
 	show();choose(selected)
 
 func choose(id: String) -> void:
@@ -109,6 +110,7 @@ func _commit() -> void:
 
 func set_busy(value: bool, message: String = "") -> void:
 	busy=value
+	if not value: close_after_commit=false
 	_confirm.disabled=value or candidate==null or draft==main.farm_state.snapshot().layout
 	_undo.disabled=value or previous.is_empty()
 	for button: Button in _tools.values(): button.disabled=value
@@ -117,7 +119,25 @@ func set_busy(value: bool, message: String = "") -> void:
 
 func finish() -> void:
 	if busy: return
+	_flush_land()
+	if draft!=main.farm_state.snapshot().layout:
+		if candidate==null or not issue().is_empty(): return
+		close_after_commit=true
+		_commit()
+		return
 	_clear_preview();active=false;_start=Vector2.INF;hide();closed.emit()
+
+func accept_land(plan: RefCounted) -> void:
+	# The live mesh is already the final result; transfer it only after disk save.
+	if not is_instance_valid(_shore):
+		_shore=ShorePreview.new();main.add_child(_shore);_shore.configure(main.get_node("Environment"))
+		_shore.update(plan)
+	_shore.accept(plan);_shore.free();_shore=null
+	var close_now: bool=close_after_commit
+	set_busy(false)
+	previous=main.previous_layout.duplicate(true)
+	choose(tool)
+	if close_now: finish()
 
 func _focus_lost() -> void:
 	if active and not busy:
@@ -146,7 +166,11 @@ func _flush_land() -> void:
 	_brush_last=point;_last_cell=point
 	_brush_message="从现有岸边开始涂抹；对岸和鸭群水域会保留。" if draft==main.farm_state.snapshot().layout and draft.construction.land.size()==before else ""
 	if draft.construction.land.size()>=Construction.MAX_PATCHES: _brush_message="本岛添地范围已达到本轮上限。可取消当前调整。"
-	_refresh()
+	if draft.construction.land.size()!=before: _refresh()
+	elif is_instance_valid(_preview):
+		for child: Node in _preview.get_children(): child.free()
+		_draw_brush(Color("88b779"))
+		if not _brush_message.is_empty(): _status.text=_brush_message
 
 func observe(event: InputEvent) -> void:
 	if not active or busy: return
@@ -269,7 +293,7 @@ func _refresh() -> void:
 	var message: String=issue()
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
 	_undo.disabled=busy or previous.is_empty()
-	_status.text=message if not message.is_empty() else {"land":"按住左键沿岸涂抹，土地与水边植物实时变化。确认保存，Esc 取消。","trellis":"拖动菜架调整长度，也可调节长宽高。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}[tool]
+	_status.text=message if not message.is_empty() else {"land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架调整长度，也可调节长宽高。","bridge":"拖动任一桥头，让两端落在岸上。","ducks":"在水面拖出活动区域，再选择数量。"}[tool]
 	if tool=="land" and not _brush_message.is_empty(): _status.text=_brush_message
 	_render_preview(message.is_empty())
 
@@ -301,9 +325,7 @@ func _render_preview(valid: bool) -> void:
 				if child is Node3D and (child.name=="AdaptiveBridge" or child.scene_file_path.ends_with("stone_bridge.glb")): _hide_node(child)
 			_preview.add_child(Structures.bridge(plan))
 	if tool=="land" and _last_cell.is_finite():
-		var circle:=PackedVector2Array()
-		for i: int in 32: circle.append(_last_cell+Vector2.from_angle(i*TAU/32)*.8)
-		_outline(circle,main.courtyard_plan.ground_height+.06,tint,false)
+		_draw_brush(tint)
 	elif tool=="ducks" and not draft.construction.ducks.area.is_empty():
 		var rect: Array=draft.construction.ducks.area
 		if Construction.numbers(rect,4) and rect[2]<=12 and rect[3]<=12:
@@ -320,6 +342,11 @@ func _render_preview(valid: bool) -> void:
 		for point: Vector3 in Construction.bridge_points(plan): _handle(point+Vector3.UP*.12,tint)
 	elif tool=="trellis":
 		_handle(plan.anchors.trellis+Vector3(0,.08,Construction.trellis_size(plan).x*.5),tint)
+
+func _draw_brush(tint: Color) -> void:
+	var circle:=PackedVector2Array()
+	for i: int in 32: circle.append(_last_cell+Vector2.from_angle(i*TAU/32)*.8)
+	_outline(circle,main.courtyard_plan.ground_height+.06,tint,false)
 
 func _handle(at: Vector3, tint: Color) -> void:
 	var node:=MeshInstance3D.new();var sphere:=SphereMesh.new();sphere.radius=.12;sphere.height=.24;node.mesh=sphere;node.position=at

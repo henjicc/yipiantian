@@ -347,7 +347,7 @@ func _reload_saved_scene() -> void:
 	replacement.settings_store = settings_store
 	replacement.clock = clock
 	replacement.previous_layout=previous_layout.duplicate(true)
-	if island_builder!=null and island_builder.active:
+	if island_builder!=null and island_builder.active and not island_builder.close_after_commit:
 		replacement._construction_resume={"tool":island_builder.tool,"point":camera.focus_point,"view":camera.view}
 	if focus_detail!=null:
 		replacement._presentation_resume=focus_detail.get_settings()
@@ -685,6 +685,12 @@ func _begin_construction(tool: String = "land") -> void:
 
 func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	if not island_builder.active or island_builder.busy: return
+	var current: Dictionary=farm_state.snapshot().layout
+	var unchanged: Dictionary=snapshot.duplicate(true)
+	unchanged.construction.land=current.construction.land.duplicate(true)
+	if unchanged==current:
+		_apply_land(snapshot,undo)
+		return
 	island_builder.set_busy(true,"正在检查岸边、支承和通路…")
 	await get_tree().process_frame
 	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
@@ -732,6 +738,38 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	farm_state=candidate
 	island_builder.set_busy(true,"已保存，正在更新小岛…")
 	_reload_saved_scene()
+
+func _apply_land(snapshot: Dictionary, undo: bool) -> void:
+	var started: int=Time.get_ticks_msec()
+	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
+	if plan==null: return
+	var construction=preload("res://layout/island_construction.gd")
+	var message: String=construction.bridge_issue(plan)
+	var area: Array=plan.construction.ducks.area
+	if not area.is_empty() and int(plan.construction.ducks.count)>0 and not Geometry2D.intersect_polygons(construction.rectangle(area),plan.rim).is_empty(): message="请为鸭群保留水面。"
+	if not Geometry2D.intersect_polygons(plan.plateau(),construction.bridge_support(plan,1)).is_empty(): message="请为对岸留出水道。"
+	# Only the brush changed. Existing fields, buildings and routes are retained;
+	# do not instantiate a second courtyard to validate unchanged architecture.
+	if not preload("res://layout/courtyard_circulation.gd").field_placement_issues(plan,{}).is_empty(): message="请保留田地周围的平地。"
+	if not message.is_empty(): island_builder.set_busy(false,message);return
+	island_builder.set_busy(true)
+	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var result: Dictionary=candidate.apply_layout(snapshot,clock.call())
+	if not result.ok: island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok: island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
+	previous_layout={} if undo else farm_state.snapshot().layout
+	farm_state=candidate
+	plan.paths=courtyard_plan.paths.duplicate();plan.garden_fences=courtyard_plan.garden_fences.duplicate(true)
+	# Undo can target a different mesh than the current draft.
+	if island_builder.draft!=snapshot:
+		island_builder._clear_preview();island_builder.draft=snapshot.duplicate(true);island_builder.candidate=plan
+	courtyard_plan=plan;farm.plan=plan
+	camera.overview_point=plan.camera_point;camera.overview_view.z=plan.camera_distance
+	RenderingServer.global_shader_parameter_set("courtyard_haze_region",plan.haze_region)
+	island_builder.accept_land(plan)
+	_refresh_hud()
+	print("LAND_COMMIT_MS ",Time.get_ticks_msec()-started)
 
 func _begin_courtyard_edit() -> void:
 	if not _loaded or _save_failed or _layout_active(): return

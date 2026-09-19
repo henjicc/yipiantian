@@ -19,6 +19,7 @@ var lily_coves: Array[Vector3] = [Vector3(-6.35,-.40,7.25),Vector3(-.9,-.40,8.05
 var fields: Array[Dictionary] = []
 var rim := PackedVector2Array([Vector2(-7.5,-7.6),Vector2(-4.8,-8.4),Vector2(-1,-8.2),Vector2(2.5,-7.9),Vector2(5.6,-6.5),Vector2(6.5,-3.8),Vector2(6.4,-.8),Vector2(6.8,1.3),Vector2(5.8,4.8),Vector2(3.5,6.1),Vector2(.7,6.7),Vector2(-2.5,6.1),Vector2(-5.5,5.6),Vector2(-7.2,3.2),Vector2(-7.6,.2),Vector2(-7.1,-3.6)])
 var paths: Array[PackedVector3Array] = [] # Derived by courtyard_circulation after real obstacles exist.
+var garden_fences: Array[Dictionary]=[] # Original garden boundary, retained across brush undo.
 var anchors := {
 	"house": Vector3(.65,.13,-4.65), "veranda": Vector3(.65,.13,-2.4),
 	"kitchen": Vector3(-4.5,.115,-5), "trellis": Vector3(-5.8,.13,1.05),
@@ -118,6 +119,11 @@ func field_polygon(index: int, margin: float = 0.0) -> PackedVector2Array:
 		var point: Vector3 = field_transform(index)*Vector3(p.x,0,p.y)
 		polygon.append(Vector2(point.x,point.z))
 	return polygon
+
+func unpainted() -> RefCounted:
+	var data: Dictionary=snapshot()
+	data.construction.land=[]
+	return from_snapshot(data)
 
 func snapshot() -> Dictionary:
 	var encoded: Array[Dictionary] = []

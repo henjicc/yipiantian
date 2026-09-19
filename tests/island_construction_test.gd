@@ -42,11 +42,13 @@ func shot(name: String) -> void:
 
 func apply() -> bool:
 	var old: Node=scene
+	var expected: Dictionary=scene.island_builder.candidate.snapshot()
 	await click(scene.island_builder._confirm)
 	var start: int=Time.get_ticks_msec()
 	while is_instance_valid(old) and root.get_node_or_null("FarmExperience")==old:
 		await create_timer(.1).timeout
 		if not old.island_builder.busy:
+			if old.farm_state.snapshot().layout==expected: return true
 			expect(false,"Construction accepted: "+old.island_builder._status.text)
 			return false
 		if Time.get_ticks_msec()-start>45000:

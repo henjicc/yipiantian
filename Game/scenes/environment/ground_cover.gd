@@ -7,7 +7,7 @@ var _exclusions: Array[PackedVector2Array] = []
 var _rng := RandomNumberGenerator.new()
 
 func build(courtyard: Node3D) -> void:
-	_rim = courtyard.plan.plateau()
+	_rim = courtyard.plan.unpainted().plateau()
 	_rng.seed = 943172
 	_build_trellis_bed(courtyard.plan)
 	_build_foundation_contacts(courtyard.plan)
@@ -68,6 +68,54 @@ func build(courtyard: Node3D) -> void:
 	grass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	grass.extra_cull_margin = .04
 	add_child(grass)
+	var expansion:=get_script().new() as Node3D
+	expansion.name="ExpansionGrass";courtyard.add_child(expansion)
+	expansion.update_expansion(courtyard.plan)
+
+var _tiles: Dictionary={}
+var _tile_shapes: Dictionary={}
+
+func update_expansion(plan: RefCounted) -> void:
+	if plan.construction.land.is_empty():
+		for tile: Node3D in _tiles.values(): tile.free()
+		_tiles.clear();_tile_shapes.clear();return
+	var base: PackedVector2Array=plan.unpainted().plateau()
+	var plateau: PackedVector2Array=plan.plateau()
+	var bounds: Rect2=plan.land_bounds()
+	var wanted: Dictionary={}
+	for z: int in range(floori(bounds.position.y),ceili(bounds.end.y)):
+		for x: int in range(floori(bounds.position.x),ceili(bounds.end.x)):
+			var cell:=Vector2i(x,z)
+			var rect:=PackedVector2Array([Vector2(x,z),Vector2(x+1,z),Vector2(x+1,z+1),Vector2(x,z+1)])
+			var pieces: Array[PackedVector2Array]=Geometry2D.clip_polygons(rect,base)
+			if pieces.is_empty(): continue
+			var shape: Array[PackedVector2Array]=[]
+			for piece: PackedVector2Array in pieces: shape.append_array(Geometry2D.intersect_polygons(piece,plateau))
+			if shape.is_empty(): continue
+			wanted[cell]=true
+			if _tile_shapes.get(cell)==shape: continue
+			if _tiles.has(cell): _tiles[cell].free();_tiles.erase(cell)
+			_tile_shapes[cell]=shape
+			var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+			_rng.seed=hash(cell)+943172
+			var count: int=0
+			for attempt: int in 80:
+				var p:=Vector2(x+_rng.randf(),z+_rng.randf())
+				var density: float=_rng.randf();var height: float=_rng.randf_range(.045,.13)
+				var patch: float=(sin(p.x*2.7+p.y*.6)+sin(p.y*3.2-p.x*.8))*.25+.5
+				if density>lerpf(.12,.7,patch): continue
+				for polygon: PackedVector2Array in shape:
+					if Geometry2D.is_point_in_polygon(p,polygon):
+						_tuft(surface,Vector3(p.x,plan.ground_height-.002,p.y),height,4);count+=1;break
+			if count==0: continue
+			var grass:=MeshInstance3D.new();grass.mesh=surface.commit()
+			grass.material_override=ShaderMaterial.new();grass.material_override.shader=SHADER
+			grass.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(grass);_tiles[cell]=grass
+	for cell: Vector2i in _tile_shapes.keys():
+		if not wanted.has(cell):
+			if _tiles.has(cell): _tiles[cell].free();_tiles.erase(cell)
+			_tile_shapes.erase(cell)
 
 func _build_foundation_contacts(plan: RefCounted) -> void:
 	# Aprons follow building anchors, with dimensions in each building's local space.
