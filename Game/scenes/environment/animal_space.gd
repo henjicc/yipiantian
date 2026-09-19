@@ -20,6 +20,7 @@ var points := PackedVector2Array()
 var resting := PackedVector2Array()
 var radius: float
 var _floor_faces: Dictionary = {}
+var _pending_floors: Array[Dictionary] = []
 var floor_level: float = .13
 var floor_origin:=Vector2.ZERO
 var floor_seams: Array[PackedVector2Array]=[]
@@ -51,6 +52,9 @@ func block(polygon: PackedVector2Array) -> void:
 				_obstacle_cells[cell].append(index)
 
 func bake() -> void:
+	# The owning navigation worker receives only captured values, never nodes.
+	for entry: Dictionary in _pending_floors: _index_floor(entry.faces,entry.pose,entry.height_range)
+	_pending_floors.clear()
 	component_cells.clear()
 	points.clear()
 	grid.blocked_edges.clear()
@@ -123,6 +127,11 @@ func nearest(p: Vector2) -> Vector2:
 func path(start: Vector2, end: Vector2) -> PackedVector2Array:
 	var a := Vector2i(((nearest(start) - bounds.position) / CELL).round())
 	var b := Vector2i(((nearest(end) - bounds.position) / CELL).round())
+	# Apply the same clearance/region test used for every smoothed route segment.
+	# Open water does not need a grid search followed by dozens of shorter rays.
+	if grid.is_in_boundsv(b) and not grid.is_point_solid(b):
+		var target: Vector2=grid.get_point_position(b)
+		if clear_segment(start,target): return PackedVector2Array([target])
 	var raw: PackedVector2Array = grid.get_point_path(a, b)
 	var result := PackedVector2Array()
 	if raw.is_empty(): return result
@@ -163,33 +172,39 @@ func _triangle_height(p: Vector2) -> float:
 			height=maxf(height,face[0].y+u*(face[1].y-face[0].y)+v*(face[2].y-face[0].y))
 	return height
 
-func add_floor(node: Node3D, visible_only: bool=true, height_range: Vector2=Vector2.INF) -> void:
+func add_floor(node: Node3D, visible_only: bool=true, height_range: Vector2=Vector2.INF, defer_index: bool=false) -> void:
 	# Index real low triangles per spatial cell; feet sample the triangle at their
 	# exact XZ rather than snapping to a neighbouring grid point on a stone edge.
 	if height_range==Vector2.INF: height_range=Vector2(floor_level-.04,floor_level+.11)
 	var meshes: Array[Node]=node.find_children("*", "MeshInstance3D", true, false)
 	if node is MeshInstance3D: meshes.append(node)
+	var faces_by_mesh: Dictionary={}
 	for mesh: MeshInstance3D in meshes:
 		if visible_only and not mesh.is_visible_in_tree(): continue
-		var faces: PackedVector3Array = mesh.mesh.get_faces()
-		for i: int in range(0, faces.size(), 3):
-			var a: Vector3 = mesh.global_transform * faces[i]
-			var b: Vector3 = mesh.global_transform * faces[i + 1]
-			var c: Vector3 = mesh.global_transform * faces[i + 2]
-			if minf(a.y, minf(b.y, c.y)) < height_range.x or maxf(a.y, maxf(b.y, c.y)) > height_range.y: continue
-			var av := Vector2(a.x, a.z)
-			var bv := Vector2(b.x, b.z)
-			var cv := Vector2(c.x, c.z)
-			var determinant: float = (bv - av).cross(cv - av)
-			if absf(determinant) < .000001: continue
-			var lo := Vector2i(((av.min(bv).min(cv) - bounds.position) / CELL).floor())
-			var hi := Vector2i(((av.max(bv).max(cv) - bounds.position) / CELL).ceil())
-			var triangle:=PackedVector3Array([a,b,c])
-			for y: int in range(maxi(0, lo.y), mini(grid.region.size.y, hi.y + 1)):
-				for x: int in range(maxi(0, lo.x), mini(grid.region.size.x, hi.x + 1)):
-					var id := Vector2i(x, y)
-					if not _floor_faces.has(id): _floor_faces[id]=[]
-					_floor_faces[id].append(triangle)
+		if not faces_by_mesh.has(mesh.mesh): faces_by_mesh[mesh.mesh]=mesh.mesh.get_faces()
+		var faces: PackedVector3Array=faces_by_mesh[mesh.mesh]
+		if defer_index: _pending_floors.append({"faces":faces,"pose":mesh.global_transform,"height_range":height_range})
+		else: _index_floor(faces,mesh.global_transform,height_range)
+
+func _index_floor(faces: PackedVector3Array, pose: Transform3D, height_range: Vector2) -> void:
+	for i: int in range(0, faces.size(), 3):
+		var a: Vector3 = pose * faces[i]
+		var b: Vector3 = pose * faces[i + 1]
+		var c: Vector3 = pose * faces[i + 2]
+		if minf(a.y, minf(b.y, c.y)) < height_range.x or maxf(a.y, maxf(b.y, c.y)) > height_range.y: continue
+		var av := Vector2(a.x, a.z)
+		var bv := Vector2(b.x, b.z)
+		var cv := Vector2(c.x, c.z)
+		var determinant: float = (bv - av).cross(cv - av)
+		if absf(determinant) < .000001: continue
+		var lo := Vector2i(((av.min(bv).min(cv) - bounds.position) / CELL).floor())
+		var hi := Vector2i(((av.max(bv).max(cv) - bounds.position) / CELL).ceil())
+		var triangle:=PackedVector3Array([a,b,c])
+		for y: int in range(maxi(0, lo.y), mini(grid.region.size.y, hi.y + 1)):
+			for x: int in range(maxi(0, lo.x), mini(grid.region.size.x, hi.x + 1)):
+				var id := Vector2i(x, y)
+				if not _floor_faces.has(id): _floor_faces[id]=[]
+				_floor_faces[id].append(triangle)
 
 static func footprint(node: Node3D, bottom: float, top: float, visible_only: bool = true) -> PackedVector2Array:
 	var vertices := PackedVector2Array()

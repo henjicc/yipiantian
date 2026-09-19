@@ -29,7 +29,38 @@ func _run() -> void:
 	sample_space.add_floor(sample_node)
 	expect(absf(sample_space.ground_height(Vector2(.20,.20))-.10)<.00001,"Foot floor equals the exact sloping triangle")
 	expect(absf(sample_space.ground_height(Vector2(.21,.20))-.101)<.00001,"Foot floor varies continuously within a navigation cell")
+	var deferred_space:=preload("res://scenes/environment/animal_space.gd").new()
+	deferred_space.floor_level=sample_space.floor_level
+	deferred_space.configure(sample_space.bounds,sample_space.radius)
+	deferred_space.add_floor(sample_node,true,Vector2.INF,true)
+	# The same mesh appears elsewhere, rotated and at a different island height.
+	var second:=MeshInstance3D.new();second.mesh=triangle;root.add_child(second)
+	second.position=Vector3(1.5,.12,1.5);second.rotation.y=PI
+	sample_space.add_floor(second,false,Vector2(-INF,INF))
+	deferred_space.add_floor(second,false,Vector2(-INF,INF),true)
+	var hidden:=MeshInstance3D.new();hidden.mesh=triangle;root.add_child(hidden);hidden.hide()
+	hidden.position.y=.6
+	deferred_space.add_floor(hidden,true,Vector2(-INF,INF),true)
+	# Captured values must survive replacement/movement/removal before the bake.
+	sample_mesh.position.y=2;second.position=Vector3(7,3,7)
+	second.free();hidden.free()
 	sample_node.free()
+	var worker:=Thread.new()
+	var started: Error=worker.start(deferred_space.bake)
+	expect(started==OK,"Background floor indexing starts")
+	if started==OK:
+		while worker.is_alive(): await process_frame
+		worker.wait_to_finish()
+	var matches: bool=true
+	for x: int in 40:
+		for z: int in 40:
+			var point:=Vector2(x*.05+.013,z*.05+.017)
+			if not is_equal_approx(sample_space.ground_height(point),deferred_space.ground_height(point)): matches=false
+	expect(matches,"Background bake preserves exact transformed triangle heights and hidden-mesh filtering after source removal")
+	expect(absf(deferred_space.ground_height(Vector2(1.3,1.3))-.22)<.00001,"Captured raised and rotated floor keeps its real height")
+	if OS.get_cmdline_user_args().has("--floor-only"):
+		for message: String in failures: push_error(message)
+		print("FLOOR_INDEX failures=",failures.size());quit(0 if failures.is_empty() else 1);return
 	var plan := Plan.new()
 	var expanded_scene: bool = "--expanded" in OS.get_cmdline_user_args()
 	var terrain_scene: bool = "--terrain" in OS.get_cmdline_user_args()

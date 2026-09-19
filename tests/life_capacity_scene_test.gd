@@ -220,6 +220,13 @@ func construction_checks() -> void:
 	var saved_inventory: Dictionary=scene.farm_state.snapshot().inventory
 	var identity: int=scene.get_instance_id()
 	var original_east: Array=scene.courtyard_plan.construction.east_land.duplicate(true)
+	var original_road_heights: Dictionary={}
+	for path: PackedVector3Array in scene.courtyard_plan.paths:
+		for i: int in range(1,path.size()):
+			for part: int in 8:
+				var at: Vector3=path[i-1].lerp(path[i],part/8.0)
+				var point:=Vector2(at.x,at.z)
+				original_road_heights[point]=scene.get_node("Environment/CourtyardAnimals").yard.ground_height(point)
 	await choose("land")
 	scene.camera._move_to(Vector3(20,.4,-2),Vector3(24,65,25));await create_timer(1).timeout
 	begin_sample("east-held-land-stroke")
@@ -234,6 +241,12 @@ func construction_checks() -> void:
 	begin_sample("land-background-navigation")
 	await settle();end_sample()
 	check(scene.get_node("Environment/CourtyardAnimals").ready_for_motion,"All capacity animals resume after terrain edit")
+	var refreshed_yard: RefCounted=scene.get_node("Environment/CourtyardAnimals").yard
+	check(absf(refreshed_yard.ground_height(Vector2(23,-3.5))-.11)<.001,"Background indexing supports the real height of newly painted east ground")
+	var road_heights_match: bool=true
+	for point: Vector2 in original_road_heights:
+		if not is_equal_approx(original_road_heights[point],refreshed_yard.ground_height(point)): road_heights_match=false
+	check(road_heights_match,"Background rebuild preserves exact foot heights along existing stone roads")
 	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
 	begin_sample("land-undo-and-background")
 	await click(builder._undo);await settle();end_sample()

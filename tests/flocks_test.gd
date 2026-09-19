@@ -36,6 +36,18 @@ func _initialize() -> void:
 	expect(not state.restore_snapshot(invalid),"Unbounded archived profile rejected")
 	var source:=Navigation.new();source.configure(Rect2(0,0,8,4),.21)
 	source.block(PackedVector2Array([Vector2(3.9,0),Vector2(4.1,0),Vector2(4.1,4),Vector2(3.9,4)]));source.bake()
+	expect(source.path(Vector2(1,2),Vector2(7,2)).is_empty(),"Direct routing cannot cross a complete barrier")
+	var open:=Navigation.new();open.configure(Rect2(0,0,10,10),.3);open.bake()
+	var straight: PackedVector2Array=open.path(Vector2(.8,2),Vector2(8,2))
+	expect(straight.size()==1 and straight[0]==open.nearest(Vector2(8,2)),"Open ground uses a direct route to the admitted destination")
+	var edge_route: PackedVector2Array=open.path(Vector2(.8,2),Vector2(20,2))
+	expect(not edge_route.is_empty() and edge_route[-1]==open.nearest(Vector2(20,2)) and open.contains(edge_route[-1]),"Direct routing still snaps an out-of-bounds goal to valid space")
+	open.block(Flocks.Space.rectangle(Vector2(4,0),Vector2(1,6)));open.bake()
+	var detour: PackedVector2Array=open.path(Vector2(2,2),Vector2(8,2))
+	var around: bool=false
+	for point: Vector2 in detour:
+		if point.y>=6.3: around=true
+	expect(detour.size()>1 and around,"Blocked direct routes still navigate around the obstacle with body clearance")
 	var region: RefCounted=Navigation.build_region([0,0,8,4],Navigation.capture(source))
 	expect(region.points.size()<source.points.size()*.6,"Disconnected fragments do not add to usable region capacity")
 	var reachable: bool=true

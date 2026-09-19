@@ -96,12 +96,12 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 			for polygon: PackedVector2Array in water_shapes(child,environment.plan): water.block(polygon)
 		if child.has_meta("bridge_water_shapes"):
 			if child.has_meta("bridge_seamed_deck"):
-				yard.add_floor(child,false,Vector2(-INF,INF))
+				yard.add_floor(child,false,Vector2(-INF,INF),progressive)
 				yard.floor_seams.append(child.get_meta("bridge_seamed_deck"))
-			else: yard.add_floor(child.get_node("Deck"),false,Vector2(-INF,INF))
+			else: yard.add_floor(child.get_node("Deck"),false,Vector2(-INF,INF),progressive)
 			continue
 		if child.name=="PlayerRoutes":
-			yard.add_floor(child.get_node("Roads"),false)
+			yard.add_floor(child.get_node("Roads"),false,Vector2.INF,progressive)
 			for key: String in environment.plan.route_footprints():
 				if key.begins_with("player_fence_"): yard.block(environment.plan.route_footprints()[key])
 			continue
@@ -111,7 +111,7 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 		var bank_role: String = child.get_meta("bank_role", "")
 
 		if child.has_meta("garden_paths"):
-			yard.add_floor(child,false)
+			yard.add_floor(child,false,Vector2.INF,progressive)
 			continue
 		if child.has_meta("fence_spans"):
 			for span: Dictionary in child.get_meta("fence_spans"):
@@ -122,8 +122,8 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 			continue
 		if not bank_role.is_empty():
 			var height: float=environment.plan.ground_height+child.position.y
-			yard.add_floor(child,false,Vector2(height-.04,height+.11))
-		elif path.contains("stone_"): yard.add_floor(child,false)
+			yard.add_floor(child,false,Vector2(height-.04,height+.11),progressive)
+		elif path.contains("stone_"): yard.add_floor(child,false,Vector2.INF,progressive)
 		if child.name in ["WaterSurface", "GroundCover", "ExpansionGrass", "NewShorePlants", "DistantLandscape", "NeighborIslets", "ContactShading", "DecorationSlots", "OsmanthusLeaves"]: continue
 		if not bank_role.is_empty() or String(child.name).begins_with("BankGrass"): continue
 		if child.name == "LivingDetails":
@@ -189,6 +189,7 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 		else: flock_spaces[kind]=Space.build_region(area,captured)
 	if update_water: water_ready=true
 	yard_ready=true
+	var resume_delay: float=0.0
 	for entry: Dictionary in birds:
 		if not update_water and entry.kind!="hen": continue
 		interaction.cancel(entry.node.name)
@@ -196,7 +197,9 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 		entry.pose.ground = entry.space.ground_height
 		entry.route = PackedVector2Array()
 		entry.state = "observe"
-		entry.timer = 0.0
+		# Resume a bird per simulation step instead of planning all flocks in one frame.
+		entry.timer = resume_delay
+		resume_delay += 1.0/30.0
 		entry.velocity=Vector2.ZERO
 		entry.interest=Vector2.INF
 		if not entry.space.contains(entry.position):
