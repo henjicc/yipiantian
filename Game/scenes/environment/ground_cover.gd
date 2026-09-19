@@ -122,6 +122,7 @@ func update_tiles(plan: RefCounted, expansion_only: bool, changed: Dictionary={}
 	var bounds: Rect2=plan.land_bounds()
 	var fields: Array[PackedVector2Array]=[]
 	for index: int in plan.fields.size(): fields.append(plan.field_polygon(index,.07))
+	fields.append_array(plan.route_footprints().values())
 	fields.append_array(_exclusions)
 	if not plan.construction.trellis.is_empty(): fields.append(preload("res://layout/island_construction.gd").trellis_footprint(plan))
 	fields.append_array(object_footprints)

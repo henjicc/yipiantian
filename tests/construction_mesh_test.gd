@@ -38,7 +38,7 @@ func _initialize() -> void:
 	for style: String in Plan.FENCE_STYLES:
 		var spans: Array[Dictionary]=[{"a":Vector3.ZERO,"b":Vector3(2,0,0),"height":1.0}]
 		var fence: Node3D=Fence.build(spans,style)
-		expect(fence.get_child_count()==2 and fence.get_meta("fence_spans")==spans,"Fence preserves geometry and gate data: "+style)
+		expect(fence.find_children("*","MeshInstance3D",true,false).size()==2 and fence.has_node("Contacts") and fence.get_meta("fence_spans")==spans,"Fence preserves geometry and gate data: "+style)
 		fence.free()
 	print("CONSTRUCTION_MESH ","PASS" if failures.is_empty() else failures)
 	quit(0 if failures.is_empty() else 1)

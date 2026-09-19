@@ -20,6 +20,7 @@ static func arrange(current: RefCounted, id: String) -> RefCounted:
 	result.fields=current.fields.duplicate(true)
 	result.fence_style=current.fence_style
 	result.plants=current.plants.duplicate(true)
+	result.routes=current.routes.duplicate(true)
 	for i: int in mini(positions.size(),result.fields.size()):
 		result.fields[i].position=positions[i]
 		result.fields[i].position.y=current.ground_height+.07

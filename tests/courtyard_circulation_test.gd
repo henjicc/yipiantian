@@ -82,8 +82,8 @@ func _run() -> void:
 	expect(not Circulation.field_placement_issues(broken,world.layout_obstacles).is_empty(),"Overlapping edit is rejected")
 	broken.fields[0].position=Vector3(25,.2,25)
 	expect(not Circulation.field_placement_issues(broken,world.layout_obstacles).is_empty(),"Off-island edit is rejected")
-	var shading: Node3D=world.get_node("ContactShading")
-	var ground_pool: Decal=shading.get_node("ContactPool13")
+	var shading: Node3D=world.get_node("BoundaryFence/Contacts")
+	var ground_pool: Decal=shading.get_child(0)
 	for span: Dictionary in plan.fences:
 		var local: Vector3=ground_pool.to_local(span.a)
 		expect(absf(local.x)<ground_pool.size.x*.5 and absf(local.z)<ground_pool.size.z*.5,"All fence feet covered by contact decal bounds")

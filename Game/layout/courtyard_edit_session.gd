@@ -42,6 +42,7 @@ func _check(snapshot: Dictionary, revision: int) -> void:
 		return
 	# Draw feedback before potentially rebuilding shore-bound model footprints.
 	var plant_issue: String=Plan.Plants.terrain_issue(plan)
+	if plant_issue.is_empty(): plant_issue=Plan.Routes.terrain_issue(plan)
 	if not plant_issue.is_empty():
 		issues.append("player_plants")
 		editor.checked(revision,plan,_blocks,issues,plant_issue)

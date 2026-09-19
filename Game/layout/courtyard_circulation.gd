@@ -2,6 +2,7 @@ extends RefCounted
 ## Derived paths and fence spans. No saved nodes, crops or per-frame navigation.
 const Space = preload("res://scenes/environment/animal_space.gd")
 const IslandSpace = preload("res://layout/island_space.gd")
+const Routes=preload("res://layout/player_routes.gd")
 var road := Space.new()
 var endpoints: Dictionary = {}
 var issues: Array[String] = []
@@ -9,6 +10,7 @@ var _network := PackedVector2Array()
 var _plan: RefCounted
 
 static func field_placement_issues(plan: RefCounted, obstacles: Dictionary) -> Array[String]:
+	obstacles=Routes.replace_obstacles(obstacles,plan)
 	var result: Array[String] = []
 	var plateau: PackedVector2Array = plan.plateau()
 	var occupied := IslandSpace.new()
@@ -22,6 +24,7 @@ static func field_placement_issues(plan: RefCounted, obstacles: Dictionary) -> A
 	return result
 
 func build(plan: RefCounted, obstacles: Dictionary) -> void:
+	obstacles=Routes.replace_obstacles(obstacles,plan)
 	_plan = plan
 	plan.paths.clear()
 	plan.fences.clear()
@@ -34,7 +37,8 @@ func build(plan: RefCounted, obstacles: Dictionary) -> void:
 		return
 	road = Space.new()
 	road.configure(plan.land_bounds(),.22,inner[0])
-	for polygon: PackedVector2Array in obstacles.values(): road.block(polygon)
+	for key: String in obstacles:
+		if not key.begins_with("player_road_"): road.block(obstacles[key])
 	for i: int in plan.fields.size(): road.block(plan.field_polygon(i,.035))
 	road.bake()
 	if road.points.is_empty():

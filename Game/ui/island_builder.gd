@@ -20,6 +20,14 @@ var _flock_corner: int=0
 var _flock_redraw: bool=false
 const BridgePreview=preload("res://presentation/bridge_layout_preview.gd")
 var bridge_preview: BridgePreview
+const Routes=preload("res://layout/player_routes.gd")
+const RoutePreview=preload("res://presentation/route_layout_preview.gd")
+var route_preview: RoutePreview
+var _route_actions: HBoxContainer
+var _route_buttons: Dictionary={}
+var _route_mode: String="draw"
+var _route_index: int=-1
+var _route_message: String=""
 const Plants=preload("res://layout/plantings.gd")
 const PlantPreview=preload("res://presentation/plant_layout_preview.gd")
 var plant_preview: PlantPreview
@@ -106,6 +114,10 @@ func _ready() -> void:
 		button.add_theme_font_size_override("font_size",17)
 		button.toggle_mode=true;button.button_pressed=mode==_plant_mode;button.name="Plant"+mode.capitalize();_plant_buttons[mode]=button
 	_plant_rotate=_button(content,"旋转选中的植物",_rotate_plants);_plant_rotate.name="RotatePlants"
+	_route_actions=HBoxContainer.new();content.add_child(_route_actions)
+	for mode: String in ["draw","gate","erase"]:
+		var button: Button=_button(_route_actions,{"draw":"绘制","gate":"出入口","erase":"移除"}[mode],_select_route_mode.bind(mode))
+		button.toggle_mode=true;button.button_pressed=mode==_route_mode;button.name="Route"+mode.capitalize();_route_buttons[mode]=button
 	_flock_actions=HBoxContainer.new();content.add_child(_flock_actions)
 	_button(_flock_actions,"重新圈定",func() -> void: _focus_lost();_flock_redraw=true).name="DrawFlock"
 	_button(_flock_actions,"自由活动",_reset_flock_area).name="ResetFlock"
@@ -152,6 +164,10 @@ func begin(scene: Node3D, selected: String = "land") -> void:
 func choose(id: String) -> void:
 	if busy: return
 	if not id.is_empty() and (Catalog.item(id).is_empty() or Catalog.item(id).editor.is_empty()): return
+	if id in Routes.KINDS and tool in Routes.KINDS and id!=tool:
+		_focus_lost();tool=id;choices.select_item(id);_route_buttons.gate.visible=id=="fence"
+		if id=="road" and _route_mode=="gate": _select_route_mode("draw")
+		_refresh();return
 	if id in Plants.KINDS and tool in Plants.KINDS and id!=tool:
 		_focus_lost();tool=id;_plant_selected.clear();_plant_message="";choices.select_item(id);_refresh();return
 	# End the previous controller before activating another; no invisible draft survives.
@@ -163,6 +179,9 @@ func choose(id: String) -> void:
 	_pending_land=Vector2.INF;_brush_last=Vector2.INF;_brush_message="";_plant_message="";_plant_last=Vector2.INF;_plant_selected.clear()
 	choices.select_item(id);choices.present(main.decoration_state.snapshot(),busy)
 	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id in Flocks.TOOLS and key=="count") or (id=="fields" and key in ["columns","rows"]) or (id in Plants.KINDS and key in ["radius","density"])
+	_route_actions.visible=id in Routes.KINDS;_route_buttons.gate.visible=id=="fence"
+	_route_index=-1;_route_message=""
+	if id=="road" and _route_mode=="gate": _select_route_mode("draw")
 	_flock_actions.visible=id in Flocks.TOOLS
 	_flock_redraw=false
 	_plant_actions.visible=id in Plants.KINDS
@@ -186,6 +205,55 @@ func choose(id: String) -> void:
 		main.decoration_layout.begin_mode();main.decoration_layout.hud.hide()
 		main.decoration_layout.select_item(id)
 		_decoration_changed();return
+	_refresh()
+
+func _select_route_mode(mode: String) -> void:
+	_focus_lost();_route_mode=mode;_route_message=""
+	for key: String in _route_buttons: _route_buttons[key].button_pressed=key==mode
+
+func _press_route(point: Vector2) -> void:
+	_route_index=-1;_route_message=""
+	if _route_mode=="draw": return
+	var nearest: int=-1;var distance: float=.65;var projected:=Vector2.ZERO
+	for i: int in draft.routes.size():
+		var entry: Dictionary=draft.routes[i]
+		if entry.kind!=tool: continue
+		var at: Vector2=Routes.nearest_on_line(entry,point)
+		if at.distance_to(point)<distance: distance=at.distance_to(point);nearest=i;projected=at
+	if nearest<0: return
+	if _route_mode=="erase": draft.routes.remove_at(nearest)
+	elif tool=="fence":
+		var openings: Array=draft.routes[nearest].openings
+		var found: int=-1
+		for i: int in openings.size():
+			if Routes.point(openings[i]).distance_to(projected)<Routes.GATE_HALF: found=i;break
+		if found>=0: openings.remove_at(found)
+		elif openings.size()<32: openings.append([float("%.4f"%projected.x),float("%.4f"%projected.y)])
+	_refresh()
+
+func _draw_route(point: Vector2) -> void:
+	point=IslandSpace.snap(point)
+	if point==_last_cell: return
+	_last_cell=point
+	var before: Array=draft.routes.duplicate(true)
+	if _route_index<0:
+		var start: Vector2=IslandSpace.snap(_start)
+		if start==point: return
+		var id: int=1
+		for entry: Dictionary in draft.routes: id=maxi(id,int(entry.id)+1)
+		draft.routes.append({"id":id,"kind":tool,"points":[[start.x,start.y],[point.x,point.y]],"openings":[]})
+		_route_index=draft.routes.size()-1
+	else:
+		var points: Array=draft.routes[_route_index].points
+		var end: Vector2=Routes.point(points[-1]);var previous_point: Vector2=Routes.point(points[-2])
+		if end==point: return
+		if absf((end-previous_point).cross(point-end))<.001 and (end-previous_point).dot(point-end)>0:
+			points[-1]=[point.x,point.y]
+		else: points.append([point.x,point.y])
+	if not Routes.valid(draft.routes):
+		draft.routes=before
+		if _route_index>=draft.routes.size(): _route_index=-1
+		_route_message="最多 64 笔、256 个转折点和 256 米线路；请先移除部分内容。"
 	_refresh()
 
 func _reset_flock_area() -> void:
@@ -334,6 +402,7 @@ func _commit() -> void:
 	commit_requested.emit(draft.duplicate(true),false)
 
 func _layout_check_pending() -> bool:
+	if tool in Routes.KINDS: return is_instance_valid(route_preview) and route_preview.pending and route_preview.message.is_empty()
 	if tool=="bridge": return is_instance_valid(bridge_preview) and bridge_preview.pending and bridge_preview.message.is_empty()
 	if tool in Flocks.TOOLS: return is_instance_valid(flock_preview) and flock_preview.pending and flock_preview.message.is_empty()
 	if Buildings.BASE.has(tool): return is_instance_valid(building_preview) and building_preview.pending and building_preview.message.is_empty()
@@ -406,6 +475,15 @@ func accept_building(plan: RefCounted) -> void:
 
 func accept_flock(plan: RefCounted) -> void:
 	flock_preview.accept(plan);flock_preview.free();flock_preview=null
+	var close_now: bool=close_after_commit
+	set_busy(false);previous=main.previous_layout.duplicate(true)
+	draft=plan.snapshot();candidate=plan
+	if close_now:
+		_clear_preview();active=false;_start=Vector2.INF;hide();closed.emit()
+	else: choose(tool)
+
+func accept_routes(plan: RefCounted) -> void:
+	route_preview.accept(plan);route_preview.free();route_preview=null
 	var close_now: bool=close_after_commit
 	set_busy(false);previous=main.previous_layout.duplicate(true)
 	draft=plan.snapshot();candidate=plan
@@ -556,7 +634,9 @@ func _press(screen: Vector2) -> void:
 					if member==hit or member.is_ancestor_of(hit): selected=true;break
 			if not selected: return
 	_start=point;_drag_snapshot=draft.duplicate(true);_last_cell=Vector2.INF
-	if tool=="land":
+	if tool in Routes.KINDS:
+		_press_route(point)
+	elif tool=="land":
 		_brush_last=point;_pending_land=point;_flush_land()
 	elif tool in Plants.KINDS:
 		_plant_last=point
@@ -570,6 +650,9 @@ func _press(screen: Vector2) -> void:
 func _drag(screen: Vector2) -> void:
 	var point: Vector2=world_point(screen)
 	if not point.is_finite(): return
+	if tool in Routes.KINDS:
+		if _route_mode=="draw": _draw_route(point)
+		return
 	if tool in Plants.KINDS:
 		if _plant_mode=="move": _move_plants(point)
 		elif _plant_mode!="point": _paint_plants(point)
@@ -623,6 +706,7 @@ func _drag(screen: Vector2) -> void:
 
 func issue() -> String:
 	if candidate==null:
+		if tool in Routes.KINDS: return "线路超出可布置范围或数量上限，请缩短后再试。"
 		if tool in Plants.KINDS: return "植物位置超出布置范围，请移回小岛附近。"
 		if Buildings.BASE.has(tool): return "建筑位置超出可布置范围，请移回岛内。"
 		if tool=="fields": return "田块位置或大小超出范围。最多 12 块田、384 个田格，每块田最多 8 行 × 8 列；可取消后重新调整。"
@@ -632,6 +716,9 @@ func issue() -> String:
 		return "从现有岸边涂抹，让新土地保持连通。"
 	var plants_issue: String=Plants.terrain_issue(candidate)
 	if not plants_issue.is_empty(): return plants_issue
+	if tool in Routes.KINDS and is_instance_valid(route_preview):
+		if not route_preview.message.is_empty(): return route_preview.message
+		if route_preview.pending: return "正在校对道路和围栏通路…"
 	if tool in Plants.KINDS and is_instance_valid(plant_preview): return plant_preview.message
 	if tool in Flocks.TOOLS and is_instance_valid(flock_preview):
 		if not flock_preview.message.is_empty(): return flock_preview.message
@@ -662,6 +749,11 @@ func _refresh() -> void:
 	if (tool in ["trellis","bridge"] or Buildings.BASE.has(tool)) and candidate!=null: draft=candidate.snapshot()
 	if tool.is_empty():
 		_status.text="";_confirm.disabled=true;_undo.disabled=not _has_undo();return
+	if tool in Routes.KINDS and candidate!=null and (draft!=main.farm_state.snapshot().layout or is_instance_valid(route_preview)):
+		if not is_instance_valid(route_preview):
+			route_preview=RoutePreview.new();main.add_child(route_preview);route_preview.configure(main)
+			route_preview.checked.connect(_routes_checked)
+		route_preview.update(candidate)
 	if tool in Plants.KINDS and candidate!=null:
 		_ensure_plant_preview();plant_preview.update(candidate)
 	if tool in Flocks.TOOLS and candidate!=null and draft!=main.farm_state.snapshot().layout:
@@ -693,6 +785,8 @@ func _refresh() -> void:
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
 	_undo.disabled=busy or not _has_undo()
 	_status.text=message if not message.is_empty() else {"fields":"点击田块后拖动移动；圆点调大小，田外圆点转向。点添田后在空地拖出新田。","land":"按住左键沿岸涂抹，土地与水边植物实时变化。完成保存，Esc 取消。","trellis":"拖动菜架移动；圆点调长度和方向。","bridge":"拖动任一桥头，让两端落在岸上。"}.get(tool,"")
+	if tool in Routes.KINDS and message.is_empty():
+		_status.text=_route_message
 	if tool=="land" and not _brush_message.is_empty(): _status.text=_brush_message
 	if tool in Plants.KINDS and message.is_empty():
 		_status.text=_plant_message if not _plant_message.is_empty() else "点放或按住左键涂刷；擦除仅作用于当前植物。已布置 %d / %d 簇。"%[draft.plants.size(),Plants.MAX_CLUMPS]
@@ -700,7 +794,9 @@ func _refresh() -> void:
 	_plant_rotate.disabled=_plant_selected.is_empty() or busy
 	_render_preview(message.is_empty())
 
-func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trellis: bool=false, keep_building: bool=false, keep_flock: bool=false, keep_bridge: bool=false, keep_plants: bool=false) -> void:
+func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trellis: bool=false, keep_building: bool=false, keep_flock: bool=false, keep_bridge: bool=false, keep_plants: bool=false, keep_routes: bool=false) -> void:
+	if not keep_routes and is_instance_valid(route_preview):
+		route_preview.retire();route_preview=null
 	if not keep_plants and is_instance_valid(plant_preview):
 		plant_preview.free();plant_preview=null
 	if not keep_bridge and is_instance_valid(bridge_preview):
@@ -719,7 +815,7 @@ func _clear_preview(keep_shore: bool=false, keep_fields: bool=false, keep_trelli
 
 func _render_preview(valid: bool) -> void:
 	var changed: bool=candidate!=null and draft!=main.farm_state.snapshot().layout
-	_clear_preview(tool=="land" and changed,tool=="fields",tool=="trellis" and changed,Buildings.BASE.has(tool) and changed,tool in Flocks.TOOLS and changed,tool=="bridge" and changed,tool in Plants.KINDS)
+	_clear_preview(tool=="land" and changed,tool=="fields",tool=="trellis" and changed,Buildings.BASE.has(tool) and changed,tool in Flocks.TOOLS and changed,tool=="bridge" and changed,tool in Plants.KINDS,tool in Routes.KINDS)
 	_preview=Node3D.new();_preview.name="ConstructionPreview";main.add_child(_preview)
 	var tint:=Color("88b779") if valid else Color("d77d62")
 	var plan: RefCounted=candidate if candidate!=null else main.courtyard_plan
@@ -728,7 +824,9 @@ func _render_preview(valid: bool) -> void:
 			if not is_instance_valid(_shore):
 				_shore=ShorePreview.new();main.add_child(_shore);_shore.configure(main.get_node("Environment"))
 			_shore.update(plan)
-	if tool in Plants.KINDS and _plant_last.is_finite():
+	if tool in Routes.KINDS:
+		for polygon: PackedVector2Array in plan.route_footprints().values(): _outline(polygon,plan.ground_height+.06,tint,false)
+	elif tool in Plants.KINDS and _plant_last.is_finite():
 		var circle:=PackedVector2Array()
 		var radius: float=.35 if _plant_mode=="point" else _values.radius.value
 		for i: int in 32: circle.append(_plant_last+Vector2.from_angle(i*TAU/32)*radius)
@@ -774,6 +872,13 @@ func _flock_checked() -> void:
 	if not active or tool not in Flocks.TOOLS: return
 	var message: String=issue()
 	_status.text=message
+	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
+	_render_preview(message.is_empty())
+
+func _routes_checked() -> void:
+	if not active or tool not in Routes.KINDS: return
+	var message: String=issue()
+	_status.text=message if not message.is_empty() else _route_message
 	_confirm.disabled=busy or not message.is_empty() or draft==main.farm_state.snapshot().layout
 	_render_preview(message.is_empty())
 

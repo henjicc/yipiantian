@@ -75,6 +75,11 @@ func rebuild_spaces(update_water: bool=true, progressive: bool=false) -> void:
 			slice=Time.get_ticks_usec()
 		if not is_instance_valid(child): continue
 		if not child is Node3D or child == self: continue
+		if child.name=="PlayerRoutes":
+			yard.add_floor(child.get_node("Roads"),false)
+			for key: String in environment.plan.route_footprints():
+				if key.begins_with("player_fence_"): yard.block(environment.plan.route_footprints()[key])
+			continue
 		if child.name=="PlayerPlants":
 			if update_water:
 				for polygon: PackedVector2Array in preload("res://layout/plantings.gd").footprints(environment.plan.plants).values(): water.block(polygon)

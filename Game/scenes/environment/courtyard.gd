@@ -149,6 +149,9 @@ func _ready() -> void:
 		route_obstacles.merge(preload("res://presentation/decoration_geometry.gd").footprints(prepared_decorations,plan.ground_height))
 	circulation.build(plan,route_obstacles)
 	_build_paths()
+	var player_routes:=preload("res://presentation/player_routes.gd").new()
+	player_routes.name="PlayerRoutes";add_child(player_routes);player_routes.update(plan,self)
+	_contact_sources.append(player_routes)
 	var fence: Node3D = FenceGeometry.build(plan.fences,plan.fence_style)
 	add_child(fence)
 	_contact_sources.append(fence)
@@ -172,7 +175,7 @@ func _circulation_obstacles() -> Dictionary:
 	var rise: float=plan.ground_height-.13
 	for node: Node3D in get_children():
 		if node.get_meta("player_dressing_hidden",false): continue
-		if node.name in ["WaterSurface","DistantLandscape","NeighborIslets","DecorationSlots","OsmanthusLeaves","LivingDetails","GardenPaths","PlayerPlants"]: continue
+		if node.name in ["WaterSurface","DistantLandscape","NeighborIslets","DecorationSlots","OsmanthusLeaves","LivingDetails","GardenPaths","PlayerPlants","PlayerRoutes"]: continue
 		if node.has_meta("bank_role") or String(node.name).begins_with("BankGrass"): continue
 		if node.name=="EntranceTrellis" and not plan.construction.trellis.is_empty():
 			result.EntranceTrellis=Construction.trellis_footprint(plan);continue
@@ -186,6 +189,7 @@ func _circulation_obstacles() -> Dictionary:
 			var polygon: PackedVector2Array = Space.footprint(prop,.05+rise,.70+rise)
 			if polygon.size()>=3: result[String(prop.name)] = polygon
 	result.merge(preload("res://layout/plantings.gd").footprints(plan.plants))
+	result.merge(plan.route_footprints())
 	return result
 
 func _process(delta: float) -> void:
@@ -295,7 +299,7 @@ func make_paths(layout: RefCounted) -> Node3D:
 	# A separate seed makes a route change independent of all surrounding foliage.
 	var road_rng := RandomNumberGenerator.new()
 	road_rng.seed=931772
-	var placed := PackedVector2Array()
+	var placed: PackedVector2Array=preload("res://layout/player_routes.gd").road_points(layout.routes)
 	var routes: Array[PackedVector3Array] = layout.paths
 	for route in routes:
 		for k in range(route.size()-1):
@@ -308,14 +312,18 @@ func make_paths(layout: RefCounted) -> Node3D:
 					if old.distance_squared_to(point)<.27*.27: duplicate=true;break
 				if duplicate: continue
 				placed.append(point)
-				var shape: int = 1 if road_rng.randf()<.65 else 2
-				var stone: Node3D=(load(ROOT+"modules/stone_%d.glb"%shape) as PackedScene).instantiate()
-				holder.add_child(stone);stone.position=p;stone.rotation.y=deg_to_rad(road_rng.randf_range(-180,180));stone.scale=Vector3(.40,.28,.40)
-				_apply_pigment(stone,"stone_%d"%shape)
-				stone.set_meta("path_stone",true)
-				_tint_stone(stone,Color("93907e")*road_rng.randf_range(.90,1.08))
+				holder.add_child(make_path_stone(p,road_rng))
 
 	return holder
+
+func make_path_stone(p: Vector3, road_rng: RandomNumberGenerator) -> Node3D:
+	var shape: int = 1 if road_rng.randf()<.65 else 2
+	var stone: Node3D=(load(ROOT+"modules/stone_%d.glb"%shape) as PackedScene).instantiate()
+	stone.position=p;stone.rotation.y=deg_to_rad(road_rng.randf_range(-180,180));stone.scale=Vector3(.40,.28,.40)
+	_apply_pigment(stone,"stone_%d"%shape)
+	stone.set_meta("path_stone",true)
+	_tint_stone(stone,Color("93907e")*road_rng.randf_range(.90,1.08))
+	return stone
 
 func _tint_stone(node: Node, color: Color) -> void:
 	if node is MeshInstance3D:
@@ -503,7 +511,7 @@ func _build_contact_shading() -> void:
 	owned.append(get_bridge())
 	for id: String in Buildings.BASE: owned.append_array(building_contact_sources(id))
 	for source: Node3D in _contact_sources:
-		if source.name=="EntranceTrellis": continue
+		if source.name in ["EntranceTrellis","PlayerRoutes"] or source.has_meta("fence_spans"): continue
 		var attached: bool=false
 		for member: Node3D in owned:
 			if member==source or member.is_ancestor_of(source): attached=true;break

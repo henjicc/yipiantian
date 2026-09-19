@@ -7,6 +7,10 @@ const BankGeometry = preload("res://layout/bank_geometry.gd")
 const Construction = preload("res://layout/island_construction.gd")
 const IslandSpace = preload("res://layout/island_space.gd")
 const Plants = preload("res://layout/plantings.gd")
+const Routes=preload("res://layout/player_routes.gd")
+var routes: Array=[]
+var _route_source: Array=[]
+var _route_footprints: Dictionary={}
 var plants: Array=[]
 var construction: Dictionary = Construction.initial()
 var scenery_expansion := Vector2.ZERO
@@ -92,6 +96,13 @@ func _init() -> void:
 		for i: int in 16: cells.append("cell_%02d" % (i+1))
 		fields.append({"id": FIELD_IDS[index], "position": Vector3(-3.3 + index % 3 * 3.25,.2,int(index / 3) * 2.8), "yaw": 0.0, "size": Vector2(2.6,2.05), "columns":4, "rows":4, "cells":cells, "seed":91744+index*7919})
 
+func route_footprints() -> Dictionary:
+	# This cache belongs to one plan, including private worker plans. No shared
+	# mutable geometry is accessed concurrently by navigation and scene updates.
+	if routes!=_route_source:
+		_route_footprints=Routes.footprints(routes);_route_source=routes.duplicate(true)
+	return _route_footprints
+
 func field_transform(index: int) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, deg_to_rad(fields[index].yaw)), fields[index].position)
 
@@ -128,13 +139,14 @@ func snapshot() -> Dictionary:
 	for field: Dictionary in fields:
 		encoded.append({"id":field.id,"position":[field.position.x,field.position.y,field.position.z],"yaw":field.yaw,
 			"size":[field.size.x,field.size.y],"columns":field.columns,"rows":field.rows,"cells":field.cells.duplicate(),"seed":field.seed})
-	return {"shore":[shore_expansion.x,shore_expansion.y],"terrain":[ground_height,bank_width],"fields":encoded,"fence_style":fence_style,"construction":construction.duplicate(true),"plants":plants.duplicate(true)}
+	return {"shore":[shore_expansion.x,shore_expansion.y],"terrain":[ground_height,bank_width],"fields":encoded,"fence_style":fence_style,"construction":construction.duplicate(true),"plants":plants.duplicate(true),"routes":routes.duplicate(true)}
 
 static func from_snapshot(data: Dictionary) -> RefCounted:
 	# This is the disk/edit admission boundary. Reject malformed layouts before any
 	# geometry or crop state is rebuilt; JSON must never allocate unbounded meshes.
 	if not Plants.valid(data.get("plants")): return null
-	if data.size()!=6 or not _numbers(data.get("shore"),2) or not data.get("fields") is Array: return null
+	if not Routes.valid(data.get("routes")): return null
+	if data.size()!=7 or not _numbers(data.get("shore"),2) or not data.get("fields") is Array: return null
 	if not Construction.valid(data.get("construction")): return null
 	if not _numbers(data.get("terrain"),2): return null
 	if data.terrain[0]<.08 or data.terrain[0]>.38 or data.terrain[1]<.8 or data.terrain[1]>1.2: return null
@@ -172,6 +184,7 @@ static func from_snapshot(data: Dictionary) -> RefCounted:
 	plan.fields = decoded
 	plan.fence_style=data.fence_style
 	plan.plants=Plants.canonical(data.plants)
+	plan.routes=Routes.canonical(data.routes)
 	if not plan.apply_construction(data.construction): return null
 	return plan
 

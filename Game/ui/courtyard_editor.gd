@@ -224,6 +224,7 @@ func _change(key: String, value: float) -> void:
 		"west","south":
 			var construction: Dictionary=draft.construction.duplicate(true)
 			var plants: Array=draft.plants.duplicate(true)
+			var routes: Array=draft.routes.duplicate(true)
 			var fields: Array[Dictionary]=draft.fields
 			var fence_style: String=draft.fence_style
 			var height: float=draft.ground_height
@@ -234,6 +235,7 @@ func _change(key: String, value: float) -> void:
 			draft.fields=fields
 			draft.fence_style=fence_style
 			draft.plants=plants
+			draft.routes=routes
 			draft.apply_construction(construction)
 	_changed()
 

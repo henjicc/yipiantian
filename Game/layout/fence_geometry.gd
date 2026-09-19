@@ -39,6 +39,8 @@ static func build(spans: Array[Dictionary], style: String = "bamboo") -> Node3D:
 		material.set_shader_parameter("wash_scale",3.5)
 		mesh.material_override=material
 		holder.add_child(mesh)
+	var contacts:=preload("res://presentation/fence_contacts.gd").new()
+	contacts.name="Contacts";holder.add_child(contacts)
 	return holder
 
 static func _pole(surface: ConstructionMesh,a: Vector3,b: Vector3,radius: float) -> void:

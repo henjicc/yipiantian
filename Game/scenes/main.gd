@@ -712,8 +712,14 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	if requested_plan==null: return
 	var plants_issue: String=CourtyardPlan.Plants.terrain_issue(requested_plan)
 	if not plants_issue.is_empty(): island_builder.set_busy(false,plants_issue);return
+	var route_issue: String=CourtyardPlan.Routes.terrain_issue(requested_plan)
+	if not route_issue.is_empty(): island_builder.set_busy(false,route_issue);return
 	var current: Dictionary=farm_state.snapshot().layout
 	var unchanged: Dictionary=snapshot.duplicate(true)
+	unchanged.routes=current.routes.duplicate(true)
+	if unchanged==current and snapshot!=current:
+		_apply_routes(snapshot,undo);return
+	unchanged=snapshot.duplicate(true)
 	unchanged.plants=current.plants.duplicate(true)
 	if unchanged==current and snapshot!=current:
 		_apply_plants(snapshot,undo)
@@ -811,6 +817,37 @@ func _apply_plants(snapshot: Dictionary, undo: bool) -> void:
 	_refresh_hud()
 	$Environment.refresh_terrain.call_deferred(true)
 	print("PLANTS_COMMIT_MS ",Time.get_ticks_msec()-started)
+
+func _apply_routes(snapshot: Dictionary, undo: bool) -> void:
+	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
+	if plan==null: return
+	island_builder.set_busy(true,"正在校对道路和围栏通路…")
+	if not is_instance_valid(island_builder.route_preview):
+		island_builder._clear_preview()
+		island_builder.route_preview=preload("res://presentation/route_layout_preview.gd").new()
+		add_child(island_builder.route_preview);island_builder.route_preview.configure(self)
+	var preview: Node3D=island_builder.route_preview
+	preview.update(plan)
+	while preview.pending:
+		await get_tree().process_frame
+		if _exiting: return
+	if preview.validated==null:
+		island_builder.set_busy(false,preview.message);return
+	var started: int=Time.get_ticks_msec()
+	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	if not candidate.apply_layout(snapshot,clock.call()).ok:
+		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
+	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	if not saved.ok:
+		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
+	previous_layout={} if undo else farm_state.snapshot().layout
+	previous_decorations={};farm_state=candidate
+	plan=preview.validated
+	island_builder.accept_routes(plan)
+	decoration_layout.refresh_path_geometry()
+	refresh_farm();seasonal_courtyard.refresh_paths($Environment)
+	$Environment.refresh_terrain.call_deferred(false)
+	print("ROUTES_COMMIT_MS ",Time.get_ticks_msec()-started)
 
 func _apply_bridge(snapshot: Dictionary, undo: bool) -> void:
 	var plan: RefCounted=CourtyardPlan.from_snapshot(snapshot)
@@ -1020,6 +1057,8 @@ func _apply_courtyard(snapshot: Dictionary, undo: bool) -> void:
 	if requested_plan==null: return
 	var plants_issue: String=CourtyardPlan.Plants.terrain_issue(requested_plan)
 	if not plants_issue.is_empty(): courtyard_edit.editor.set_busy(false,plants_issue);return
+	var route_issue: String=CourtyardPlan.Routes.terrain_issue(requested_plan)
+	if not route_issue.is_empty(): courtyard_edit.editor.set_busy(false,route_issue);return
 	var candidate:=FarmState.new()
 	candidate.restore_snapshot(farm_state.snapshot())
 	var result: Dictionary=candidate.apply_layout(snapshot,clock.call())

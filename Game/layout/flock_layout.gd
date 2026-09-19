@@ -99,7 +99,8 @@ static func land_issue(plan: RefCounted, obstacles: Dictionary) -> String:
 	var inner: Array[PackedVector2Array]=Geometry2D.offset_polygon(plan.plateau(),-.21)
 	if inner.is_empty(): return "鸡群没有足够平地，请先调整活动区域。"
 	region.configure(Rect2(flock.area[0],flock.area[1],flock.area[2],flock.area[3]),.21,inner[0])
-	for polygon: PackedVector2Array in obstacles.values(): region.block(polygon)
+	for key: String in obstacles:
+		if not key.begins_with("player_road_"): region.block(obstacles[key])
 	for i: int in plan.fields.size(): region.block(plan.field_polygon(i))
 	for span: Dictionary in plan.fences:
 		var a:=Vector2(span.a.x,span.a.z);var b:=Vector2(span.b.x,span.b.z)
