@@ -1,5 +1,5 @@
 extends RefCounted
-## Persisted parameters for the first in-world construction slice. Coordinates are XZ.
+## Persisted island and structure parameters. Brush stamps use world XZ coordinates.
 const IslandSpace = preload("res://layout/island_space.gd")
 const Buildings = preload("res://layout/building_layout.gd")
 const BRIDGE_STYLES: Array[String] = ["平桥", "拱桥"]
@@ -9,7 +9,7 @@ const BRUSH_SIZE: float = 1.5
 const Flocks=preload("res://layout/flock_layout.gd")
 
 static func initial() -> Dictionary:
-	return {"land":[],"trellis":[],"bridge":[],"flocks":Flocks.initial(),"buildings":Buildings.initial()}
+	return {"land":[],"east_land":[],"trellis":[],"bridge":[],"flocks":Flocks.initial(),"buildings":Buildings.initial()}
 
 static func numbers(value: Variant, count: int) -> bool:
 	if not value is Array or value.size()!=count: return false
@@ -18,11 +18,12 @@ static func numbers(value: Variant, count: int) -> bool:
 	return true
 
 static func valid(data: Variant) -> bool:
-	if not data is Dictionary or data.size()!=5 or not Buildings.valid(data.get("buildings")): return false
-	if not data.get("land") is Array or data.land.size()>MAX_PATCHES: return false
-	for patch: Variant in data.land:
+	if not data is Dictionary or data.size()!=6 or not Buildings.valid(data.get("buildings")): return false
+	for key: String in ["land","east_land"]:
+		if not data.get(key) is Array or data[key].size()>MAX_PATCHES: return false
+	for patch: Variant in data.land+data.east_land:
 		if not numbers(patch,4) and not (numbers(patch,5) and patch[4]==-1): return false
-		if absf(patch[0])>18 or absf(patch[1])>18 or patch[2]<CELL or patch[3]<CELL or patch[2]>5 or patch[3]>5: return false
+		if absf(patch[0])>30 or absf(patch[1])>30 or patch[2]<CELL or patch[3]<CELL or patch[2]>5 or patch[3]>5: return false
 		for n: float in patch:
 			if absf(n/CELL-roundf(n/CELL))>.0001: return false
 	if not data.get("trellis") is Array or not data.get("bridge") is Array: return false
@@ -47,16 +48,16 @@ static func brush_cell(point: Vector2) -> Vector2:
 	# Ray/plane round trips must not switch cells at a numerical grid boundary.
 	return Vector2(IslandSpace.cell_at(point.snapped(Vector2.ONE*.0001)))*CELL
 
-static func paint(land: Array, outline: PackedVector2Array, point: Vector2, erase: bool=false) -> PackedVector2Array:
+static func paint(land: Array, outline: PackedVector2Array, point: Vector2, erase: bool=false, local_from_world: Transform2D=Transform2D.IDENTITY) -> PackedVector2Array:
 	var cell: Vector2=brush_cell(point)
 	var stamp: Array=[cell.x-CELL,cell.y-CELL,BRUSH_SIZE,BRUSH_SIZE]
 	if erase: stamp.append(-1)
-	if absf(stamp[0])>18 or absf(stamp[1])>18 or land.size()>=MAX_PATCHES: return outline
-	var polygon: PackedVector2Array=rectangle(stamp)
+	if absf(stamp[0])>30 or absf(stamp[1])>30 or land.size()>=MAX_PATCHES: return outline
+	var polygon: PackedVector2Array=local_from_world*rectangle(stamp)
 	if erase:
 		if not IslandSpace.overlaps(polygon,outline): return outline
 	elif IslandSpace.supported(polygon,outline): return outline
-	var merged: PackedVector2Array=land_outline(outline,[stamp])
+	var merged: PackedVector2Array=land_outline(outline,[stamp],local_from_world)
 	if not merged.is_empty():
 		land.append(stamp)
 		return merged
@@ -79,10 +80,10 @@ static func clear_water(point: Vector2, outline: PackedVector2Array, clearance: 
 		point=nearest+direction*(clearance+.05)
 	return point
 
-static func land_outline(original: PackedVector2Array, patches: Array) -> PackedVector2Array:
+static func land_outline(original: PackedVector2Array, patches: Array, local_from_world: Transform2D=Transform2D.IDENTITY) -> PackedVector2Array:
 	var outline: PackedVector2Array=original.duplicate()
 	for values: Array in patches:
-		var patch: PackedVector2Array=rectangle(values)
+		var patch: PackedVector2Array=local_from_world*rectangle(values)
 		# Require area overlap, not a point/edge touch which leaves a fragile neck.
 		if Geometry2D.intersect_polygons(outline,patch).is_empty(): return PackedVector2Array()
 		# Ordered subtractive stamps can trim the authored island, and later

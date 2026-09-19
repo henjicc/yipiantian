@@ -45,7 +45,7 @@ func _run() -> void:
 	folder=ProjectSettings.globalize_path("res://../.local/verification/trellis-planting-%d"%Time.get_unix_time_from_system())
 	DirAccess.make_dir_recursive_absolute(folder);print("EVIDENCE "+folder)
 	var plan:=Plan.new()
-	plan.apply_construction({"land":[[-4,5,5,5],[0,5,4,5],[-4,9,5,4],[0,9,4,4]],"trellis":[],"bridge":[],"buildings":{"house":[],"kitchen":[]},"flocks":preload("res://layout/flock_layout.gd").initial()})
+	plan.apply_construction({"east_land":[],"land":[[-4,5,5,5],[0,5,4,5],[-4,9,5,4],[0,9,4,4]],"trellis":[],"bridge":[],"buildings":{"house":[],"kitchen":[]},"flocks":preload("res://layout/flock_layout.gd").initial()})
 	if Plan.from_snapshot(plan.snapshot())==null:
 		expect(false,"Expanded test land must satisfy current layout rules");quit(1);return
 	scene=load("res://scenes/main.tscn").instantiate();scene.name="FarmExperience";scene.courtyard_plan=plan

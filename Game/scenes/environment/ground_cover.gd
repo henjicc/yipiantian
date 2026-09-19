@@ -115,12 +115,13 @@ static func grass_cells(polygons: Array) -> Dictionary:
 	return result
 
 func update_tiles(plan: RefCounted, expansion_only: bool, changed: Dictionary={}) -> void:
-	if expansion_only and plan.construction.land.is_empty():
+	if expansion_only and plan.construction.land.is_empty() and plan.construction.east_land.is_empty():
 		for tile: Node3D in _tiles.values(): tile.free()
 		_tiles.clear();_tile_shapes.clear();return
-	var base: PackedVector2Array=plan.unpainted().plateau()
-	var plateau: PackedVector2Array=plan.plateau()
-	var bounds: Rect2=plan.land_bounds()
+	var original: RefCounted=plan.unpainted()
+	var bases: Array[PackedVector2Array]=[original.plateau(),original.plateau(1)]
+	var plateaus: Array[PackedVector2Array]=[plan.plateau(),plan.plateau(1)]
+	var bounds: Rect2=plan.buildable_bounds() if expansion_only else plan.land_bounds()
 	var fields: Array[PackedVector2Array]=[]
 	for index: int in plan.fields.size(): fields.append(plan.field_polygon(index,.07))
 	fields.append_array(plan.route_footprints().values())
@@ -137,10 +138,10 @@ func update_tiles(plan: RefCounted, expansion_only: bool, changed: Dictionary={}
 			var cell:=Vector2i(x,z)
 			if not changed.is_empty() and not changed.has(cell): continue
 			var rect:=PackedVector2Array([Vector2(x,z),Vector2(x+1,z),Vector2(x+1,z+1),Vector2(x,z+1)])
-			var pieces: Array[PackedVector2Array]=Geometry2D.clip_polygons(rect,base) if expansion_only else Geometry2D.intersect_polygons(rect,base)
-			if pieces.is_empty(): continue
 			var shape: Array[PackedVector2Array]=[]
-			for piece: PackedVector2Array in pieces: shape.append_array(Geometry2D.intersect_polygons(piece,plateau))
+			for island: int in (2 if expansion_only else 1):
+				var pieces: Array[PackedVector2Array]=Geometry2D.clip_polygons(rect,bases[island]) if expansion_only else Geometry2D.intersect_polygons(rect,bases[island])
+				for piece: PackedVector2Array in pieces: shape.append_array(Geometry2D.intersect_polygons(piece,plateaus[island]))
 			if shape.is_empty(): continue
 			var blocked: Array[PackedVector2Array]=[]
 			for field: PackedVector2Array in fields:
@@ -169,7 +170,7 @@ func update_tiles(plan: RefCounted, expansion_only: bool, changed: Dictionary={}
 				if not _clear_planting(p,blocked,routes): continue
 				for polygon: PackedVector2Array in shape:
 					if Geometry2D.is_point_in_polygon(p,polygon):
-						_tuft(surface,Vector3(p.x,plan.ground_height-.002,p.y),height,4);count+=1;break
+						_tuft(surface,Vector3(p.x,plan.ground_height_at(p)-.002,p.y),height,4);count+=1;break
 			if count==0: continue
 			var grass:=MeshInstance3D.new();grass.mesh=surface.commit()
 			grass.material_override=ShaderMaterial.new();grass.material_override.shader=SHADER

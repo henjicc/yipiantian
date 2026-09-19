@@ -132,9 +132,10 @@ func field_polygon(index: int, margin: float = 0.0) -> PackedVector2Array:
 	return IslandSpace.footprint(fields[index].size, field_transform(index), margin)
 
 func unpainted() -> RefCounted:
-	var data: Dictionary=snapshot()
-	data.construction.land=[]
-	return from_snapshot(data)
+	var base: RefCounted=load("res://layout/courtyard_plan.gd").new()
+	if shore_expansion!=Vector2.ZERO: base.expand_shore(shore_expansion.x,shore_expansion.y)
+	base.set_terrain(ground_height,bank_width)
+	return base
 
 func snapshot() -> Dictionary:
 	var encoded: Array[Dictionary] = []
@@ -198,40 +199,44 @@ func apply_construction(value: Dictionary) -> bool:
 	for kind: String in Construction.Flocks.KINDS:
 		construction.flocks[kind].count=int(construction.flocks[kind].count)
 		regions.append(construction.flocks[kind].area)
-	for values: Array in construction.land+[construction.trellis,construction.bridge]+regions:
+	for values: Array in construction.land+construction.east_land+[construction.trellis,construction.bridge]+regions:
 		for i: int in values.size(): values[i]=float(values[i])
 	# Canonical decimal precision survives JSON without retaining float32 noise
 	# from the scene's Vector3 anchors and dimension handles.
 	for values: Array in [construction.trellis,construction.bridge]:
 		for i: int in values.size(): values[i]=float("%.4f"%values[i])
 	if not construction.trellis.is_empty(): construction.trellis[5]=wrapf(construction.trellis[5],-180,180)
-	Construction.Buildings.apply(self)
 	# Boolean edits start from the displayed original curve, so the first
 	# brush stroke does not pull every untouched bank corner inward.
 	var source: PackedVector2Array=rim if construction.land.is_empty() else BankGeometry.contour(rim)
 	var combined: PackedVector2Array=Construction.land_outline(source,construction.land)
 	if combined.is_empty(): return false
 	rim=combined
+	source=east_rim if construction.east_land.is_empty() else BankGeometry.contour(east_rim)
+	combined=Construction.land_outline(source,construction.east_land,island_pose(1).affine_inverse())
+	if combined.is_empty(): return false
+	east_rim=combined
+	Construction.Buildings.apply(self)
 	var bounds: Rect2=land_bounds()
 	scenery_expansion=Vector2(maxf(shore_expansion.x,-7.6-bounds.position.x),maxf(shore_expansion.y,bounds.end.y-6.7))
 	animal_areas.yard=bounds
-	animal_areas.water=bounds.grow(5.5)
-	# Keep whole clumps (not only their centres) clear of the new waterline.
-	var painted: bool=not construction.land.is_empty()
-	var waterline: PackedVector2Array=BankGeometry.ring(BankGeometry.contour(rim,painted),1.055,bank_width,painted)
+	animal_areas.water=buildable_bounds().grow(5.5)
+	# Keep whole clumps clear of the changed waterline, using their original shore.
 	for i: int in lily_coves.size():
 		var p:=Vector2(lily_coves[i].x,lily_coves[i].z)
+		var island: int=1 if p.x>11 else 0
 		var affected: bool=false
-		for patch: Array in construction.land:
+		for patch: Array in land_patches(island):
 			if Rect2(patch[0],patch[1],patch[2],patch[3]).grow(1.6).has_point(p): affected=true;break
 		if not affected: continue
-		p=Construction.clear_water(p,waterline,1.5)
+		p=Construction.clear_water(p,island_ring(island,1.055),1.5)
 		lily_coves[i]=Vector3(p.x,lily_coves[i].y,p.y)
 	for i: int in reeds.size():
 		var p:=Vector2(reeds[i].x,reeds[i].z)
-		for patch: Array in construction.land:
+		var island: int=1 if p.x>9 else 0
+		for patch: Array in land_patches(island):
 			if Rect2(patch[0],patch[1],patch[2],patch[3]).has_point(p):
-				p=Construction.nearest_edge(p,rim)*.95
+				p=Construction.nearest_edge(p,island_ring(island,.95))
 				reeds[i]=Vector3(p.x,reeds[i].y,p.y)
 				break
 	if not construction.trellis.is_empty():
@@ -297,18 +302,26 @@ static func resized_field(field: Dictionary, columns: int, rows: int, size: Vect
 	candidate.cells = cells
 	return candidate
 
+func land_patches(island: int) -> Array:
+	return construction.east_land if island==1 else construction.land
+
+func island_rim(island: int) -> PackedVector2Array:
+	return east_rim if island==1 else rim
+
+func island_pose(island: int) -> Transform2D:
+	return Transform2D(-deg_to_rad(angles.east_bank),Vector2(anchors.east_bank.x,anchors.east_bank.z)) if island==1 else Transform2D.IDENTITY
+
+func island_ring(island: int, scale: float) -> PackedVector2Array:
+	var painted: bool=not land_patches(island).is_empty()
+	return island_pose(island)*BankGeometry.ring(BankGeometry.contour(island_rim(island),painted),scale,bank_width,painted)
+
 func plateau(island: int=0) -> PackedVector2Array:
 	if island==1:
-		var source: Array=[east_rim,angles.east_bank,anchors.east_bank,bank_width]
+		var source: Array=[east_rim,angles.east_bank,anchors.east_bank,bank_width,not construction.east_land.is_empty()]
 		if source!=_east_ground_source:
-			_east_ground_source=source.duplicate(true);_east_ground.clear()
-			var pose:=Transform3D(Basis(Vector3.UP,deg_to_rad(angles.east_bank)),anchors.east_bank)
-			for p: Vector2 in BankGeometry.ring(BankGeometry.contour(east_rim),.96,bank_width):
-				var world: Vector3=pose*Vector3(p.x,0,p.y)
-				_east_ground.append(Vector2(world.x,world.z))
+			_east_ground_source=source.duplicate(true);_east_ground=island_ring(1,.96)
 		return _east_ground
-	var painted: bool=not construction.land.is_empty()
-	return BankGeometry.ring(BankGeometry.contour(rim,painted), .96, bank_width,painted)
+	return island_ring(0,.96)
 
 func supporting_island(polygon: PackedVector2Array) -> int:
 	# An object must stand on one complete plateau, never on a union across water.
@@ -341,16 +354,7 @@ func buildable_bounds() -> Rect2:
 	return result
 
 func water_banks() -> Array[PackedVector2Array]:
-	# The waterline lies outside the flat buildable plateau. The slope is neither
-	# usable farmland nor clear water; use the same ring as the rendered bank.
-	var painted: bool = not construction.land.is_empty()
-	var main: PackedVector2Array = BankGeometry.ring(BankGeometry.contour(rim, painted), 1.055, bank_width, painted)
-	var east := PackedVector2Array()
-	var pose := Transform3D(Basis(Vector3.UP, deg_to_rad(angles.east_bank)), anchors.east_bank)
-	for point: Vector2 in BankGeometry.ring(BankGeometry.contour(east_rim), 1.055, bank_width):
-		var world: Vector3 = pose * Vector3(point.x, 0, point.y)
-		east.append(Vector2(world.x, world.z))
-	return [main, east]
+	return [island_ring(0,1.055),island_ring(1,1.055)]
 
 func land_bounds() -> Rect2:
 	var result := Rect2(rim[0],Vector2.ZERO)

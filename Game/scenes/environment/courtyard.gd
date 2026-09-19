@@ -236,7 +236,7 @@ func _bank(role: String, outline: PackedVector2Array, at: Vector3, yaw_degrees: 
 	node.rotation.y = deg_to_rad(yaw_degrees)
 	var surface := MeshInstance3D.new()
 	surface.name = "RoundedShore"
-	surface.mesh = BankGeometry.build(outline, plan.ground_height, plan.bank_width,role=="main" and not plan.construction.land.is_empty())
+	surface.mesh = BankGeometry.build(outline, plan.ground_height, plan.bank_width,not plan.land_patches(0 if role=="main" else 1).is_empty())
 	node.add_child(surface)
 	add_child(node)
 	_apply_pigment(node, "island_bank_v2" if role == "main" else "east_bank_v2")
@@ -288,7 +288,7 @@ func _build_ground() -> void:
 		var rock: Node3D=_module(entry.asset,entry.at,entry.yaw,entry.size)
 		rock.set_meta("shore_stone",true)
 		_tint_stone(rock,entry.color)
-	if not plan.construction.land.is_empty(): add_child(preload("res://presentation/shore_dressing.gd").plants(plan))
+	if not plan.construction.land.is_empty() or not plan.construction.east_land.is_empty(): add_child(preload("res://presentation/shore_dressing.gd").plants(plan))
 
 func _build_paths() -> void:
 	add_child(make_paths(plan))
@@ -360,10 +360,10 @@ func _build_architecture() -> void:
 		landing.set_meta("authored_bridge_path",true)
 		_fit_bridge_stone(landing)
 		_tint_stone(landing,Color("93907e"))
-	for i in 7:
-		var position_on_bank: Vector3 = plan.east_stones[i]
-		var rock: Node3D=_module("stone_%d"%(i%5),position_on_bank,i*39,Vector3(.85,2.8+(i%3)*.7,.8))
-		_fit_bridge_stone(rock);_tint_stone(rock,Color("829184"))
+	for entry: Dictionary in preload("res://presentation/shore_dressing.gd").stones(plan,1):
+		var rock: Node3D=_module(entry.asset,entry.at,entry.yaw,entry.size)
+		rock.set_meta("shore_stone",true);rock.set_meta("shore_island",1)
+		_fit_bridge_stone(rock);_tint_stone(rock,entry.color)
 	# The right bay contains the harvest table; the old bench occupied its legs
 	# and was partly buried in the raised veranda platform.
 

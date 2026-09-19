@@ -40,7 +40,7 @@ func _run() -> void:
 	expect(Geometry2D.is_point_in_polygon(Vector2(0,7),brush.candidate.rim) and Geometry2D.is_point_in_polygon(Vector2(2,8.5),brush.candidate.rim),"Stroke follows both legs of an L")
 	expect(scene.get_node("Environment")._floater_origins!=plants,"Nearby lotus clumps move before mouse release")
 	expect(scene.farm_state.snapshot()==original,"Unconfirmed stroke leaves authority unchanged")
-	expect(brush._shore._surface.mesh!=null,"Continuous shore triangulates")
+	expect(brush._shore._surfaces[0].mesh!=null,"Continuous shore triangulates")
 	await shot("04-held-foliage")
 	brush._focus_lost();await frames()
 	expect(brush.draft==original.layout,"Focus loss cancels unfinished stroke")

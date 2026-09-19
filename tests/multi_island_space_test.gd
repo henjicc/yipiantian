@@ -46,4 +46,22 @@ func _initialize() -> void:
 		for p: Vector3 in line:
 			if absf(p.y-(.095 if island==1 else .115))>.001: correct=false
 	expect(both.size()==2 and correct,"Automatic paving splits at water and keeps each island's own height")
+	snapshot=Plan.new().snapshot();snapshot.construction.east_land=[[15.5,-4,4,3.5]]
+	changed=Plan.from_snapshot(snapshot)
+	expect(changed!=null and changed.plateau(1)!=Plan.new().plateau(1) and changed.plateau()==Plan.new().plateau(),"Independent east edits preserve exact main ground")
+	expect(changed.supporting_island(Space.rectangle(Vector2(17,-3),Vector2(1,1)))==1,"New east land uses world-grid coordinates without scaling its world anchor")
+	snapshot.fields[0].position=[17.5,.18,-2.5]
+	changed=Plan.from_snapshot(snapshot)
+	expect(changed!=null and changed.unpainted().plateau(1)==Plan.new().plateau(1),"Original grass baseline survives a planted field outside the original east shore")
+	expect(Plan.from_snapshot(JSON.parse_string(JSON.stringify(changed.snapshot()))).snapshot()==changed.snapshot(),"East stamps and extension field survive JSON round trip")
+	snapshot.construction.east_land.append([18,-4,1.5,1.5,-1])
+	changed=Plan.from_snapshot(snapshot)
+	expect(changed!=null,"Ordered east shrink reconstructs connected land")
+	var pose:=Transform2D(.4,Vector2(13,-3))
+	var local: PackedVector2Array=Space.rectangle(Vector2(-2,-2),Vector2(4,4))
+	var patches: Array=[]
+	var painted: PackedVector2Array=Construction.paint(patches,local,pose*Vector2(1.5,0),false,pose.affine_inverse())
+	expect(not patches.is_empty() and Construction.land_outline(local,patches,pose.affine_inverse())==painted,"Rotated island stamps replay in island-local coordinates")
+	snapshot.construction.east_land=[[30.5,0,1.5,1.5]]
+	expect(not Construction.valid(snapshot.construction),"East stamps enforce the finite world bounds")
 	print("MULTI_ISLAND_SPACE checks=%d failures=%d"%[checks,failures]);quit(0 if failures==0 else 1)

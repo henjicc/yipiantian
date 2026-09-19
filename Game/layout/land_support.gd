@@ -5,7 +5,7 @@ const Construction=preload("res://layout/island_construction.gd")
 const Routes=preload("res://layout/player_routes.gd")
 const Bank=preload("res://layout/bank_geometry.gd")
 
-static func capture(main: Node3D) -> Dictionary:
+static func capture(main: Node3D, island: int=0) -> Dictionary:
 	var plan: RefCounted=main.courtyard_plan
 	var environment: Node3D=main.get_node("Environment")
 	var protected: Dictionary={}
@@ -17,7 +17,7 @@ static func capture(main: Node3D) -> Dictionary:
 		protected[key]=environment.layout_obstacles[key]
 	protected.merge(main.decoration_layout.ground_footprints())
 	for i: int in plan.fields.size(): protected["田块%d"%i]=plan.field_polygon(i,.14)
-	protected["桥头"]=Construction.bridge_approaches(plan)[0]
+	protected["桥头"]=Construction.bridge_approaches(plan)[island]
 	# Preserve the currently usable approaches as well as the object feet.
 	for i: int in plan.paths.size():
 		var line: PackedVector3Array=plan.paths[i]
@@ -34,9 +34,14 @@ static func capture(main: Node3D) -> Dictionary:
 			var at: Vector3=child.position
 			protected["根部"+id]=Space.rectangle(Vector2(at.x,at.z)-Vector2.ONE*.55,Vector2.ONE*1.1)
 	var grounded: Dictionary={}
-	var plateau: PackedVector2Array=plan.plateau()
+	var plateau: PackedVector2Array=plan.plateau(island)
+	var original: PackedVector2Array=plan.unpainted().plateau(island)
 	for key: String in protected:
-		var pieces: Array[PackedVector2Array]=Geometry2D.intersect_polygons(protected[key],plateau)
+		# Fixed root collars already overhang some authored banks. Filling the
+		# water under that overhang must not acquire new, irreversible support.
+		# The trellis flower moves with player construction and uses current land.
+		var fixed_root: bool=key.begins_with("根部") and not key.begins_with("根部Flowers0_")
+		var pieces: Array[PackedVector2Array]=Geometry2D.intersect_polygons(protected[key],original if fixed_root else plateau)
 		if not pieces.is_empty(): grounded[key]=pieces
 	return grounded
 
@@ -57,5 +62,14 @@ static func issue(plateau: PackedVector2Array, protected: Dictionary) -> String:
 				return "这里承托着物件或植物，请保留其下方的土地。"
 	return ""
 
-static func plateau(rim: PackedVector2Array, plan: RefCounted) -> PackedVector2Array:
-	return Bank.ring(Bank.contour(rim,true),.96,plan.bank_width,true)
+static func plateau(rim: PackedVector2Array, plan: RefCounted, island: int=0) -> PackedVector2Array:
+	return plan.island_pose(island)*Bank.ring(Bank.contour(rim,true),.96,plan.bank_width,true)
+
+static func neighbor_issue(environment: Node3D, plan: RefCounted) -> String:
+	var neighbors: Node3D=environment.get_node("NeighborIslets")
+	var edges: Array[PackedVector2Array]=[]
+	for bank: PackedVector2Array in plan.water_banks(): edges.append_array(Geometry2D.offset_polygon(bank,.5))
+	for polygon: PackedVector2Array in neighbors.construction_obstacles(plan):
+		for edge: PackedVector2Array in edges:
+			if Space.overlaps(edge,polygon): return "这里靠近邻岛，请为两座岛保留水道。"
+	return ""

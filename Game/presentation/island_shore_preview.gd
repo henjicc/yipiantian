@@ -4,7 +4,7 @@ const Bank=preload("res://layout/bank_geometry.gd")
 const Dressing=preload("res://presentation/shore_dressing.gd")
 const Cover=preload("res://scenes/environment/ground_cover.gd")
 var environment: Node3D
-var _surface: MeshInstance3D
+var _surfaces: Dictionary={}
 var _rocks: Dictionary={}
 var _plants: Node3D
 var _hidden: Array[Node3D]=[]
@@ -19,12 +19,9 @@ func configure(courtyard: Node3D) -> void:
 	environment=courtyard
 	_last_land=environment.plan.construction.land.duplicate(true)
 	for child: Node in environment.get_children():
-		if child is Node3D and (child.name=="MainBank" or child.has_meta("shore_stone") or child.name in ["NewShorePlants","ExpansionGrass"] or child.has_meta("fence_spans")):
+		if child is Node3D and (child.name in ["NewShorePlants","ExpansionGrass"] or child.has_meta("fence_spans")):
 			_originals.append(child)
 			if child.visible: _hidden.append(child);child.hide()
-	_surface=MeshInstance3D.new();_surface.name="LiveBank"
-	_surface.material_override=environment.get_node("MainBank").get_child(0).get_active_material(0)
-	_surface.set_layer_mask_value(2,true);add_child(_surface)
 	_grass=preload("res://scenes/environment/ground_cover.gd").new();_grass.name="ExpansionGrass";add_child(_grass)
 	_grass.object_footprints=environment.get_node("ExpansionGrass").object_footprints.duplicate()
 	_grass._exclusions=environment.get_node("ExpansionGrass")._exclusions.duplicate()
@@ -34,26 +31,40 @@ func configure(courtyard: Node3D) -> void:
 	if original_core.visible: _hidden.append(original_core);original_core.hide()
 
 func update(plan: RefCounted) -> void:
-	for stamp: Array in plan.construction.land:
-		if stamp.size()==5 and stamp not in environment.plan.construction.land:
+	for stamp: Array in plan.construction.land+plan.construction.east_land:
+		if stamp.size()==5 and stamp not in environment.plan.construction.land+environment.plan.construction.east_land:
 			environment.get_node("CourtyardAnimals").preview_kind="hen";_held_hens=true;break
 	# Terrain-only preview keeps the existing paths until a structure edit
 	# derives new ones. Grass must obey these same routes before and after save.
 	plan.paths=environment.plan.paths.duplicate()
-	_surface.mesh=Bank.build(plan.rim,plan.ground_height,plan.bank_width,not plan.construction.land.is_empty())
-	var wanted: Dictionary={}
-	for entry: Dictionary in Dressing.stones(plan):
-		var key: String=var_to_str(entry)
-		wanted[key]=true
-		if _rocks.has(key): continue
-		var rock: Node3D=(load("res://art/environment/modules/"+entry.asset+".glb") as PackedScene).instantiate()
-		add_child(rock);rock.position=entry.at;rock.rotation.y=deg_to_rad(entry.yaw);rock.scale=entry.size
-		environment._apply_pigment(rock,entry.asset);environment._tint_stone(rock,entry.color)
-		_rocks[key]=rock
-		rock.set_meta("shore_stone",true)
-		environment._fit_bridge_stone(rock)
-	for key: String in _rocks.keys():
-		if not wanted.has(key): _rocks[key].free();_rocks.erase(key)
+	for island: int in 2:
+		if plan.land_patches(island)==environment.plan.land_patches(island) and not _surfaces.has(island): continue
+		if not _surfaces.has(island):
+			var bank: Node3D=environment.get_node("EastBank" if island==1 else "MainBank")
+			_originals.append(bank)
+			if bank.visible: _hidden.append(bank);bank.hide()
+			for child: Node in environment.get_children():
+				if child.has_meta("shore_stone") and child.get_meta("shore_island",0)==island:
+					_originals.append(child)
+					if child.visible: _hidden.append(child);child.hide()
+			var surface:=MeshInstance3D.new();surface.name="LiveBank%d"%island
+			surface.material_override=bank.get_child(0).get_active_material(0)
+			surface.set_layer_mask_value(2,true);add_child(surface);surface.transform=bank.transform
+			_surfaces[island]=surface
+		_surfaces[island].mesh=Bank.build(plan.island_rim(island),plan.ground_height,plan.bank_width,not plan.land_patches(island).is_empty())
+		var wanted: Dictionary={}
+		for entry: Dictionary in Dressing.stones(plan,island):
+			var key: String=str(island)+var_to_str(entry)
+			wanted[key]=true
+			if _rocks.has(key): continue
+			var rock: Node3D=(load("res://art/environment/modules/"+entry.asset+".glb") as PackedScene).instantiate()
+			add_child(rock);rock.position=entry.at;rock.rotation.y=deg_to_rad(entry.yaw);rock.scale=entry.size
+			environment._apply_pigment(rock,entry.asset);environment._tint_stone(rock,entry.color)
+			_rocks[key]=rock
+			rock.set_meta("shore_stone",true);rock.set_meta("shore_island",island)
+			environment._fit_bridge_stone(rock)
+		for key: String in _rocks.keys():
+			if _rocks[key].get_meta("shore_island")==island and not wanted.has(key): _rocks[key].free();_rocks.erase(key)
 	if is_instance_valid(_plants): _plants.free()
 	_plants=Dressing.plants(plan);add_child(_plants)
 	_grass.update_expansion(plan)
@@ -78,11 +89,12 @@ func update(plan: RefCounted) -> void:
 	environment.preview_shore_plants(plan)
 
 func accept(plan: RefCounted) -> void:
-	var bank: Node3D=environment.get_node("MainBank")
-	bank.get_child(0).mesh=_surface.mesh;bank.show()
-	bank.remove_meta("navigation_footprints")
+	for island: int in _surfaces:
+		var bank: Node3D=environment.get_node("EastBank" if island==1 else "MainBank")
+		bank.get_child(0).mesh=_surfaces[island].mesh;bank.show()
+		bank.remove_meta("navigation_footprints")
 	for node: Node3D in _originals:
-		if node==bank: continue
+		if node.has_meta("bank_role"): continue
 		environment._shore_sources.erase(node);environment._contact_sources.erase(node)
 		environment.layout_obstacles.erase(String(node.name))
 		node.free()

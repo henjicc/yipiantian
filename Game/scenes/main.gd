@@ -799,6 +799,7 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 		return
 	unchanged=snapshot.duplicate(true)
 	unchanged.construction.land=current.construction.land.duplicate(true)
+	unchanged.construction.east_land=current.construction.east_land.duplicate(true)
 	if unchanged==current:
 		_apply_land(snapshot,undo)
 		return
@@ -964,8 +965,11 @@ func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 	if message.is_empty(): message=preload("res://layout/bridge_passage.gd").plan_water_issue(plan,$Environment.layout_obstacles)
 	if message.is_empty():
 		var support=preload("res://layout/land_support.gd")
-		message=support.issue(plan.plateau(),support.capture(self))
-	if not Geometry2D.intersect_polygons(plan.plateau(),construction.bridge_support(plan,1)).is_empty(): message="请为对岸留出水道。"
+		for island: int in 2:
+			message=support.issue(plan.plateau(island),support.capture(self,island))
+			if not message.is_empty(): break
+	if not Geometry2D.intersect_polygons(plan.water_banks()[0],plan.water_banks()[1]).is_empty(): message="请为对岸留出水道。"
+	if message.is_empty(): message=preload("res://layout/land_support.gd").neighbor_issue($Environment,plan)
 	# Only the brush changed. Existing fields, buildings and routes are retained;
 	# do not instantiate a second courtyard to validate unchanged architecture.
 	if not preload("res://layout/courtyard_circulation.gd").field_placement_issues(plan,{}).is_empty(): message="请保留田地周围的平地。"

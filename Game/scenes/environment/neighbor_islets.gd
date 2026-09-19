@@ -105,6 +105,20 @@ func waterline_sources() -> Array[Node3D]:
 		if entry.node.position.length() < 28.0: result.append(entry.high)
 	return result
 
+func construction_obstacles(candidate: RefCounted) -> Array[PackedVector2Array]:
+	var result: Array[PackedVector2Array]=[]
+	for entry: Dictionary in _islets:
+		if not entry.has("land_outline"):
+			var world: PackedVector2Array=preload("res://scenes/environment/animal_space.gd").cached_footprint(entry.high,-.7,-.15)
+			var current:=Transform2D(-entry.node.rotation.y,Vector2(entry.node.position.x,entry.node.position.z))
+			entry.land_outline=current.affine_inverse()*world
+		# Match the existing limited western scenery movement, without moving
+		# connected playable islands or letting distant households overlap land.
+		var at: Vector3=entry.base_position
+		at.x-=candidate.scenery_expansion.max(candidate.shore_expansion).x*(1.0-smoothstep(-10.0,-4.0,at.x))
+		result.append(Transform2D(-entry.node.rotation.y,Vector2(at.x,at.z))*entry.land_outline)
+	return result
+
 func show_stories(neighbors: Dictionary, living: Node3D) -> void:
 	for id: String in HOUSE_NODES:
 		var island: Node3D=get_node(HOUSE_NODES[id])
