@@ -1,5 +1,9 @@
 # 首个版本界面资源
 
+## 明式多环选菜菜单 · 20260920
+
+选菜菜单使用程序生成的同心双作物环、分隔线、填色和命中多边形，十二种田地作物每环六种同时显示；菜架只有丝瓜时自动缩为单环。外框四个方位复用同一张透明四合如意木雕节点并按 90° 旋转，不把文字、图标、悬停态或点击区域烘焙进图片。图片工具生成的原始 1374×1145 RGBA 图保存在 `RadialMenu/ruyi-joint-original.png`，经透明边界裁切、缩放并居中到 256×256 后进入 `Game/art/ui/radial_menu/ruyi-joint.png`。完整实际提示词、哈希和处理步骤见 [generation.json](RadialMenu/generation.json)；图片工具未返回费用。定向入口为 `tests/field_menu_scene_test.gd -- --visual`，覆盖十二种菜双环、边缘收进、菜架单环、旋转复用节点、取消及实际点击。
+
 ## 时令主题图标 · 20260918
 
 九月日常与雨后院落使用图片工具生成的透明手绘图标，秋日晾晒复用已有小晒架图标；三项共用 ItemCard，上图下字。原图、采用位置及完整提示词见 [season-icon.json](season-icon.json)。运行导入上限512，原始PNG保留；未生成三维资产，图片工具未返回费用。实际面板与最小窗口证据见 `.local/verification/season-1733961/`。

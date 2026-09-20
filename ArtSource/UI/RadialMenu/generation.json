@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-09-20",
+  "tool": "Codex built-in image generation",
+  "use_case": "background-extraction",
+  "reference": {
+    "returned_file": "exec-a8a5f261-159e-48e3-8204-6eaf859fe49c.png",
+    "path": "ArtSource/UI/RadialMenu/ming-ring-concept.png",
+    "role": "selected Ming-furniture radial-menu concept",
+    "bytes": 2774058,
+    "sha256": "a1e319f51282eeee0ffc5f27003afef33d6dd414147fd7f80be35a4dfacab4c5"
+  },
+  "returned_file": "exec-93a84de5-4385-4a6d-bf70-b1e163143c3c.png",
+  "original": {
+    "path": "ArtSource/UI/RadialMenu/ruyi-joint-original.png",
+    "size": "1374x1145",
+    "bytes": 871594,
+    "sha256": "74eec8938aa75bc8c96cb5fabfe339927d5177e60418869c1637a81324c7f4cf"
+  },
+  "runtime": {
+    "path": "Game/art/ui/radial_menu/ruyi-joint.png",
+    "size": "256x256",
+    "bytes": 40924,
+    "sha256": "1c47f09a589d9c6e45655bb26f9a5ace505ba5c9f197e5e659d68388be1e53be",
+    "processing": "trim transparent bounds, resize within 220x220, center on transparent 256x256 canvas"
+  },
+  "prompt": "Create exactly one isolated front-facing Ming-style four-combined-ruyi wooden joint medallion, based on the four cardinal ornaments in the provided circular farm menu reference. It will be placed at the top of a procedural circular frame and rotated by 90-degree increments for the other three positions. The provided menu image is a style and shape reference only; do not include the menu, crops, text, farm, or circular frame. One compact symmetrical quatrefoil / sihe-ruyi openwork knot medallion with a short rectangular joining collar pointing downward toward the circle. It must read cleanly at 64–96 pixels. Polished 2D game UI asset, restrained Ming furniture carving, warm medium huanghuali wood, thin tea-brown edge line, very subtle carved depth, matte finish. Exact orthographic front view; centered; complete silhouette with generous transparent margin; vertically aligned; near four-way symmetry so rotation remains visually coherent. Flat neutral frontal lighting with only tiny internal bevel shading; no cast shadow and no directional highlight. Genuinely transparent alpha, including inside every openwork hole. One object only; no text, crop, frame arc, backdrop, paper square, checkerboard, watermark, heavy grain, cracks, gold, or red lacquer."
+}

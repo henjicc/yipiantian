@@ -114,10 +114,27 @@ func run() -> void:
 	var seed_panel: Control=scene.field_menu.cards
 	check(root.get_visible_rect().encloses(seed_panel.get_global_rect()),"Crop picker fits at viewport edge")
 	var reached: Array[String] = []
-	for page: int in 3:
-		for item: Node in scene.field_menu.cards.get_children(): reached.append(str(item.name))
-		if page < 2: await click(scene.field_menu.veil.get_node("Next").get_global_rect().get_center())
-	check(reached.size()==12 and reached.has("garlic"),"All twelve crops are reachable in the fan menu")
+	var used_rings: Dictionary={}
+	for id: String in scene.Crops.seeds(false):
+		check(scene.field_menu.cards.has_node(id),"Concentric picker exposes "+id)
+		if scene.field_menu.cards.has_node(id):
+			reached.append(id)
+			used_rings[scene.field_menu.cards.get_node(id).ring_index]=true
+	check(reached.size()==12 and reached.has("garlic") and used_rings.size()==2,"All twelve crops are reachable across two crop rings")
+	for index: int in 4:
+		var ornament: TextureRect=scene.field_menu.cards.get_node("Ruyi%d"%index)
+		check(is_equal_approx(ornament.rotation,index*PI*.5),"Ruyi frame node rotates from one reusable transparent asset")
+	root.size=Vector2i(960,600);await process_frame;await process_frame
+	scene.field_menu.present_seeds(Vector2(950,20))
+	check(root.get_visible_rect().encloses(scene.field_menu.cards.get_global_rect()),"Concentric crop picker fits the compact window at its edge")
+	await shot("seeds-compact")
+	scene.field_menu.present_seeds(Vector2(480,300),true)
+	check(scene.field_menu.cards.has_node("luffa") and not scene.field_menu.cards.has_node("greens"),"Trellis ring offers only its climbing crop")
+	root.size=Vector2i(1600,900);await process_frame;await process_frame
+	scene.atmosphere.set_preview_hour(21.0)
+	scene.field_menu.present_seeds(Vector2(800,450))
+	await shot("seeds-night")
+	scene.atmosphere.set_preview_hour(14.0)
 	var escape := InputEventKey.new();escape.keycode=KEY_ESCAPE;escape.pressed=true
 	root.push_input(escape,true);await process_frame
 	check(not scene.field_menu.active,"Escape closes the crop picker")

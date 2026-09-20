@@ -193,9 +193,6 @@ func _choose(id: String) -> void:
 	await _camera_settled()
 	if not scene.field_menu.active:
 		await _click(_control("Sow").get_global_rect().get_center())
-	for page: int in 3:
-		if scene.field_menu.cards.has_node(id): break
-		await _click(scene.field_menu.veil.get_node("Next").get_global_rect().get_center())
 	var petal: Control = scene.field_menu.cards.get_node(id)
 	await _click(petal.global_position + petal.center)
 
