@@ -5,10 +5,11 @@ signal action_requested(tool: String, crop: String)
 const Crops = preload("res://farm/crop_catalog.gd")
 const ThemeFactory = preload("res://ui/farm_theme.gd")
 const RUYI_JOINT: Texture2D = preload("res://art/ui/radial_menu/ruyi-joint.png")
+const WOOD_TEXTURE: Texture2D = preload("res://art/ui/radial_menu/huanghuali-texture.png")
+const PAPER_TEXTURE: Texture2D = preload("res://art/ui/radial_menu/xuan-paper-texture.png")
+const WOOD_RING_SHADER: Shader = preload("res://art/ui/radial_menu/wood_ring.gdshader")
 const CROPS_PER_RING: int = 6
 const WOOD_DARK := Color("68482f")
-const WOOD := Color("9f6844")
-const WOOD_LIGHT := Color("c28a61")
 const PAPER := Color("f4ecd9")
 const CELADON := Color("dce7d5")
 const CELADON_EDGE := Color("66795d")
@@ -67,7 +68,10 @@ class RingSegment extends Button:
 		var fill := CELADON if over else PAPER
 		if disabled:
 			fill = Color("d2cec2")
-		draw_colored_polygon(polygon, fill)
+		var paper_uvs := PackedVector2Array()
+		for point: Vector2 in polygon:
+			paper_uvs.append(point / size)
+		draw_colored_polygon(polygon, fill, paper_uvs, PAPER_TEXTURE)
 		var edge := polygon.duplicate()
 		edge.append(polygon[0])
 		draw_polyline(edge, CELADON_EDGE if over else Color("9f8664"), 2.4 if over else 1.8, true)
@@ -92,15 +96,12 @@ class RingFrame extends Control:
 	var ring_boundaries := PackedFloat32Array()
 
 	func _draw() -> void:
-		draw_circle(center + Vector2(0, 5), outer_radius + 19, Color(0.16, 0.12, 0.08, .18))
-		draw_circle(center, outer_radius + 16, WOOD_DARK)
-		draw_circle(center, outer_radius + 11, WOOD)
-		draw_arc(center, outer_radius + 8, 0.0, TAU, 192, WOOD_LIGHT, 3.0, true)
-		draw_arc(center, outer_radius + 1, 0.0, TAU, 192, WOOD_DARK, 3.0, true)
+		# The dark base is only exposed in the narrow gutters. The visible outer
+		# bezel is a texture-mapped shader ring with analytic antialiasing.
+		draw_circle(center, outer_radius - 17.0, WOOD_DARK, true, -1.0, true)
 		for radius: float in ring_boundaries:
 			draw_arc(center, radius, 0.0, TAU, 192, WOOD_DARK, 3.0, true)
-		draw_circle(center, center_radius + 8, WOOD_DARK)
-		draw_circle(center, center_radius + 3, WOOD)
+		draw_circle(center, center_radius + 3.0, WOOD_DARK, true, -1.0, true)
 
 
 func _ready() -> void:
@@ -204,6 +205,8 @@ func _show_seeds(_page: int = 0) -> void:
 		frame.ring_boundaries.append(crop_inner + ring_index * (band_width + ring_gap) + band_width)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cards.add_child(frame)
+	_add_textured_wood_ring("WoodBezel", center, outer_radius - 18.0, outer_radius + 18.0, 2.0)
+	_add_textured_wood_ring("CenterBezel", center, center_radius * .75, center_radius + 8.0, 1.0)
 	_add_ring_ornaments(center, outer_radius + ornament_size * .24, ornament_size)
 	for ring_index: int in ring_count:
 		var first: int = ring_index * CROPS_PER_RING
@@ -212,6 +215,26 @@ func _show_seeds(_page: int = 0) -> void:
 		var outer_ring_radius: float = inner_radius + band_width
 		_add_crop_ring(ring_ids, center, inner_radius, outer_ring_radius, outer_radius, ring_index)
 	_add_cancel_button(anchor, center_radius * 1.45)
+
+
+func _add_textured_wood_ring(name: String, center: Vector2, inner_radius: float, outer_radius: float, repeats: float) -> void:
+	var canvas_radius: float = outer_radius + 11.0
+	var ring := TextureRect.new()
+	ring.name = name
+	ring.texture = WOOD_TEXTURE
+	ring.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ring.stretch_mode = TextureRect.STRETCH_SCALE
+	ring.position = center - Vector2.ONE * canvas_radius
+	ring.size = Vector2.ONE * canvas_radius * 2.0
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	var material := ShaderMaterial.new()
+	material.shader = WOOD_RING_SHADER
+	material.set_shader_parameter("inner_radius", inner_radius / canvas_radius)
+	material.set_shader_parameter("outer_radius", outer_radius / canvas_radius)
+	material.set_shader_parameter("grain_repeats", repeats)
+	ring.material = material
+	cards.add_child(ring)
 
 
 func _add_crop_ring(ids: Array[String], center: Vector2, inner_radius: float, outer_radius: float, menu_radius: float, ring_index: int) -> void:

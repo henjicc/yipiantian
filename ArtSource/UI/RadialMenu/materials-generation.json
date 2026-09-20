@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-09-20",
+  "tool": "Codex built-in image generation",
+  "mode": "referenced image generation",
+  "reference": "ArtSource/UI/RadialMenu/ming-ring-concept.png",
+  "reference_role": "palette and Ming-furniture craft direction only",
+  "materials": {
+    "huanghuali": {
+      "returned_file": "exec-6d5c71c3-2e13-4711-8818-a421a10385cf.png",
+      "original": {
+        "path": "ArtSource/UI/RadialMenu/huanghuali-texture-original.png",
+        "size": "1254x1254",
+        "bytes": 2296692,
+        "sha256": "33625054759f48ed6d2078667f6fc06511918e54dec13d381a037ad71569ccd9"
+      },
+      "runtime": {
+        "path": "Game/art/ui/radial_menu/huanghuali-texture.png",
+        "size": "1024x1024",
+        "bytes": 1518499,
+        "sha256": "bd8425469c7595f730d575b2f44c9404f667aa615262acf45434300d7a911b7d",
+        "processing": "Lanczos resize to 1024x1024 and strip metadata; mapped into an analytic antialiased ring by wood_ring.gdshader"
+      },
+      "prompt": "Create one production-ready square game UI material texture, using the reference image only for its restrained Ming-dynasty-inspired palette and craft feeling. Asset: seamless warm huanghuali-style wood texture for a circular radial-menu bezel. View: perfectly orthographic, flat front-facing material sample, even diffuse lighting. Surface: refined medium warm brown hardwood, broad flowing grain, subtle hand-polished matte wax finish, very light tonal depth, understated historical Chinese furniture character. Composition: full-bleed texture only. It must tile seamlessly on all four edges and remain readable when mapped into a narrow 30–60 px circular band. Do not include any ring shape, frame, corners, objects, metal, paper, carved symbols, ruyi motifs, text, letters, shadows, perspective, cracks, holes, dramatic knots, glossy plastic, red lacquer, gold trim, or photoreal camera glare. Keep contrast restrained so icons and labels remain dominant. Opaque image; no transparency."
+    },
+    "xuan_paper": {
+      "returned_file": "exec-59060144-5724-412c-9995-8e087a454411.png",
+      "original": {
+        "path": "ArtSource/UI/RadialMenu/xuan-paper-texture-original.png",
+        "size": "1254x1254",
+        "bytes": 2117658,
+        "sha256": "ccd00e0dcb16451c79c64a49ed6d16fc0dc61f54b921f51c40d318527a1396d6"
+      },
+      "runtime": {
+        "path": "Game/art/ui/radial_menu/xuan-paper-texture.png",
+        "size": "512x512",
+        "bytes": 309115,
+        "sha256": "1779777e32749d380deb7ef4d70651f2dfefd0609d6566ad12d4d00c09c1ca63",
+        "processing": "Lanczos resize to 512x512 and strip metadata; UV-mapped across procedural crop sectors"
+      },
+      "prompt": "Create one production-ready square game UI material texture, using the reference image only for its warm off-white palette. Asset: seamless subtle xuan-paper / rice-paper texture for radial menu sector backgrounds in a Chinese farming game. View: perfectly orthographic, flat front-facing material sample, even diffuse lighting. Surface: warm ivory handmade paper, extremely subtle fine fibers, faint natural pigment variation, calm matte finish. Low contrast and nearly flat so dark Chinese text and crop icons stay crisp. Composition: full-bleed texture only. It must tile seamlessly on all four edges. Do not include borders, circles, menu shapes, folds, torn edges, stains, calligraphy, seals, flowers, clouds, symbols, text, letters, objects, shadows, perspective, wrinkles, vignette, or strong fibers. Opaque image; no transparency."
+    }
+  }
+}

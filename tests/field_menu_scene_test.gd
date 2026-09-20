@@ -121,6 +121,11 @@ func run() -> void:
 			reached.append(id)
 			used_rings[scene.field_menu.cards.get_node(id).ring_index]=true
 	check(reached.size()==12 and reached.has("garlic") and used_rings.size()==2,"All twelve crops are reachable across two crop rings")
+	for bezel_name: String in ["WoodBezel","CenterBezel"]:
+		check(scene.field_menu.cards.has_node(bezel_name),"Textured wood layer exists: "+bezel_name)
+		if scene.field_menu.cards.has_node(bezel_name):
+			var bezel: TextureRect=scene.field_menu.cards.get_node(bezel_name)
+			check(bezel.mouse_filter==Control.MOUSE_FILTER_IGNORE and bezel.material is ShaderMaterial,"Textured wood remains a non-interactive programmatic ring: "+bezel_name)
 	for index: int in 4:
 		var ornament: TextureRect=scene.field_menu.cards.get_node("Ruyi%d"%index)
 		check(is_equal_approx(ornament.rotation,index*PI*.5),"Ruyi frame node rotates from one reusable transparent asset")
