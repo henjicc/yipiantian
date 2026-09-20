@@ -61,7 +61,7 @@
       "prompt": "Use case: sketch-to-render. Asset type: reusable transparent game UI quarter-ring frame segment. Input images: Image 1 is the immutable geometry template and alpha-layout reference. Its exact canvas placement, circular silhouette, inner radius, outer radius, 90-degree arc, radial end cuts, and transparent regions are mandatory. Image 2 is material reference only: natural warm huanghuali hardwood grain and color. Primary request: replace only the light gray face inside Image 1's outlined quarter-ring shape with a polished Ming-furniture-style huanghuali wooden frame surface. Keep Image 1's geometry pixel-aligned and unchanged. The result must still be the exact same mathematical quarter annulus, not a hand-drawn approximation. Material and construction: natural irregular wood pores and flowing grain at believable scale; grain generally follows the curved length but remains organic, with subtle local variation rather than parallel concentric stripes; a restrained shallow outer bevel and very thin inner lip must stay entirely inside the supplied silhouette; matte waxed finish, warm medium brown, fine dark tea-brown edge, orthographic front view, neutral even frontal lighting. Hard invariants: preserve Image 1's exact 1254x1254 canvas and exact position; preserve the exact 90-degree circular geometry and constant band width; preserve both straight radial end faces exactly; do not expand, shrink, bend, rotate, recenter, crop, round, or redraw the silhouette; everything outside the template band, including the circular opening, must remain genuinely transparent; no cast shadow outside the silhouette; no other ring quarters, no complete circle, no ruyi ornament, no text, no crop icons, no paper, no scene, no checkerboard, no watermark; do not create vinyl-like grooves, repeated concentric bands, fabric, leather, rope, red lacquer, gold, or plastic."
     },
     "wood_bezel_quarter_gongbi": {
-      "status": "selected runtime source",
+      "status": "superseded by the user-selected Concept A slim runtime source; retained as the approved material-style reference",
       "guide": {
         "path": "ArtSource/UI/RadialMenu/wood-bezel-quarter-guide.png",
         "role": "immutable exact quarter-annulus geometry and alpha layout"
@@ -93,7 +93,7 @@
       "prompt": "Use case: production game UI texture, structure-guided stylized-concept. Create a single transparent PNG texture for ONE exact quarter-annulus wooden bezel segment used in a radial crop menu. REFERENCE RESPONSIBILITIES: Input 1 is an IMMUTABLE GEOMETRY TEMPLATE. Preserve its canvas size, exact quarter-annulus position, exact 90-degree circular arcs, constant width, endpoints, and transparent regions. Do not redesign, round, taper, widen, narrow, rotate, recenter, crop, extend, or add ornaments beyond this exact silhouette. Input 2 is the APPROVED close-up gongbi light-colour style reference. Transfer its selective fine tea-brown contours, layered pale colour washes, controlled pigment variation, matte hand-painted volume, and softly accumulated colour near edges. Do not transfer the vegetable shape or green colour. Input 3 is the APPROVED world style reference. Match its warm restrained Jiangnan miniature-game palette and simplified natural materials. Transfer visual language only, not buildings, crops, scenery, lighting, UI, labels, or objects. MATERIAL AND PAINTING: Render the exact band as warm muted ochre-brown / huanghuali-inspired wood in a gongbi-inspired light-colour painted style. Use broad translucent sienna and umber washes, sparse gently curving wood-grain brush marks that follow the arc, occasional darker tea-brown contour accents, and a shallow hand-painted bevel with quiet warm highlights. The grain must remain sparse, irregular, painterly and readable as wood at game UI size—not concentric stripes, not photographic pores, not a stretched texture. Keep a clean, continuous silhouette and coherent surface across both ends so four rotated copies join gracefully. Matte finish, restrained depth, soft pigment variation. STRICTLY AVOID: photorealism, PBR gloss, dense wood grain, repeating rings, vinyl-record grooves, machine-cut plastic, thick black outlines, heavy carving, metallic trim, gold, cracks, dirt, distressed antique damage, paper background, checkerboard, cast shadow outside the shape, text, calligraphy, seals, plants, scenery, extra ornaments, or any change to the template geometry. OUTPUT: Transparent background outside the exact quarter-annulus. One segment only. No presentation board or margin decoration."
     },
     "paper_wood_frame_gongbi": {
-      "status": "selected reusable nine-slice source for buttons and primary menu panels",
+      "status": "superseded by the user-selected Concept A slim nine-slice source; retained as production history",
       "guide": {
         "path": "ArtSource/UI/RadialMenu/paper-wood-frame-guide.png",
         "role": "immutable rounded-square alpha, corner radius, border width and inner-paper geometry",
@@ -131,7 +131,7 @@
       "prompt": "Use case: sketch-to-render. Asset type: production game UI 9-slice rounded rectangular panel and button frame. Input 1 is the immutable geometry and alpha-layout template: preserve the exact square canvas, rounded-square placement, outer corner radius, frame width, inner rounded cream panel, and transparent outer corners. Input 2 is the selected radial-menu wood style: match its pale ochre gongbi-painted wood, tea-brown contour, broad translucent washes, sparse long grain strokes and matte hand-painted bevel. Inputs 3 and 4 are approved project style references for selective fine contours, layered pale colour, restrained warm Jiangnan palette and matte miniature-game finish only. Render the gray border as the same pale ochre gongbi wood and keep the inner panel as warm ivory xuan-paper with extremely subtle fibres and pale pigment variation. Make all four corners visually identical and keep straight calm edge middles suitable for 9-slice stretching; no discrete motif may cross the central horizontal or vertical stretch zones. Use a thin tea-brown outer contour, a narrow darker inner lip, softly pooled pigment and a shallow painted bevel. Hard invariants: do not change geometry, border thickness, radii, center size, canvas placement or transparency. No cast shadow, text, icons, flowers, clouds, metal, lacquer, gold, deep carving, photoreal wood, dense pores, plastic gloss, checkerboard, watermark or scene."
     },
     "wood_center_ring_gongbi": {
-      "status": "selected center bezel source",
+      "status": "superseded by the user-selected Concept A slim center bezel source; retained as production history",
       "guide": {
         "path": "ArtSource/UI/RadialMenu/wood-center-ring-guide.png",
         "geometry": "exact concentric annulus; 1000px cropped outer diameter; inner radius 365/500 of outer radius",
@@ -153,6 +153,94 @@
         "processing": "replace generated alpha with the exact full-ring guide, crop its 1000px circle and resize; no polar texture mapping or shader distortion"
       },
       "prompt": "Use case: sketch-to-render. Asset type: production game UI full circular center bezel. Input 1 is the immutable geometry and alpha template: preserve the exact square canvas, concentric ring placement, radii, transparent center hole and transparent outside. Input 2 is the selected radial-menu wood style: match its pale ochre gongbi-painted wood, tea-brown contour, broad translucent pigment washes, sparse long grain brush strokes, matte surface and shallow hand-painted bevel. Inputs 3 and 4 provide the approved project visual language only. Render one seamless perfectly circular wooden annulus whose grain flows naturally around the circumference without repeated concentric bands, stretched stripes, saw teeth or photographic texture. Use thin tea-brown outer and inner contours, subtle pooled pigment, sparse elongated brushwork and a calm pale ochre body. Hard invariants: exact mathematical geometry and alpha; no change to thickness, radii, center, placement or transparency; no external shadow, text, icons, flowers, clouds, metal, lacquer, gold, deep carving, photoreal pores, dense pattern, checkerboard, watermark, scene or extra ornament."
+    },
+    "wood_bezel_quarter_gongbi_slim": {
+      "status": "selected Concept A runtime source",
+      "guide": {
+        "path": "ArtSource/UI/RadialMenu/wood-bezel-quarter-slim-guide.png",
+        "size": "1254x1254",
+        "geometry": "exact 90-degree annulus; outer radius 1000 px; inner radius 930 px; center at (127,1127); 7% radial band",
+        "bytes": 14682,
+        "sha256": "500d4094ca02f12ae4587d2b9eb444300a21732042b28225d58f7f7839ae8812"
+      },
+      "style_reference": "Game/art/ui/radial_menu/wood-bezel-quarter-gongbi.png",
+      "returned_file": "exec-120cf4e5-7334-4360-99c3-e61acef2a260.png",
+      "original": {
+        "path": "ArtSource/UI/RadialMenu/wood-bezel-quarter-gongbi-slim-original.png",
+        "size": "1254x1254",
+        "bytes": 612715,
+        "sha256": "04c1c5ad2e5582eab7ee9f4b9ab65564f523a7f66e1da5aa69d3c758d25ac6af"
+      },
+      "runtime": {
+        "path": "Game/art/ui/radial_menu/wood-bezel-quarter-gongbi-slim.png",
+        "size": "1000x1000",
+        "bytes": 214267,
+        "sha256": "279077e9b0e389ea464b1b6000bfedc8c27d6477ba5f135e7ed1b4ce86ee4fbc",
+        "processing": "crop the exact 1000px quadrant, replace generated alpha with the guide alpha, preserve only generated gongbi wood colour, and neutralize isolated near-black paint artifacts to tea brown; Godot imports with mipmaps"
+      },
+      "prompt": "Use the supplied slim quarter-annulus guide as immutable geometry and alpha. Paint only inside it with the same pale ochre gongbi wood as the current approved ring: restrained translucent washes, sparse long natural grain, thin tea-brown contours and matte hand-painted depth. Keep the exact 1254x1254 canvas, 90-degree endpoints, 1000px outer radius and 930px inner radius. Do not alter, widen, taper, round, rotate or redraw the silhouette. Transparent outside and inside the ring. No concentric grooves, photographic pores, thick dark edging, ornament, text, shadow or scene. Concept A proportions."
+    },
+    "wood_center_ring_gongbi_slim": {
+      "status": "selected Concept A center bezel source",
+      "guide": {
+        "path": "ArtSource/UI/RadialMenu/wood-center-ring-slim-guide.png",
+        "size": "1254x1254",
+        "geometry": "exact concentric annulus; outer radius 500 px; inner radius 430 px; center at (627,627); 14% radial band",
+        "bytes": 24520,
+        "sha256": "454952ba5ceebeb9f3a64f0353198c90744b130c5c7e31a27e482a3b6e0cac6a"
+      },
+      "style_reference": "Game/art/ui/radial_menu/wood-center-ring-gongbi.png",
+      "returned_file": "exec-16f7159f-a989-453c-8bba-be0127a757ee.png",
+      "original": {
+        "path": "ArtSource/UI/RadialMenu/wood-center-ring-gongbi-slim-original.png",
+        "size": "1254x1254",
+        "bytes": 970050,
+        "sha256": "17cc9c650ea8ab25ef8aae52e5c2dc09a04a69d315aa300f9c3d41e6a8bcaeb3"
+      },
+      "runtime": {
+        "path": "Game/art/ui/radial_menu/wood-center-ring-gongbi-slim.png",
+        "size": "512x512",
+        "bytes": 109958,
+        "sha256": "1337a4367f8415890d6b09fc2713c70eeeba9057424fb0db28c9393770dc3de4",
+        "processing": "the generator painted a larger center opening than the immutable guide, so remap only its valid already-circular wood band radially from approximately runtime radii 238..256 to 220..256, then apply the exact guide alpha, resize to 512px, and neutralize isolated red or near-black edge artifacts to tea brown; this does not map a planar texture into polar space"
+      },
+      "prompt": "Use the supplied slim full-ring guide as immutable geometry and alpha. Paint one seamless mathematical center bezel with the same pale ochre gongbi wood as the current approved ring: restrained translucent washes, sparse curved natural grain, thin tea-brown inner and outer contours and matte hand-painted depth. Keep the exact concentric placement, 500px outer radius and 430px inner radius. Transparent outside and in the center. Do not change the geometry. No repeated concentric stripes, photographic wood, heavy carving, thick black outline, ornament, text, shadow or scene. Concept A proportions."
+    },
+    "paper_wood_frame_gongbi_slim": {
+      "status": "selected Concept A reusable nine-slice source for buttons and primary menu panels",
+      "guide": {
+        "path": "ArtSource/UI/RadialMenu/paper-wood-frame-slim-guide.png",
+        "size": "1254x1254",
+        "geometry": "1000px rounded square cropped from (127,127); outer radius 200 px; inner inset 42 px and inner radius 158 px; 4.2% border",
+        "bytes": 62921,
+        "sha256": "bc712033ac9304fddb5d58236390463951323e96b10f7b9ffed91d213d7bd84b"
+      },
+      "style_reference": "Game/art/ui/radial_menu/paper-wood-frame-gongbi.png",
+      "returned_file": "exec-db3b1a44-6293-4a5a-af27-49b33b9454bb.png",
+      "original": {
+        "path": "ArtSource/UI/RadialMenu/paper-wood-frame-gongbi-slim-original.png",
+        "size": "1254x1254",
+        "bytes": 1206143,
+        "sha256": "41ec5d8af5866c3cb2b56be67b4075924320d57e87eaf1a006cc86081ab2bbf2"
+      },
+      "runtime": {
+        "paths": [
+          "Game/art/ui/radial_menu/paper-wood-frame-gongbi-slim.png",
+          "Game/art/ui/radial_menu/paper-wood-frame-gongbi-slim-hover.png",
+          "Game/art/ui/radial_menu/paper-wood-frame-gongbi-slim-pressed.png",
+          "Game/art/ui/radial_menu/paper-wood-frame-gongbi-slim-disabled.png"
+        ],
+        "size_each": "96x96",
+        "bytes": [10875, 10365, 8210, 3601],
+        "sha256": [
+          "67d31e6b710a94cbd0f62fa924530aa947f225e98a4775b85b00634c3c1cfb4a",
+          "09e922c1b12b9f3d53a0b8b11303a973a3640c50bbd77462ac3f789feb0b18a1",
+          "b955fff778f45d6ebe3d7017019216a4b2947ecad1f95de93c6ff1cfe13113f8",
+          "00c9ca82625a54bfdffab5ea1e0c600cd3a7692fabbc9ae52d03fa4a39ccb301"
+        ],
+        "processing": "replace generated alpha with the exact guide, crop the 1000px framed region, derive hover/pressed/disabled by tinting only the inner rounded paper mask, and resize to 96px; Godot StyleBoxTexture keeps 20px corners fixed and stretches only quiet edge middles and center"
+      },
+      "prompt": "Use the supplied slim rounded-square frame guide as immutable geometry and alpha. Paint the 42px border with the same pale ochre gongbi wood as the approved radial ring and the center with warm ivory xuan paper. Keep calm straight edge middles and identical corners for nine-slice resizing. Preserve the exact canvas, placement, corner radii, border width and transparency. No motifs across stretch zones, no text, icons, metal, gold, thick dark edge, photoreal wood, plastic gloss, shadow or scene. Concept A proportions."
     },
     "ruyi_joint_gongbi": {
       "status": "selected reusable four-way joint source",

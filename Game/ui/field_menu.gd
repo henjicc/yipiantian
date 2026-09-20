@@ -5,8 +5,8 @@ signal action_requested(tool: String, crop: String)
 const Crops = preload("res://farm/crop_catalog.gd")
 const ThemeFactory = preload("res://ui/farm_theme.gd")
 const RUYI_JOINT: Texture2D = preload("res://art/ui/radial_menu/ruyi-joint-gongbi.png")
-const WOOD_BEZEL_QUARTER: Texture2D = preload("res://art/ui/radial_menu/wood-bezel-quarter-gongbi.png")
-const CENTER_BEZEL: Texture2D = preload("res://art/ui/radial_menu/wood-center-ring-gongbi.png")
+const WOOD_BEZEL_QUARTER: Texture2D = preload("res://art/ui/radial_menu/wood-bezel-quarter-gongbi-slim.png")
+const CENTER_BEZEL: Texture2D = preload("res://art/ui/radial_menu/wood-center-ring-gongbi-slim.png")
 const PAPER_TEXTURE: Texture2D = preload("res://art/ui/radial_menu/xuan-paper-texture.png")
 const CROPS_PER_RING: int = 6
 const WOOD_DARK := Color("68482f")
@@ -74,7 +74,7 @@ class RingSegment extends Button:
 		draw_colored_polygon(polygon, fill, paper_uvs, PAPER_TEXTURE)
 		var edge := polygon.duplicate()
 		edge.append(polygon[0])
-		draw_polyline(edge, CELADON_EDGE if over else Color("9f8664"), 2.4 if over else 1.8, true)
+		draw_polyline(edge, CELADON_EDGE if over else Color("9f8664"), 1.8 if over else 1.4, true)
 		var font: Font = ThemeFactory.FONT
 		if picture:
 			var icon_rect := Rect2(center + Vector2(-icon_size * .5, -icon_size * .68), Vector2(icon_size, icon_size))
@@ -100,7 +100,7 @@ class RingFrame extends Control:
 		# Four transparent wood quarters form the visible outer bezel above it.
 		draw_circle(center, outer_radius + 3.0, WOOD_DARK, true, -1.0, true)
 		for radius: float in ring_boundaries:
-			draw_arc(center, radius, 0.0, TAU, 192, WOOD_DARK, 3.0, true)
+			draw_arc(center, radius, 0.0, TAU, 192, WOOD_DARK, 2.0, true)
 		draw_circle(center, center_radius + 3.0, WOOD_DARK, true, -1.0, true)
 
 
@@ -179,7 +179,7 @@ func _show_seeds(_page: int = 0) -> void:
 	var view: Vector2 = get_viewport().get_visible_rect().size
 	var ring_count: int = ceili(ids.size() / float(CROPS_PER_RING))
 	var outer_radius: float = clampf(minf(view.x, view.y) * (.27 if ring_count == 1 else .31), 190.0 if ring_count == 1 else 220.0, 238.0 if ring_count == 1 else 282.0)
-	var ornament_size: float = clampf(outer_radius * .29, 64.0, 82.0)
+	var ornament_size: float = clampf(outer_radius * .20, 48.0, 60.0)
 	var extent: float = outer_radius + ornament_size * .72
 	anchor = Vector2(clampf(point.x, extent, view.x - extent), clampf(point.y, extent, view.y - extent))
 	cards = Control.new()
@@ -191,8 +191,8 @@ func _show_seeds(_page: int = 0) -> void:
 	var center := Vector2.ONE * extent
 	var center_radius: float = outer_radius * .18
 	var crop_inner: float = center_radius + outer_radius * .055
-	var crop_outer: float = outer_radius * .93
-	var ring_gap: float = clampf(outer_radius * .022, 5.0, 7.0)
+	var crop_outer: float = outer_radius * .99
+	var ring_gap: float = clampf(outer_radius * .009, 2.5, 3.5)
 	var band_width: float = (crop_outer - crop_inner - ring_gap * (ring_count - 1)) / ring_count
 	var frame := RingFrame.new()
 	frame.name = "Frame"
@@ -214,7 +214,7 @@ func _show_seeds(_page: int = 0) -> void:
 		var inner_radius: float = crop_inner + ring_index * (band_width + ring_gap)
 		var outer_ring_radius: float = inner_radius + band_width
 		_add_crop_ring(ring_ids, center, inner_radius, outer_ring_radius, outer_radius, ring_index)
-	_add_cancel_button(anchor, center_radius * 1.45)
+	_add_cancel_button(anchor, center_radius * 1.90)
 
 
 func _add_wood_bezel_quarters(center: Vector2, radius: float) -> void:
@@ -254,8 +254,8 @@ func _add_crop_ring(ids: Array[String], center: Vector2, inner_radius: float, ou
 	var start_offset: float = -PI * .5 - step * .5 + (step * .5 if ring_index % 2 == 1 else 0.0)
 	for i: int in count:
 		var id: String = ids[i]
-		var start: float = start_offset + i * step + .012
-		var finish: float = start_offset + (i + 1) * step - .012
+		var start: float = start_offset + i * step + .0055
+		var finish: float = start_offset + (i + 1) * step - .0055
 		var button := RingSegment.new()
 		button.name = id
 		button.caption = Crops.definition(id).name

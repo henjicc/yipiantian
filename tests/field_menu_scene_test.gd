@@ -44,7 +44,7 @@ func run() -> void:
 	scene.farm_changed.connect(func(_result: Dictionary) -> void: actions+=1)
 	await create_timer(1.0).timeout
 	var button_frame:=ThemeFactory.create().get_stylebox("normal","Button")
-	check(button_frame is StyleBoxTexture and is_equal_approx(button_frame.texture_margin_left,20.0),"Resizable controls use a corner-safe nine-slice wood frame")
+	check(button_frame is StyleBoxTexture and is_equal_approx(button_frame.texture_margin_left,20.0) and button_frame.texture.resource_path.ends_with("paper-wood-frame-gongbi-slim.png"),"Resizable controls use the slim corner-safe nine-slice wood frame")
 	scene.atmosphere.set_preview_hour(14.0)
 	var animals: Node3D=scene.get_node("Environment/CourtyardAnimals")
 	while not animals.ready_for_motion: await process_frame
@@ -126,26 +126,27 @@ func run() -> void:
 	check(reached.size()==12 and reached.has("garlic") and used_rings.size()==2,"All twelve crops are reachable across two crop rings")
 	check(scene.field_menu.cards.has_node("CenterBezel"),"Full gongbi-painted center bezel exists")
 	var center_bezel: TextureRect=scene.field_menu.cards.get_node("CenterBezel")
-	check(center_bezel.texture.resource_path.ends_with("wood-center-ring-gongbi.png"),"Center bezel uses the matched gongbi asset instead of a stretched planar texture")
+	check(center_bezel.texture.resource_path.ends_with("wood-center-ring-gongbi-slim.png"),"Center bezel uses the slim matched gongbi asset instead of a stretched planar texture")
 	var center_image: Image=center_bezel.texture.get_image()
-	check(center_image.get_pixel(256,256).a<.1 and center_image.get_pixel(486,256).a>.9,"Center bezel keeps an exact transparent circular opening")
+	check(center_image.get_pixel(256,256).a<.1 and center_image.get_pixel(470,256).a<.1 and center_image.get_pixel(486,256).a>.9,"Slim center bezel keeps an exact transparent circular opening")
 	for quarter_index: int in 4:
 		var quarter: TextureRect=scene.field_menu.cards.get_node("WoodQuarter%d"%quarter_index)
 		check(quarter.mouse_filter==Control.MOUSE_FILTER_IGNORE and is_equal_approx(quarter.rotation,quarter_index*PI*.5),"Gongbi-painted wood quarter rotates without polar texture stretching")
-	var quarter_image: Image=load("res://art/ui/radial_menu/wood-bezel-quarter-gongbi.png").get_image()
+	var quarter_image: Image=load("res://art/ui/radial_menu/wood-bezel-quarter-gongbi-slim.png").get_image()
 	var exact_quarter: bool=quarter_image.get_size()==Vector2i(1000,1000)
 	for degrees: float in [10.0,30.0,45.0,60.0,80.0]:
 		var angle: float=deg_to_rad(degrees)
-		var wood_point:=Vector2i(roundi(cos(angle)*930.0),roundi(999.0-sin(angle)*930.0))
-		var opening_point:=Vector2i(roundi(cos(angle)*800.0),roundi(999.0-sin(angle)*800.0))
+		var wood_point:=Vector2i(roundi(cos(angle)*965.0),roundi(999.0-sin(angle)*965.0))
+		var opening_point:=Vector2i(roundi(cos(angle)*900.0),roundi(999.0-sin(angle)*900.0))
 		exact_quarter=exact_quarter and quarter_image.get_pixelv(wood_point).a>.9 and quarter_image.get_pixelv(opening_point).a<.1
-	check(exact_quarter,"Wood frame keeps a constant mathematical quarter-annulus mask")
+	check(exact_quarter,"Slim wood frame keeps a constant mathematical quarter-annulus mask")
 	for index: int in 4:
 		var ornament: TextureRect=scene.field_menu.cards.get_node("Ruyi%d"%index)
 		check(is_equal_approx(ornament.rotation,index*PI*.5) and ornament.texture.resource_path.ends_with("ruyi-joint-gongbi.png"),"Ruyi frame node rotates from one matched reusable transparent asset")
 	var ruyi_image: Image=scene.field_menu.cards.get_node("Ruyi0").texture.get_image()
 	var ruyi_bounds:=ruyi_image.get_used_rect()
 	check(ruyi_bounds.size.x>210 and ruyi_bounds.size.y>220 and ruyi_image.get_pixel(128,24).a>.9 and ruyi_image.get_pixel(128,128).a<.1,"Ruyi keeps the generated artwork and its matching transparent openwork instead of a mismatched mask")
+	check(scene.field_menu.cards.get_node("Ruyi0").size.x<=60.0,"Concept A keeps the ruyi joints visually subordinate to the crop choices")
 	root.size=Vector2i(960,600);await process_frame;await process_frame
 	scene.field_menu.present_seeds(Vector2(950,20))
 	check(root.get_visible_rect().encloses(scene.field_menu.cards.get_global_rect()),"Concentric crop picker fits the compact window at its edge")

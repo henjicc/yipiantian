@@ -2,10 +2,10 @@ extends RefCounted
 ## One small theme for this game's HUD and menus, not a component library.
 
 const FONT = preload("res://art/ui/fonts/汇文明朝体.ttf")
-const PAPER_FRAME_NORMAL: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi.png")
-const PAPER_FRAME_HOVER: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-hover.png")
-const PAPER_FRAME_PRESSED: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-pressed.png")
-const PAPER_FRAME_DISABLED: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-disabled.png")
+const PAPER_FRAME_NORMAL: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-slim.png")
+const PAPER_FRAME_HOVER: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-slim-hover.png")
+const PAPER_FRAME_PRESSED: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-slim-pressed.png")
+const PAPER_FRAME_DISABLED: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-slim-disabled.png")
 const INK := Color("4b493d")
 const PAPER := Color("f4ecd9")
 const EDGE := Color("ac9978")
