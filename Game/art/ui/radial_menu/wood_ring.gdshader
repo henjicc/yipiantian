@@ -2,7 +2,6 @@ shader_type canvas_item;
 
 uniform float inner_radius : hint_range(0.0, 1.0) = 0.84;
 uniform float outer_radius : hint_range(0.0, 1.0) = 0.94;
-uniform float grain_repeats : hint_range(1.0, 4.0) = 2.0;
 
 void fragment() {
 	vec2 point = (UV - vec2(0.5)) * 2.0;
@@ -11,10 +10,11 @@ void fragment() {
 	float ring = smoothstep(inner_radius - feather, inner_radius + feather, radius)
 		* (1.0 - smoothstep(outer_radius - feather, outer_radius + feather, radius));
 
-	float angle = atan(point.y, point.x) / 6.28318530718 + 0.5;
 	float across = clamp((radius - inner_radius) / max(outer_radius - inner_radius, 0.001), 0.0, 1.0);
-	vec2 wood_uv = vec2(fract(angle * grain_repeats), across);
-	vec3 wood = texture(TEXTURE, wood_uv).rgb;
+	// Keep the source wood in planar coordinates. Polar remapping compresses the
+	// grain across a narrow band and turns natural variation into record-like
+	// concentric stripes.
+	vec3 wood = texture(TEXTURE, UV).rgb;
 
 	// Shallow waxed-wood bevel: light catches the inner shoulder while the
 	// outer rim remains darker, without baking a fixed-size frame into the art.

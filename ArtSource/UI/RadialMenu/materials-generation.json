@@ -1,7 +1,7 @@
 {
   "generated_at": "2026-09-20",
   "tool": "Codex built-in image generation",
-  "mode": "referenced image generation",
+  "mode": "referenced image generation and precise-object edit",
   "reference": "ArtSource/UI/RadialMenu/ming-ring-concept.png",
   "reference_role": "palette and Ming-furniture craft direction only",
   "materials": {
@@ -18,9 +18,27 @@
         "size": "1024x1024",
         "bytes": 1518499,
         "sha256": "bd8425469c7595f730d575b2f44c9404f667aa615262acf45434300d7a911b7d",
-        "processing": "Lanczos resize to 1024x1024 and strip metadata; mapped into an analytic antialiased ring by wood_ring.gdshader"
+        "processing": "Lanczos resize to 1024x1024 and strip metadata; sampled in planar UV coordinates only for the small center bezel"
       },
       "prompt": "Create one production-ready square game UI material texture, using the reference image only for its restrained Ming-dynasty-inspired palette and craft feeling. Asset: seamless warm huanghuali-style wood texture for a circular radial-menu bezel. View: perfectly orthographic, flat front-facing material sample, even diffuse lighting. Surface: refined medium warm brown hardwood, broad flowing grain, subtle hand-polished matte wax finish, very light tonal depth, understated historical Chinese furniture character. Composition: full-bleed texture only. It must tile seamlessly on all four edges and remain readable when mapped into a narrow 30–60 px circular band. Do not include any ring shape, frame, corners, objects, metal, paper, carved symbols, ruyi motifs, text, letters, shadows, perspective, cracks, holes, dramatic knots, glossy plastic, red lacquer, gold trim, or photoreal camera glare. Keep contrast restrained so icons and labels remain dominant. Opaque image; no transparency."
+    },
+    "wood_bezel_quarter": {
+      "draft_returned_file": "exec-5166fb9d-78c4-4ac3-9315-d8d153fcf3b3.png",
+      "returned_file": "exec-273f124b-2f4d-475f-b26f-54926cbf7867.png",
+      "original": {
+        "path": "ArtSource/UI/RadialMenu/wood-bezel-quarter-original.png",
+        "size": "1254x1254",
+        "bytes": 360649,
+        "sha256": "3985c57ed31e3802355157efe7964448c287f843955f4ce536e8458d9a603cef"
+      },
+      "runtime": {
+        "path": "Game/art/ui/radial_menu/wood-bezel-quarter.png",
+        "size": "1000x1000",
+        "bytes": 342230,
+        "sha256": "927cd96f1fbefac3aac49aa51e3453c9c59eac5c6d7b35ed42677267e58aed5e",
+        "processing": "crop the selected quadrant, normalize its minor horizontal geometry deviation by 5.5%, apply a supersampled exact quarter-annulus alpha mask, and rotate four runtime copies; the wood pixels are never polar-remapped"
+      },
+      "prompt": "Use case: precise-object-edit. Asset type: reusable transparent game UI frame segment. Edit target: the provided transparent huanghuali quarter-circle frame segment. Keep the wood species, natural grain, warm color, restrained Ming furniture molding, orthographic front view, lighting, and genuine transparency unchanged. Change only the geometry and placement: Make the wooden band distinctly slimmer: its radial thickness must be exactly about 12% of the outer radius, suitable for a narrow game UI bezel. Keep a small outer bevel and a very thin inner lip, with a broad natural wood face between them. Preserve natural irregular wood pores and flowing grain at true scale; do not turn it into concentric grooves or repeated stripes. Place the implied circle center exactly at the bottom-left corner of the square canvas. The segment must occupy one exact top-right quadrant, running from the top edge at 12 o'clock to the right edge at 3 o'clock. Both radial end cuts must align exactly with those canvas edges, so four 90-degree rotated copies join cleanly. Keep the entire canvas outside the segment genuinely transparent, including the circular opening. No complete ring, no extra quarters, no ruyi ornament, no shadow, no text, no checkerboard, no scene, no watermark."
     },
     "xuan_paper": {
       "returned_file": "exec-59060144-5724-412c-9995-8e087a454411.png",
