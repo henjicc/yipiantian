@@ -66,7 +66,58 @@ func _run() -> void:
 		for yaw: float in [17.5,37.5]:
 			scene.camera.view.x = yaw
 			await shot("04-yaw-%s.png" % yaw)
+		# Sweep the old safe-rectangle boundary: no complete bank may blink out.
+		for yaw: float in [-12.0, 0.0, 17.5, 27.5, 37.5, 50.0, 68.0]:
+			scene.camera.view.x = yaw
+			await process_frame
+			await process_frame
+			for group: Dictionary in frame._groups:
+				expect(group.node.is_visible_in_tree(), "Orbit retains world foreground at yaw %s: %s" % [yaw, group.node.name])
+			if yaw in [-12.0,68.0]: await shot("04-boundary-%s.png" % yaw)
+		var landscape: Node3D = scene.get_node("Environment/DistantLandscape")
 		scene.camera.view.x = 27.5
+		await process_frame
+		await process_frame
+		var range_node: Node3D = landscape.get_node("WesternRange")
+		var mountain: Vector3 = range_node.global_position
+		var start_pixel: Vector2 = scene.camera.unproject_position(mountain)
+		scene.camera.view.x += 10.0
+		await process_frame
+		await process_frame
+		expect(range_node.global_position.is_equal_approx(mountain), "Mountains stay anchored while orbiting")
+		expect(absf(scene.camera.unproject_position(mountain).x-start_pixel.x)>30, "Yaw moves mountain silhouette across the image")
+		scene.camera.view.x = 27.5
+		scene.camera.view.y += 5.0
+		await shot("04-pitch.png")
+		expect(range_node.global_position.is_equal_approx(mountain), "Tilt does not move the mountain stage")
+		scene.camera.view.y = scene.camera.overview_view.y
+		await create_timer(.5).timeout
+		var blur: float = scene.camera.attributes.dof_blur_amount
+		scene.harvest_book.present(scene.farm_state.snapshot())
+		scene.garden_album.begin_photo()
+		await create_timer(.5).timeout
+		expect(frame.is_visible_in_tree(), "Photo mode keeps overview foreground")
+		expect(is_equal_approx(scene.camera.attributes.dof_blur_amount,blur), "Photo mode keeps chosen depth of field")
+		scene.garden_album._layer.hide()
+		await shot("04-photo-viewfinder.png")
+		var viewfinder: Image = root.get_texture().get_image()
+		scene.garden_album._layer.show()
+		await scene.garden_album.take_photo()
+		var photos: Array = scene.farm_state.snapshot().memories.photos
+		expect(photos.size()==1, "Actual shutter saves a photo")
+		if photos.size()==1:
+			var saved: Image = scene.garden_album.files.texture(photos[0].id).get_image()
+			saved.save_png(output.path_join("04-saved-photo.png"))
+			var difference: float = 0.0
+			var samples: int = 0
+			for x: int in range(0, saved.get_width(), 8):
+				for y: int in range(saved.get_height()/2, saved.get_height(), 8):
+					var a: Color = saved.get_pixel(x,y)
+					var b: Color = viewfinder.get_pixel(x,y)
+					difference += absf(a.r-b.r)+absf(a.g-b.g)+absf(a.b-b.b)
+					samples += 3
+			expect(difference/samples<.025, "Saved foreground matches viewfinder pixels")
+		scene.harvest_book.dismiss()
 		scene._focus_field(0)
 		await create_timer(1.0).timeout
 		expect(not frame.visible, "Foreground leaves focused farming unobstructed")

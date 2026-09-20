@@ -93,12 +93,14 @@ func end_memory() -> void:
 func begin_photo() -> void:
 	if active or scene._exiting or scene._save_failed: return
 	active=true;scene._cancel_input();scene.hud.hide();scene.harvest_book._root.hide()
+	scene.focus_detail.photo_mode=true
 	scene.camera.free_input_enabled=true;scene.camera.set_free_view(true)
 	_status.text="";_capture.text="拍照" if _pending.is_empty() else "重试保存"
 	_layer.show()
 func end_photo() -> void:
 	if not active or busy: return
 	active=false;_layer.hide();scene.camera.set_free_view(false);scene.camera.free_input_enabled=false
+	scene.focus_detail.photo_mode=false
 	if scene.harvest_book.viewing: scene.harvest_book.end_view()
 	scene.harvest_book.tab="album";scene.harvest_book._root.show();scene.harvest_book.refresh(scene.farm_state.snapshot())
 	scene.hud.show();scene._cancel_input()

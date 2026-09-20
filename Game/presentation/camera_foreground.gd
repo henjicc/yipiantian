@@ -4,25 +4,18 @@ extends Node3D
 const PlantWind = preload("res://presentation/plant_wind.gd")
 const ROOT := "res://art/environment/"
 var _camera: Camera3D
-var _fields: Array = []
-var _slots: Array[Node3D] = []
 var _groups: Array[Dictionary] = []
 var _meshes: Array[MeshInstance3D] = []
 var _wind := PlantWind.new()
 var _amount: float = 0.0
 var _wanted: bool = true
-var _last_camera: Transform3D
-var _last_size := Vector2.ZERO
 var _materials: Dictionary = {}
 var _water_plants: Array[Dictionary] = []
 var _motion_time: float = 0.0
 
 
-func configure(camera: Camera3D, fields: Array, environment: Node3D) -> void:
+func configure(camera: Camera3D) -> void:
 	_camera = camera
-	_fields = fields.duplicate()
-	for slot: Dictionary in environment.get_decoration_slots():
-		_slots.append(environment.get_slot_marker(slot.id))
 	top_level = true
 	global_transform = Transform3D.IDENTITY
 	# Bases extend beyond the image, instead of exposing two complete floating pads.
@@ -33,7 +26,6 @@ func configure(camera: Camera3D, fields: Array, environment: Node3D) -> void:
 	_add_floating_patch(Vector2(.43, .90), 1.30, 124.0)
 	_add_floating_patch(Vector2(.64, .86), 1.10, 247.0)
 	visible = false
-	_update_frame()
 
 
 func set_overview_visible(value: bool, immediate: bool = false) -> void:
@@ -203,31 +195,5 @@ func _process(delta: float) -> void:
 			patch.node.rotation.z = sin(phase*.8)*.012
 	for mesh: MeshInstance3D in _meshes:
 		mesh.transparency = 1.0 - _amount
-	if visible: _update_frame()
-
-
-func _update_frame() -> void:
-	var size: Vector2 = _camera.get_viewport().get_visible_rect().size
-	if size == _last_size and _camera.global_transform.is_equal_approx(_last_camera): return
-	_last_camera = _camera.global_transform
-	_last_size = size
-	var safe := Rect2(Vector2(.28,.20),Vector2(.44,.56))
-	for field: Node3D in _fields:
-		for x: float in [-1.45,1.45]:
-			for z: float in [-1.2,1.2]:
-				var point: Vector3 = field.global_transform*Vector3(x,.55,z)
-				if not _camera.is_position_behind(point): safe=safe.expand(_camera.unproject_position(point)/size)
-	for marker: Node3D in _slots:
-		if not _camera.is_position_behind(marker.global_position): safe=safe.expand(_camera.unproject_position(marker.global_position)/size)
-	# Retreat whole objects at extreme orbits instead of slicing leaves with a
-	# screen rectangle. The default pose keeps the centre open by construction.
-	for group: Dictionary in _groups:
-		var bank: Node3D = group.node
-		var blocked: bool = false
-		for fraction: float in [.0,.25,.5,.75,1.0]:
-			var height: float = group.height*fraction
-			var point: Vector3 = bank.global_position + Vector3.UP*height
-			if not _camera.is_position_behind(point):
-				var uv: Vector2 = _camera.unproject_position(point)/size
-				blocked = blocked or safe.grow(.02).has_point(uv)
-		bank.visible = not blocked
+	# World-space scenery uses normal depth occlusion and frustum clipping.
+	# Never hide a whole bank because a projected sample crosses the farm.

@@ -38,11 +38,14 @@ void fragment() {
   if (landscape_layer == 1) { painted = texture(far_mountains, UV); }
   else if (landscape_layer == 2) { painted = texture(mid_hills, UV); }
   else { painted = texture(near_bank, UV); }
+  // The authored cutouts end mid-pigment. Orbit can expose those edges;
+  // feather into the shared mist instead of revealing a rectangular card.
+  float edge_fade = smoothstep(0.0, 0.08, UV.x) * smoothstep(0.0, 0.08, 1.0 - UV.x);
   // Near-zero-alpha RGB in generated cutouts is not meaningful pigment.
   if (painted.a < 0.025) { discard; }
   float base_haze = landscape_layer == 1 ? 0.40 : (landscape_layer == 2 ? 0.25 : 0.12);
   float haze = mix(base_haze,0.94,courtyard_haze_strength);
   ALBEDO = mix(painted.rgb * atmosphere_tint.rgb, sky_horizon.rgb, haze);
-  ALPHA = smoothstep(0.025, 0.985, painted.a);
+  ALPHA = smoothstep(0.025, 0.985, painted.a) * edge_fade;
  }
 }

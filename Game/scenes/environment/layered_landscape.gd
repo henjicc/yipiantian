@@ -1,9 +1,10 @@
 extends Node3D
-## Distant matte cards share a horizontal stage. Its yaw follows the current
-## camera pose in the same frame, keeping the painted waterline level on orbit.
+## Distant matte cards are anchored to the authored overview, not the live camera.
+## Orbit and tilt must both move their projection, just like the nearby islands.
 const SHADER = preload("res://scenes/environment/backdrop.gdshader")
 const ROOT := "res://art/environment/backdrop/layers-v2/"
 var material: ShaderMaterial
+var _sky: MeshInstance3D
 
 func _ready() -> void:
 	material = ShaderMaterial.new()
@@ -16,6 +17,8 @@ func _ready() -> void:
 	position = Vector3(0, 0.85, 0)
 	process_priority = 1 # After the camera, before the focus band and drawing.
 	_card("SkyAndDistantWater", 0, Vector3(0, 0, -460), Vector2(1200, 700))
+	_sky = get_node("SkyAndDistantWater")
+	_sky.top_level = true
 	# Each alpha silhouette appears once. Different peaks, widths and depths,
 	# rather than a repeated/mirrored mountain and village strip.
 	_card("WesternRange", 1, Vector3(-102, 105, -400), Vector2(320, 75))
@@ -27,11 +30,16 @@ func _process(_delta: float) -> void:
 	var camera: Camera3D = get_viewport().get_camera_3d()
 	if camera == null:
 		return
-	var yaw: float = atan2(camera.global_basis.z.x, camera.global_basis.z.z)
-	# Match the authored overview, not temporary focus/free-camera tilts. Otherwise
+	var yaw: float = deg_to_rad(camera.overview_view.x if camera is FarmCamera else 27.5)
+	# Match only explicit overview tuning, never transient orbit or photo poses. Otherwise
 	# lowering the overview pushes the entire painted mountain band out of frame.
 	var pitch: float = camera.overview_view.y if camera is FarmCamera else 28.0
 	basis = Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, deg_to_rad(-pitch))
+	# Only the featureless sky/water fill tracks yaw, so its finite support never
+	# exposes a side or clips at the far plane. Painted mountains remain fixed.
+	var sky_yaw: float = atan2(camera.global_basis.z.x, camera.global_basis.z.z)
+	var sky_basis := Basis(Vector3.UP, sky_yaw) * Basis(Vector3.RIGHT, deg_to_rad(-pitch))
+	_sky.global_transform = Transform3D(sky_basis, global_position + sky_basis * Vector3(0, 0, -460))
 
 func _card(label: String, layer: int, at: Vector3, size: Vector2) -> void:
 	var card := MeshInstance3D.new()

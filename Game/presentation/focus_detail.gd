@@ -12,6 +12,7 @@ const PlantWind = preload("res://presentation/plant_wind.gd")
 const IndirectLighting = preload("res://presentation/indirect_lighting.gd")
 var _indirect_lighting: Node
 var _decoration_wind := PlantWind.new()
+var photo_mode: bool = false
 var _foreground: Node3D
 var _camera: Camera3D
 var _attributes: CameraAttributesPractical
@@ -57,7 +58,7 @@ func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations
 	_foreground = CameraForeground.new()
 	_foreground.name = "CameraForeground"
 	_camera.add_child(_foreground)
-	_foreground.configure(_camera, _fields, _environment)
+	_foreground.configure(_camera)
 	_indirect_lighting = IndirectLighting.new()
 	add_child(_indirect_lighting)
 	_indirect_lighting.configure(_environment.get_parent(), _environment, _camera.get_world_3d().environment)
@@ -86,7 +87,6 @@ func replace_fields(fields: Array) -> void:
 		crops.child_entered_tree.disconnect(_on_crop_added.bind(field))
 		crops.child_exiting_tree.disconnect(_on_crop_removed)
 	_fields=fields.duplicate()
-	_foreground._fields=_fields.duplicate()
 	_field_bounds.clear();_bounds_dirty=true
 	for field: Node3D in _fields:
 		field.get_node("Crops").child_entered_tree.connect(_on_crop_added.bind(field))
@@ -224,7 +224,7 @@ func _process(delta: float) -> void:
 	RenderingServer.global_shader_parameter_set("courtyard_haze_visit",Vector4(_neighbor_center.x,_neighbor_center.y,0,_neighbor_clear))
 	# Global buffer colors are consumed directly by spatial shaders in linear space.
 	RenderingServer.global_shader_parameter_set("courtyard_haze_color", environment.fog_light_color.srgb_to_linear())
-	var inspecting: bool = _camera.get("free_view") == true
+	var inspecting: bool = _camera.get("free_view") == true and not photo_mode
 	var constructing: bool=_camera.get("construction_framing")==true
 	_construction_clear=move_toward(_construction_clear,1.0 if constructing else 0.0,delta/.7)
 	var framing: bool = not inspecting and not constructing and not is_instance_valid(_neighbor) and not is_instance_valid(_target) and not _decorations.active and _quality != "low"
