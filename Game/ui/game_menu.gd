@@ -29,6 +29,9 @@ var _wallpaper: Button
 var _values: Dictionary = {}
 var _populating: bool = false
 var _page_index: int = 0
+var _paper: PanelContainer
+var _quit_confirmation: PanelContainer
+var _keep_playing: Button
 
 
 func _ready() -> void:
@@ -43,6 +46,7 @@ func _ready() -> void:
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_root.add_child(shade)
 	var panel := PanelContainer.new()
+	_paper = panel
 	panel.name = "Paper"
 	_root.add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -167,23 +171,33 @@ func _ready() -> void:
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status.add_theme_font_size_override("font_size", 17)
 	column.add_child(_status)
-	var actions := HBoxContainer.new()
-	column.add_child(actions)
-	_retry = _button(actions, "重试保存")
+	_retry = _button(column, "重试保存")
 	_retry.name = "RetrySettings"
 	_retry.pressed.connect(func() -> void: save_requested.emit())
-	_close = _button(actions, "返回农场")
-	_close.name = "ReturnToFarm"
-	_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_close.pressed.connect(func() -> void: close_requested.emit())
+	var actions := HBoxContainer.new()
+	column.add_child(actions)
 	_quit = _button(actions, "退出游戏")
 	_quit.name = "QuitGame"
-	_quit.pressed.connect(func() -> void: quit_requested.emit())
+	_quit.custom_minimum_size.x = 180
+	_style_exit(_quit)
+	_quit.pressed.connect(func() -> void:
+		_paper.hide()
+		_quit_confirmation.show()
+		_keep_playing.grab_focus())
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(spacer)
+	_close = _button(actions, "返回农场")
+	_close.name = "ReturnToFarm"
+	_close.custom_minimum_size.x = 180
+	_close.pressed.connect(func() -> void: close_requested.emit())
+	_build_quit_confirmation()
 	_show_page(0)
 	hide()
 
 
 func present(value: Dictionary, message: String = "") -> void:
+	cancel_quit_confirmation()
 	_values = value.duplicate(true)
 	_populating = true
 	for key: String in _sliders:
@@ -211,6 +225,7 @@ func set_status(message: String, can_leave_unsaved: bool = false) -> void:
 
 
 func dismiss() -> void:
+	cancel_quit_confirmation()
 	_window.get_popup().hide()
 	_quality.get_popup().hide()
 	_resolution.get_popup().hide()
@@ -251,7 +266,7 @@ func _refresh_focus_chain(index: int) -> void:
 		controls.append(tab)
 	_collect_focus(_pages[index], controls)
 	if _retry.visible: controls.append(_retry)
-	controls.append_array([_close, _quit])
+	controls.append_array([_quit, _close])
 	for position: int in controls.size():
 		var control: Control = controls[position]
 		control.focus_mode = Control.FOCUS_ALL
@@ -306,3 +321,57 @@ func _collect_focus(node: Node, controls: Array[Control]) -> void:
 func show_free_view(active: bool) -> void:
 	if _developer_buttons.has("free_camera"):
 		_developer_buttons.free_camera.text = "退出自由视角" if active else "自由视角"
+
+
+func _style_exit(button: Button) -> void:
+	for state: String in ["hover", "pressed", "hover_pressed"]:
+		var style := FarmTheme.framed_paper(FarmTheme.Tokens.DANGER_HOVER if state == "hover" else FarmTheme.Tokens.DANGER_PRESSED)
+		style.set("edge", FarmTheme.Tokens.DANGER)
+		button.add_theme_stylebox_override(state, style)
+	for state: String in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
+		button.add_theme_color_override(state, FarmTheme.Tokens.DANGER)
+	var focus: StyleBoxFlat = button.get_theme_stylebox("focus").duplicate()
+	focus.border_color = FarmTheme.Tokens.DANGER
+	button.add_theme_stylebox_override("focus", focus)
+
+
+func _build_quit_confirmation() -> void:
+	_quit_confirmation = PanelContainer.new()
+	_quit_confirmation.name = "QuitConfirmation"
+	_root.add_child(_quit_confirmation)
+	_quit_confirmation.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_quit_confirmation.offset_left = -230
+	_quit_confirmation.offset_right = 230
+	_quit_confirmation.offset_top = -80
+	_quit_confirmation.offset_bottom = 80
+	var column := VBoxContainer.new()
+	_quit_confirmation.add_child(column)
+	var label := Label.new()
+	label.text = "确定退出游戏？"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(label)
+	var row := HBoxContainer.new()
+	column.add_child(row)
+	var confirm := _button(row, "确认退出")
+	confirm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_exit(confirm)
+	confirm.pressed.connect(func() -> void:
+		cancel_quit_confirmation()
+		quit_requested.emit())
+	_keep_playing = _button(row, "继续游戏")
+	_keep_playing.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_keep_playing.pressed.connect(cancel_quit_confirmation)
+	for pair: Array in [[confirm, _keep_playing], [_keep_playing, confirm]]:
+		var path: NodePath = pair[0].get_path_to(pair[1])
+		for property: String in ["focus_next", "focus_previous", "focus_neighbor_left", "focus_neighbor_right", "focus_neighbor_top", "focus_neighbor_bottom"]:
+			pair[0].set(property, path)
+	_quit_confirmation.hide()
+
+
+func cancel_quit_confirmation() -> bool:
+	if not _quit_confirmation.visible: return false
+	_quit_confirmation.hide()
+	_paper.show()
+	_quit.grab_focus()
+	return true

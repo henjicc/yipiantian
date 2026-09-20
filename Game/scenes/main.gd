@@ -1849,6 +1849,7 @@ func _save_settings() -> bool:
 
 
 func _request_menu_close() -> void:
+	if game_menu.cancel_quit_confirmation(): return
 	_cancel_input()
 	decoration_layout.cancel_pointer_gesture()
 	if (_settings_dirty or not _settings_issue.is_empty()) and not _allow_leave_settings:
