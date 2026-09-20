@@ -6,12 +6,9 @@ signal cancel_tool_requested
 signal tool_requested(tool: String)
 signal tool_press_started(tool: String)
 signal crop_requested(crop_id: String)
-signal overview_requested
-signal reset_requested
 signal retry_requested
 signal recovery_requested
 signal exit_requested
-signal decoration_requested
 signal settings_requested
 signal free_view_requested
 signal camera_tuning_requested
@@ -45,7 +42,6 @@ var _storage_message: Label
 var _retry: Button
 var _recover: Button
 var _exit: Button
-var _view_controls: HBoxContainer
 var _free_view: Button
 var _time_panel: PanelContainer
 var _time_slider: HSlider
@@ -60,11 +56,11 @@ func _ready() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	root.theme = FarmTheme.create()
-	var build:=Button.new();build.name="BuildIsland";build.text="建设";root.add_child(build)
+	var build := _button(root, "建设", 100)
+	build.name = "BuildIsland"
 	build.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	build.offset_left=-544;build.offset_right=-422;build.offset_top=88;build.offset_bottom=132
+	build.offset_left=-226;build.offset_right=-126;build.offset_top=88;build.offset_bottom=132
 	build.pressed.connect(func() -> void: construction_requested.emit())
-	FarmTheme.pointer_focus(build)
 	var basket := StatusBadge.new()
 	basket.name = "OpenBasket"
 	root.add_child(basket)
@@ -96,21 +92,15 @@ func _ready() -> void:
 		time_badge.focus_mode = Control.FOCUS_NONE
 	_build_farm_controls(root)
 	var bar := HBoxContainer.new()
-	_view_controls = bar
 	bar.name = "ViewControls"
 	root.add_child(bar)
 	bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	bar.offset_left = -410
+	bar.offset_left = -118
 	bar.offset_right = -18
 	bar.offset_top = 88
 	bar.offset_bottom = 130
 	bar.add_theme_constant_override("separation", 8)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_button(bar, "全景", 84).pressed.connect(func() -> void: overview_requested.emit())
-	_button(bar, "复位", 84).pressed.connect(func() -> void: reset_requested.emit())
-	var decorate := _button(bar, "摆件", 84)
-	decorate.name = "Decorate"
-	decorate.pressed.connect(func() -> void: decoration_requested.emit())
 	_settings = _button(bar, "设置", 100)
 	_settings.name = "Settings"
 	_settings.pressed.connect(func() -> void: settings_requested.emit())
@@ -363,9 +353,6 @@ func show_saved() -> void:
 
 func show_decoration_mode(active: bool) -> void:
 	_decorating = active
-	_view_controls.get_child(0).disabled = active
-	_view_controls.get_child(1).disabled = active
-	_view_controls.get_node("Decorate").text = "完成" if active else "摆件"
 	_tools.visible = not active
 	_sync_rows()
 

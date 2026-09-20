@@ -47,6 +47,37 @@ func run() -> void:
 	var button_frame:=ThemeFactory.create().get_stylebox("normal","Button")
 	check(button_frame is PigmentStyle,"Controls use continuous-UV pigment with runtime outlines, not sliced bitmaps")
 	scene.atmosphere.set_preview_hour(14.0)
+	var build: Button = scene.hud.get_node("Layout/BuildIsland")
+	var settings: Button = scene.hud.get_node("Layout/ViewControls/Settings")
+	check(is_equal_approx(build.size.x, settings.size.x) and is_equal_approx(build.size.y, settings.size.y), "Construction and settings have equal dimensions")
+	check(scene.hud.get_node("Layout/ViewControls").get_child_count() == 1, "No duplicate decoration, overview or reset HUD buttons")
+	for badge_name: String in ["OpenBasket", "TimeBadge"]:
+		var badge: Button = scene.hud.get_node("Layout/" + badge_name)
+		for state: String in ["normal", "hover", "pressed"]:
+			check(badge.get_theme_stylebox(state) is StyleBoxEmpty, "Status badge has no background: " + badge_name + state)
+	await shot("simplified-hud")
+	scene.camera.drag(Vector2(12, 8), false)
+	scene.camera.zoom(-2.0)
+	while scene.camera.is_transitioning(): await process_frame
+	var original_pose: Transform3D = scene.camera.global_transform
+	scene._focus_field(0)
+	while scene.camera.is_transitioning(): await process_frame
+	scene._focus_field(1)
+	while scene.camera.is_transitioning(): await process_frame
+	await mouse(Vector2(8,400), true, MOUSE_BUTTON_WHEEL_DOWN)
+	while scene.camera.is_transitioning(): await process_frame
+	await process_frame
+	check(not scene.camera.focused and scene.selected_field == -1, "Backward wheel exits chained field focus")
+	check(scene.camera.global_transform.is_equal_approx(original_pose), "Backward wheel restores pre-focus pose, not previous field or default overview")
+	scene.camera.reset_view()
+	while scene.camera.is_transitioning(): await process_frame
+	await click(build.get_global_rect().get_center())
+	check(scene.island_builder.active, "Construction entry opens combined building tools")
+	await click(scene.island_builder.choices.categories.objects.get_global_rect().get_center())
+	check(scene.island_builder.choices.items.bench.is_visible_in_tree(), "Decorations remain reachable inside construction")
+	await click(scene.island_builder._finish.get_global_rect().get_center())
+	check(not scene.island_builder.active, "Construction exits without edits")
+	while scene.camera.is_transitioning(): await process_frame
 	var animals: Node3D=scene.get_node("Environment/CourtyardAnimals")
 	while not animals.ready_for_motion: await process_frame
 	animals.set_process(false)
@@ -59,9 +90,24 @@ func run() -> void:
 	check(scene.field_menu.active and actions==0,"Soil click opens menu without changing farm")
 	if not scene.field_menu.active: quit(1); return
 	await shot("menu")
+	for angle: float in [PI * 4.0 / 3.0, PI * 5.0 / 3.0]:
+		for offset: float in [-.01, .01]:
+			var sample := Vector2(160,160) + Vector2.from_angle(angle + offset) * 100.0
+			var covered: bool = false
+			for entry: Control in scene.field_menu.cards.get_children():
+				covered = covered or Geometry2D.is_point_in_polygon(sample, entry.polygon)
+			check(covered, "Action fan boundaries have no open angular gap")
 	await click(petal("sow"))
 	check(scene.field_menu.active and actions==0,"Sow opens crop choice without planting")
 	await shot("seeds")
+	var menu_center: Vector2 = scene.field_menu.cards.size * .5
+	for angle_index: int in 120:
+		var sample: Vector2 = menu_center + Vector2.from_angle(angle_index * TAU / 120.0 + .002) * 140.0
+		var covered: bool = false
+		for entry: Node in scene.field_menu.cards.get_children():
+			if entry is Button:
+				covered = covered or Geometry2D.is_point_in_polygon(sample, entry.polygon)
+		check(covered, "Crop ring boundaries have no open angular gap")
 	await click(petal("radish"))
 	check(actions==1 and scene.farm_state.get_cell(scene.farm.field_id(0),"cell_01").crop_id=="radish","Selected seed commits once to captured cell")
 	check(scene.selected_tool.is_empty(),"Menu is one-shot")

@@ -10,7 +10,8 @@ var _layout: MarginContainer
 
 func _init() -> void:
 	FarmTheme.pointer_focus(self)
-	add_theme_stylebox_override("normal", FarmTheme.framed_paper())
+	for state: String in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+		add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	_layout = MarginContainer.new()
 	_layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for side: String in ["left", "right"]:
@@ -38,7 +39,6 @@ func _init() -> void:
 	row.add_child(copy)
 	title_label = _label(copy, 24)
 	detail_label = _label(copy, 16)
-	detail_label.add_theme_color_override("font_color", Tokens.MUTED)
 	detail_label.hide()
 	_layout.minimum_size_changed.connect(update_minimum_size)
 
@@ -53,5 +53,7 @@ func _label(parent: Control, font_size: int) -> Label:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", Tokens.INK)
+	label.add_theme_color_override("font_outline_color", Tokens.PAPER)
+	label.add_theme_constant_override("outline_size", 2)
 	parent.add_child(label)
 	return label

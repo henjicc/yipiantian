@@ -190,12 +190,9 @@ func _ready() -> void:
 		_cancel_input()
 		_refresh_hud())
 	add_child(tool_cursor)
-	hud.overview_requested.connect(_return_overview)
-	hud.reset_requested.connect(_reset_view)
 	hud.retry_requested.connect(_retry_storage)
 	hud.recovery_requested.connect(_recover_storage)
 	hud.exit_requested.connect(_finish_exit)
-	hud.decoration_requested.connect(_begin_decoration)
 	hud.settings_requested.connect(_open_menu)
 	hud.free_view_requested.connect(_toggle_free_view)
 	if (OS.is_debug_build() and OS.has_feature("editor")):
@@ -1274,7 +1271,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_cancel_input()
 		if decoration_layout != null:
 			decoration_layout.cancel_pointer_gesture()
-		camera.zoom((-0.8 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.8) * event.factor)
+		if camera.focused and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_return_overview()
+		else:
+			camera.zoom((-0.8 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.8) * event.factor)
 		get_viewport().set_input_as_handled()
 		return
 	if decoration_layout != null and decoration_layout.active:

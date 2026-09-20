@@ -32,7 +32,10 @@ class Petal extends Button:
 		var color := CELADON if over else PAPER
 		if disabled:
 			color = ThemeFactory.Tokens.DISABLED
-		draw_colored_polygon(polygon, color)
+		var paper_uvs := PackedVector2Array()
+		for point: Vector2 in polygon:
+			paper_uvs.append(point / 216.0)
+		draw_colored_polygon(polygon, color, paper_uvs, PAPER_TEXTURE)
 		var edge := polygon.duplicate()
 		edge.append(polygon[0])
 		draw_polyline(edge, CELADON_EDGE if over else ThemeFactory.EDGE, 1.4, true)
@@ -138,9 +141,9 @@ func present(point: Vector2, cell: Dictionary) -> void:
 		for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
 			button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 		button.focus_mode = Control.FOCUS_NONE
-		var start: float = PI + i * PI / 3.0 + .025
-		var finish: float = PI + (i + 1) * PI / 3.0 - .025
-		button.polygon = _ring_polygon(Vector2(160, 160), 44.0, 150.0, start, finish)
+		var start: float = PI + i * PI / 3.0
+		var finish: float = PI + (i + 1) * PI / 3.0
+		button.polygon = _ring_polygon(Vector2(160, 160), 36.0, 150.0, start, finish)
 		button.center = Vector2(160, 160) + Vector2.from_angle((start + finish) * .5) * 99
 		button.picture = load("res://art/ui/crops/porch-sow.png" if id == "sow" else "res://art/ui/crops/%s.png" % id)
 		var empty: bool = cell.get("crop_id", "").is_empty()
@@ -179,9 +182,9 @@ func _show_seeds(_page: int = 0) -> void:
 	veil.add_child(cards)
 	var center := Vector2.ONE * extent
 	var center_radius: float = outer_radius * .18
-	var crop_inner: float = center_radius + outer_radius * .055
-	var crop_outer: float = outer_radius * .99
-	var ring_gap: float = clampf(outer_radius * .009, 2.5, 3.5)
+	var crop_inner: float = center_radius
+	var crop_outer: float = outer_radius
+	var ring_gap: float = 0.0
 	var band_width: float = (crop_outer - crop_inner - ring_gap * (ring_count - 1)) / ring_count
 	var frame := RingFrame.new()
 	frame.name = "Frame"
@@ -199,7 +202,7 @@ func _show_seeds(_page: int = 0) -> void:
 		var inner_radius: float = crop_inner + ring_index * (band_width + ring_gap)
 		var outer_ring_radius: float = inner_radius + band_width
 		_add_crop_ring(ring_ids, center, inner_radius, outer_ring_radius, outer_radius, ring_index)
-	_add_cancel_button(anchor, center_radius * 1.90)
+	_add_cancel_button(anchor, center_radius * 2.0)
 
 
 func _add_crop_ring(ids: Array[String], center: Vector2, inner_radius: float, outer_radius: float, menu_radius: float, ring_index: int) -> void:
@@ -210,8 +213,8 @@ func _add_crop_ring(ids: Array[String], center: Vector2, inner_radius: float, ou
 	var start_offset: float = -PI * .5 - step * .5 + (step * .5 if ring_index % 2 == 1 else 0.0)
 	for i: int in count:
 		var id: String = ids[i]
-		var start: float = start_offset + i * step + .0055
-		var finish: float = start_offset + (i + 1) * step - .0055
+		var start: float = start_offset + i * step
+		var finish: float = start_offset + (i + 1) * step
 		var button := RingSegment.new()
 		button.name = id
 		button.caption = Crops.definition(id).name

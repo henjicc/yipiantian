@@ -151,9 +151,11 @@ func _close_scene() -> void:
 
 
 func _enter() -> void:
-	await _click(scene.get_node("HUD/Layout/ViewControls/Decorate").get_global_rect().get_center())
+	# Legacy controller coverage; the public construction entry is covered by
+	# construction_catalog_test and field_menu_scene_test.
+	scene._begin_decoration()
 	await create_timer(0.85).timeout
-	_expect(scene.decoration_layout.active, "Arrangement entry is a working UI action")
+	_expect(scene.decoration_layout.active, "Arrangement controller enters its active mode")
 
 
 func _choose(name: String) -> void:
