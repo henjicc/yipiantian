@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://e4tvdsldbwh7"
-path="res://.godot/imported/wood-bezel-quarter.png-380ab17a7b6aa4b0e2139f57f35c830a.ctex"
+uid="uid://cbb5yskv8t4xg"
+path="res://.godot/imported/wood-bezel-quarter-gongbi.png-9aa5a27e7d881f7fa5694a60bddf8db5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/ui/radial_menu/wood-bezel-quarter.png"
-dest_files=["res://.godot/imported/wood-bezel-quarter.png-380ab17a7b6aa4b0e2139f57f35c830a.ctex"]
+source_file="res://art/ui/radial_menu/wood-bezel-quarter-gongbi.png"
+dest_files=["res://.godot/imported/wood-bezel-quarter-gongbi.png-9aa5a27e7d881f7fa5694a60bddf8db5.ctex"]
 
 [params]
 

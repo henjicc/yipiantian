@@ -124,7 +124,15 @@ func run() -> void:
 	check(scene.field_menu.cards.has_node("CenterBezel"),"Planar-textured center bezel exists")
 	for quarter_index: int in 4:
 		var quarter: TextureRect=scene.field_menu.cards.get_node("WoodQuarter%d"%quarter_index)
-		check(quarter.mouse_filter==Control.MOUSE_FILTER_IGNORE and is_equal_approx(quarter.rotation,quarter_index*PI*.5),"Natural wood quarter rotates without polar texture stretching")
+		check(quarter.mouse_filter==Control.MOUSE_FILTER_IGNORE and is_equal_approx(quarter.rotation,quarter_index*PI*.5),"Gongbi-painted wood quarter rotates without polar texture stretching")
+	var quarter_image: Image=load("res://art/ui/radial_menu/wood-bezel-quarter-gongbi.png").get_image()
+	var exact_quarter: bool=quarter_image.get_size()==Vector2i(1000,1000)
+	for degrees: float in [10.0,30.0,45.0,60.0,80.0]:
+		var angle: float=deg_to_rad(degrees)
+		var wood_point:=Vector2i(roundi(cos(angle)*930.0),roundi(999.0-sin(angle)*930.0))
+		var opening_point:=Vector2i(roundi(cos(angle)*800.0),roundi(999.0-sin(angle)*800.0))
+		exact_quarter=exact_quarter and quarter_image.get_pixelv(wood_point).a>.9 and quarter_image.get_pixelv(opening_point).a<.1
+	check(exact_quarter,"Wood frame keeps a constant mathematical quarter-annulus mask")
 	for index: int in 4:
 		var ornament: TextureRect=scene.field_menu.cards.get_node("Ruyi%d"%index)
 		check(is_equal_approx(ornament.rotation,index*PI*.5),"Ruyi frame node rotates from one reusable transparent asset")

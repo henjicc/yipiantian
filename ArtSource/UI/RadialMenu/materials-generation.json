@@ -1,7 +1,7 @@
 {
   "generated_at": "2026-09-20",
   "tool": "Codex built-in image generation",
-  "mode": "referenced image generation and precise-object edit",
+  "mode": "referenced image generation, exact-geometry masking and style-guided rendering",
   "reference": "ArtSource/UI/RadialMenu/ming-ring-concept.png",
   "reference_role": "palette and Ming-furniture craft direction only",
   "materials": {
@@ -23,6 +23,7 @@
       "prompt": "Create one production-ready square game UI material texture, using the reference image only for its restrained Ming-dynasty-inspired palette and craft feeling. Asset: seamless warm huanghuali-style wood texture for a circular radial-menu bezel. View: perfectly orthographic, flat front-facing material sample, even diffuse lighting. Surface: refined medium warm brown hardwood, broad flowing grain, subtle hand-polished matte wax finish, very light tonal depth, understated historical Chinese furniture character. Composition: full-bleed texture only. It must tile seamlessly on all four edges and remain readable when mapped into a narrow 30–60 px circular band. Do not include any ring shape, frame, corners, objects, metal, paper, carved symbols, ruyi motifs, text, letters, shadows, perspective, cracks, holes, dramatic knots, glossy plastic, red lacquer, gold trim, or photoreal camera glare. Keep contrast restrained so icons and labels remain dominant. Opaque image; no transparency."
     },
     "wood_bezel_quarter": {
+      "status": "rejected because the generated silhouette was not an exact mathematical quarter circle",
       "draft_returned_file": "exec-5166fb9d-78c4-4ac3-9315-d8d153fcf3b3.png",
       "returned_file": "exec-273f124b-2f4d-475f-b26f-54926cbf7867.png",
       "original": {
@@ -31,14 +32,64 @@
         "bytes": 360649,
         "sha256": "3985c57ed31e3802355157efe7964448c287f843955f4ce536e8458d9a603cef"
       },
-      "runtime": {
-        "path": "Game/art/ui/radial_menu/wood-bezel-quarter.png",
-        "size": "1000x1000",
-        "bytes": 342230,
-        "sha256": "927cd96f1fbefac3aac49aa51e3453c9c59eac5c6d7b35ed42677267e58aed5e",
-        "processing": "crop the selected quadrant, normalize its minor horizontal geometry deviation by 5.5%, apply a supersampled exact quarter-annulus alpha mask, and rotate four runtime copies; the wood pixels are never polar-remapped"
-      },
       "prompt": "Use case: precise-object-edit. Asset type: reusable transparent game UI frame segment. Edit target: the provided transparent huanghuali quarter-circle frame segment. Keep the wood species, natural grain, warm color, restrained Ming furniture molding, orthographic front view, lighting, and genuine transparency unchanged. Change only the geometry and placement: Make the wooden band distinctly slimmer: its radial thickness must be exactly about 12% of the outer radius, suitable for a narrow game UI bezel. Keep a small outer bevel and a very thin inner lip, with a broad natural wood face between them. Preserve natural irregular wood pores and flowing grain at true scale; do not turn it into concentric grooves or repeated stripes. Place the implied circle center exactly at the bottom-left corner of the square canvas. The segment must occupy one exact top-right quadrant, running from the top edge at 12 o'clock to the right edge at 3 o'clock. Both radial end cuts must align exactly with those canvas edges, so four 90-degree rotated copies join cleanly. Keep the entire canvas outside the segment genuinely transparent, including the circular opening. No complete ring, no extra quarters, no ruyi ornament, no shadow, no text, no checkerboard, no scene, no watermark."
+    },
+    "wood_bezel_quarter_guided": {
+      "status": "geometry workflow accepted; visual source superseded because its realistic wood treatment did not match the approved gongbi light-colour style",
+      "guide": {
+        "path": "ArtSource/UI/RadialMenu/wood-bezel-quarter-guide.png",
+        "size": "1254x1254",
+        "geometry": "exact 90-degree annulus; outer radius 1000 px; inner radius 865 px; center at (127,1127); supersampled 4x then Lanczos reduced",
+        "bytes": 207337,
+        "sha256": "af4d4e329093d0a4a51a8b4178323f44295b767f8ade51bf0acf27ae053f7f12"
+      },
+      "returned_file": "exec-00d2a5ab-5e86-450c-bf14-e3c511ff2912.png",
+      "original": {
+        "path": "ArtSource/UI/RadialMenu/wood-bezel-quarter-guided-original.png",
+        "size": "1254x1254",
+        "bytes": 558002,
+        "sha256": "ae9cf3ce76cc3101017a206dfee91f3abbccdf5267c0406abc97b9935ec64ff6"
+      },
+      "runtime": {
+        "path": "Game/art/ui/radial_menu/wood-bezel-quarter-guided.png",
+        "size": "1000x1000",
+        "bytes": 470415,
+        "sha256": "ef5508c1137a69a63ef298dfc1fe4e178bda55692d909fd4886a527e06e098bc",
+        "processing": "crop the guide's exact 1000x1000 quadrant and apply the same supersampled mathematical annulus as the final alpha mask; alpha RMSE against the independently regenerated reference mask is 7.55384e-05, with the difference limited to image quantization"
+      },
+      "prompt": "Use case: sketch-to-render. Asset type: reusable transparent game UI quarter-ring frame segment. Input images: Image 1 is the immutable geometry template and alpha-layout reference. Its exact canvas placement, circular silhouette, inner radius, outer radius, 90-degree arc, radial end cuts, and transparent regions are mandatory. Image 2 is material reference only: natural warm huanghuali hardwood grain and color. Primary request: replace only the light gray face inside Image 1's outlined quarter-ring shape with a polished Ming-furniture-style huanghuali wooden frame surface. Keep Image 1's geometry pixel-aligned and unchanged. The result must still be the exact same mathematical quarter annulus, not a hand-drawn approximation. Material and construction: natural irregular wood pores and flowing grain at believable scale; grain generally follows the curved length but remains organic, with subtle local variation rather than parallel concentric stripes; a restrained shallow outer bevel and very thin inner lip must stay entirely inside the supplied silhouette; matte waxed finish, warm medium brown, fine dark tea-brown edge, orthographic front view, neutral even frontal lighting. Hard invariants: preserve Image 1's exact 1254x1254 canvas and exact position; preserve the exact 90-degree circular geometry and constant band width; preserve both straight radial end faces exactly; do not expand, shrink, bend, rotate, recenter, crop, round, or redraw the silhouette; everything outside the template band, including the circular opening, must remain genuinely transparent; no cast shadow outside the silhouette; no other ring quarters, no complete circle, no ruyi ornament, no text, no crop icons, no paper, no scene, no checkerboard, no watermark; do not create vinyl-like grooves, repeated concentric bands, fabric, leather, rope, red lacquer, gold, or plastic."
+    },
+    "wood_bezel_quarter_gongbi": {
+      "status": "selected runtime source",
+      "guide": {
+        "path": "ArtSource/UI/RadialMenu/wood-bezel-quarter-guide.png",
+        "role": "immutable exact quarter-annulus geometry and alpha layout"
+      },
+      "style_references": [
+        {
+          "path": "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+          "role": "approved selective contours, layered light-colour washes, pigment variation and matte volume"
+        },
+        {
+          "path": "docs/design-baseline/images/approved/farm-gongbi-v1.png",
+          "role": "approved warm restrained Jiangnan miniature-game palette and simplified natural materials"
+        }
+      ],
+      "returned_file": "exec-a59d41ce-7e32-4916-95f8-e179a27e8d2a.png",
+      "original": {
+        "path": "ArtSource/UI/RadialMenu/wood-bezel-quarter-gongbi-original.png",
+        "size": "1254x1254",
+        "bytes": 507495,
+        "sha256": "a97a34edecfb7674e6da75a7ab15d58ed2d101d4f3080319d80208940134212c"
+      },
+      "runtime": {
+        "path": "Game/art/ui/radial_menu/wood-bezel-quarter-gongbi.png",
+        "size": "1000x1000",
+        "bytes": 445293,
+        "sha256": "fbb97072cdfb4b25674375dd7b0950222c33aaabfcab2f5205525487bcb6f448",
+        "processing": "crop the guide's exact 1000x1000 quadrant and replace generated alpha with the guide's supersampled mathematical alpha mask; only the generated painted colour remains; 8-bit runtime alpha maximum normalized difference from the cropped guide is 0.00195315"
+      },
+      "prompt": "Use case: production game UI texture, structure-guided stylized-concept. Create a single transparent PNG texture for ONE exact quarter-annulus wooden bezel segment used in a radial crop menu. REFERENCE RESPONSIBILITIES: Input 1 is an IMMUTABLE GEOMETRY TEMPLATE. Preserve its canvas size, exact quarter-annulus position, exact 90-degree circular arcs, constant width, endpoints, and transparent regions. Do not redesign, round, taper, widen, narrow, rotate, recenter, crop, extend, or add ornaments beyond this exact silhouette. Input 2 is the APPROVED close-up gongbi light-colour style reference. Transfer its selective fine tea-brown contours, layered pale colour washes, controlled pigment variation, matte hand-painted volume, and softly accumulated colour near edges. Do not transfer the vegetable shape or green colour. Input 3 is the APPROVED world style reference. Match its warm restrained Jiangnan miniature-game palette and simplified natural materials. Transfer visual language only, not buildings, crops, scenery, lighting, UI, labels, or objects. MATERIAL AND PAINTING: Render the exact band as warm muted ochre-brown / huanghuali-inspired wood in a gongbi-inspired light-colour painted style. Use broad translucent sienna and umber washes, sparse gently curving wood-grain brush marks that follow the arc, occasional darker tea-brown contour accents, and a shallow hand-painted bevel with quiet warm highlights. The grain must remain sparse, irregular, painterly and readable as wood at game UI size—not concentric stripes, not photographic pores, not a stretched texture. Keep a clean, continuous silhouette and coherent surface across both ends so four rotated copies join gracefully. Matte finish, restrained depth, soft pigment variation. STRICTLY AVOID: photorealism, PBR gloss, dense wood grain, repeating rings, vinyl-record grooves, machine-cut plastic, thick black outlines, heavy carving, metallic trim, gold, cracks, dirt, distressed antique damage, paper background, checkerboard, cast shadow outside the shape, text, calligraphy, seals, plants, scenery, extra ornaments, or any change to the template geometry. OUTPUT: Transparent background outside the exact quarter-annulus. One segment only. No presentation board or margin decoration."
     },
     "xuan_paper": {
       "returned_file": "exec-59060144-5724-412c-9995-8e087a454411.png",
