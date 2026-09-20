@@ -10,10 +10,10 @@ const CENTER_BEZEL: Texture2D = preload("res://art/ui/radial_menu/wood-center-ri
 const PAPER_TEXTURE: Texture2D = preload("res://art/ui/radial_menu/xuan-paper-texture.png")
 const CROPS_PER_RING: int = 6
 const WOOD_DARK := Color("68482f")
-const PAPER := Color("f4ecd9")
-const CELADON := Color("dce7d5")
-const CELADON_EDGE := Color("66795d")
-const INK := Color("4b493d")
+const PAPER := ThemeFactory.PAPER
+const CELADON := ThemeFactory.Tokens.WASH_HOVER
+const CELADON_EDGE := ThemeFactory.LEAF
+const INK := ThemeFactory.INK
 
 var active: bool = false
 var veil: Control
@@ -33,18 +33,18 @@ class Petal extends Button:
 
 	func _draw() -> void:
 		var over: bool = is_hovered() and not disabled
-		var color := Color("dce3cd") if over else Color("f4ecd9")
+		var color := CELADON if over else PAPER
 		if disabled:
-			color = Color("c8c3b4")
+			color = ThemeFactory.Tokens.DISABLED
 		draw_colored_polygon(polygon, color)
 		var edge := polygon.duplicate()
 		edge.append(polygon[0])
-		draw_polyline(edge, Color("6f7953") if over else Color("a48c66"), 2.0, true)
+		draw_polyline(edge, CELADON_EDGE if over else ThemeFactory.EDGE, 1.4, true)
 		if picture:
 			draw_texture_rect(picture, Rect2(center - Vector2(24, 31), Vector2(48, 48)), false, Color(1, 1, 1, .45 if disabled else 1.0))
 		var font: Font = ThemeFactory.FONT
 		var width: float = font.get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 19).x
-		draw_string(font, center + Vector2(-width * .5, 35), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color("4b493d"))
+		draw_string(font, center + Vector2(-width * .5, 35), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, INK)
 
 	func _ready() -> void:
 		mouse_entered.connect(queue_redraw)
@@ -67,14 +67,14 @@ class RingSegment extends Button:
 		var over: bool = is_hovered() and not disabled
 		var fill := CELADON if over else PAPER
 		if disabled:
-			fill = Color("d2cec2")
+			fill = ThemeFactory.Tokens.DISABLED
 		var paper_uvs := PackedVector2Array()
 		for point: Vector2 in polygon:
 			paper_uvs.append(point / size)
 		draw_colored_polygon(polygon, fill, paper_uvs, PAPER_TEXTURE)
 		var edge := polygon.duplicate()
 		edge.append(polygon[0])
-		draw_polyline(edge, CELADON_EDGE if over else Color("9f8664"), 1.8 if over else 1.4, true)
+		draw_polyline(edge, CELADON_EDGE if over else ThemeFactory.EDGE, 1.8 if over else 1.4, true)
 		var font: Font = ThemeFactory.FONT
 		if picture:
 			var icon_rect := Rect2(center + Vector2(-icon_size * .5, -icon_size * .68), Vector2(icon_size, icon_size))

@@ -1,0 +1,19 @@
+{
+  "date": "2026-09-20",
+  "tool": "built-in imagegen",
+  "cost": "not returned",
+  "style": "Approved F wash + E thin outline; existing crop icon paintings",
+  "sources": [
+    {
+      "file": "pigment-source.png",
+      "generated_file": "exec-9ee8d2dd-ee4f-4456-9bfb-53eab2cdc0f0.png",
+      "prompt": "Production asset: one square seamless pigment texture, full bleed opaque RGB. Use supplied crop paintings and accepted F UI as PAINTING STYLE only. Fill entire image edge to edge with softly layered pale sage and olive grey watercolor washes, irregular medium-sized translucent overlapping brush patches, subtle pigment pooling, delicate mottling. No objects, no leaves, no UI, no borders, no text, no shadow, no lighting gradient, no yellow aged paper, no cracks, no vignette. Consistent even tonal distribution, low-to-medium contrast. A tileable raw material to tint and clip into program-controlled game UI shapes; not a rendered interface."
+    },
+    {
+      "file": "icons-source.png",
+      "generated_file": "exec-2cde3132-776a-42c9-a558-614baeac73c8.png",
+      "prompt": "Use case: stylized-concept. Production game UI icon sheet, three isolated icons in ONE horizontal row, evenly spaced in three equal cells, transparent background with actual alpha. Left: simple squat woven bamboo vegetable basket with ONE arched handle, no food. Middle: a small warm ochre sun disk with eight short restrained painted rays. Right: a pale cream and sage crescent moon opening right, NO face, NO stars. All three have same apparent height and visual weight. Match supplied approved vegetable illustrations: fine selective olive-brown hand-drawn contour, layered subdued translucent pigment, meticulous gongbi botanical picture-book craft, softly modeled matte volume, only a hint of depth from brush washes, NOT shiny 3D, NOT flat emoji, NOT metallic, no bevel, no drop shadow, no frame, no text, no paper background. Very simple readable at 36px, clean complete silhouettes, generous transparent separation between icons."
+    }
+  ],
+  "process": "build_materials.py; opaque middle crop; grayscale normalization; mirror seamless tile; semantic token colors; 8x antialiased mathematical rounded silhouette; fixed 20px corners and 216px TILE center; icon equal-cell crops, alpha dust below 8/255 removed, aspect fit to 112 in 128px."
+}

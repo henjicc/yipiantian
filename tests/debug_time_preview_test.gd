@@ -5,7 +5,7 @@ var failures: Array[String] = []
 var output: String
 
 func _initialize() -> void:
-	output = ProjectSettings.globalize_path("res://../.local/verification/debug-time").simplify_path()
+	output = ProjectSettings.globalize_path("res://../.local/verification/debug-time-%d" % Time.get_ticks_usec()).simplify_path()
 	_run.call_deferred()
 
 func expect(ok: bool, message: String) -> void:
@@ -20,7 +20,27 @@ func _run() -> void:
 	root.add_child(scene)
 	await create_timer(.5).timeout
 	expect(root.mode == Window.MODE_EXCLUSIVE_FULLSCREEN, "Development flag overrides default windowed preference with real fullscreen")
-	var clock: Label = scene.hud.get_node("Layout/LocalClock")
+	var clock: Label = scene.hud._clock
+	var basket_title: String = scene.hud._harvested.text
+	var basket_detail: String = scene.hud._harvest_detail.text
+	scene.hud._harvested.text = "菜篮 · 99999"
+	scene.hud._harvest_detail.text = "累计收获 99999 篮"
+	for window_size: Vector2i in [Vector2i(960,600), Vector2i(3840,2160)]:
+		root.mode = Window.MODE_WINDOWED
+		root.size = window_size
+		await process_frame
+		await process_frame
+		for badge: Control in [scene.hud.get_node("Layout/OpenBasket"), scene.hud.get_node("Layout/TimeBadge")]:
+			var frame: Rect2 = badge.get_global_rect()
+			expect(root.get_visible_rect().encloses(frame), "Status badge fits viewport")
+			expect(frame.encloses(badge.picture.get_global_rect()) and frame.encloses(badge.title_label.get_global_rect()), "Badge contains both icon and title")
+			expect(badge.picture.get_global_rect().end.x < badge.title_label.get_global_rect().position.x, "Fixed icon slot cannot overlap title")
+			var copy: Control = badge.title_label.get_parent()
+			expect(absf(badge.picture.get_global_rect().get_center().y-copy.get_global_rect().get_center().y)<1.0, "Icon and text block share vertical center")
+			expect(badge.picture.stretch_mode==TextureRect.STRETCH_KEEP_ASPECT_CENTERED, "Icon aspect ratio is preserved")
+	root.mode = Window.MODE_EXCLUSIVE_FULLSCREEN
+	scene.hud._harvested.text = basket_title
+	scene.hud._harvest_detail.text = basket_detail
 	var panel: PanelContainer = scene.hud.get_node("Layout/DebugTimePreview")
 	await pointer(clock.get_global_rect().get_center(), true)
 	await pointer(clock.get_global_rect().get_center(), false)
@@ -47,6 +67,12 @@ func _run() -> void:
 	slider.value = 720
 	expect(scene.atmosphere.get_night_weight() == 0 and clock.text == "12:00", "Noon updates light and displayed time together")
 	await shot("noon.png")
+	await pointer(clock.get_global_rect().get_center(), true)
+	await pointer(clock.get_global_rect().get_center(), false)
+	expect(not panel.visible, "Whole time badge also toggles the preview closed")
+	await shot("hud-clean.png")
+	await pointer(clock.get_global_rect().get_center(), true)
+	await pointer(clock.get_global_rect().get_center(), false)
 	var live: Button = panel.find_child("LiveTime",true,false)
 	await pointer(live.get_global_rect().get_center(),true)
 	await pointer(live.get_global_rect().get_center(),false)
@@ -55,8 +81,11 @@ func _run() -> void:
 	scene._open_menu()
 	expect(not panel.visible, "Settings hides the debug time panel")
 	scene.farm_audio.shutdown();scene.free()
+	await process_frame
+	await process_frame
 	for failure: String in failures: push_error(failure)
 	print("DEBUG_TIME_PREVIEW failures=%d" % failures.size())
+	print("DEBUG_TIME_SCREENSHOTS "+output)
 	quit(0 if failures.is_empty() else 1)
 
 func pointer(point: Vector2, pressed: bool) -> void:

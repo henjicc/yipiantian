@@ -29,6 +29,9 @@ func _run() -> void:
 		root.get_texture().get_image().save_png(capture_folder.path_join("tiled-frame-settings.png"))
 	_expect(menu.visible, "Menu opens without changing scene state")
 	_expect(root.gui_get_focus_owner() == menu._tabs[0], "Opening captures keyboard focus")
+	var focus: StyleBoxFlat = menu._tabs[0].get_theme_stylebox("focus")
+	_expect(not focus.draw_center, "Keyboard focus leaves selected pigment visible")
+	_expect(menu._tabs[0].get_theme_color("font_pressed_color") == preload("res://ui/ui_tokens.gd").INK, "Selected text retains dark readable ink")
 	menu._quit.grab_focus()
 	var tab_event := InputEventKey.new()
 	tab_event.keycode = KEY_TAB
@@ -52,6 +55,10 @@ func _run() -> void:
 	_expect(menu._pages[1].visible and not menu._pages[0].visible, "Controls page replaces settings inside one modal")
 	menu._show_page(2)
 	_expect(menu._pages[2].visible and not menu._pages[1].visible, "Sources are accessible without leaving the farm")
+	if visual:
+		await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(capture_folder.path_join("pigment-sources.png"))
 	menu.set_status("设置未能保存，本次调整仍然有效。可重试保存。", true)
 	_expect(menu._close.text == "暂不保存，返回" and menu._quit.text == "仍然退出", "Failed settings save exposes truthful continue and exit choices")
 	menu.present(Store.DEFAULTS, "设置文件无法读取，已使用默认设置。原件保留。")

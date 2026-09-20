@@ -22,9 +22,10 @@ signal construction_requested
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const FarmTheme = preload("res://ui/farm_theme.gd")
+const StatusBadge = preload("res://ui/status_badge.gd")
 const INK := FarmTheme.INK
-const SUN = preload("res://art/ui/sun.svg")
-const MOON = preload("res://art/ui/moon.svg")
+const SUN = preload("res://art/ui/pigment/sun.png")
+const MOON = preload("res://art/ui/pigment/moon.png")
 var _harvested: Label
 var _harvest_detail: Label
 var _clock: Label
@@ -63,52 +64,35 @@ func _ready() -> void:
 	build.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	build.offset_left=-532;build.offset_right=-410;build.offset_top=88;build.offset_bottom=130
 	build.pressed.connect(func() -> void: construction_requested.emit())
-	var left_plate := _status_plate(root)
-	left_plate.position = Vector2(18, 18)
-	left_plate.size = Vector2(300, 74)
-	var open_basket:=Button.new()
-	open_basket.name="OpenBasket"
-	open_basket.flat=true
-	open_basket.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	open_basket.pressed.connect(func() -> void: basket_requested.emit())
-	left_plate.add_child(open_basket)
-	var basket := TextureRect.new()
-	basket.texture = preload("res://art/ui/basket.svg")
-	basket.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	basket.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	basket.position = Vector2(28, 29)
-	basket.size = Vector2(50, 50)
+	var basket := StatusBadge.new()
+	basket.name = "OpenBasket"
 	root.add_child(basket)
-	var right_plate := _status_plate(root)
-	right_plate.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	right_plate.offset_left = -182
-	right_plate.offset_right = -18
-	right_plate.offset_top = 18
-	right_plate.offset_bottom = 76
-	_day_icon = TextureRect.new()
-	_day_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_day_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_day_icon)
-	_day_icon.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_day_icon.offset_left = -169
-	_day_icon.offset_right = -133
-	_day_icon.offset_top = 29
-	_day_icon.offset_bottom = 65
-	_clock = _label(root, "", 26)
-	_clock.name = "LocalClock"
-	_clock.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_clock.offset_left = -120
-	_clock.offset_right = -30
-	_clock.offset_top = 26
-	_clock.offset_bottom = 65
-	if OS.is_debug_build():
-		_clock.mouse_filter = Control.MOUSE_FILTER_STOP
-		_clock.gui_input.connect(_clock_input)
-	_harvested = _label(root, "", 24)
+	basket.position = Vector2(18, 18)
+	basket.custom_minimum_size = Vector2(286, 74)
+	basket.picture.texture = preload("res://art/ui/pigment/basket.png")
+	basket.detail_label.show()
+	basket.pressed.connect(func() -> void: basket_requested.emit())
+	_harvested = basket.title_label
 	_harvested.name = "Harvested"
-	_harvested.position = Vector2(91, 24)
-	_harvest_detail = _label(root, "", 16)
-	_harvest_detail.position = Vector2(91, 58)
+	_harvest_detail = basket.detail_label
+	var time_badge := StatusBadge.new()
+	time_badge.name = "TimeBadge"
+	root.add_child(time_badge)
+	time_badge.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	time_badge.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	time_badge.offset_left = -200
+	time_badge.offset_right = -18
+	time_badge.offset_top = 18
+	time_badge.offset_bottom = 80
+	_day_icon = time_badge.picture
+	_clock = time_badge.title_label
+	_clock.name = "LocalClock"
+	_clock.add_theme_font_size_override("font_size", 26)
+	if OS.is_debug_build():
+		time_badge.pressed.connect(_toggle_time_preview)
+	else:
+		time_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		time_badge.focus_mode = Control.FOCUS_NONE
 	_build_farm_controls(root)
 	var bar := HBoxContainer.new()
 	_view_controls = bar
@@ -282,15 +266,13 @@ func _build_time_preview(root: Control) -> void:
 	_time_panel.hide()
 
 
-func _clock_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_clock.accept_event()
-		if _time_panel.visible:
-			hide_time_preview()
-		else:
-			_sync_time_slider()
-			_time_panel.show()
-			time_preview_opened.emit()
+func _toggle_time_preview() -> void:
+	if _time_panel.visible:
+		hide_time_preview()
+	else:
+		_sync_time_slider()
+		_time_panel.show()
+		time_preview_opened.emit()
 
 
 func _sync_time_slider() -> void:
@@ -345,15 +327,6 @@ func _build_storage_overlay(root: Control) -> void:
 func show_free_view(active: bool) -> void:
 	if _free_view != null:
 		_free_view.text = "退出自由视角" if active else "自由视角"
-
-
-func _status_plate(parent: Control) -> Panel:
-	var panel := Panel.new()
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style: StyleBoxTexture = FarmTheme.framed_paper()
-	panel.add_theme_stylebox_override("panel", style)
-	parent.add_child(panel)
-	return panel
 
 
 func show_storage_issue(kind: String, unsaved: bool) -> void:
