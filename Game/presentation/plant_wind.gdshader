@@ -35,9 +35,8 @@ instance uniform float preserve_painted_color = 0.0;
 instance uniform float leaf_roughness_variation = 0.0;
 instance uniform float fresh_leaf_color = 0.0;
 instance uniform vec2 root_soil = vec2(-1000.0,0.0); // world soil height / contact band; crops only
-instance uniform float frame_enabled = 0.0;
+instance uniform float foreground_visibility = 1.0;
 instance uniform float haze_exempt = 0.0;
-instance uniform vec4 frame_safe_rect = vec4(0.15, 0.14, 0.85, 0.90);
 varying vec3 world_point;
 varying vec3 surface_point;
 
@@ -86,11 +85,9 @@ void vertex() {
 
 void fragment() {
 	FOG = vec4(courtyard_haze_color.rgb, haze_exempt > 0.5 ? 0.0 : courtyard_haze(world_point));
-	if (frame_enabled > 0.5) {
-		bool centre = SCREEN_UV.x > 0.16 && SCREEN_UV.x < 0.84 && SCREEN_UV.y > 0.12 && SCREEN_UV.y < 0.91;
-		bool operation = SCREEN_UV.x > frame_safe_rect.x && SCREEN_UV.x < frame_safe_rect.z && SCREEN_UV.y > frame_safe_rect.y && SCREEN_UV.y < frame_safe_rect.w;
-		if (centre || operation) { discard; }
-	}
+	// Stable coverage fade stays in the opaque pipeline, retaining depth and DOF.
+	float coverage = fract(52.9829189 * fract(dot(FRAGCOORD.xy,vec2(0.06711056,0.00583715))));
+	if (foreground_visibility < coverage) { discard; }
 	vec3 color = base_color.rgb;
 	if (textured) { color *= texture(color_texture, UV).rgb; }
 	if (pigment) { color *= 0.87 + 0.20 * pigment_wash(world_point * wash_scale) + 0.045 * pigment_wash(world_point * wash_scale * 5.0); }

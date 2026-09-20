@@ -28,9 +28,15 @@ func _run() -> void:
 	var isolated := output.path_join("session-%d" % Time.get_ticks_usec())
 	scene.store = load("res://farm/farm_store.gd").new(isolated)
 	scene.settings_store = load("res://settings/settings_store.gd").new(isolated.path_join("preferences"))
+	var initial: Dictionary = scene.settings_store.load_settings().settings
+	initial.overview_mdeg = [43000.0,14000.0]
+	expect(scene.settings_store.save(initial).ok,"Overview preference written before game startup")
 	root.add_child(scene)
 	scene.atmosphere.set_preview_hour(16.5)
 	await create_timer(1.0).timeout
+	expect(scene.camera.overview_view.x==43.0 and scene.camera.view.y==14.0,"Actual game startup restores saved overview angles")
+	await overview_memory_checks(isolated.path_join("preferences"))
+	scene.camera.restore_overview_angles(Vector2(27.5,10.0))
 	await shot("01-overview.png")
 	var frame: Node3D = scene.camera.get_node("CameraForeground")
 	var triangles: int = 0
@@ -120,6 +126,17 @@ func _run() -> void:
 			expect(difference/samples<.025, "Saved foreground matches viewfinder pixels")
 		scene.harvest_book.dismiss()
 		scene._focus_field(0)
+		var previous_coverage: float = 1.0
+		for tick: int in 18:
+			await process_frame
+			var coverage: float = frame._meshes[0].get_instance_shader_parameter("foreground_visibility")
+			expect(coverage<=previous_coverage,"Foreground coverage fades monotonically during focus")
+			previous_coverage=coverage
+			for mesh: MeshInstance3D in frame._meshes:
+				expect(mesh.transparency==0.0,"Focus never switches foreground to transparent rendering")
+			if tick in [0,3,7,12]:
+				await RenderingServer.frame_post_draw
+				root.get_texture().get_image().save_png(output.path_join("05-focus-transition-%02d.png"%tick))
 		await create_timer(1.0).timeout
 		expect(not frame.visible, "Foreground leaves focused farming unobstructed")
 		await shot("05-focused.png")
@@ -154,3 +171,42 @@ func shot(filename: String) -> void:
 	await create_timer(.5).timeout
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(output.path_join(filename))
+
+func overview_memory_checks(preferences: String) -> void:
+	var point := Vector2(800,720)
+	for button: MouseButton in [MOUSE_BUTTON_RIGHT,MOUSE_BUTTON_MIDDLE]:
+		var before_yaw: float = scene.camera.view.x
+		var press := InputEventMouseButton.new()
+		press.button_index=button;press.pressed=true;press.position=point
+		Input.parse_input_event(press)
+		await process_frame
+		var motion := InputEventMouseMotion.new()
+		motion.position=point+Vector2(65,0);motion.relative=Vector2(65,0)
+		motion.button_mask=MOUSE_BUTTON_MASK_RIGHT if button==MOUSE_BUTTON_RIGHT else MOUSE_BUTTON_MASK_MIDDLE
+		Input.parse_input_event(motion)
+		await process_frame
+		press=press.duplicate();press.pressed=false;press.position=motion.position
+		Input.parse_input_event(press)
+		await process_frame
+		expect(scene.camera.view.x<before_yaw,"Routed right/middle drag rotates the overview")
+		var loaded: Dictionary = load("res://settings/settings_store.gd").new(preferences).load_settings()
+		expect(loaded.ok and is_equal_approx(loaded.settings.overview_mdeg[0]/1000.0,scene.camera.view.x),"Mouse release durably records current overview")
+	var remembered: Vector3 = scene.camera.overview_view
+	scene._focus_field(0)
+	await create_timer(.9).timeout
+	scene.camera.drag(Vector2(30,0),false)
+	scene._return_overview()
+	await create_timer(.9).timeout
+	expect(scene.camera.view.is_equal_approx(remembered),"Focus and overview restore the last overview, not the field orbit")
+	scene.camera.drag(Vector2(-100000,0),false)
+	expect(scene.camera.view.x==68.0,"Right orbit is bounded")
+	scene.camera.drag(Vector2(100000,0),false)
+	expect(scene.camera.view.x==-12.0,"Left orbit is bounded")
+	scene._cancel_input()
+	var reopened: Dictionary = load("res://settings/settings_store.gd").new(preferences).load_settings()
+	var fresh: Camera3D = load("res://scenes/farm_camera.gd").new()
+	root.add_child(fresh)
+	fresh.restore_overview_angles(Vector2(reopened.settings.overview_mdeg[0],reopened.settings.overview_mdeg[1])/1000.0)
+	expect(fresh.view.x==-12.0,"New camera restores persisted bounded view")
+	fresh.queue_free()
+	scene.camera.current=true

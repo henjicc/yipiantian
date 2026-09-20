@@ -1,0 +1,200 @@
+{
+  "date": "2026-09-21",
+  "tool": "built-in image_gen",
+  "reference": "ArtSource/Environment/Backdrop/horizon-v3/west-shoulder.png",
+  "model": null,
+  "seed": null,
+  "cost": null,
+  "assets": [
+    {
+      "name": "hill-01",
+      "prompt": "Use case stylized-concept. Generate ONE independent small Jiangnan hill asset: one compact rounded peak with a broad low LEFT shoulder and rocky face on right. Not a panorama, not an asset sheet. Match reference Chinese gongbi pale celadon/slate pigment, delicate grey rock-strata contours and clustered painted tree foliage. Matte natural irregular silhouette, no smooth plastic dome, no photorealism. Front elevation seen across a lake, neutral diffuse lighting. Landscape 3:2 canvas, COMPLETE hill and base within central 86% width, all edges have transparent margin. TRUE RGBA transparent background: outside vegetation and rock alpha zero, no outer glow, haze, sky, lake, reflection, ground rectangle, shadow, paper, checkerboard, buildings or text. Distinct silhouette suitable for layered world-space game scenery.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-71cca8b3-d084-4521-a89b-809ef0d354d7.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "rgba_size": [
+        1536,
+        1024
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "crop_uv": [
+        0.008463541666666666,
+        0.1806640625,
+        0.9908854166666666,
+        0.837890625
+      ]
+    },
+    {
+      "name": "hill-02",
+      "prompt": "Use case stylized-concept. Generate ONE independent small Jiangnan hill asset: one low double summit, higher left summit, deeply wooded saddle. Not a panorama, not an asset sheet. Match reference Chinese gongbi pale celadon/slate pigment, delicate grey rock-strata contours and clustered painted tree foliage. Matte natural irregular silhouette, no smooth plastic dome, no photorealism. Front elevation seen across a lake, neutral diffuse lighting. Landscape 3:2 canvas, COMPLETE hill and base within central 86% width, all edges have transparent margin. TRUE RGBA transparent background: outside vegetation and rock alpha zero, no outer glow, haze, sky, lake, reflection, ground rectangle, shadow, paper, checkerboard, buildings or text. Distinct silhouette suitable for layered world-space game scenery.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-12853cd5-8c51-48d3-8ddc-c8f8ddfb74e5.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "rgba_size": [
+        1536,
+        1024
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "crop_uv": [
+        0.027994791666666668,
+        0.2373046875,
+        0.982421875,
+        0.837890625
+      ]
+    },
+    {
+      "name": "hill-03",
+      "prompt": "Use case stylized-concept. Generate ONE independent small Jiangnan hill asset: one narrow crooked peak leaning slightly right with two little foothills. Not a panorama, not an asset sheet. Match reference Chinese gongbi pale celadon/slate pigment, delicate grey rock-strata contours and clustered painted tree foliage. Matte natural irregular silhouette, no smooth plastic dome, no photorealism. Front elevation seen across a lake, neutral diffuse lighting. Landscape 3:2 canvas, COMPLETE hill and base within central 86% width, all edges have transparent margin. TRUE RGBA transparent background: outside vegetation and rock alpha zero, no outer glow, haze, sky, lake, reflection, ground rectangle, shadow, paper, checkerboard, buildings or text. Distinct silhouette suitable for layered world-space game scenery.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-9070a65e-85e2-4999-b7c6-8353635521dc.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "rgba_size": [
+        1536,
+        1024
+      ],
+      "alpha_range": [
+        0,
+        253
+      ],
+      "crop_uv": [
+        0.028645833333333332,
+        0.1318359375,
+        0.9739583333333334,
+        0.9033203125
+      ]
+    },
+    {
+      "name": "hill-04",
+      "prompt": "Use case stylized-concept. Generate ONE independent small Jiangnan hill asset: one wide very low wooded bank with three irregular tree clusters, no tall peak. Not a panorama, not an asset sheet. Match reference Chinese gongbi pale celadon/slate pigment, delicate grey rock-strata contours and clustered painted tree foliage. Matte natural irregular silhouette, no smooth plastic dome, no photorealism. Front elevation seen across a lake, neutral diffuse lighting. Landscape 3:2 canvas, COMPLETE hill and base within central 86% width, all edges have transparent margin. TRUE RGBA transparent background: outside vegetation and rock alpha zero, no outer glow, haze, sky, lake, reflection, ground rectangle, shadow, paper, checkerboard, buildings or text. Distinct silhouette suitable for layered world-space game scenery.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-d6d776c0-f05e-44d0-a63f-7844ccf6076f.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "rgba_size": [
+        1536,
+        1024
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "crop_uv": [
+        0.013671875,
+        0.34765625,
+        0.986328125,
+        0.7734375
+      ]
+    },
+    {
+      "name": "hill-05",
+      "prompt": "Use case stylized-concept. Generate ONE independent small Jiangnan hill asset: one squat rock dome split by a diagonal wooded ravine. Not a panorama, not an asset sheet. Match reference Chinese gongbi pale celadon/slate pigment, delicate grey rock-strata contours and clustered painted tree foliage. Matte natural irregular silhouette, no smooth plastic dome, no photorealism. Front elevation seen across a lake, neutral diffuse lighting. Landscape 3:2 canvas, COMPLETE hill and base within central 86% width, all edges have transparent margin. TRUE RGBA transparent background: outside vegetation and rock alpha zero, no outer glow, haze, sky, lake, reflection, ground rectangle, shadow, paper, checkerboard, buildings or text. Distinct silhouette suitable for layered world-space game scenery.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-153c2864-4e2c-42cc-8212-88a6a3dde9c6.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "rgba_size": [
+        1536,
+        1024
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "crop_uv": [
+        0.014973958333333334,
+        0.1171875,
+        0.9850260416666666,
+        0.892578125
+      ]
+    },
+    {
+      "name": "hill-06",
+      "prompt": "Use case stylized-concept. Generate ONE independent small Jiangnan hill asset: one asymmetric triple-hill cluster, central saddle lower than both ends. Not a panorama, not an asset sheet. Match reference Chinese gongbi pale celadon/slate pigment, delicate grey rock-strata contours and clustered painted tree foliage. Matte natural irregular silhouette, no smooth plastic dome, no photorealism. Front elevation seen across a lake, neutral diffuse lighting. Landscape 3:2 canvas, COMPLETE hill and base within central 86% width, all edges have transparent margin. TRUE RGBA transparent background: outside vegetation and rock alpha zero, no outer glow, haze, sky, lake, reflection, ground rectangle, shadow, paper, checkerboard, buildings or text. Distinct silhouette suitable for layered world-space game scenery.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-b2d956b6-bcf2-4d38-9b38-e2b83d2aabf4.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "rgba_size": [
+        1536,
+        1024
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "crop_uv": [
+        0.007161458333333333,
+        0.19921875,
+        0.9954427083333334,
+        0.841796875
+      ]
+    },
+    {
+      "name": "hill-07",
+      "prompt": "Use case stylized-concept. Generate ONE independent small Jiangnan hill asset: one low peninsula of deciduous trees over exposed pale stone shelves. Not a panorama, not an asset sheet. Match reference Chinese gongbi pale celadon/slate pigment, delicate grey rock-strata contours and clustered painted tree foliage. Matte natural irregular silhouette, no smooth plastic dome, no photorealism. Front elevation seen across a lake, neutral diffuse lighting. Landscape 3:2 canvas, COMPLETE hill and base within central 86% width, all edges have transparent margin. TRUE RGBA transparent background: outside vegetation and rock alpha zero, no outer glow, haze, sky, lake, reflection, ground rectangle, shadow, paper, checkerboard, buildings or text. Distinct silhouette suitable for layered world-space game scenery.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-fbf7952f-0913-4be1-94d8-a4fdcadb117c.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "rgba_size": [
+        1536,
+        1024
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "crop_uv": [
+        0.014973958333333334,
+        0.240234375,
+        0.9889322916666666,
+        0.8251953125
+      ]
+    },
+    {
+      "name": "hill-08",
+      "prompt": "Use case stylized-concept. Generate ONE independent small Jiangnan hill asset: one tall rounded wooded summit with a distinct stepped shoulder on right. Not a panorama, not an asset sheet. Match reference Chinese gongbi pale celadon/slate pigment, delicate grey rock-strata contours and clustered painted tree foliage. Matte natural irregular silhouette, no smooth plastic dome, no photorealism. Front elevation seen across a lake, neutral diffuse lighting. Landscape 3:2 canvas, COMPLETE hill and base within central 86% width, all edges have transparent margin. TRUE RGBA transparent background: outside vegetation and rock alpha zero, no outer glow, haze, sky, lake, reflection, ground rectangle, shadow, paper, checkerboard, buildings or text. Distinct silhouette suitable for layered world-space game scenery.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-c7f8c632-65c3-4334-9cbc-b1392b025070.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "rgba_size": [
+        1536,
+        1024
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "crop_uv": [
+        0.02734375,
+        0.1201171875,
+        0.97265625,
+        0.9091796875
+      ]
+    },
+    {
+      "name": "hill-09",
+      "prompt": "Use case stylized-concept. Generate ONE independent small Jiangnan hill asset: one small pair of offset hills, distant hill visible behind nearer left hill. Not a panorama, not an asset sheet. Match reference Chinese gongbi pale celadon/slate pigment, delicate grey rock-strata contours and clustered painted tree foliage. Matte natural irregular silhouette, no smooth plastic dome, no photorealism. Front elevation seen across a lake, neutral diffuse lighting. Landscape 3:2 canvas, COMPLETE hill and base within central 86% width, all edges have transparent margin. TRUE RGBA transparent background: outside vegetation and rock alpha zero, no outer glow, haze, sky, lake, reflection, ground rectangle, shadow, paper, checkerboard, buildings or text. Distinct silhouette suitable for layered world-space game scenery.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-91868932-be7a-4f75-94cc-1d1d482307b5.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "rgba_size": [
+        1536,
+        1024
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "crop_uv": [
+        0.01953125,
+        0.228515625,
+        0.98046875,
+        0.841796875
+      ]
+    },
+    {
+      "name": "hill-10",
+      "prompt": "Use case stylized-concept. Generate ONE independent small Jiangnan hill asset: one long low sloping foothill descending left, shrubs and fine rocky folds. Not a panorama, not an asset sheet. Match reference Chinese gongbi pale celadon/slate pigment, delicate grey rock-strata contours and clustered painted tree foliage. Matte natural irregular silhouette, no smooth plastic dome, no photorealism. Front elevation seen across a lake, neutral diffuse lighting. Landscape 3:2 canvas, COMPLETE hill and base within central 86% width, all edges have transparent margin. TRUE RGBA transparent background: outside vegetation and rock alpha zero, no outer glow, haze, sky, lake, reflection, ground rectangle, shadow, paper, checkerboard, buildings or text. Distinct silhouette suitable for layered world-space game scenery.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-781e0183-c803-447e-9c5b-0e08544f6c74.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "rgba_size": [
+        1536,
+        1024
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "crop_uv": [
+        0.011067708333333334,
+        0.263671875,
+        0.9895833333333334,
+        0.7978515625
+      ]
+    }
+  ]
+}

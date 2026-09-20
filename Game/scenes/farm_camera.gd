@@ -2,9 +2,12 @@ class_name FarmCamera
 extends Camera3D
 
 signal motion_finished
+signal overview_changed
 
 const DEFAULT_POINT := Vector3(0.25, 0.75, 0.0)
 const DEFAULT_VIEW := Vector3(27.5, 10.0, 25.5)
+const MIN_YAW := -12.0
+const MAX_YAW := 68.0
 const FOCUS_DISTANCE: float = 10.4
 const ARRANGEMENT_DISTANCE: float = 31.0
 var construction_framing: bool = false
@@ -223,6 +226,14 @@ func overview_parameters() -> Dictionary:
 	return {"yaw": overview_view.x, "pitch": overview_view.y, "distance": overview_view.z,
 		"fov": fov, "target_x": overview_point.x, "target_y": overview_point.y, "target_z": overview_point.z}
 
+func restore_overview_angles(angles: Vector2) -> void:
+	overview_view.x = clampf(angles.x,MIN_YAW,MAX_YAW)
+	overview_view.y = clampf(angles.y,10.0,40.0)
+	view = overview_view
+	_saved_view = view
+	_destination_view = view
+	_apply_pose()
+
 
 func preview_overview(parameters: Dictionary) -> void:
 	_stop_transition()
@@ -319,9 +330,13 @@ func drag(relative: Vector2, pan: bool) -> void:
 			focus_point.x = clampf(focus_point.x, _anchor.x - limit, _anchor.x + limit)
 			focus_point.z = clampf(focus_point.z, _anchor.z - limit, _anchor.z + limit)
 	else:
-		view.x = clampf(view.x - relative.x * 0.18, minf(-12.0, overview_view.x), maxf(68.0, overview_view.x))
-		view.y = clampf(view.y + relative.y * 0.18, 50.0 if construction_framing else 32.0 if focused else minf(22.0, overview_view.y), 78.0 if construction_framing else 54.0 if focused else maxf(40.0, overview_view.y))
+		view.x = clampf(view.x - relative.x * 0.18, MIN_YAW, MAX_YAW)
+		view.y = clampf(view.y + relative.y * 0.18, 50.0 if construction_framing else 32.0 if focused else 10.0, 78.0 if construction_framing else 54.0 if focused else 40.0)
 	_apply_pose()
+	if not pan and not focused and not free_view and not neighbor_view and not construction_framing and not _decoration_framing:
+		overview_view.x = view.x
+		overview_view.y = view.y
+		overview_changed.emit()
 	motion_finished.emit()
 
 

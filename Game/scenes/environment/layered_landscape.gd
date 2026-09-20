@@ -22,6 +22,23 @@ func _ready() -> void:
 	_hill("SinglePeak", "single-peak", -48.0, 142.0, 42.0, Rect2(0.006,0.115,0.988,0.800))
 	_hill("TwinHills", "twin-hills", -6.0, 125.0, 65.0, Rect2(0.010,0.326,0.980,0.423))
 	_hill("WoodedKnoll", "wooded-knoll", -28.0, 100.0, 38.0, Rect2(0.012,0.268,0.976,0.502))
+	# Each new silhouette appears once. Staggered radii leave multiple readable
+	# layers at both ends of the player's bounded overview orbit.
+	var expanded: Array = [
+		[-108.0,170.0,57.0,Rect2(.0085,.1807,.9824,.6572)],
+		[-83.0,145.0,52.0,Rect2(.0280,.2373,.9544,.6006)],
+		[-65.0,205.0,48.0,Rect2(.0286,.1318,.9453,.7715)],
+		[-88.0,108.0,44.0,Rect2(.0137,.3477,.9727,.4258)],
+		[-31.0,220.0,62.0,Rect2(.0150,.1172,.9701,.7754)],
+		[14.0,185.0,62.0,Rect2(.0072,.1992,.9883,.6426)],
+		[35.0,115.0,44.0,Rect2(.0150,.2402,.9740,.5850)],
+		[58.0,180.0,54.0,Rect2(.0273,.1201,.9453,.7891)],
+		[-4.0,240.0,56.0,Rect2(.0195,.2285,.9609,.6133)],
+		[-56.0,100.0,33.0,Rect2(.0111,.2637,.9785,.5342)],
+	]
+	for index: int in expanded.size():
+		var placement: Array = expanded[index]
+		_hill("ExpandedHill%02d"%index,"hill-%02d"%(index+1),placement[0],placement[1],placement[2],placement[3],"expanded-v5")
 	material.changed.connect(_sync_hill_palette)
 
 func _sync_hill_palette() -> void:
@@ -29,10 +46,10 @@ func _sync_hill_palette() -> void:
 		hill.set_shader_parameter("atmosphere_tint",material.get_shader_parameter("atmosphere_tint"))
 		hill.set_shader_parameter("horizon_color",material.get_shader_parameter("sky_horizon"))
 
-func _hill(label: String, asset: String, heading: float, radius: float, width: float, crop: Rect2) -> void:
+func _hill(label: String, asset: String, heading: float, radius: float, width: float, crop: Rect2, collection: String = "individual-v4") -> void:
 	# A fixed cylindrical segment faces the lake, not the moving camera.
 	# Curvature and transparent ends avoid a hard rectangular side at orbit limits.
-	var texture: Texture2D = load("res://art/environment/backdrop/individual-v4/"+asset+".png")
+	var texture: Texture2D = load("res://art/environment/backdrop/"+collection+"/"+asset+".png")
 	var height: float = width * texture.get_height()*crop.size.y/(texture.get_width()*crop.size.x)
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)

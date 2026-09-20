@@ -80,6 +80,9 @@ var _pointer_position := Vector2(-100, -100)
 var tool_cursor: ToolCursor
 var camera_tuning: CameraTuning
 var _dragging: bool = false
+var _orbit_button: MouseButton = MOUSE_BUTTON_NONE
+var _orbit_travel: float = 0.0
+var _view_dirty: bool = false
 var _press_position := Vector2.INF
 var _press_dragged: bool = false
 var _pressed_field: int = -1
@@ -1235,14 +1238,13 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		_cancel_or_return()
 		get_viewport().set_input_as_handled()
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-		_cancel_or_return()
-		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and _press_position != Vector2.INF:
 		_press_dragged = _press_dragged or event.position.distance_to(_press_position) > 7.0
 	elif event is InputEventMouseButton and not event.pressed:
-		if event.button_index == MOUSE_BUTTON_MIDDLE:
-			_dragging = false
+		if event.button_index == _orbit_button:
+			var short_right: bool = _orbit_button==MOUSE_BUTTON_RIGHT and _orbit_travel<7.0 and not event.canceled
+			_finish_orbit()
+			if short_right: _cancel_or_return()
 		elif event.button_index == MOUSE_BUTTON_LEFT:
 			var hovered := get_viewport().gui_get_hovered_control()
 			if event.canceled:
@@ -1293,11 +1295,15 @@ func _unhandled_input(event: InputEvent) -> void:
 					_picks.append({"down": false, "position": event.position, "dragged": _press_dragged,
 						"action_allowed": not camera.is_transitioning()})
 					_press_position = Vector2.INF
-			MOUSE_BUTTON_MIDDLE:
+			MOUSE_BUTTON_MIDDLE, MOUSE_BUTTON_RIGHT:
 				_cancel_input()
 				_dragging = event.pressed
+				_orbit_button = event.button_index if event.pressed else MOUSE_BUTTON_NONE
+				_orbit_travel = 0.0
 	elif event is InputEventMouseMotion and _dragging:
-		camera.drag(event.relative, event.shift_pressed)
+		_orbit_travel += event.relative.length()
+		if _orbit_button!=MOUSE_BUTTON_RIGHT or _orbit_travel>=7.0:
+			camera.drag(event.relative, event.shift_pressed)
 
 
 func _physics_process(_delta: float) -> void:
@@ -1659,6 +1665,7 @@ func _toggle_camera_tuning() -> void:
 
 
 func _cancel_input(cancel_tool_press: bool = true) -> void:
+	_finish_orbit()
 	_pressed_animal=""
 	_pressed_entry=""
 	if cancel_tool_press:
@@ -1670,6 +1677,19 @@ func _cancel_input(cancel_tool_press: bool = true) -> void:
 	_pressed_cell = ""
 	_press_context = {}
 	_picks.clear()
+
+func _finish_orbit() -> void:
+	_dragging = false
+	_orbit_button = MOUSE_BUTTON_NONE
+	if _view_dirty and game_menu!=null:
+		_view_dirty = false
+		_save_settings()
+
+func _remember_overview() -> void:
+	# Integer millidegrees round-trip exactly through JSON verification.
+	settings_values.overview_mdeg = [float(roundi(camera.overview_view.x*1000)),float(roundi(camera.overview_view.y*1000))]
+	_settings_dirty = true
+	_view_dirty = true
 
 
 func _setup_settings() -> void:
@@ -1695,6 +1715,9 @@ func _setup_settings() -> void:
 	game_menu.wallpaper_requested.connect(_enter_wallpaper)
 	get_window().size_changed.connect(_apply_render_resolution)
 	_apply_settings()
+	if settings_values.has("overview_mdeg"):
+		camera.restore_overview_angles(Vector2(settings_values.overview_mdeg[0],settings_values.overview_mdeg[1])/1000.0)
+	camera.overview_changed.connect(_remember_overview)
 	hud.show_settings_issue(not _settings_issue.is_empty())
 
 

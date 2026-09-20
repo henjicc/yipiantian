@@ -10,6 +10,7 @@ var _wind := PlantWind.new()
 var _amount: float = 0.0
 var _wanted: bool = true
 var _materials: Dictionary = {}
+var _stable_meshes: Dictionary = {}
 var _water_plants: Array[Dictionary] = []
 var _motion_time: float = 0.0
 
@@ -25,7 +26,22 @@ func configure(camera: Camera3D) -> void:
 	_add_reed_shore(Vector2(.735, 1.035), 1)
 	_add_floating_patch(Vector2(.43, .90), 1.30, 124.0)
 	_add_floating_patch(Vector2(.64, .86), 1.10, 247.0)
+	_add_orbit_patches()
 	visible = false
+
+func _add_orbit_patches() -> void:
+	var random := RandomNumberGenerator.new()
+	random.seed = 9212026
+	for angle: float in [-48.0,-24.0,0.0,54.0,80.0,104.0]:
+		var patch := Node3D.new()
+		patch.name = "OrbitPlants%d" % _groups.size()
+		add_child(patch)
+		var radius: float = random.randf_range(16.5,18.0)
+		patch.position = Vector3(sin(deg_to_rad(angle))*radius,-.22,cos(deg_to_rad(angle))*radius)
+		_instance(patch,"archipelago/cattail_high.glb",Vector3(.25,-.15,0),Vector3.ONE*random.randf_range(.75,1.05),random.randf_range(0,360),"grass")
+		var lotus_scale: float = random.randf_range(1.2,1.65)
+		_instance(patch,"lotus/lotus_high.glb",Vector3(-.4,-.15*lotus_scale-.03,.25),Vector3.ONE*lotus_scale,random.randf_range(0,360),"lotus")
+		_groups.append({"node":patch,"anchor":patch.position,"height":1.5})
 
 
 func set_overview_visible(value: bool, immediate: bool = false) -> void:
@@ -162,6 +178,16 @@ func _instance(parent: Node3D, path: String, at: Vector3, size: Vector3, yaw: fl
 	model.rotation.y = deg_to_rad(yaw)
 	for node: Node in model.find_children("*", "MeshInstance3D", true, false):
 		var mesh: MeshInstance3D = node
+		# Only near framing models use a fixed surface set. Imported source LODs
+		# remain untouched for the same plants elsewhere in the farm.
+		var mesh_key: int = mesh.mesh.get_instance_id()
+		if not _stable_meshes.has(mesh_key):
+			var stable := ArrayMesh.new()
+			for index: int in mesh.mesh.get_surface_count():
+				stable.add_surface_from_arrays(mesh.mesh.surface_get_primitive_type(index),mesh.mesh.surface_get_arrays(index))
+				stable.surface_set_material(index,mesh.mesh.surface_get_material(index))
+			_stable_meshes[mesh_key] = stable
+		mesh.mesh = _stable_meshes[mesh_key]
 		mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mesh.lod_bias = 1.0
 		for surface: int in mesh.mesh.get_surface_count():
@@ -175,11 +201,10 @@ func _instance(parent: Node3D, path: String, at: Vector3, size: Vector3, yaw: fl
 				_materials[key] = material
 			mesh.set_surface_override_material(surface,_materials[key])
 		_meshes.append(mesh)
-	if not plant.is_empty():
-		_wind.apply(model,plant)
-		# Framing plants are near the lens, not distant islands in the lake mist.
-		for mesh: Node in model.find_children("*", "MeshInstance3D", true, false):
-			mesh.set_instance_shader_parameter("haze_exempt",1.0)
+	_wind.apply(model,plant if not plant.is_empty() else "grass")
+	for mesh: Node in model.find_children("*", "MeshInstance3D", true, false):
+		mesh.set_instance_shader_parameter("haze_exempt",1.0)
+		if plant.is_empty(): mesh.set_instance_shader_parameter("wind_motion",Vector4.ZERO)
 
 
 func _process(delta: float) -> void:
@@ -194,6 +219,6 @@ func _process(delta: float) -> void:
 			patch.node.position = patch.origin + Vector3(sin(phase)*.014,sin(phase*.8)*.012,cos(phase)*.009)
 			patch.node.rotation.z = sin(phase*.8)*.012
 	for mesh: MeshInstance3D in _meshes:
-		mesh.transparency = 1.0 - _amount
+		mesh.set_instance_shader_parameter("foreground_visibility",_amount)
 	# World-space scenery uses normal depth occlusion and frustum clipping.
 	# Never hide a whole bank because a projected sample crosses the farm.

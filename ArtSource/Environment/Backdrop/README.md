@@ -1,5 +1,13 @@
 # 远山与河岸背景
 
+## expanded-v5：20260921 左右扩景十张独立素材
+
+按用户要求新增十次独立 image_gen 调用，原生透明 PNG 为 `hill-01..10.png`，不是将同一幅大图切成十份；与 v4 三张共同使用。形态包括单峰、双峰、石坡、低林岸和偏斜山肩。固定参考仍为 v3 的 `west-shoulder.png`，完整提示词、原输出路径、尺寸、alpha范围和用于去透明留白的UV边界见 [expanded-v5/generation-record.json](expanded-v5/generation-record.json)。原图无修改复制到 `Game/art/environment/backdrop/expanded-v5/`，开启 mipmaps；工具没有返回模型、种子或费用。本轮没有新增 Tripo／Blender 调用。
+
+十张图各用一次，分布方位 -108° 至 58°，距离100–240米；与原有三张交错叠加，覆盖普通全景偏航 -12° 至 68° 的两侧视野。几何、透明轮廓与昼夜同步仍沿用 v4。不是可环游山体，不扩展游玩或建设范围。
+
+配套前景在固定世界位置增加六处香蒲与荷叶组合，固定随机种子控制尺寸和朝向，保留中央水道。前景专用网格从原始高档表面构造，不复制导入LOD，原资产及其他场景LOD不改；植物与岸石使用同一不透明覆盖淡出，避免聚焦第一帧切换透明管线和随后改变几何细节。逐帧聚焦截图、左右极限与昼夜／拍照证据位于 `.local/verification/overview-expanded-v5/`，入口 `tests/foreground_composition_test.gd`；方向天空专项沿用 `tests/landscape_sky_test.gd`。
+
 ## 现役 individual-v4：20260921 独立工笔小山组合
 
 用户指出 v3 三维山包轮廓过于光滑，与远山绘景不一致。现保留 v3 无限远方向天空，将四段参数化岸坡降到 1.4–1.8 米设计高度，仅承接湖面；较高的山体改用三个分别生成的透明素材，各使用一次，不复用一张大图裁成多座山。

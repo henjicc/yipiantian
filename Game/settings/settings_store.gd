@@ -80,7 +80,9 @@ func save(settings: Dictionary) -> Dictionary:
 	if write_error != OK:
 		return _failure("flush", write_error)
 	var verified: Dictionary = _read(PENDING)
-	if verified.kind != "valid" or verified.settings != settings:
+	# Verify the exact serialized bytes; JSON represents all parsed numbers as
+	# floats, so nested numeric arrays must not be compared by Variant type.
+	if verified.kind != "valid" or verified.get("hash", "") != text.sha256_text():
 		return _failure("verify")
 	var replace_error: Error = DirAccess.rename_absolute(_path(PENDING), _path(MAIN))
 	if replace_error != OK:
@@ -92,8 +94,15 @@ func save(settings: Dictionary) -> Dictionary:
 
 
 static func valid_settings(value: Dictionary) -> bool:
-	if value.size() != DEFAULTS.size():
+	if value.size() != DEFAULTS.size() + int(value.has("overview_mdeg")):
 		return false
+	# Absence means the player has not customized the overview yet.
+	if value.has("overview_mdeg"):
+		var angles: Variant = value.overview_mdeg
+		if not angles is Array or angles.size()!=2: return false
+		for angle: Variant in angles:
+			if not (angle is float or angle is int) or not is_finite(float(angle)) or float(angle)!=floorf(float(angle)): return false
+		if angles[0]<-12000 or angles[0]>68000 or angles[1]<10000 or angles[1]>40000: return false
 	for key: String in ["master", "music", "effects"]:
 		var volume: Variant = value.get(key)
 		if not (volume is float or volume is int) or not is_finite(float(volume)) or float(volume) < 0.0 or float(volume) > 1.0:

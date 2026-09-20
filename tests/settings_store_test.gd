@@ -24,6 +24,12 @@ func _run() -> void:
 	values.quality = "low"
 	values.dof_enabled = false
 	values.resolution = "1440"
+	values.overview_mdeg = [46000.0,18000.0]
+	var invalid_angles: Dictionary = values.duplicate(true)
+	invalid_angles.overview_mdeg = [69000,18000]
+	_expect(not Store.valid_settings(invalid_angles), "Out-of-range overview yaw is rejected")
+	invalid_angles.overview_mdeg = [12.0,NAN]
+	_expect(not Store.valid_settings(invalid_angles), "Non-finite overview pitch is rejected")
 	_expect(store.save(values).ok, "All preference categories save")
 	_expect(Store.new(path).load_settings().settings == values, "Reopening preserves exact settings")
 	values.quality = "high"
