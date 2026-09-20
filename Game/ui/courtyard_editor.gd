@@ -53,7 +53,7 @@ func _ready() -> void:
 	for side: String in ["left","right","top","bottom"]: outer.add_theme_constant_override("margin_"+side,24)
 	_root.add_child(outer)
 	var paper:=PanelContainer.new()
-	paper.add_theme_stylebox_override("panel",ThemeFactory.paper())
+	paper.add_theme_stylebox_override("panel",ThemeFactory.framed_paper())
 	outer.add_child(paper)
 	var content:=VBoxContainer.new()
 	paper.add_child(content)

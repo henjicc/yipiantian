@@ -2,6 +2,10 @@ extends RefCounted
 ## One small theme for this game's HUD and menus, not a component library.
 
 const FONT = preload("res://art/ui/fonts/汇文明朝体.ttf")
+const PAPER_FRAME_NORMAL: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi.png")
+const PAPER_FRAME_HOVER: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-hover.png")
+const PAPER_FRAME_PRESSED: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-pressed.png")
+const PAPER_FRAME_DISABLED: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-disabled.png")
 const INK := Color("4b493d")
 const PAPER := Color("f4ecd9")
 const EDGE := Color("ac9978")
@@ -19,19 +23,15 @@ static func create() -> Theme:
 		theme.set_color("font_pressed_color", type, PAPER)
 		theme.set_color("font_disabled_color", type, Color("8b877a"))
 	for type: String in ["Button", "OptionButton"]:
-		theme.set_stylebox("normal", type, paper())
-		theme.set_stylebox("hover", type, paper(Color("e9dfc6")))
-		theme.set_stylebox("pressed", type, paper(LEAF))
-		theme.set_stylebox("disabled", type, paper(Color("e8e2d4")))
-		var focus: StyleBoxFlat = paper()
-		focus.draw_center = false
-		focus.border_color = Color("826846")
-		focus.set_border_width_all(3)
-		theme.set_stylebox("focus", type, focus)
+		theme.set_stylebox("normal", type, framed_paper(PAPER_FRAME_NORMAL))
+		theme.set_stylebox("hover", type, framed_paper(PAPER_FRAME_HOVER))
+		theme.set_stylebox("pressed", type, framed_paper(PAPER_FRAME_PRESSED))
+		theme.set_stylebox("disabled", type, framed_paper(PAPER_FRAME_DISABLED))
+		theme.set_stylebox("focus", type, framed_paper(PAPER_FRAME_HOVER))
 		theme.set_constant("h_separation", type, 8)
-	theme.set_stylebox("panel", "PanelContainer", paper())
-	theme.set_stylebox("panel", "Panel", paper())
-	theme.set_stylebox("panel", "PopupMenu", paper())
+	theme.set_stylebox("panel", "PanelContainer", framed_paper(PAPER_FRAME_NORMAL))
+	theme.set_stylebox("panel", "Panel", framed_paper(PAPER_FRAME_NORMAL))
+	theme.set_stylebox("panel", "PopupMenu", framed_paper(PAPER_FRAME_NORMAL))
 	theme.set_stylebox("hover", "PopupMenu", paper(Color("e2d9bd")))
 	theme.set_color("font_hover_color", "PopupMenu", INK)
 	theme.set_constant("v_separation", "PopupMenu", 16)
@@ -47,6 +47,23 @@ static func create() -> Theme:
 	theme.set_stylebox("grabber_area", "HSlider", filled)
 	theme.set_stylebox("grabber_area_highlight", "HSlider", filled)
 	return theme
+
+
+static func framed_paper(texture: Texture2D = PAPER_FRAME_NORMAL) -> StyleBoxTexture:
+	# Keep the painted corners intact; only the calm edge middles and paper center stretch.
+	var style := StyleBoxTexture.new()
+	style.texture = texture
+	style.texture_margin_left = 20.0
+	style.texture_margin_top = 20.0
+	style.texture_margin_right = 20.0
+	style.texture_margin_bottom = 20.0
+	style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH
+	style.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH
+	style.content_margin_left = 18.0
+	style.content_margin_right = 18.0
+	style.content_margin_top = 10.0
+	style.content_margin_bottom = 10.0
+	return style
 
 
 static func paper(color: Color = PAPER, radius: int = 18) -> StyleBoxFlat:

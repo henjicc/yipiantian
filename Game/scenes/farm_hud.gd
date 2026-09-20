@@ -317,9 +317,7 @@ func _build_storage_overlay(root: Control) -> void:
 	panel.offset_right = 290
 	panel.offset_top = -135
 	panel.offset_bottom = 135
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("f0e8d4")
-	style.set_corner_radius_all(18)
+	var style := FarmTheme.framed_paper()
 	style.content_margin_left = 24
 	style.content_margin_right = 24
 	style.content_margin_top = 24
@@ -352,7 +350,7 @@ func show_free_view(active: bool) -> void:
 func _status_plate(parent: Control) -> Panel:
 	var panel := Panel.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style: StyleBoxFlat = FarmTheme.paper()
+	var style: StyleBoxTexture = FarmTheme.framed_paper()
 	panel.add_theme_stylebox_override("panel", style)
 	parent.add_child(panel)
 	return panel

@@ -116,7 +116,7 @@ func _ready() -> void:
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	_panel.grow_horizontal=Control.GROW_DIRECTION_BEGIN
 	_panel.offset_left=-294;_panel.offset_right=-18;_panel.offset_top=104
-	_panel.add_theme_stylebox_override("panel",ThemeFactory.paper())
+	_panel.add_theme_stylebox_override("panel",ThemeFactory.framed_paper())
 	var content:=VBoxContainer.new();content.add_theme_constant_override("separation",8);_panel.add_child(content)
 	var title:=Label.new();title.text="布置小岛";title.add_theme_font_size_override("font_size",23);content.add_child(title)
 	choices=Choices.new();content.add_child(choices);_tools=choices.items

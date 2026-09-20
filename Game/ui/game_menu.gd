@@ -45,7 +45,7 @@ func _ready() -> void:
 	panel.offset_right = 310
 	panel.offset_top = -282
 	panel.offset_bottom = 282
-	var style: StyleBoxFlat = FarmTheme.paper()
+	var style: StyleBoxTexture = FarmTheme.framed_paper()
 	style.content_margin_left = 26
 	style.content_margin_right = 26
 	style.content_margin_top = 20

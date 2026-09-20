@@ -1,5 +1,6 @@
 extends SceneTree
 ## Actual input, props and original bird rigs, with isolated player data.
+const ThemeFactory = preload("res://ui/farm_theme.gd")
 var scene: Node3D
 var folder: String
 var failures: Array[String] = []
@@ -42,6 +43,8 @@ func run() -> void:
 	scene.get_node("Environment/CourtyardAnimals")._rng.seed=20260919
 	scene.farm_changed.connect(func(_result: Dictionary) -> void: actions+=1)
 	await create_timer(1.0).timeout
+	var button_frame:=ThemeFactory.create().get_stylebox("normal","Button")
+	check(button_frame is StyleBoxTexture and is_equal_approx(button_frame.texture_margin_left,20.0),"Resizable controls use a corner-safe nine-slice wood frame")
 	scene.atmosphere.set_preview_hour(14.0)
 	var animals: Node3D=scene.get_node("Environment/CourtyardAnimals")
 	while not animals.ready_for_motion: await process_frame
@@ -121,7 +124,11 @@ func run() -> void:
 			reached.append(id)
 			used_rings[scene.field_menu.cards.get_node(id).ring_index]=true
 	check(reached.size()==12 and reached.has("garlic") and used_rings.size()==2,"All twelve crops are reachable across two crop rings")
-	check(scene.field_menu.cards.has_node("CenterBezel"),"Planar-textured center bezel exists")
+	check(scene.field_menu.cards.has_node("CenterBezel"),"Full gongbi-painted center bezel exists")
+	var center_bezel: TextureRect=scene.field_menu.cards.get_node("CenterBezel")
+	check(center_bezel.texture.resource_path.ends_with("wood-center-ring-gongbi.png"),"Center bezel uses the matched gongbi asset instead of a stretched planar texture")
+	var center_image: Image=center_bezel.texture.get_image()
+	check(center_image.get_pixel(256,256).a<.1 and center_image.get_pixel(486,256).a>.9,"Center bezel keeps an exact transparent circular opening")
 	for quarter_index: int in 4:
 		var quarter: TextureRect=scene.field_menu.cards.get_node("WoodQuarter%d"%quarter_index)
 		check(quarter.mouse_filter==Control.MOUSE_FILTER_IGNORE and is_equal_approx(quarter.rotation,quarter_index*PI*.5),"Gongbi-painted wood quarter rotates without polar texture stretching")
@@ -135,7 +142,7 @@ func run() -> void:
 	check(exact_quarter,"Wood frame keeps a constant mathematical quarter-annulus mask")
 	for index: int in 4:
 		var ornament: TextureRect=scene.field_menu.cards.get_node("Ruyi%d"%index)
-		check(is_equal_approx(ornament.rotation,index*PI*.5),"Ruyi frame node rotates from one reusable transparent asset")
+		check(is_equal_approx(ornament.rotation,index*PI*.5) and ornament.texture.resource_path.ends_with("ruyi-joint-gongbi.png"),"Ruyi frame node rotates from one matched reusable transparent asset")
 	root.size=Vector2i(960,600);await process_frame;await process_frame
 	scene.field_menu.present_seeds(Vector2(950,20))
 	check(root.get_visible_rect().encloses(scene.field_menu.cards.get_global_rect()),"Concentric crop picker fits the compact window at its edge")

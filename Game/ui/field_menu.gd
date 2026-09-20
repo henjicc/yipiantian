@@ -4,11 +4,10 @@ signal action_requested(tool: String, crop: String)
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const ThemeFactory = preload("res://ui/farm_theme.gd")
-const RUYI_JOINT: Texture2D = preload("res://art/ui/radial_menu/ruyi-joint.png")
-const WOOD_TEXTURE: Texture2D = preload("res://art/ui/radial_menu/huanghuali-texture.png")
+const RUYI_JOINT: Texture2D = preload("res://art/ui/radial_menu/ruyi-joint-gongbi.png")
 const WOOD_BEZEL_QUARTER: Texture2D = preload("res://art/ui/radial_menu/wood-bezel-quarter-gongbi.png")
+const CENTER_BEZEL: Texture2D = preload("res://art/ui/radial_menu/wood-center-ring-gongbi.png")
 const PAPER_TEXTURE: Texture2D = preload("res://art/ui/radial_menu/xuan-paper-texture.png")
-const WOOD_RING_SHADER: Shader = preload("res://art/ui/radial_menu/wood_ring.gdshader")
 const CROPS_PER_RING: int = 6
 const WOOD_DARK := Color("68482f")
 const PAPER := Color("f4ecd9")
@@ -207,7 +206,7 @@ func _show_seeds(_page: int = 0) -> void:
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cards.add_child(frame)
 	_add_wood_bezel_quarters(center, outer_radius + 18.0)
-	_add_textured_wood_ring("CenterBezel", center, center_radius * .75, center_radius + 8.0)
+	_add_center_bezel(center, center_radius + 8.0)
 	_add_ring_ornaments(center, outer_radius + ornament_size * .24, ornament_size)
 	for ring_index: int in ring_count:
 		var first: int = ring_index * CROPS_PER_RING
@@ -234,22 +233,16 @@ func _add_wood_bezel_quarters(center: Vector2, radius: float) -> void:
 		cards.add_child(quarter)
 
 
-func _add_textured_wood_ring(name: String, center: Vector2, inner_radius: float, outer_radius: float) -> void:
-	var canvas_radius: float = outer_radius + 11.0
+func _add_center_bezel(center: Vector2, outer_radius: float) -> void:
 	var ring := TextureRect.new()
-	ring.name = name
-	ring.texture = WOOD_TEXTURE
+	ring.name = "CenterBezel"
+	ring.texture = CENTER_BEZEL
 	ring.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	ring.stretch_mode = TextureRect.STRETCH_SCALE
-	ring.position = center - Vector2.ONE * canvas_radius
-	ring.size = Vector2.ONE * canvas_radius * 2.0
+	ring.position = center - Vector2.ONE * outer_radius
+	ring.size = Vector2.ONE * outer_radius * 2.0
 	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ring.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	var material := ShaderMaterial.new()
-	material.shader = WOOD_RING_SHADER
-	material.set_shader_parameter("inner_radius", inner_radius / canvas_radius)
-	material.set_shader_parameter("outer_radius", outer_radius / canvas_radius)
-	ring.material = material
 	cards.add_child(ring)
 
 
