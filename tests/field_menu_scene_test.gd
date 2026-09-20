@@ -143,6 +143,9 @@ func run() -> void:
 	for index: int in 4:
 		var ornament: TextureRect=scene.field_menu.cards.get_node("Ruyi%d"%index)
 		check(is_equal_approx(ornament.rotation,index*PI*.5) and ornament.texture.resource_path.ends_with("ruyi-joint-gongbi.png"),"Ruyi frame node rotates from one matched reusable transparent asset")
+	var ruyi_image: Image=scene.field_menu.cards.get_node("Ruyi0").texture.get_image()
+	var ruyi_bounds:=ruyi_image.get_used_rect()
+	check(ruyi_bounds.size.x>210 and ruyi_bounds.size.y>220 and ruyi_image.get_pixel(128,24).a>.9 and ruyi_image.get_pixel(128,128).a<.1,"Ruyi keeps the generated artwork and its matching transparent openwork instead of a mismatched mask")
 	root.size=Vector2i(960,600);await process_frame;await process_frame
 	scene.field_menu.present_seeds(Vector2(950,20))
 	check(root.get_visible_rect().encloses(scene.field_menu.cards.get_global_rect()),"Concentric crop picker fits the compact window at its edge")

@@ -158,7 +158,7 @@
       "status": "selected reusable four-way joint source",
       "guide": {
         "path": "ArtSource/UI/RadialMenu/ruyi-joint-guide.png",
-        "role": "immutable transparent silhouette and openwork geometry",
+        "role": "rejected post-process mask retained for provenance; its openwork did not align with the generated ornament and it is not used by the final runtime asset",
         "bytes": 76331,
         "sha256": "983aad161d8f2ba6683b815c6f297b6f2f9dc5b02d3acf031bcb8925b174a0df"
       },
@@ -172,9 +172,9 @@
       "runtime": {
         "path": "Game/art/ui/radial_menu/ruyi-joint-gongbi.png",
         "size": "256x256",
-        "bytes": 34618,
-        "sha256": "bf3e4c411f255fe82c66fb9c2289ed848686ae262f31c7e29db9d808c606705a",
-        "processing": "replace generated alpha with the exact guide, crop the 900px ornament, resize and neutralize stray saturated red edge pixels; rotate the one transparent runtime asset four ways"
+        "bytes": 77740,
+        "sha256": "e153f088ac259a2e74b2a76238f174fd50a96491caa9b5f2d624122cf14cbffd",
+        "processing": "preserve the generated image's own matching RGBA and openwork; derive the meaningful alpha bounds at a 5% threshold, add a 12px source margin, crop 720x745 from (267,238), resize proportionally to fit within 232x232, and center on a 256x256 transparent canvas; rotate the one runtime asset four ways"
       },
       "prompt": "Use case: sketch-to-render. Asset type: production game UI ornamental ruyi joint, transparent PNG. Input 1 is the immutable silhouette and alpha template: preserve its exact canvas placement, symmetric four-lobed outline, open center cutout, lower joining stem and all transparent regions. Input 2 is the selected radial-menu wood style: match its pale ochre gongbi-painted wood, tea-brown contour, broad translucent pigment washes, sparse fine brush-grain, matte surface and shallow hand-painted bevel. Inputs 3 and 4 provide the approved project visual language only. Render a small hand-painted gongbi wooden joint from the same set using a pale ochre body, thin tea-brown outlines around outside and openings, restrained pooled pigment at lobe roots, sparse delicate grain and a tiny warm ivory highlight. Maintain readability at 32–48px. Hard invariants: do not alter the guide geometry or alpha; preserve the open center and stem; no external shadow, red, green, black lacquer, gold, metal, flowers, clouds, text, photoreal pores, deep carving, checkerboard, watermark, scene or extra ornament."
     },
