@@ -79,6 +79,7 @@ var hover_field: int = -1
 var hover_cell: String = ""
 var _pointer_position := Vector2(-100, -100)
 var tool_cursor: ToolCursor
+var sway_tuning: PanelContainer
 var camera_tuning: CameraTuning
 var _dragging: bool = false
 var _orbit_button: MouseButton = MOUSE_BUTTON_NONE
@@ -196,6 +197,10 @@ func _ready() -> void:
 	hud.exit_requested.connect(_finish_exit)
 	hud.settings_requested.connect(_open_menu)
 	if (OS.is_debug_build() and OS.has_feature("editor")):
+		sway_tuning = preload("res://ui/sway_tuning.gd").new()
+		sway_tuning.camera = camera
+		hud.get_node("Layout").add_child(sway_tuning)
+		sway_tuning.visibility_changed.connect(_refresh_hud)
 		camera_tuning = CameraTuning.new()
 		camera_tuning.camera = camera
 		hud.get_node("Layout").add_child(camera_tuning)
@@ -496,7 +501,7 @@ func _refresh_hud() -> void:
 		return
 	var cell: Dictionary = {} if hover_field < 0 or hover_cell.is_empty() else farm_state.get_cell(_planting_id(hover_field), hover_cell)
 	var state: Dictionary=farm_state.snapshot()
-	hud.show_state(cell, state.harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed or camera.free_view or _basket_active() or (camera_tuning != null and camera_tuning.visible), selected_field, selected_palette, state.inventory)
+	hud.show_state(cell, state.harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed or camera.free_view or _basket_active() or (camera_tuning != null and camera_tuning.visible) or (sway_tuning != null and sway_tuning.visible), selected_field, selected_palette, state.inventory)
 	hud.show_decoration_mode(decoration_layout != null and decoration_layout.active)
 	if _layout_active(): hud.show_decoration_mode(true)
 
@@ -1165,6 +1170,12 @@ func _input(event: InputEvent) -> void:
 	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
 	if island_builder!=null and island_builder.active:
 		island_builder.observe(event);return
+	if sway_tuning != null and sway_tuning.visible:
+		if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+			sway_tuning.hide()
+			get_viewport().set_input_as_handled()
+		return
+	if _consume_focus_return_wheel(event): return
 	if field_menu != null and field_menu.active:
 		if (event is InputEventKey and event.pressed and event.keycode==KEY_ESCAPE) or (event is InputEventMouseButton and event.pressed and event.button_index!=MOUSE_BUTTON_LEFT):
 			field_menu.dismiss()
@@ -1250,7 +1261,20 @@ func _input(event: InputEvent) -> void:
 				_cancel_input(false)
 
 
+func _consume_focus_return_wheel(event: InputEvent) -> bool:
+	if not event is InputEventMouseButton or not event.pressed or event.canceled or event.button_index != MOUSE_BUTTON_WHEEL_DOWN:
+		return false
+	if not _loaded or _save_failed or camera.free_view or _layout_active() or _basket_active() or _animal_active(): return false
+	if (game_menu != null and game_menu.visible) or (garden_album != null and garden_album.active): return false
+	if not camera.consume_focus_return_wheel(): return false
+	if field_menu != null: field_menu.dismiss()
+	if camera.focused: _return_overview()
+	get_viewport().set_input_as_handled()
+	return true
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if sway_tuning != null and sway_tuning.visible: return
 	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
 	if island_builder!=null and island_builder.active:
 		island_builder.handle(event);return
@@ -1271,10 +1295,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_cancel_input()
 		if decoration_layout != null:
 			decoration_layout.cancel_pointer_gesture()
-		if camera.focused and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_return_overview()
-		else:
-			camera.zoom((-0.8 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.8) * event.factor)
+		camera.zoom((-0.8 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.8) * event.factor)
 		get_viewport().set_input_as_handled()
 		return
 	if decoration_layout != null and decoration_layout.active:
@@ -1463,7 +1484,7 @@ func _select_cell(cell_id: String) -> void:
 
 
 func _tools_available() -> bool:
-	return _loaded and not _save_failed and not _exiting and not _layout_active() and not _basket_active() and not _animal_active() and not (camera_tuning != null and camera_tuning.visible) and not camera.free_view and not camera.is_transitioning() and not (game_menu != null and game_menu.visible) and not (decoration_layout != null and decoration_layout.active)
+	return _loaded and not _save_failed and not _exiting and not _layout_active() and not _basket_active() and not _animal_active() and not (camera_tuning != null and camera_tuning.visible) and not (sway_tuning != null and sway_tuning.visible) and not camera.free_view and not camera.is_transitioning() and not (game_menu != null and game_menu.visible) and not (decoration_layout != null and decoration_layout.active)
 
 
 func _start_tool_press(tool: String) -> void:
@@ -1618,6 +1639,7 @@ func _cancel_or_return() -> void:
 
 
 func _return_overview() -> void:
+	if sway_tuning != null: sway_tuning.hide()
 	if camera_tuning != null:
 		camera_tuning.hide()
 	if camera.free_view:
@@ -1762,6 +1784,7 @@ func _apply_render_resolution() -> void:
 
 
 func _open_menu() -> void:
+	if sway_tuning != null: sway_tuning.hide()
 	if game_menu == null or not _loaded or _save_failed:
 		return
 	_cancel_input()
@@ -1890,6 +1913,9 @@ func _developer_action(action: String) -> void:
 	_request_menu_close()
 	if game_menu.visible: return
 	match action:
+		"sway_tuning":
+			_return_overview()
+			sway_tuning.present()
 		"camera_tuning": _toggle_camera_tuning()
 		"free_camera": _toggle_free_view()
 		"time": hud._toggle_time_preview()

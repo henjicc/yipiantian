@@ -185,7 +185,7 @@ func _ready() -> void:
 		content.add_child(developer)
 		developer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		_pages.append(developer)
-		for entry: Array in [["camera_tuning", "相机调节"], ["free_camera", "自由视角"], ["models", "模型检查"], ["time", "昼夜预览"]]:
+		for entry: Array in [["camera_tuning", "相机调节"], ["sway_tuning", "镜头晃动"], ["free_camera", "自由视角"], ["models", "模型检查"], ["time", "昼夜预览"]]:
 			var button := _button(developer, entry[1])
 			button.name = entry[0]
 			_developer_buttons[entry[0]] = button

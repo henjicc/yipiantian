@@ -49,9 +49,19 @@ var sway_enabled: bool = false
 var sway_idle_seconds: float = 30.0
 var _idle_seconds: float = 0.0
 var _activity_since_frame: bool = false
-var _sway_time: float = 0.0
 var _sway_weight: float = 0.0
-var _sway_phase := Vector3(randf() * TAU, randf() * TAU, randf() * TAU)
+var sway_motion = preload("res://scenes/handheld_motion.gd").new()
+var sway_preview: bool = false
+var _wheel_return_latched: bool = false
+var _wheel_quiet: float = 0.0
+
+
+func consume_focus_return_wheel() -> bool:
+	if not focused and not _wheel_return_latched:
+		return false
+	_wheel_return_latched = true
+	_wheel_quiet = 0.0
+	return true
 
 
 func configure_sway(enabled: bool, idle_seconds: float) -> void:
@@ -77,22 +87,19 @@ func observe_input(event: InputEvent) -> void:
 
 
 func _advance_sway(delta: float) -> void:
-	var allowed: bool = sway_enabled and not _activity_since_frame and not free_view and not construction_framing and not _decoration_framing and not neighbor_view and not is_transitioning()
-	if Input.get_mouse_button_mask() != 0:
+	var allowed: bool = (sway_enabled or sway_preview) and (not _activity_since_frame or sway_preview) and not free_view and not construction_framing and not _decoration_framing and not neighbor_view and not is_transitioning()
+	if Input.get_mouse_button_mask() != 0 and not sway_preview:
 		allowed = false
 	if allowed:
 		_idle_seconds += delta
 	else:
 		_idle_seconds = 0.0
 	_activity_since_frame = false
-	var active: bool = allowed and _idle_seconds >= sway_idle_seconds
+	var active: bool = allowed and (sway_preview or _idle_seconds >= sway_idle_seconds)
 	_sway_weight = lerpf(_sway_weight, 1.0 if active else 0.0, 1.0 - exp(-delta * (0.65 if active else 5.0)))
-	_sway_time += delta
-	# Camera-plane offsets never enter the saved orbit, focus target or zoom spring.
-	# Scale with viewing distance so overview and close-up have a similar small
-	# screen-space drift. Random phases keep the slow waves from moving in lockstep.
-	h_offset = _sway_weight * view.z * 0.005 * (sin(_sway_time * 0.31 + _sway_phase.x) * 0.7 + sin(_sway_time * 0.53 + _sway_phase.z) * 0.3)
-	v_offset = _sway_weight * view.z * 0.003 * (sin(_sway_time * 0.27 + _sway_phase.y) * 0.7 + sin(_sway_time * 0.43 + _sway_phase.x) * 0.3)
+	sway_motion.advance(delta)
+	h_offset = _sway_weight * view.z * .006 * sway_motion.offset.x
+	v_offset = _sway_weight * view.z * .006 * sway_motion.offset.y
 
 func view_neighbor(point: Vector3, angles: Vector3) -> void:
 	if not neighbor_view:
@@ -126,6 +133,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_wheel_quiet += delta
+	if _wheel_return_latched and not is_transitioning() and _wheel_quiet >= .3:
+		_wheel_return_latched = false
 	_advance_zoom(delta)
 	_advance_sway(delta)
 	if free_view:
@@ -434,3 +444,5 @@ func _apply_pose() -> void:
 	var pitch := deg_to_rad(view.y)
 	position = focus_point + Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * view.z
 	look_at(focus_point)
+	position += basis.z * sway_motion.offset.z * view.z * .006 * _sway_weight
+	basis = basis * Basis.from_euler(sway_motion.angles * _sway_weight)

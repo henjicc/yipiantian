@@ -19,6 +19,7 @@ func _run() -> void:
 	root.add_child(scene)
 	await create_timer(1).timeout
 	var camera: FarmCamera = scene.camera
+	camera.sway_motion._noise.seed = 42
 	camera.set_process(false)
 	var original_view: Vector3 = camera.view
 	var original_point: Vector3 = camera.focus_point
@@ -82,6 +83,45 @@ func _run() -> void:
 	expect(Vector2(camera.h_offset,camera.v_offset).length()<.0001, "Disable settles to stable framing")
 	scene._return_overview()
 	await create_timer(1).timeout
+	# A fast wheel burst belongs entirely to the focus-return gesture.
+	camera.zoom(-3)
+	await create_timer(1).timeout
+	var return_point: Vector3 = camera.focus_point
+	var return_view: Vector3 = camera.view
+	scene._focus_field(0)
+	await create_timer(.85).timeout
+	scene._focus_field(1)
+	await create_timer(.85).timeout
+	scene.selected_tool = "sow"
+	for tick: int in 30:
+		var back := InputEventMouseButton.new()
+		back.pressed = true
+		back.button_index = MOUSE_BUTTON_WHEEL_DOWN
+		back.factor = 20
+		back.position = Vector2(800,400)
+		root.push_input(back)
+		await create_timer(.035).timeout
+	await create_timer(.5).timeout
+	expect(not camera.focused and camera.view.is_equal_approx(return_view) and camera.focus_point.is_equal_approx(return_point), "Fast wheel burst restores exact original framing after chained focus, without zoom")
+	var ordinary := InputEventMouseButton.new()
+	ordinary.pressed = true
+	ordinary.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	ordinary.position = Vector2(800,400)
+	root.push_input(ordinary)
+	await create_timer(.8).timeout
+	expect(camera.view.z > return_view.z + .7, "Fresh wheel gesture resumes ordinary zoom after return")
+	scene._open_menu()
+	scene.game_menu._developer_buttons.sway_tuning.pressed.emit()
+	await create_timer(1).timeout
+	expect(scene.sway_tuning.visible and camera.sway_preview and not camera.sway_enabled, "Developer preview works without changing saved enable preference")
+	scene.sway_tuning._sliders.amplitude.value = 0
+	await create_timer(2).timeout
+	expect(absf(camera.h_offset) < .0001 and absf(camera.v_offset) < .0001, "Live amplitude control can settle motion to zero")
+	scene.sway_tuning._sliders.amplitude.value = 1
+	await shot("handheld-tuning.png")
+	scene.sway_tuning.hide()
+	expect(not camera.sway_preview, "Closing tuning ends its preview override")
+	await create_timer(2).timeout
 	var front: Node3D = scene.find_child("PathLanternFront",true,false)
 	expect(front != null and front.find_children("*","MeshInstance3D",true,false).is_empty(), "Foreground lamp and pole removed")
 	expect(is_equal_approx(front.get_node("GardenFillLight").omni_range, 5.6), "Field illumination footprint retained")
