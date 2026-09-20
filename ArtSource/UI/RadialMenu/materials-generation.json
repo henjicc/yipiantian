@@ -207,7 +207,7 @@
       "prompt": "Use the supplied slim full-ring guide as immutable geometry and alpha. Paint one seamless mathematical center bezel with the same pale ochre gongbi wood as the current approved ring: restrained translucent washes, sparse curved natural grain, thin tea-brown inner and outer contours and matte hand-painted depth. Keep the exact concentric placement, 500px outer radius and 430px inner radius. Transparent outside and in the center. Do not change the geometry. No repeated concentric stripes, photographic wood, heavy carving, thick black outline, ornament, text, shadow or scene. Concept A proportions."
     },
     "paper_wood_frame_gongbi_slim": {
-      "status": "selected Concept A reusable nine-slice source for buttons and primary menu panels",
+      "status": "superseded by the non-stretched tiled Concept A frame; retained as production history",
       "guide": {
         "path": "ArtSource/UI/RadialMenu/paper-wood-frame-slim-guide.png",
         "size": "1254x1254",
@@ -241,6 +241,47 @@
         "processing": "replace generated alpha with the exact guide, crop the 1000px framed region, derive hover/pressed/disabled by tinting only the inner rounded paper mask, and resize to 96px; Godot StyleBoxTexture keeps 20px corners fixed and stretches only quiet edge middles and center"
       },
       "prompt": "Use the supplied slim rounded-square frame guide as immutable geometry and alpha. Paint the 42px border with the same pale ochre gongbi wood as the approved radial ring and the center with warm ivory xuan paper. Keep calm straight edge middles and identical corners for nine-slice resizing. Preserve the exact canvas, placement, corner radii, border width and transparency. No motifs across stretch zones, no text, icons, metal, gold, thick dark edge, photoreal wood, plastic gloss, shadow or scene. Concept A proportions."
+    },
+    "gongbi_wood_seamless": {
+      "status": "selected seamless material source for rectangular UI borders",
+      "style_reference": "ArtSource/UI/RadialMenu/paper-wood-frame-gongbi-slim-original.png",
+      "returned_file": "exec-0349944c-9908-44ab-baa7-6f81ddc82100.png",
+      "original": {
+        "path": "ArtSource/UI/RadialMenu/gongbi-wood-seamless-original.png",
+        "size": "1254x1254",
+        "bytes": 1799983,
+        "sha256": "8abc9eb9b87494cf89d9afbe7a2ea43f28b713b1c219be0ce6e3afc4bcea7313"
+      },
+      "runtime": {
+        "path": "Game/art/ui/radial_menu/gongbi-wood-seamless.png",
+        "size": "256x256",
+        "bytes": 75701,
+        "sha256": "4df0cb70d3ab45f2b0e54e0b2d97742240cf694e38fa3b5d43535a34ed963c94",
+        "processing": "take the central 512px sample, append its horizontal mirror, append the vertical mirror of that pair, then Lanczos-reduce the guaranteed periodic 1024px result to 256px; exact edge validation reports AE=0 for both left/right and top/bottom pixel pairs"
+      },
+      "prompt": "Use case: stylized-concept. Asset type: seamless repeatable game UI border material texture. Image 1 is style reference only: match its pale warm ochre gongbi-painted wood, restrained tea-brown brush contours, translucent light-colour washes, sparse elongated grain, matte hand-painted finish, and quiet Ming-inspired craft feeling. Generate ONE opaque square flat wood material tile, viewed perfectly orthographic with even neutral lighting. It must be genuinely seamless on all four edges and look natural when repeated horizontally and vertically along a 4–6 pixel-wide rounded UI border. Use broad calm color fields and sparse fine grain at game-UI scale; keep contrast low so repetition is not obvious. Full-bleed wood texture only. No frame shape, no rounded rectangle, no paper center, no transparent background, no bevel silhouette, no corners, no objects, no text, no ornament, no shadows, no checkerboard, no photographic pores, no dense knots, no concentric bands, no plastic gloss, no gold, no red lacquer, no watermark. The left/right edges and top/bottom edges must join seamlessly without a visible seam."
+    },
+    "paper_wood_frame_gongbi_tiled": {
+      "status": "selected reusable non-stretched nine-slice source for buttons and primary menu panels",
+      "material_source": "Game/art/ui/radial_menu/gongbi-wood-seamless.png",
+      "geometry": "96x96 nine-patch; 20px fixed corner cells; 56px repeatable center and edge cells; outer rounded radius 18px; inner inset 5px and radius 13px",
+      "runtime": {
+        "paths": [
+          "Game/art/ui/radial_menu/paper-wood-frame-gongbi-tiled.png",
+          "Game/art/ui/radial_menu/paper-wood-frame-gongbi-tiled-hover.png",
+          "Game/art/ui/radial_menu/paper-wood-frame-gongbi-tiled-pressed.png",
+          "Game/art/ui/radial_menu/paper-wood-frame-gongbi-tiled-disabled.png"
+        ],
+        "size_each": "96x96",
+        "bytes": [10137, 5296, 5273, 4600],
+        "sha256": [
+          "9bb35194288a460899f8dc0e5d1d18d08da7012155fa1e18774f06134e8ded06",
+          "d864322d7d23fd9973050668cd8454fd7a7f9af3208b5436ceaff71265d82e67",
+          "90b51852960069ec6f17625e2072ab8cb3abdc4fe16c037c1628bed9c5f4c8d8",
+          "3513a518ed15416609ade8772080c270585076c4359b5c1e048ca91aa2bbfee8"
+        ],
+        "processing": "construct at 768x768 (8x supersampling); tile one 56px-period wood cell along horizontal edges and its 90-degree rotation along vertical edges; tile a mirrored seamless xuan-paper cell in the center; generate outer alpha, rounded corners and 1px tea-brown inner/outer contours from mathematical masks; derive hover/pressed/disabled by replacing only the inner-paper color; Lanczos-reduce to 96px. Godot fixes the 20px corner cells and uses AXIS_STRETCH_MODE_TILE on both axes, so resizing adds or clips complete texture periods without scaling the border artwork."
+      }
     },
     "ruyi_joint_gongbi": {
       "status": "selected reusable four-way joint source",

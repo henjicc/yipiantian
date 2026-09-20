@@ -5,6 +5,8 @@ const Store = preload("res://settings/settings_store.gd")
 var checks: int = 0
 var failures: Array[String] = []
 var emitted: Dictionary = {}
+var visual: bool = false
+var capture_folder: String = ""
 
 
 func _initialize() -> void:
@@ -12,12 +14,19 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	visual = "--visual" in OS.get_cmdline_user_args()
+	capture_folder = ProjectSettings.globalize_path("res://../.local/verification/game-menu")
+	DirAccess.make_dir_recursive_absolute(capture_folder)
 	root.size = Vector2i(1280, 720)
 	var menu := Menu.new()
 	root.add_child(menu)
 	menu.settings_changed.connect(func(value: Dictionary) -> void: emitted = value)
 	menu.present(Store.DEFAULTS)
 	await process_frame
+	if visual:
+		await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(capture_folder.path_join("tiled-frame-settings.png"))
 	_expect(menu.visible, "Menu opens without changing scene state")
 	_expect(root.gui_get_focus_owner() == menu._tabs[0], "Opening captures keyboard focus")
 	menu._quit.grab_focus()
@@ -57,6 +66,9 @@ func _run() -> void:
 		_expect(Rect2(Vector2.ZERO, Vector2(viewport_size)).encloses(physical), "Scaled modal fits physical window %s" % str(viewport_size))
 		for control: Control in [menu._close, menu._quit, menu._window, menu._quality, menu._dof]:
 			_expect(panel.get_global_rect().encloses(control.get_global_rect()), "Control stays inside modal at %s: %s" % [str(viewport_size), control.name])
+		if visual and viewport_size == Vector2i(3840, 2160):
+			await RenderingServer.frame_post_draw
+			root.get_texture().get_image().save_png(capture_folder.path_join("tiled-frame-4k.png"))
 	menu.queue_free()
 	await process_frame
 	print("GAME_MENU_TEST checks=%d failures=%d" % [checks, failures.size()])

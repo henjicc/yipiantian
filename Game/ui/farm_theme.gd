@@ -2,10 +2,10 @@ extends RefCounted
 ## One small theme for this game's HUD and menus, not a component library.
 
 const FONT = preload("res://art/ui/fonts/汇文明朝体.ttf")
-const PAPER_FRAME_NORMAL: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-slim.png")
-const PAPER_FRAME_HOVER: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-slim-hover.png")
-const PAPER_FRAME_PRESSED: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-slim-pressed.png")
-const PAPER_FRAME_DISABLED: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-slim-disabled.png")
+const PAPER_FRAME_NORMAL: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-tiled.png")
+const PAPER_FRAME_HOVER: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-tiled-hover.png")
+const PAPER_FRAME_PRESSED: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-tiled-pressed.png")
+const PAPER_FRAME_DISABLED: Texture2D = preload("res://art/ui/radial_menu/paper-wood-frame-gongbi-tiled-disabled.png")
 const INK := Color("4b493d")
 const PAPER := Color("f4ecd9")
 const EDGE := Color("ac9978")
@@ -50,15 +50,16 @@ static func create() -> Theme:
 
 
 static func framed_paper(texture: Texture2D = PAPER_FRAME_NORMAL) -> StyleBoxTexture:
-	# Keep the painted corners intact; only the calm edge middles and paper center stretch.
+	# Keep the antialiased corners intact and repeat the seamless edge cells.
+	# Button width now changes the tile count instead of stretching the wood grain.
 	var style := StyleBoxTexture.new()
 	style.texture = texture
 	style.texture_margin_left = 20.0
 	style.texture_margin_top = 20.0
 	style.texture_margin_right = 20.0
 	style.texture_margin_bottom = 20.0
-	style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH
-	style.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH
+	style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+	style.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
 	style.content_margin_left = 18.0
 	style.content_margin_right = 18.0
 	style.content_margin_top = 10.0

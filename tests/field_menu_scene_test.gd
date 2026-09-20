@@ -44,7 +44,8 @@ func run() -> void:
 	scene.farm_changed.connect(func(_result: Dictionary) -> void: actions+=1)
 	await create_timer(1.0).timeout
 	var button_frame:=ThemeFactory.create().get_stylebox("normal","Button")
-	check(button_frame is StyleBoxTexture and is_equal_approx(button_frame.texture_margin_left,20.0) and button_frame.texture.resource_path.ends_with("paper-wood-frame-gongbi-slim.png"),"Resizable controls use the slim corner-safe nine-slice wood frame")
+	check(button_frame is StyleBoxTexture and is_equal_approx(button_frame.texture_margin_left,20.0) and button_frame.texture.resource_path.ends_with("paper-wood-frame-gongbi-tiled.png"),"Resizable controls use the slim corner-safe nine-slice wood frame")
+	check(button_frame.axis_stretch_horizontal==StyleBoxTexture.AXIS_STRETCH_MODE_TILE and button_frame.axis_stretch_vertical==StyleBoxTexture.AXIS_STRETCH_MODE_TILE,"Resizable controls repeat seamless border texture instead of stretching wood grain")
 	scene.atmosphere.set_preview_hour(14.0)
 	var animals: Node3D=scene.get_node("Environment/CourtyardAnimals")
 	while not animals.ready_for_motion: await process_frame
