@@ -57,10 +57,10 @@ func _run() -> void:
 	_expect("低画质暂不启用" in menu._dof.text, "Temporary quality effect is described accurately")
 	menu._dof.button_pressed = false
 	_expect(not emitted.dof_enabled, "DOF toggle changes only its preference")
-	menu._show_page(1)
-	_expect(menu._pages[1].visible and not menu._pages[0].visible, "Controls page replaces settings inside one modal")
 	menu._show_page(2)
-	_expect(menu._pages[2].visible and not menu._pages[1].visible, "Sources are accessible without leaving the farm")
+	_expect(menu._pages[2].visible and not menu._pages[0].visible, "Controls page replaces settings inside one modal")
+	menu._show_page(3)
+	_expect(menu._pages[3].visible and not menu._pages[2].visible, "Sources are accessible without leaving the farm")
 	if visual:
 		await process_frame
 		await RenderingServer.frame_post_draw
@@ -69,6 +69,7 @@ func _run() -> void:
 	_expect(menu._close.text == "暂不保存，返回" and menu._quit.text == "仍然退出", "Failed settings save exposes truthful continue and exit choices")
 	menu.present(Store.DEFAULTS, "设置文件无法读取，已使用默认设置。原件保留。")
 	_expect(menu._status.text.begins_with("设置文件无法读取"), "Load failures remain visible on reopen")
+	menu._show_page(1)
 	for viewport_size: Vector2i in [Vector2i(960, 600), Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(3840, 2160)]:
 		root.size = viewport_size
 		await process_frame
@@ -77,7 +78,7 @@ func _run() -> void:
 		_expect(root.get_visible_rect().encloses(panel.get_global_rect()), "Entire modal fits logical viewport for %s" % str(viewport_size))
 		var physical: Rect2 = root.get_stretch_transform() * panel.get_global_rect()
 		_expect(Rect2(Vector2.ZERO, Vector2(viewport_size)).encloses(physical), "Scaled modal fits physical window %s" % str(viewport_size))
-		for control: Control in [menu._close, menu._quit, menu._window, menu._resolution, menu._resolution_info, menu._quality, menu._dof]:
+		for control: Control in [menu._close, menu._quit, menu._window, menu._resolution, menu._quality, menu._dof]:
 			_expect(panel.get_global_rect().encloses(control.get_global_rect()), "Control stays inside modal at %s: %s" % [str(viewport_size), control.name])
 		if visual and viewport_size == Vector2i(3840, 2160):
 			await RenderingServer.frame_post_draw
@@ -88,6 +89,14 @@ func _run() -> void:
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png(capture_folder.path_join("dropdown-refined-4k.png"))
 			menu._quality.get_popup().hide()
+	_expect(not menu.has_node("SaveSettings") and not menu._retry.visible, "No manual save button on normal settings")
+	_expect(menu._tabs[0].text == "音量" and menu._tabs[1].text == "显示" and menu._tabs[3].text == "关于", "Settings categories and About use requested labels")
+	if OS.is_debug_build() and OS.has_feature("editor"):
+		menu._show_page(4)
+		_expect(menu._developer_buttons.size() == 4, "Developer tab contains camera, free view, model and time tools")
+		if visual:
+			await RenderingServer.frame_post_draw
+			root.get_texture().get_image().save_png(capture_folder.path_join("developer.png"))
 	menu.queue_free()
 	await process_frame
 	print("GAME_MENU_TEST checks=%d failures=%d" % [checks, failures.size()])

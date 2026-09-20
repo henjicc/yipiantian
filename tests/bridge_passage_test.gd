@@ -56,7 +56,7 @@ func _run() -> void:
 		await flock_checks();await finish();return
 	await exercise_passage("stone" if authored else "arch")
 	if authored: await finish();return
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("lotus")
 	expect(scene.island_builder.plant_preview.message.is_empty(),"Plant editing preserves the valid bridge water passage")
 	await choose_tool("bridge")
@@ -174,7 +174,7 @@ func flock_checks() -> void:
 	scene.add_child(blocker);blocker.position=Vector3(5.05,.3,-1.12);blocker.hide()
 	expect(scene.decoration_layout.placement_issue(blocker,"bench","").contains("桥头"),"Later prop placement protects the full-width bridge exit")
 	blocker.free()
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout;await choose_tool("hen")
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout;await choose_tool("hen")
 	scene.camera.focus_point=Vector3(7,.13,0);scene.camera.view=Vector3(35,65,30);await frames(10)
 	await drag(Vector3(4,.13,-2),Vector3(13,.13,2))
 	if not await ready_flock() or not await apply(): return
@@ -202,7 +202,7 @@ func flock_checks() -> void:
 	await exercise_passage("stone-region",animals.flock_spaces.hen)
 	await park_hens(animals)
 	# Bridge replacement must retain the same region and rebuild its real floor.
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout;await choose_tool("bridge")
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout;await choose_tool("bridge")
 	scene.camera.focus_point=Vector3(4,.13,0);await frames(10)
 	var ends: Array[Vector3]=Construction.bridge_points(scene.courtyard_plan)
 	await drag(ends[1]+Vector3.UP*.12,Vector3(11,.13,.1))

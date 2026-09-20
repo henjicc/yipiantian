@@ -111,7 +111,7 @@ func _run() -> void:
 	root.size=Vector2i(960,640);await frames();await shot("07-small-kitchen")
 	expect(root.get_visible_rect().encloses(scene.harvest_book._paper.get_global_rect()),"Four station kitchen fits small window")
 	root.size=Vector2i(1600,900);await frames();scene.harvest_book.dismiss();await create_timer(1).timeout
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("drying_rack")
 	var placed: Dictionary=scene.decoration_state.snapshot()
 	await click(builder._undo)
@@ -149,7 +149,7 @@ func _run() -> void:
 	expect(scene.farm_state.snapshot().kitchen.stock.root_dry==2 and scene.farm_state.snapshot().inventory.radish==1,"Both offline batches collect exactly once")
 	expect(not scene.decoration_layout._instances.drying_rack.get_node("Harvest").visible,"Collection clears only finished food")
 	scene.harvest_book.dismiss();await create_timer(1).timeout
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout;await choose_tool("drying_rack")
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout;await choose_tool("drying_rack")
 	await click(scene.island_builder._decoration_remove)
 	expect(not scene.decoration_layout._instances.has("drying_rack") and scene.decoration_state.snapshot().drying_rack.unlocked,"Collected rack can be stored without losing unlock")
 	await click(scene.island_builder._undo)

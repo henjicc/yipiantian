@@ -42,7 +42,7 @@ func _run() -> void:
 	expect(site.is_finite(),"An empty east-bank site can connect to the house across the existing bridge")
 	if not site.is_finite(): await finish();return
 	var original: Dictionary=scene.farm_state.snapshot()
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("fields")
 	scene.camera._move_to(Vector3(12,.4,-2.5),Vector3(24,65,24));await create_timer(1).timeout
 	var builder: Node=scene.island_builder
@@ -129,7 +129,7 @@ func _checked(preview: Node) -> String:
 
 func _routes() -> void:
 	var rules=preload("res://layout/player_routes.gd")
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	var builder: Node=scene.island_builder
 	scene.camera._move_to(Vector3(13,.4,-2.5),Vector3(24,65,24));await create_timer(1).timeout
 	for kind: String in ["road","fence"]:
@@ -170,7 +170,7 @@ func _routes() -> void:
 
 func _structures() -> void:
 	var builder: Node=scene.island_builder
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	if OS.get_cmdline_user_args().has("--kitchen"):
 		await _kitchen();return
 	await choose_tool("trellis")

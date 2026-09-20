@@ -72,7 +72,7 @@ func _run() -> void:
 	var lamp: Node3D=scene.decoration_layout._instances.lantern
 	var poses: Dictionary={"house":house.global_transform,"porch":porch.global_transform,"water":water_tool.global_transform,"food":food.global_transform}
 	var instance_ids: Array=[scene.get_instance_id(),house.get_instance_id(),water_tool.get_instance_id(),food.get_instance_id(),env.get_node("CourtyardAnimals").get_instance_id()]
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	scene.camera.zoom(6);await create_timer(.6).timeout
 	await choose_tool("house")
 	var builder: Node=scene.island_builder
@@ -174,7 +174,7 @@ func _run() -> void:
 	lamp=scene.decoration_layout._instances.lantern
 	var light: OmniLight3D=lamp.get_node("FarmLanternLight")
 	expect(light.visible and light.light_energy>0 and light.global_position.distance_to(scene.courtyard_plan.slots.hanging_01-Vector3.UP*.22)<.001,"Night lantern illuminates the moved hook")
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout;await choose_tool("kitchen")
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout;await choose_tool("kitchen")
 	var kitchen_at: Vector3=scene.get_node("Environment/Kitchen").global_position+Vector3.UP*1.8
 	expect(scene._scene_entry_at(scene.camera.unproject_position(kitchen_at))=="stove","Moved kitchen retains its actual scene entrance")
 	root.size=Vector2i(960,640);await frames();await shot("05-small-window")

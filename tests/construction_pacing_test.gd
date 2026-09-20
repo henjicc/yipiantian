@@ -24,7 +24,7 @@ func _run() -> void:
 	scene.clock=func() -> float: return Time.get_unix_time_from_system()
 	root.add_child(scene);current_scene=scene;await frames(8)
 	scene.atmosphere.set_preview_hour(11)
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("lantern")
 	expect(scene.island_builder._status.text.contains("0/16") and scene.island_builder._status.text.contains("0/3"),"Locked object shows current baskets and varieties")
 	await choose_tool("drying_rack")
@@ -57,7 +57,7 @@ func _run() -> void:
 	var inventory: Dictionary=scene.farm_state.snapshot().inventory
 	expect(preload("res://farm/crop_catalog.gd").total_harvested(inventory)==0,"No spare food is needed to continue building")
 	scene.harvest_book.dismiss();await frames()
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await drag(Vector3(0,.13,6),Vector3(0,.13,8.5))
 	await drag(Vector3(0,.13,8.5),Vector3(2.5,.13,8.5))
 	await click(scene.island_builder._confirm);await frames()

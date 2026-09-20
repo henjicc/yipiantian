@@ -94,7 +94,7 @@ func _run() -> void:
 	expect(absf(camera.global_position.distance_to(pivot)-radius)<.001 and camera.unproject_position(pivot).distance_to(projected)<.05, "Clicked off-centre point remains fixed on screen throughout orbit")
 	expect(scene._picks.is_empty() and scene.selected_field == -1, "Free orbit never admits farm picking")
 	# A release consumed by UI must still end the gesture.
-	var ui_point: Vector2 = scene.hud.get_node("Layout/DebugFreeCamera").get_global_rect().get_center()
+	var ui_point: Vector2 = scene.hud.get_node("Layout/FarmControls/Settings").get_global_rect().get_center()
 	await button(ui_point,false,MOUSE_BUTTON_LEFT)
 	old_pose = camera.global_transform
 	await motion(point,Vector2(60,30),0)

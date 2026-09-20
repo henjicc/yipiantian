@@ -65,15 +65,8 @@ func _ready() -> void:
 		farm_scene.decoration_state.unlock(fixture.harvested)
 		farm_scene.refresh_farm()
 		farm_scene._save_farm()
-		# Only the isolated demonstration substitutes the HUD's local clock timer.
-		# Never change the system clock or the production HUD's update contract.
-		for child: Node in farm_scene.hud.get_children():
-			if child is Timer and child.timeout.is_connected(Callable(farm_scene.hud, "_update_clock")):
-				child.stop()
 		_set_demo_hour(12.0)
 	if _tree_demo or _camera_demo:
-		for child: Node in farm_scene.hud.get_children():
-			if child is Timer and child.timeout.is_connected(Callable(farm_scene.hud,"_update_clock")): child.stop()
 		_set_demo_hour(16.5)
 	# Movie Maker advances the simulation by 1/60 s for each saved frame.
 	# It does not wait for the live encoder's handshake.
@@ -388,7 +381,7 @@ func _run_final_demo(delta: float) -> void:
 				"fixture_harvested": {"greens": 9, "radish": 6},
 				"controlled_utc_advance_seconds": 1440,
 				"fixture_hours": [12, 21], "farm": farm_scene.farm_state.snapshot(),
-				"hud_clock_matches_fixture": farm_scene.hud._clock.text == "21:00",
+				"lighting_matches_fixture": is_equal_approx(farm_scene.atmosphere.get_preview_hour(), 21.0),
 				"decorations": farm_scene.decoration_state.snapshot(),
 				"presentation": farm_scene.focus_detail.get_settings(),
 				"mesh_lod_threshold": get_viewport().mesh_lod_threshold,
@@ -409,9 +402,6 @@ func _demo_action(tool: String) -> void:
 
 func _set_demo_hour(hour: float) -> void:
 	farm_scene.atmosphere.set_preview_hour(hour)
-	var minutes: int = int(round(hour * 60.0)) % 1440
-	farm_scene.hud._clock.text = "%02d:%02d" % [floori(minutes / 60.0), minutes % 60]
-	farm_scene.hud._day_icon.texture = farm_scene.hud.SUN if minutes >= 360 and minutes < 1080 else farm_scene.hud.MOON
 
 
 func _input(event: InputEvent) -> void:

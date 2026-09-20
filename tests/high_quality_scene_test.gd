@@ -133,7 +133,7 @@ func _run() -> void:
 
 
 func _choose_quality(value: String) -> void:
-	await _click(scene.get_node("HUD/Layout/ViewControls/Settings").get_global_rect().get_center())
+	await _click(scene.get_node("HUD/Layout/FarmControls/Settings").get_global_rect().get_center())
 	_expect(scene.game_menu.visible, "Settings button opens real menu")
 	if not scene.game_menu.visible:
 		push_error("MENU_FAILED " + str(root.gui_get_focus_owner()))

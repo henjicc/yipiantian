@@ -25,7 +25,7 @@ func _run() -> void:
 	scene.clock=func() -> float: return 2000000.0
 	root.add_child(scene);current_scene=scene;await frames(8)
 	scene.atmosphere.set_preview_hour(11)
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	var brush: Node=scene.island_builder
 	await click(brush._panel.find_child("LandErase",true,false))
 	var before: Dictionary=scene.farm_state.snapshot()

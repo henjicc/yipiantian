@@ -51,7 +51,7 @@ func _run() -> void:
 	var lamp_pose: Transform3D=lamp.global_transform
 	var flower: Node3D=scene.get_node("Environment/Flowers0_0")
 	var flower_pose: Transform3D=flower.global_transform
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("trellis")
 	var builder: Node=scene.island_builder
 	if OS.get_cmdline_user_args().has("--finish-only"):

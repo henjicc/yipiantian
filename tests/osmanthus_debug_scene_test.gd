@@ -36,10 +36,10 @@ func _run() -> void:
 		var p: Vector3 = leaves.multimesh.get_instance_transform(i).origin
 		expect(leaves.custom_aabb.has_point(p), "Animated culling bounds contain the canopy emission point")
 	await shot("01-overview.png")
-	var button: Button = scene.hud.get_node("Layout/DebugFreeCamera")
-	button.pressed.emit()
+	scene._open_menu()
+	scene._developer_action("free_camera")
 	await process_frame
-	expect(scene.camera.free_view, "Visible free-view button enables debug camera")
+	expect(scene.camera.free_view, "Developer entry enables debug camera")
 	expect(scene.selected_field == -1 and scene.selected_cell.is_empty(), "Entering inspection cancels crop selection")
 	var origin: Vector3 = scene.camera.position
 	scene.camera.move_free(Vector3(1,1,0),20.0)

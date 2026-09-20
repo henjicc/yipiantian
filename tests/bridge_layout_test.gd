@@ -41,7 +41,7 @@ func _run() -> void:
 	var original_bridge: Node3D=environment.get_bridge()
 	var birds: Array[Node3D]=[]
 	for bird: Dictionary in animals.birds: birds.append(bird.node)
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("bridge")
 	scene.camera.focus_point=Vector3(4,.13,0);await frames(10)
 	var builder: Node=scene.island_builder
@@ -333,7 +333,7 @@ func move_checks(builder: Node) -> void:
 	while builder.busy: await process_frame
 	expect(not builder.active and scene.courtyard_plan.snapshot()==wanted,"One Finish retries, saves and exits whole-bridge editing")
 	await terrain_ready();await inspect_bridge()
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout;await choose_tool("bridge")
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout;await choose_tool("bridge")
 	scene.camera.focus_point=Vector3(4,.13,0);await frames(10)
 	builder._bridge_style.select(0);builder._bridge_style.item_selected.emit(0)
 	if not await ready_draft(): return
@@ -349,7 +349,7 @@ func move_checks(builder: Node) -> void:
 	scene.store=Store.new(directory);scene.settings_store=Settings.new(folder.path_join("settings"));scene.clock=func() -> float: return now
 	root.add_child(scene);current_scene=scene;await frames(8)
 	expect(scene.courtyard_plan.snapshot()==wanted,"Reopening restores the whole bridge at the moved endpoints and selected style")
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout;await choose_tool("bridge")
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout;await choose_tool("bridge")
 	root.size=Vector2i(960,640);await frames()
 	expect(root.get_visible_rect().encloses(scene.island_builder._panel.get_global_rect()),"Bridge snap control fits the minimum window")
 	await shot("move-small-window")

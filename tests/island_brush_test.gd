@@ -16,7 +16,7 @@ func _run() -> void:
 	root.add_child(scene);current_scene=scene;await frames(8)
 	scene.atmosphere.set_preview_hour(11)
 	var before: Vector3=scene.camera.view
-	await click(scene.hud.get_node("Layout/BuildIsland"))
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"))
 	expect(scene.camera.is_transitioning(),"Entry uses an active camera transition")
 	expect(scene.camera.view.y>before.y and scene.camera.view.y<65,"Intermediate view is between overview and overhead")
 	await shot("01-camera-moving")

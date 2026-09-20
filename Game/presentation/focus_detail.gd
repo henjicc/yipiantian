@@ -97,6 +97,8 @@ func replace_fields(fields: Array) -> void:
 func set_quality(value: String) -> bool:
 	if value not in ["standard", "low", "high"]:
 		return false
+	if value == _quality:
+		return true
 	_quality = value
 	if _camera != null:
 		_apply_quality()
@@ -126,10 +128,12 @@ func _apply_quality() -> void:
 	_environment.get_node("NeighborIslets").set_low_detail_enabled(_quality == "low")
 	_environment.get_node("LivingDetails").set_lamp_shadows(_quality != "low")
 	# Sun shadows and selected crop detail stay intact at every quality level.
-	# Drop decorative geometry before an MSAA switch can stall shader compilation.
+	# Low quality removes the decorative foreground without changing sample count.
 	if _quality == "low" and _foreground != null:
 		_foreground.set_overview_visible(false, true)
-	_camera.get_viewport().msaa_3d = Viewport.MSAA_2X if _quality == "low" else Viewport.MSAA_4X
+	# Keep the pipeline sample count fixed across presets. Changing MSAA forces
+	# material pipeline recompilation; low still reduces geometry, DOF and lighting.
+	_camera.get_viewport().msaa_3d = Viewport.MSAA_4X
 	var world_environment: Environment = _camera.get_world_3d().environment
 	if world_environment != null:
 		world_environment.ssil_enabled = _quality != "low"

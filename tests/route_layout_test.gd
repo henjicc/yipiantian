@@ -23,7 +23,7 @@ func _run() -> void:
 		await edges();await finish();return
 	var original: Node3D=scene;var house: Node3D=scene.get_node("Environment/MainHouse")
 	var animals: Node3D=scene.get_node("Environment/CourtyardAnimals")
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("road");var builder: Node=scene.island_builder
 	expect(builder.tool=="road" and builder._route_actions.visible,"Road catalog opens drawing controls")
 	# Hold through a corner; geometry must exist before releasing the mouse.
@@ -109,7 +109,7 @@ func _run() -> void:
 	await shot("07-small-window");await finish()
 
 func edges() -> void:
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("road");var builder: Node=scene.island_builder
 	var original: Dictionary=scene.farm_state.snapshot()
 	var start: Vector2=scene.camera.unproject_position(Vector3(-1.5,.13,7))

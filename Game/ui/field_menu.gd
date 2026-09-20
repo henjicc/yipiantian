@@ -130,7 +130,7 @@ func present(point: Vector2, cell: Dictionary) -> void:
 	cards.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var harvest: bool = cell.get("stage", "") == "mature"
 	var till: bool = cell.get("ground", "ready") == "rough"
-	var entries: Array = [["harvest" if harvest else "sow", "收获" if harvest else "播种"], ["water", "浇水"], ["till" if till else "weed", "开垦" if till else "除草"]]
+	var entries: Array = [["harvest" if harvest else "sow", "收获" if harvest else "种植"], ["water", "浇水"], ["till" if till else "weed", "开垦" if till else "除草"]]
 	for i: int in 3:
 		var id: String = entries[i][0]
 		var button := Petal.new()
@@ -145,7 +145,8 @@ func present(point: Vector2, cell: Dictionary) -> void:
 		var finish: float = PI + (i + 1) * PI / 3.0
 		button.polygon = _ring_polygon(Vector2(160, 160), 36.0, 150.0, start, finish)
 		button.center = Vector2(160, 160) + Vector2.from_angle((start + finish) * .5) * 99
-		button.picture = load("res://art/ui/crops/porch-sow.png" if id == "sow" else "res://art/ui/crops/%s.png" % id)
+		button.picture = load("res://art/ui/toolbar/plant.png" if id == "sow" else "res://art/ui/crops/%s.png" % id)
+		button.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		var empty: bool = cell.get("crop_id", "").is_empty()
 		button.disabled = (id == "sow" and (not empty or cell.get("ground", "ready") != "ready")) or (id == "water" and (empty or harvest or cell.get("watered", false))) or (id in ["weed", "till"] and (not empty or cell.get("ground", "ready") != ("weedy" if id == "weed" else "rough")))
 		cards.add_child(button)

@@ -97,7 +97,9 @@ static func pointer_focus(button: BaseButton) -> void:
 	# Pointer activation need not leave a keyboard-navigation ring behind.
 	button.gui_input.connect(func(event: InputEvent) -> void:
 		if event is InputEventMouseButton and not event.pressed:
-			button.release_focus.call_deferred())
+			(func() -> void:
+				if is_instance_valid(button) and button.is_inside_tree():
+					button.release_focus()).call_deferred())
 
 
 static func paper(color: Color = PAPER, radius: int = 18) -> StyleBoxFlat:

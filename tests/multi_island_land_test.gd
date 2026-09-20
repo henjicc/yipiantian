@@ -91,7 +91,7 @@ func _run() -> void:
 	scene.store=Store.new(folder.path_join("farm"));scene.settings_store=Settings.new(folder.path_join("settings"))
 	scene.clock=func() -> float: return now
 	root.add_child(scene);current_scene=scene;await frames(8);scene.atmosphere.set_preview_hour(11)
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout;await east_view()
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout;await east_view()
 	if OS.get_cmdline_user_args().has("--edges"):
 		await edge_checks();await finish();return
 	var brush: Node=scene.island_builder

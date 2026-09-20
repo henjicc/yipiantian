@@ -67,6 +67,7 @@ var settings_store: SettingsStore
 var game_menu: GameMenu
 var settings_values: Dictionary = {}
 var _settings_dirty: bool = false
+var _high_quality_pending: bool = false
 var _settings_issue: String = ""
 var _allow_leave_settings: bool = false
 var selected_field: int = -1
@@ -194,12 +195,10 @@ func _ready() -> void:
 	hud.recovery_requested.connect(_recover_storage)
 	hud.exit_requested.connect(_finish_exit)
 	hud.settings_requested.connect(_open_menu)
-	hud.free_view_requested.connect(_toggle_free_view)
 	if (OS.is_debug_build() and OS.has_feature("editor")):
 		camera_tuning = CameraTuning.new()
 		camera_tuning.camera = camera
 		hud.get_node("Layout").add_child(camera_tuning)
-		hud.camera_tuning_requested.connect(_toggle_camera_tuning)
 		camera_tuning.visibility_changed.connect(_refresh_hud)
 		camera_tuning.depth_of_field_changed.connect(func(enabled: bool, strength: float) -> void:
 			settings_values.dof_enabled = enabled
@@ -1622,7 +1621,7 @@ func _return_overview() -> void:
 		camera_tuning.hide()
 	if camera.free_view:
 		camera.set_free_view(false)
-		hud.show_free_view(false)
+		game_menu.show_free_view(false)
 	if decoration_layout != null and decoration_layout.active:
 		decoration_layout.finish_mode()
 	_cancel_input()
@@ -1650,7 +1649,7 @@ func _toggle_free_view() -> void:
 	_return_overview()
 	if enabled:
 		camera.set_free_view(true)
-		hud.show_free_view(true)
+		game_menu.show_free_view(true)
 
 
 func _toggle_camera_tuning() -> void:
@@ -1710,6 +1709,7 @@ func _setup_settings() -> void:
 	add_child(game_menu)
 	game_menu.settings_changed.connect(_change_settings)
 	game_menu.save_requested.connect(_save_settings)
+	game_menu.developer_requested.connect(_developer_action)
 	game_menu.close_requested.connect(_request_menu_close)
 	game_menu.quit_requested.connect(_request_exit)
 	game_menu.wallpaper_requested.connect(_enter_wallpaper)
@@ -1721,11 +1721,20 @@ func _setup_settings() -> void:
 	hud.show_settings_issue(not _settings_issue.is_empty())
 
 
-func _apply_settings() -> void:
-	farm_audio.set_volumes(settings_values.master, settings_values.music, settings_values.effects)
-	focus_detail.set_quality(settings_values.quality)
-	focus_detail.set_depth_of_field(settings_values.dof_enabled, focus_detail.get_settings().dof_strength)
-	_apply_render_resolution()
+func _apply_settings(previous: Dictionary = {}) -> void:
+	if previous.get("master") != settings_values.master or previous.get("music") != settings_values.music or previous.get("effects") != settings_values.effects:
+		farm_audio.set_volumes(settings_values.master, settings_values.music, settings_values.effects)
+	if previous.get("quality") != settings_values.quality:
+		if not previous.is_empty() and settings_values.quality == "high":
+			if not _high_quality_pending:
+				_high_quality_pending = true
+				_apply_high_quality.call_deferred()
+		else:
+			focus_detail.set_quality(settings_values.quality)
+	if previous.get("dof_enabled") != settings_values.dof_enabled:
+		focus_detail.set_depth_of_field(settings_values.dof_enabled, focus_detail.get_settings().dof_strength)
+	if previous.get("resolution") != settings_values.resolution:
+		_apply_render_resolution()
 	# Headless validation has no OS window; preference validation remains identical.
 	if DisplayServer.get_name() != "headless" and not (desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy)):
 		var window: Window = get_window()
@@ -1745,8 +1754,8 @@ func _apply_render_resolution() -> void:
 	var choice: String = settings_values.resolution
 	# Never lower UI resolution or change the display's video mode for 3D quality.
 	var scale_3d: float = 1.0 if choice == "native" else clampf(float(choice) / maxf(output.y, 1), .25, 1.0)
-	get_viewport().scaling_3d_scale = scale_3d
-	if game_menu != null: game_menu.refresh_resolution_info()
+	if not is_equal_approx(get_viewport().scaling_3d_scale, scale_3d):
+		get_viewport().scaling_3d_scale = scale_3d
 
 
 func _open_menu() -> void:
@@ -1802,11 +1811,24 @@ func _wallpaper_changed(enabled: bool) -> void:
 func _change_settings(value: Dictionary) -> void:
 	if not SettingsStore.valid_settings(value):
 		return
+	var previous: Dictionary = settings_values
 	settings_values = value.duplicate(true)
 	_settings_dirty = true
 	_allow_leave_settings = false
-	_apply_settings()
-	hud.show_settings_issue(true)
+	_apply_settings(previous)
+	_save_settings()
+	if _high_quality_pending and _settings_issue.is_empty():
+		game_menu.set_status("正在切换画质…")
+
+
+func _apply_high_quality() -> void:
+	# Let the menu paint feedback before the renderer allocates the GI volume.
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+	if not is_inside_tree(): return
+	focus_detail.set_quality(settings_values.quality)
+	_high_quality_pending = false
+	if _settings_issue.is_empty(): game_menu.set_status("")
 
 
 func _save_settings() -> bool:
@@ -1815,7 +1837,7 @@ func _save_settings() -> bool:
 		_settings_dirty = false
 		_settings_issue = ""
 		_allow_leave_settings = false
-		game_menu.set_status("设置已保存。")
+		game_menu.set_status("")
 	else:
 		_settings_issue = "设置未能保存，本次调整仍然有效。可重试保存；农场进度不受影响。"
 		if result.kind in ["unsupported", "unsupported_pending"]:
@@ -1836,10 +1858,34 @@ func _request_menu_close() -> void:
 	_allow_leave_settings = false
 	camera.free_input_enabled = true
 	_refresh_hud()
-	hud.get_node("Layout/ViewControls/Settings").grab_focus()
+	hud.get_node("Layout/FarmControls/Settings").grab_focus()
 
 
 func _report_preview_ready() -> void:
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	print("DEV_PREVIEW_READY screen=%d mode=%d size=%s" % [DisplayServer.window_get_current_screen(), get_window().mode, DisplayServer.window_get_size()])
+
+func _developer_action(action: String) -> void:
+	if not (OS.is_debug_build() and OS.has_feature("editor")): return
+	if not _loaded or _save_failed: return
+	if action == "models":
+		var path := "res://development/model_gallery.tscn"
+		if not ResourceLoader.exists(path):
+			game_menu.set_status("模型检查室未安装在当前工程中。")
+			return
+		settle_farm()
+		if not _save_farm(): return
+		if _settings_dirty and not _save_settings(): return
+		var error: Error = get_tree().change_scene_to_file(path)
+		if error != OK:
+			game_menu.set_status("模型检查室未能打开，请重试。")
+			return
+		farm_audio.shutdown()
+		return
+	_request_menu_close()
+	if game_menu.visible: return
+	match action:
+		"camera_tuning": _toggle_camera_tuning()
+		"free_camera": _toggle_free_view()
+		"time": hud._toggle_time_preview()

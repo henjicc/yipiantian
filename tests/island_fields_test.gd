@@ -136,7 +136,7 @@ func _run() -> void:
 	var original_fences: Array[Node3D]=[]
 	for node: Node in scene.get_node("Environment").get_children():
 		if node is Node3D and node.has_meta("fence_spans") and node.visible: original_fences.append(node)
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("fields")
 	expect(original_paths.is_visible_in_tree(),"Opening field tools retains the existing visible paths")
 	for node: Node3D in original_fences: expect(node.is_visible_in_tree(),"Opening field tools retains existing fence and contact shadows")

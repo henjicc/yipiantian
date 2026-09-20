@@ -87,8 +87,8 @@ func _run() -> void:
 	scene.atmosphere.set_preview_hour(11)
 	var crops: Dictionary=scene.farm_state.snapshot().fields
 	await shot("00-entry")
-	print("ENTRY ",root.get_visible_rect()," ",scene.hud.get_node("Layout/BuildIsland").get_global_rect()," ",scene._loaded," ",scene._save_failed)
-	await click(scene.hud.get_node("Layout/BuildIsland"))
+	print("ENTRY ",root.get_visible_rect()," ",scene.hud.get_node("Layout/FarmControls/BuildIsland").get_global_rect()," ",scene._loaded," ",scene._save_failed)
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"))
 	print("ENTRY_AFTER ",scene.island_builder.active," hovered=",root.gui_get_hovered_control())
 	expect(scene.island_builder.active,"Real HUD click enters in-world construction")
 	if not scene.island_builder.active: await finish();return

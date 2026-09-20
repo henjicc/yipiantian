@@ -39,7 +39,7 @@ func _run() -> void:
 	scene.clock=func() -> float: return now
 	root.add_child(scene);current_scene=scene;await frames(8)
 	scene.atmosphere.set_preview_hour(11)
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await drag(Vector3(0,.13,6),Vector3(3,.13,8.5))
 	if not await apply(): await finish();return
 	var builder: Node=scene.island_builder

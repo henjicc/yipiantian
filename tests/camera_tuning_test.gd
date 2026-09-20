@@ -29,7 +29,10 @@ func _run() -> void:
 	var camera: FarmCamera = scene.camera
 	var panel: PanelContainer = scene.camera_tuning
 	scene._select_crop("spinach")
-	await click(scene.hud.get_node("Layout/DebugCameraTuning").get_global_rect().get_center())
+	scene._open_menu()
+	scene.game_menu._show_page(4)
+	await process_frame
+	await click(scene.game_menu._developer_buttons.camera_tuning.get_global_rect().get_center())
 	expect(panel.visible and scene.selected_tool.is_empty(), "Opening panel cancels armed farming")
 	if OS.get_cmdline_user_args().has("--fog-regression"):
 		panel._dof_slider.value = 0

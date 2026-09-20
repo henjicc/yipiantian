@@ -47,14 +47,10 @@ func run() -> void:
 	var button_frame:=ThemeFactory.create().get_stylebox("normal","Button")
 	check(button_frame is PigmentStyle,"Controls use continuous-UV pigment with runtime outlines, not sliced bitmaps")
 	scene.atmosphere.set_preview_hour(14.0)
-	var build: Button = scene.hud.get_node("Layout/BuildIsland")
-	var settings: Button = scene.hud.get_node("Layout/ViewControls/Settings")
+	var build: Button = scene.hud.get_node("Layout/FarmControls/BuildIsland")
+	var settings: Button = scene.hud.get_node("Layout/FarmControls/Settings")
 	check(is_equal_approx(build.size.x, settings.size.x) and is_equal_approx(build.size.y, settings.size.y), "Construction and settings have equal dimensions")
-	check(scene.hud.get_node("Layout/ViewControls").get_child_count() == 1, "No duplicate decoration, overview or reset HUD buttons")
-	for badge_name: String in ["OpenBasket", "TimeBadge"]:
-		var badge: Button = scene.hud.get_node("Layout/" + badge_name)
-		for state: String in ["normal", "hover", "pressed"]:
-			check(badge.get_theme_stylebox(state) is StyleBoxEmpty, "Status badge has no background: " + badge_name + state)
+	check(not scene.hud.has_node("Layout/TimeBadge") and not scene.hud.has_node("Layout/ViewControls"), "Upper HUD is clear")
 	await shot("simplified-hud")
 	scene.camera.drag(Vector2(12, 8), false)
 	scene.camera.zoom(-2.0)
@@ -193,6 +189,7 @@ func run() -> void:
 	await click(scene.hud.get_node("Layout/ToolChoices/Water").get_global_rect().get_center())
 	check(scene.selected_tool=="water" and not scene.field_menu.active,"Horizontal tray equips without applying to stale target")
 	scene._cancel_tool()
+	await process_frame; await process_frame
 	await click(scene.hud.get_node("Layout/FarmControls/Sow").get_global_rect().get_center())
 	await create_timer(.3).timeout
 	check(scene.selected_palette=="sow" and not scene.field_menu.active,"Bottom sow opens horizontal crop choices")

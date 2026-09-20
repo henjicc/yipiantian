@@ -223,7 +223,7 @@ func paint_capacity_plants() -> bool:
 func field_save_check() -> void:
 	check(preplanted,"Field-save capacity check includes established plants")
 	scene.atmosphere.set_preview_hour(11)
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout;await choose("fields")
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout;await choose("fields")
 	scene.camera._move_to(Vector3(18,.4,-2),Vector3(24,65,25));await create_timer(1).timeout
 	var builder: Node=scene.island_builder
 	var originals: Array=scene.farm.fields.duplicate()
@@ -248,7 +248,7 @@ func field_save_check() -> void:
 
 func construction_checks() -> void:
 	scene.atmosphere.set_preview_hour(11)
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	check(scene.island_builder.active,"Real UI opens island construction")
 	if not scene.island_builder.active: await shot("failed-construction-entry");return
 	if not preplanted and not await paint_capacity_plants(): return
@@ -285,7 +285,7 @@ func construction_checks() -> void:
 	for point: Vector2 in original_road_heights:
 		if not is_equal_approx(original_road_heights[point],refreshed_yard.ground_height(point)): road_heights_match=false
 	check(road_heights_match,"Background rebuild preserves exact foot heights along existing stone roads")
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	begin_sample("land-undo-and-background")
 	await click(builder._undo);await settle();end_sample()
 	check(scene.courtyard_plan.construction.east_land==original_east,"Large-scene terrain undo succeeds")

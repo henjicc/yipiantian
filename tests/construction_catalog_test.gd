@@ -23,7 +23,7 @@ func _run() -> void:
 	scene.clock=func() -> float: return now
 	root.add_child(scene);current_scene=scene;await frames(8)
 	scene.atmosphere.set_preview_hour(11)
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	var builder: Node=scene.island_builder
 	expect(builder.active,"HUD enters construction catalog")
 	if OS.get_cmdline_user_args().has("--switches-only"):
@@ -105,7 +105,7 @@ func _run() -> void:
 	scene.store=Store.new(path);scene.settings_store=Settings.new(folder.path_join("settings"));scene.clock=func() -> float: return now
 	root.add_child(scene);current_scene=scene;await frames(6)
 	expect(scene.decoration_state.snapshot()==saved,"Actual scene reopen restores catalog placement")
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("fields")
 	expect(scene.island_builder.tool=="fields" and is_instance_valid(scene.island_builder.field_preview),"Planting category opens the live field controller")
 	await choose_tool("trellis")

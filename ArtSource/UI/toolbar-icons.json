@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-21",
+  "tool": "built-in image_gen",
+  "purpose": "统一底栏透明工笔淡彩图标，原始生成PNG直接入库，无代码绘制或抠图",
+  "assets": [
+    {
+      "id": "plant",
+      "prompt": "Use case: stylized-concept. Generate ONE production game toolbar icon, square PNG with genuine transparent alpha background, not checkerboard drawing, no background paper panel, no ground shadow, no labels, no text. Ming-era Chinese pastoral farming game, gongbi meticulous fine ink contour and restrained pale mineral watercolor pigment, sage green, warm bamboo ochre, muted dark olive ink. Hand-painted botanical illustration feeling, soft internal wash with very slight volume, NOT 3D render, not glossy, not vector/flat emoji, not photographic. Simple legible silhouette designed for 28-40px display. Object centered occupying 85 percent of canvas, consistent generous safe padding, fully visible. One young vegetable seedling with three fresh sage-green leaves and a tiny ochre root clump, two visible seed grains beside its base. No basket, no pot.",
+      "source": "%USERPROFILE%\\.codex\\generated_images\\01a0bd2f-bdf8-7412-a4b9-4c80a4f71be2\\exec-3125143a-3293-497a-9259-870f23954071.png",
+      "destination": "Game/art/ui/toolbar/plant.png"
+    },
+    {
+      "id": "tools",
+      "prompt": "Use case: stylized-concept. Generate ONE production game toolbar icon, square PNG with genuine transparent alpha background, not checkerboard drawing, no background paper panel, no ground shadow, no labels, no text. Ming-era Chinese pastoral farming game, gongbi meticulous fine ink contour and restrained pale mineral watercolor pigment, sage green, warm bamboo ochre, muted dark olive ink. Hand-painted botanical illustration feeling, soft internal wash with very slight volume, NOT 3D render, not glossy, not vector/flat emoji, not photographic. Simple legible silhouette designed for 28-40px display. Object centered occupying 85 percent of canvas, consistent generous safe padding, fully visible. A small traditional wooden-handled hoe and curved sickle crossed neatly as a compact farming tools emblem, dark muted iron and pale bamboo wood, chunky readable silhouettes.",
+      "source": "%USERPROFILE%\\.codex\\generated_images\\01a0bd2f-bdf8-7412-a4b9-4c80a4f71be2\\exec-5d7c2907-104b-4007-83d5-c4b0d69b28cd.png",
+      "destination": "Game/art/ui/toolbar/tools.png"
+    },
+    {
+      "id": "basket",
+      "prompt": "Use case: stylized-concept. Generate ONE production game toolbar icon, square PNG with genuine transparent alpha background, not checkerboard drawing, no background paper panel, no ground shadow, no labels, no text. Ming-era Chinese pastoral farming game, gongbi meticulous fine ink contour and restrained pale mineral watercolor pigment, sage green, warm bamboo ochre, muted dark olive ink. Hand-painted botanical illustration feeling, soft internal wash with very slight volume, NOT 3D render, not glossy, not vector/flat emoji, not photographic. Simple legible silhouette designed for 28-40px display. Object centered occupying 85 percent of canvas, consistent generous safe padding, fully visible. One traditional Chinese woven bamboo harvest basket with rounded handle, warm muted straw and subtle sage-green woven band, empty basket, simplified weave.",
+      "source": "%USERPROFILE%\\.codex\\generated_images\\01a0bd2f-bdf8-7412-a4b9-4c80a4f71be2\\exec-c585fac3-e265-4044-a4bf-4cac128fbc54.png",
+      "destination": "Game/art/ui/toolbar/basket.png"
+    },
+    {
+      "id": "build",
+      "prompt": "Use case: stylized-concept. Generate ONE production game toolbar icon, square PNG with genuine transparent alpha background, not checkerboard drawing, no background paper panel, no ground shadow, no labels, no text. Ming-era Chinese pastoral farming game, gongbi meticulous fine ink contour and restrained pale mineral watercolor pigment, sage green, warm bamboo ochre, muted dark olive ink. Hand-painted botanical illustration feeling, soft internal wash with very slight volume, NOT 3D render, not glossy, not vector/flat emoji, not photographic. Simple legible silhouette designed for 28-40px display. Object centered occupying 85 percent of canvas, consistent generous safe padding, fully visible. One modest Jiangnan farmhouse front, pale plaster walls, sage-grey curved tiled roof, simple warm wooden door, compact readable house silhouette. No scenery, no trees.",
+      "source": "%USERPROFILE%\\.codex\\generated_images\\01a0bd2f-bdf8-7412-a4b9-4c80a4f71be2\\exec-c85f2e0c-5351-47c5-b87a-5fa85540be14.png",
+      "destination": "Game/art/ui/toolbar/build.png"
+    },
+    {
+      "id": "settings",
+      "prompt": "Use case: stylized-concept. Generate ONE production game toolbar icon, square PNG with genuine transparent alpha background, not checkerboard drawing, no background paper panel, no ground shadow, no labels, no text. Ming-era Chinese pastoral farming game, gongbi meticulous fine ink contour and restrained pale mineral watercolor pigment, sage green, warm bamboo ochre, muted dark olive ink. Hand-painted botanical illustration feeling, soft internal wash with very slight volume, NOT 3D render, not glossy, not vector/flat emoji, not photographic. Simple legible silhouette designed for 28-40px display. Object centered occupying 85 percent of canvas, consistent generous safe padding, fully visible. A hand-painted settings adjustment symbol: three short vertical bamboo-colored bars with rounded pale celadon jade sliding beads at differing heights. Organic fine brush outlines and watercolor wash. Clearly a settings icon, no gear, no industrial chrome, no frame.",
+      "source": "%USERPROFILE%\\.codex\\generated_images\\01a0bd2f-bdf8-7412-a4b9-4c80a4f71be2\\exec-feefd9ec-9a49-4ccc-8c3f-54b44a85ee08.png",
+      "destination": "Game/art/ui/toolbar/settings.png"
+    },
+    {
+      "id": "cancel",
+      "prompt": "Use case: stylized-concept. Generate ONE production game toolbar icon, square PNG with genuine transparent alpha background, not checkerboard drawing, no background paper panel, no ground shadow, no labels, no text. Ming-era Chinese pastoral farming game, gongbi meticulous fine ink contour and restrained pale mineral watercolor pigment, sage green, warm bamboo ochre, muted dark olive ink. Hand-painted botanical illustration feeling, soft internal wash with very slight volume, NOT 3D render, not glossy, not vector/flat emoji, not photographic. Simple legible silhouette designed for 28-40px display. Object centered occupying 85 percent of canvas, consistent generous safe padding, fully visible. One simple curved return arrow painted with sage-green mineral pigment and warm ochre fine outline, broad readable stroke, restrained hand-painted gongbi brush texture, no circle or background.",
+      "source": "%USERPROFILE%\\.codex\\generated_images\\01a0bd2f-bdf8-7412-a4b9-4c80a4f71be2\\exec-63fd9437-7306-4d39-a745-80e1ca35613c.png",
+      "destination": "Game/art/ui/toolbar/cancel.png"
+    }
+  ]
+}

@@ -30,10 +30,6 @@ func _run() -> void:
 	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("preferences"))
 	root.add_child(scene)
 	await physics_frame
-	# Match the presentation clock in evidence without changing the OS or farm time.
-	for child: Node in scene.hud.get_children():
-		if child is Timer and child.timeout.is_connected(Callable(scene.hud, "_update_clock")):
-			child.stop()
 	_set_hour(12.0)
 	await create_timer(1.25).timeout
 	await _capture("01-initial-day.png")
@@ -116,9 +112,6 @@ func _capture(filename: String) -> void:
 
 func _set_hour(hour: float) -> void:
 	scene.atmosphere.set_preview_hour(hour)
-	var minutes: int = int(round(hour * 60.0)) % 1440
-	scene.hud._clock.text = "%02d:%02d" % [floori(minutes / 60.0), minutes % 60]
-	scene.hud._day_icon.texture = scene.hud.SUN if minutes >= 360 and minutes < 1080 else scene.hud.MOON
 
 
 func _expect(condition: bool, message: String) -> void:

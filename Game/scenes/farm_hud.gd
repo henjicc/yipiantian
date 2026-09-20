@@ -10,8 +10,6 @@ signal retry_requested
 signal recovery_requested
 signal exit_requested
 signal settings_requested
-signal free_view_requested
-signal camera_tuning_requested
 signal preview_hour_requested(hour: float)
 signal time_preview_opened
 signal basket_requested
@@ -19,14 +17,8 @@ signal construction_requested
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const FarmTheme = preload("res://ui/farm_theme.gd")
-const StatusBadge = preload("res://ui/status_badge.gd")
 const INK := FarmTheme.INK
-const SUN = preload("res://art/ui/pigment/sun.png")
-const MOON = preload("res://art/ui/pigment/moon.png")
-var _harvested: Label
-var _harvest_detail: Label
-var _clock: Label
-var _day_icon: TextureRect
+var _basket: Button
 var _settings: Button
 var _tools: HBoxContainer
 var _tool_row: HBoxContainer
@@ -42,7 +34,6 @@ var _storage_message: Label
 var _retry: Button
 var _recover: Button
 var _exit: Button
-var _free_view: Button
 var _time_panel: PanelContainer
 var _time_slider: HSlider
 var _preview_minutes: int = -1
@@ -56,79 +47,10 @@ func _ready() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	root.theme = FarmTheme.create()
-	var build := _button(root, "建设", 100)
-	build.name = "BuildIsland"
-	build.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	build.offset_left=-226;build.offset_right=-126;build.offset_top=88;build.offset_bottom=132
-	build.pressed.connect(func() -> void: construction_requested.emit())
-	var basket := StatusBadge.new()
-	basket.name = "OpenBasket"
-	root.add_child(basket)
-	basket.position = Vector2(18, 18)
-	basket.custom_minimum_size = Vector2(286, 74)
-	basket.picture.texture = preload("res://art/ui/pigment/basket.png")
-	basket.detail_label.show()
-	basket.pressed.connect(func() -> void: basket_requested.emit())
-	_harvested = basket.title_label
-	_harvested.name = "Harvested"
-	_harvest_detail = basket.detail_label
-	var time_badge := StatusBadge.new()
-	time_badge.name = "TimeBadge"
-	root.add_child(time_badge)
-	time_badge.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	time_badge.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	time_badge.offset_left = -200
-	time_badge.offset_right = -18
-	time_badge.offset_top = 18
-	time_badge.offset_bottom = 80
-	_day_icon = time_badge.picture
-	_clock = time_badge.title_label
-	_clock.name = "LocalClock"
-	_clock.add_theme_font_size_override("font_size", 26)
-	if (OS.is_debug_build() and OS.has_feature("editor")):
-		time_badge.pressed.connect(_toggle_time_preview)
-	else:
-		time_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		time_badge.focus_mode = Control.FOCUS_NONE
 	_build_farm_controls(root)
-	var bar := HBoxContainer.new()
-	bar.name = "ViewControls"
-	root.add_child(bar)
-	bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	bar.offset_left = -118
-	bar.offset_right = -18
-	bar.offset_top = 88
-	bar.offset_bottom = 130
-	bar.add_theme_constant_override("separation", 8)
-	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_settings = _button(bar, "设置", 100)
-	_settings.name = "Settings"
-	_settings.pressed.connect(func() -> void: settings_requested.emit())
-	if (OS.is_debug_build() and OS.has_feature("editor")):
-		_free_view = _button(root, "自由视角", 160)
-		_free_view.name = "DebugFreeCamera"
-		_free_view.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-		_free_view.offset_left = -178
-		_free_view.offset_right = -18
-		_free_view.offset_top = 140
-		_free_view.offset_bottom = 182
-		_free_view.pressed.connect(func() -> void: free_view_requested.emit())
-		var tuning := _button(root, "相机调节", 160)
-		tuning.name = "DebugCameraTuning"
-		tuning.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-		tuning.offset_left = -346
-		tuning.offset_right = -186
-		tuning.offset_top = 140
-		tuning.offset_bottom = 182
-		tuning.pressed.connect(func() -> void: camera_tuning_requested.emit())
+	if OS.is_debug_build() and OS.has_feature("editor"):
 		_build_time_preview(root)
 	_build_storage_overlay(root)
-	_update_clock()
-	var timer := Timer.new()
-	timer.wait_time = 1.0
-	timer.timeout.connect(_update_clock)
-	add_child(timer)
-	timer.start()
 
 
 func _build_farm_controls(root: Control) -> void:
@@ -136,19 +58,28 @@ func _build_farm_controls(root: Control) -> void:
 	_tools.name = "FarmControls"
 	root.add_child(_tools)
 	_tools.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_tools.offset_left = -200
-	_tools.offset_right = 200
+	_tools.offset_left = -380
+	_tools.offset_right = 380
 	_tools.offset_top = -66
 	_tools.offset_bottom = -18
 	_tools.alignment = BoxContainer.ALIGNMENT_CENTER
-	_tools.add_theme_constant_override("separation", 10)
+	_tools.add_theme_constant_override("separation", 8)
 	_tools.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for item: Array in [["sow", "播种", "Sow"], ["tools", "工具", "Tools"]]:
-		var entry := _button(_tools, item[1], 120)
+	for item: Array in [["sow", "种植", "Sow"], ["tools", "工具", "Tools"]]:
+		var entry := _toolbar_button(item[1], "res://art/ui/toolbar/plant.png" if item[0] == "sow" else "res://art/ui/toolbar/tools.png")
 		entry.name = item[2]
 		entry.toggle_mode = true
 		entry.pressed.connect(func() -> void: palette_requested.emit(item[0]))
-	var cancel := _button(_tools, "取消", 88)
+	_basket = _toolbar_button("菜篮", "res://art/ui/toolbar/basket.png")
+	_basket.name = "OpenBasket"
+	_basket.pressed.connect(func() -> void: basket_requested.emit())
+	var build := _toolbar_button("建设", "res://art/ui/toolbar/build.png")
+	build.name = "BuildIsland"
+	build.pressed.connect(func() -> void: construction_requested.emit())
+	_settings = _toolbar_button("设置", "res://art/ui/toolbar/settings.png")
+	_settings.name = "Settings"
+	_settings.pressed.connect(func() -> void: settings_requested.emit())
+	var cancel := _toolbar_button("取消", "res://art/ui/toolbar/cancel.png")
 	cancel.name = "CancelTool"
 	cancel.pressed.connect(func() -> void: cancel_tool_requested.emit())
 	cancel.hide()
@@ -242,7 +173,6 @@ func _build_time_preview(root: Control) -> void:
 	box.add_child(_time_slider)
 	_time_slider.value_changed.connect(func(value: float) -> void:
 		_preview_minutes = int(value)
-		_update_clock()
 		preview_hour_requested.emit(value / 60.0))
 	var actions := HBoxContainer.new()
 	box.add_child(actions)
@@ -250,7 +180,6 @@ func _build_time_preview(root: Control) -> void:
 	live.name = "LiveTime"
 	live.pressed.connect(func() -> void:
 		_preview_minutes = -1
-		_update_clock()
 		_sync_time_slider()
 		preview_hour_requested.emit(-1.0))
 	_button(actions, "收起", 110).pressed.connect(hide_time_preview)
@@ -315,11 +244,6 @@ func _build_storage_overlay(root: Control) -> void:
 	_storage_overlay.hide()
 
 
-func show_free_view(active: bool) -> void:
-	if _free_view != null:
-		_free_view.text = "退出自由视角" if active else "自由视角"
-
-
 func show_storage_issue(kind: String, unsaved: bool) -> void:
 	_storage_message.text = "保存未完成，最新进度仍在本次窗口中。请重试保存。" if unsaved else {
 		"recovery_available": "存档未能读取，可恢复上一份备份。最近的改动可能丢失，原文件会保留。",
@@ -353,14 +277,14 @@ func show_saved() -> void:
 
 func show_decoration_mode(active: bool) -> void:
 	_decorating = active
-	_tools.visible = not active
+	_tools.get_node("Sow").visible = not active
+	_tools.get_node("Tools").visible = not active
+	_tools.get_node("CancelTool").visible = not active and _tools.get_node("CancelTool").visible
 	_sync_rows()
 
 
-func show_state(_cell: Dictionary, harvested: Dictionary, tool: String, crop_id: String, traveling: bool, _field_index: int = -1, palette: String = "", inventory: Dictionary = {}) -> void:
+func show_state(_cell: Dictionary, _harvested: Dictionary, tool: String, crop_id: String, traveling: bool, _field_index: int = -1, palette: String = "", _inventory: Dictionary = {}) -> void:
 	_palette = palette
-	_harvested.text = "菜篮 · %d" % Crops.total_harvested(inventory)
-	_harvest_detail.text = "累计收获 %d 篮" % Crops.total_harvested(harvested)
 	for id: String in _crop_buttons:
 		var card: Button = _crop_buttons[id]
 		card.disabled = traveling or palette != "sow"
@@ -373,7 +297,7 @@ func show_state(_cell: Dictionary, harvested: Dictionary, tool: String, crop_id:
 		var button: Button = _tools.get_node(entry)
 		button.disabled = traveling
 		button.set_pressed_no_signal(palette == ("sow" if entry == "Sow" else "tools"))
-	_tools.get_node("CancelTool").visible = not tool.is_empty()
+	_tools.get_node("CancelTool").visible = not _decorating and not tool.is_empty()
 	_sync_rows()
 
 
@@ -396,18 +320,26 @@ func _button(parent: Control, text: String, width: float) -> Button:
 	return button
 
 
-func _update_clock() -> void:
-	var local: Dictionary = Time.get_datetime_dict_from_system(false)
-	if _preview_minutes >= 0:
-		local.hour = _preview_minutes / 60
-		local.minute = _preview_minutes % 60
-	_clock.text = "%02d:%02d" % [local.hour, local.minute]
-	_day_icon.texture = SUN if local.hour >= 6 and local.hour < 18 else MOON
-
-
 func show_settings_issue(has_issue: bool) -> void:
 	_settings.text = "设置 !" if has_issue else "设置"
 
 
 func is_time_preview_open() -> bool:
 	return _time_panel != null and _time_panel.visible
+
+func _toolbar_button(caption: String, icon_path: String) -> Button:
+	var button := _button(_tools, caption, 104)
+	button.icon = load(icon_path)
+	button.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	button.expand_icon = true
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.add_theme_constant_override("icon_max_width", 28)
+	button.add_theme_constant_override("h_separation", 6)
+	_fit_toolbar_button(button)
+	return button
+
+
+func _fit_toolbar_button(button: Button) -> void:
+	var text_width: float = button.get_theme_font("font").get_string_size(button.text, HORIZONTAL_ALIGNMENT_LEFT, -1, button.get_theme_font_size("font_size")).x
+	# Expanded icons do not contribute to Button minimum width; reserve their slot.
+	button.custom_minimum_size.x = maxf(112.0, text_width + 70.0)

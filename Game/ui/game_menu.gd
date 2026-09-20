@@ -6,6 +6,7 @@ signal save_requested
 signal close_requested
 signal quit_requested
 signal wallpaper_requested
+signal developer_requested(action: String)
 
 const FarmTheme = preload("res://ui/farm_theme.gd")
 const QUALITY_VALUES: Array[String] = ["standard", "low", "high"]
@@ -18,15 +19,16 @@ var _volume_labels: Dictionary = {}
 var _window: OptionButton
 var _quality: OptionButton
 var _resolution: OptionButton
-var _resolution_info: Label
 var _dof: Button
 var _status: Label
 var _close: Button
 var _quit: Button
-var _save: Button
+var _retry: Button
+var _developer_buttons: Dictionary = {}
 var _wallpaper: Button
 var _values: Dictionary = {}
 var _populating: bool = false
+var _page_index: int = 0
 
 
 func _ready() -> void:
@@ -46,8 +48,8 @@ func _ready() -> void:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	panel.offset_left = -310
 	panel.offset_right = 310
-	panel.offset_top = -330
-	panel.offset_bottom = 330
+	panel.offset_top = -275
+	panel.offset_bottom = 275
 	var style: StyleBox = FarmTheme.framed_paper()
 	style.content_margin_left = 26
 	style.content_margin_right = 26
@@ -58,7 +60,10 @@ func _ready() -> void:
 	panel.add_child(column)
 	var tabs := HBoxContainer.new()
 	column.add_child(tabs)
-	for title: String in ["设置", "操作", "来源"]:
+	var titles: Array[String] = ["音量", "显示", "操作", "关于"]
+	if OS.is_debug_build() and OS.has_feature("editor"):
+		titles.append("开发者")
+	for title: String in titles:
 		var tab: Button = _button(tabs, title)
 		tab.toggle_mode = true
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -67,7 +72,7 @@ func _ready() -> void:
 		_tabs.append(tab)
 	var content := Control.new()
 	content.name = "Pages"
-	content.custom_minimum_size = Vector2(560, 426)
+	content.custom_minimum_size = Vector2(560, 340)
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(content)
 	var settings := VBoxContainer.new()
@@ -94,6 +99,11 @@ func _ready() -> void:
 		slider.value_changed.connect(func(value: float) -> void:
 			number.text = "%d%%" % roundi(value)
 			_change(key, value / 100.0))
+	var display := VBoxContainer.new()
+	display.name = "Display"
+	content.add_child(display)
+	display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_pages.append(display)
 	_window = OptionButton.new()
 	_window.name = "WindowMode"
 	_window.add_item("窗口")
@@ -101,7 +111,7 @@ func _ready() -> void:
 	FarmTheme.configure_option(_window)
 	_window.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_window.custom_minimum_size.y = 42
-	_row(settings, "显示").add_child(_window)
+	_row(display, "窗口模式").add_child(_window)
 	_window.item_selected.connect(func(index: int) -> void: _change("fullscreen", index == 1))
 	_resolution = OptionButton.new()
 	_resolution.name = "RenderResolution"
@@ -110,13 +120,8 @@ func _ready() -> void:
 	FarmTheme.configure_option(_resolution)
 	_resolution.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_resolution.custom_minimum_size.y = 42
-	_row(settings, "3D 分辨率").add_child(_resolution)
+	_row(display, "分辨率").add_child(_resolution)
 	_resolution.item_selected.connect(func(index: int) -> void: _change("resolution", RESOLUTION_VALUES[index]))
-	_resolution_info = Label.new()
-	_resolution_info.add_theme_font_size_override("font_size", 16)
-	_resolution_info.add_theme_color_override("font_color", FarmTheme.Tokens.MUTED)
-	settings.add_child(_resolution_info)
-	get_window().size_changed.connect(refresh_resolution_info)
 	_quality = OptionButton.new()
 	_quality.name = "Quality"
 	_quality.add_item("标准")
@@ -125,37 +130,48 @@ func _ready() -> void:
 	FarmTheme.configure_option(_quality)
 	_quality.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_quality.custom_minimum_size.y = 42
-	_row(settings, "画质").add_child(_quality)
+	_row(display, "画质").add_child(_quality)
 	_quality.item_selected.connect(func(index: int) -> void:
 		_change("quality", QUALITY_VALUES[index])
 		_refresh_dof())
-	_dof = _button(_row(settings, "景深"), "开启")
+	_dof = _button(_row(display, "景深"), "开启")
 	_dof.name = "DepthOfField"
 	_dof.toggle_mode = true
 	_dof.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_dof.toggled.connect(func(enabled: bool) -> void:
 		_change("dof_enabled", enabled)
 		_refresh_dof())
-	_wallpaper = _button(_row(settings, "桌面"), "设为桌面壁纸")
+	_wallpaper = _button(_row(display, "桌面"), "设为桌面壁纸")
 	_wallpaper.name = "DesktopWallpaper"
 	_wallpaper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_wallpaper.tooltip_text = "在当前屏幕安静展示农场；双击系统托盘图标返回游戏。"
 	_wallpaper.pressed.connect(func() -> void: wallpaper_requested.emit())
 	var operations: RichTextLabel = _text_page(content, "操作说明")
-	operations.text = "[b]照料田地[/b]\n空手点击田格展开菜单，选择动作；播种时再选蔬菜。点空白、右键或 Esc 关闭菜单。门前种子篮、锄头、水壶可拿起对应工具，再点击土地连续操作；底部播种／工具按钮展开横排选择。拿着种子时滚轮换菜，右键、Esc 或取消按钮放下工具。每轮可浇水一次，不同作物节省的生长时间不同；成熟收获一篮。\n\n[b]照料菜架[/b]\n点击架脚的种植位靠近，再点种植位播种丝瓜；也可点藤蔓或果实浇水、收获。扩架增加位置，缩架前先收获会被移除的作物。\n\n[b]观察院落[/b]\n放下种子后滚轮缩放。点击田块边缘靠近；中键拖动转动视角，Shift＋中键平移。\n\n[b]返回与布置[/b]\n右键或 Esc 先放下工具，再清除选格、返回全景。“建设”调整小岛，“摆件”调整已有装饰：选装饰、点空位，再确认；旋转适用于地面装饰。\n\n作物按现实时间生长。离开后再次进入，会继续上次的农场。"
-	var sources: RichTextLabel = _text_page(content, "制作来源")
+	operations.text = "[b]照料田地[/b]\n空手点击田格展开菜单，选择动作；播种时再选蔬菜。点空白、右键或 Esc 关闭菜单。门前种子篮、锄头、水壶可拿起对应工具，再点击土地连续操作；底部种植／工具按钮展开横排选择。拿着种子时滚轮换菜，右键、Esc 或取消按钮放下工具。每轮可浇水一次，不同作物节省的生长时间不同；成熟收获一篮。\n\n[b]照料菜架[/b]\n点击架脚的种植位靠近，再点种植位播种丝瓜；也可点藤蔓或果实浇水、收获。扩架增加位置，缩架前先收获会被移除的作物。\n\n[b]观察院落[/b]\n放下种子后滚轮缩放。点击田块靠近，向后滚轮返回聚焦前的机位；中键拖动转动视角，Shift＋中键平移。\n\n[b]返回与布置[/b]\n右键或 Esc 先放下工具，再清除选格、返回全景。“建设”内选择土地、建筑或摆件：选装饰、点空位，再确认；旋转适用于地面装饰。\n\n作物按现实时间生长。离开后再次进入，会继续上次的农场。"
+	var sources: RichTextLabel = _text_page(content, "关于")
 	sources.text = "[b]我有一片田[/b]\n图像：OpenAI 图像生成，依项目定稿参考制作。\n模型草案：Tripo；模型整理与补制：Blender。\n场景、界面与交互：Godot。\n音乐、环境声与操作声：项目内合成制作。\n\n[b]中文字体[/b]\n汇文明朝体 · Huiwen-mincho\n原字体随游戏内置，无需安装。\n字体内版权标记：Public Domain。"
+	if OS.is_debug_build() and OS.has_feature("editor"):
+		var developer := VBoxContainer.new()
+		developer.name = "Developer"
+		developer.add_theme_constant_override("separation", 10)
+		content.add_child(developer)
+		developer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_pages.append(developer)
+		for entry: Array in [["camera_tuning", "相机调节"], ["free_camera", "自由视角"], ["models", "模型检查"], ["time", "昼夜预览"]]:
+			var button := _button(developer, entry[1])
+			button.name = entry[0]
+			_developer_buttons[entry[0]] = button
+			button.pressed.connect(func() -> void: developer_requested.emit(entry[0]))
 	_status = Label.new()
 	_status.name = "SettingsStatus"
-	_status.custom_minimum_size.y = 48
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status.add_theme_font_size_override("font_size", 17)
 	column.add_child(_status)
 	var actions := HBoxContainer.new()
 	column.add_child(actions)
-	_save = _button(actions, "保存设置")
-	_save.name = "SaveSettings"
-	_save.pressed.connect(func() -> void: save_requested.emit())
+	_retry = _button(actions, "重试保存")
+	_retry.name = "RetrySettings"
+	_retry.pressed.connect(func() -> void: save_requested.emit())
 	_close = _button(actions, "返回农场")
 	_close.name = "ReturnToFarm"
 	_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -176,7 +192,6 @@ func present(value: Dictionary, message: String = "") -> void:
 	_window.select(1 if value.fullscreen else 0)
 	_quality.select(QUALITY_VALUES.find(value.quality))
 	_resolution.select(RESOLUTION_VALUES.find(value.resolution))
-	refresh_resolution_info()
 	_refresh_dof()
 	_populating = false
 	set_status(message)
@@ -188,8 +203,11 @@ func present(value: Dictionary, message: String = "") -> void:
 
 func set_status(message: String, can_leave_unsaved: bool = false) -> void:
 	_status.text = message
+	_status.visible = not message.is_empty()
+	_retry.visible = can_leave_unsaved
 	_close.text = "暂不保存，返回" if can_leave_unsaved else "返回农场"
 	_quit.text = "仍然退出" if can_leave_unsaved else "退出游戏"
+	_refresh_focus_chain(_page_index)
 
 
 func dismiss() -> void:
@@ -197,13 +215,6 @@ func dismiss() -> void:
 	_quality.get_popup().hide()
 	_resolution.get_popup().hide()
 	hide()
-
-
-func refresh_resolution_info() -> void:
-	if _resolution_info == null: return
-	var output: Vector2i = get_window().size
-	var rendered := Vector2i(Vector2(output) * get_viewport().scaling_3d_scale)
-	_resolution_info.text = "界面输出 %d × %d  ·  3D 渲染 %d × %d" % [output.x, output.y, rendered.x, rendered.y]
 
 
 func _refresh_dof() -> void:
@@ -216,12 +227,13 @@ func _refresh_dof() -> void:
 func _change(key: String, value: Variant) -> void:
 	if _populating:
 		return
+	if _values.get(key) == value: return
 	_values[key] = value
-	set_status("设置已在本次游戏中生效，尚未保存。")
 	settings_changed.emit(_values.duplicate(true))
 
 
 func _show_page(index: int) -> void:
+	_page_index = index
 	_window.get_popup().hide()
 	_quality.get_popup().hide()
 	_resolution.get_popup().hide()
@@ -237,13 +249,9 @@ func _refresh_focus_chain(index: int) -> void:
 	var controls: Array[Control] = []
 	for tab: Button in _tabs:
 		controls.append(tab)
-	if index == 0:
-		for key: String in ["master", "music", "effects"]:
-			controls.append(_sliders[key])
-		controls.append_array([_window, _resolution, _quality, _dof, _wallpaper])
-	else:
-		controls.append(_pages[index])
-	controls.append_array([_save, _close, _quit])
+	_collect_focus(_pages[index], controls)
+	if _retry.visible: controls.append(_retry)
+	controls.append_array([_close, _quit])
 	for position: int in controls.size():
 		var control: Control = controls[position]
 		control.focus_mode = Control.FOCUS_ALL
@@ -287,3 +295,14 @@ func _button(parent: Control, title: String) -> Button:
 	FarmTheme.pointer_focus(button)
 	parent.add_child(button)
 	return button
+
+func _collect_focus(node: Node, controls: Array[Control]) -> void:
+	if node is BaseButton or node is Range or node is RichTextLabel:
+		controls.append(node)
+	for child: Node in node.get_children():
+		_collect_focus(child, controls)
+
+
+func show_free_view(active: bool) -> void:
+	if _developer_buttons.has("free_camera"):
+		_developer_buttons.free_camera.text = "退出自由视角" if active else "自由视角"

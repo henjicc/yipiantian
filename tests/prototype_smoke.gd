@@ -33,11 +33,13 @@ func _run() -> void:
 	await create_timer(0.9).timeout
 	_expect(camera.focused, "Camera enters focus mode")
 	await _capture("focus.png")
-	# The full view button goes through GUI hit testing and must not select a field behind it.
-	var button: Button = scene.get_node("HUD/Layout/ViewControls").get_child(0)
-	await _click(button.get_global_rect().get_center())
+	var wheel := InputEventMouseButton.new()
+	wheel.position = Vector2(8,400)
+	wheel.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	wheel.pressed = true
+	root.push_input(wheel,true)
 	await create_timer(0.9).timeout
-	_expect(scene.selected_field == -1 and not camera.focused, "GUI overview button clears field selection")
+	_expect(scene.selected_field == -1 and not camera.focused, "Backward wheel clears field selection")
 	_expect(camera.focus_point.is_equal_approx(initial_point) and camera.view.is_equal_approx(initial_view), "Overview pose restored")
 	# Moving between press and release must not turn a drag into a click.
 	await _send_button(screen_point, true)
@@ -80,7 +82,7 @@ func _run() -> void:
 	root.size = Vector2i(960, 600)
 	await create_timer(0.2).timeout
 	var viewport_rect := Rect2(Vector2.ZERO, root.get_visible_rect().size)
-	for control in scene.get_node("HUD/Layout/ViewControls").get_children():
+	for control in scene.get_node("HUD/Layout/FarmControls").get_children():
 		_expect(viewport_rect.encloses(control.get_global_rect()), "View controls remain inside a smaller window")
 	await _capture("compact.png")
 	for failure in failures:

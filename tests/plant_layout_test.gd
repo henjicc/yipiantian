@@ -41,7 +41,7 @@ func _run() -> void:
 	var identity: int=scene.get_instance_id()
 	var house: Node3D=environment.get_node("MainHouse")
 	var bird: Node3D=animals.birds[0].node
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	await choose_tool("lotus")
 	var builder: Node=scene.island_builder
 	expect(builder.tool=="lotus" and is_instance_valid(builder.plant_preview),"Plant catalog opens usable in-world tool")

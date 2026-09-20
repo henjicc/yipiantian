@@ -31,7 +31,7 @@ func _run() -> void:
 	animals.interaction.profiles=snapshot.animals.duplicate(true)
 	if OS.get_cmdline_user_args().has("--edges-only"):
 		await edges(animals);await finish();return
-	await click(scene.hud.get_node("Layout/BuildIsland"));await create_timer(1).timeout
+	await click(scene.hud.get_node("Layout/FarmControls/BuildIsland"));await create_timer(1).timeout
 	var builder: Node=scene.island_builder
 	await choose_tool("hen")
 	expect(builder.tool=="hen" and builder._rows.count.visible,"Hen catalog opens a working region editor")
