@@ -45,7 +45,7 @@
 | 实现或修改 I/O、后台任务的错误、恢复、日志或状态链路 | [`observability.md`](rules/observability.md) |
 | 实现输入校验、鉴权、敏感数据处理或有外部/破坏性副作用的操作 | [`security.md`](rules/security.md) |
 | 开始仓库改动、处理并行工作、提交或同步 | [`git-workflow.md`](rules/git-workflow.md) |
-| 决定验证范围、验证改动或交付运行结果 | [`testing.md`](rules/testing.md) |
+| 决定验证范围、验证改动、录制／渲染视频素材或交付运行结果 | [`testing.md`](rules/testing.md) |
 | 项目事实失效、稳定约束变化、发现可复用开发经验、规则冲突或维护规则 | [`rule-maintenance.md`](rules/rule-maintenance.md) |
 
 项目内技能位于 `.agents/skills/`。生成／替换三维资产、拆件动画、减面／LOD 破面排查，或检索／补拍这些资产的制作对比素材时，使用项目级 [farm-3d-asset-pipeline](.agents/skills/farm-3d-asset-pipeline/SKILL.md)；它路由到现有资产规范和素材记录。Godot 开发和 Blender 资产制作时按需使用对应技能。技能示例与社区资料不能替代官方版本核验，不覆盖当前项目规则或扩大任务范围；采用情况与限制见 [Godot 资料及工具](docs/godot-resources.md)。
