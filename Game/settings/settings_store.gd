@@ -8,7 +8,7 @@ const PENDING: String = "settings.pending.json"
 const DEFAULTS: Dictionary = {
 	"master": 0.8, "music": 0.7, "effects": 0.8,
 	"fullscreen": false, "quality": "standard", "dof_enabled": true,
-	"resolution": "native",
+	"resolution": "native", "sway_enabled": false, "sway_idle_seconds": 30.0,
 }
 var directory: String
 var _loaded: bool = false
@@ -94,7 +94,7 @@ func save(settings: Dictionary) -> Dictionary:
 
 
 static func valid_settings(value: Dictionary) -> bool:
-	if value.size() != DEFAULTS.size() + int(value.has("overview_mdeg")):
+	if value.size() != DEFAULTS.size() - 2 + int(value.has("sway_enabled")) + int(value.has("sway_idle_seconds")) + int(value.has("overview_mdeg")):
 		return false
 	# Absence means the player has not customized the overview yet.
 	if value.has("overview_mdeg"):
@@ -107,6 +107,11 @@ static func valid_settings(value: Dictionary) -> bool:
 		var volume: Variant = value.get(key)
 		if not (volume is float or volume is int) or not is_finite(float(volume)) or float(volume) < 0.0 or float(volume) > 1.0:
 			return false
+	var delay: Variant = value.get("sway_idle_seconds", DEFAULTS.sway_idle_seconds)
+	if not (delay is int or delay is float) or not is_finite(float(delay)) or float(delay) != floorf(float(delay)) or delay < 0 or delay > 600:
+		return false
+	if not value.get("sway_enabled", DEFAULTS.sway_enabled) is bool:
+		return false
 	return value.get("fullscreen") is bool and value.get("dof_enabled") is bool and value.get("quality") in ["standard", "low", "high"] and value.get("resolution") in ["native", "1080", "1440", "2160"]
 
 
@@ -137,7 +142,10 @@ func _read(filename: String) -> Dictionary:
 		return {"kind": "unsupported", "hash": hash_value}
 	if data.size() != 2 or not data.get("settings") is Dictionary or not valid_settings(data.settings):
 		return {"kind": "corrupt", "hash": hash_value}
-	return {"kind": "valid", "settings": data.settings, "hash": hash_value}
+	# Unset optional preferences use defaults without rewriting the file.
+	var settings: Dictionary = DEFAULTS.duplicate(true)
+	settings.merge(data.settings, true)
+	return {"kind": "valid", "settings": settings, "hash": hash_value}
 
 
 func _safe_paths() -> bool:

@@ -19,6 +19,8 @@ var _volume_labels: Dictionary = {}
 var _window: OptionButton
 var _quality: OptionButton
 var _resolution: OptionButton
+var _sway: Button
+var _sway_delay: SpinBox
 var _dof: Button
 var _status: Label
 var _close: Button
@@ -145,6 +147,28 @@ func _ready() -> void:
 	_dof.toggled.connect(func(enabled: bool) -> void:
 		_change("dof_enabled", enabled)
 		_refresh_dof())
+	_sway = _button(_row(display, "轻微晃动"), "已关闭")
+	_sway.name = "CameraSway"
+	_sway.toggle_mode = true
+	_sway.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_sway.toggled.connect(func(enabled: bool) -> void:
+		_change("sway_enabled", enabled)
+		_refresh_sway())
+	_sway_delay = SpinBox.new()
+	_sway_delay.name = "SwayIdleSeconds"
+	_sway_delay.min_value = 0
+	_sway_delay.max_value = 600
+	_sway_delay.step = 1
+	_sway_delay.suffix = "秒"
+	var delay_edit: LineEdit = _sway_delay.get_line_edit()
+	delay_edit.add_theme_stylebox_override("normal", FarmTheme.framed_paper())
+	delay_edit.add_theme_stylebox_override("read_only", FarmTheme.framed_paper())
+	delay_edit.add_theme_color_override("font_color", FarmTheme.INK)
+	delay_edit.add_theme_color_override("font_uneditable_color", FarmTheme.INK.lightened(.3))
+	_sway_delay.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_sway_delay.custom_minimum_size.y = 42
+	_row(display, "空闲后晃动").add_child(_sway_delay)
+	_sway_delay.value_changed.connect(func(value: float) -> void: _change("sway_idle_seconds", roundi(value)))
 	_wallpaper = _button(_row(display, "桌面"), "设为桌面壁纸")
 	_wallpaper.name = "DesktopWallpaper"
 	_wallpaper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -207,6 +231,8 @@ func present(value: Dictionary, message: String = "") -> void:
 	_quality.select(QUALITY_VALUES.find(value.quality))
 	_resolution.select(RESOLUTION_VALUES.find(value.resolution))
 	_refresh_dof()
+	_refresh_sway()
+	_sway_delay.set_value_no_signal(value.sway_idle_seconds)
 	_populating = false
 	set_status(message)
 	_show_page(0)
@@ -230,6 +256,12 @@ func dismiss() -> void:
 	_quality.get_popup().hide()
 	_resolution.get_popup().hide()
 	hide()
+
+
+func _refresh_sway() -> void:
+	_sway.set_pressed_no_signal(_values.sway_enabled)
+	_sway.text = "已开启" if _values.sway_enabled else "已关闭"
+	_sway_delay.editable = _values.sway_enabled
 
 
 func _refresh_dof() -> void:

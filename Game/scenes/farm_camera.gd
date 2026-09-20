@@ -45,6 +45,47 @@ var _free_return_view: Vector3
 var neighbor_view: bool = false
 var _neighbor_return_point: Vector3
 var _neighbor_return_view: Vector3
+var sway_enabled: bool = false
+var sway_idle_seconds: float = 30.0
+var _idle_seconds: float = 0.0
+var _activity_since_frame: bool = false
+var _sway_time: float = 0.0
+var _sway_weight: float = 0.0
+var _sway_phase := Vector3(randf() * TAU, randf() * TAU, randf() * TAU)
+
+
+func configure_sway(enabled: bool, idle_seconds: float) -> void:
+	sway_enabled = enabled
+	sway_idle_seconds = idle_seconds
+	note_activity()
+
+
+func note_activity() -> void:
+	_idle_seconds = 0.0
+	_activity_since_frame = true
+
+
+func observe_input(event: InputEvent) -> void:
+	if event is InputEventMouse or event is InputEventKey or event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > 0.15):
+		note_activity()
+
+
+func _advance_sway(delta: float) -> void:
+	var allowed: bool = sway_enabled and not _activity_since_frame and free_input_enabled and not free_view and not construction_framing and not _decoration_framing and not neighbor_view and not is_transitioning()
+	if Input.get_mouse_button_mask() != 0:
+		allowed = false
+	if allowed:
+		_idle_seconds += delta
+	else:
+		_idle_seconds = 0.0
+	_activity_since_frame = false
+	var active: bool = allowed and _idle_seconds >= sway_idle_seconds
+	_sway_weight = lerpf(_sway_weight, 1.0 if active else 0.0, 1.0 - exp(-delta * (0.65 if active else 5.0)))
+	_sway_time += delta
+	# Camera-plane offsets never enter the saved orbit, focus target or zoom spring.
+	# Incommensurate slow waves with random phases give a bounded, soft drift.
+	h_offset = _sway_weight * 0.035 * (sin(_sway_time * 0.31 + _sway_phase.x) * 0.7 + sin(_sway_time * 0.53 + _sway_phase.z) * 0.3)
+	v_offset = _sway_weight * 0.022 * (sin(_sway_time * 0.27 + _sway_phase.y) * 0.7 + sin(_sway_time * 0.43 + _sway_phase.x) * 0.3)
 
 func view_neighbor(point: Vector3, angles: Vector3) -> void:
 	if not neighbor_view:
@@ -79,6 +120,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_advance_zoom(delta)
+	_advance_sway(delta)
 	if free_view:
 		if free_input_enabled and get_window().has_focus():
 			var direction := Vector3(float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A)), float(Input.is_physical_key_pressed(KEY_E)) - float(Input.is_physical_key_pressed(KEY_Q)), float(Input.is_physical_key_pressed(KEY_S)) - float(Input.is_physical_key_pressed(KEY_W)))
@@ -305,6 +347,7 @@ func set_decoration_framing(active: bool) -> void:
 
 
 func zoom(amount: float) -> void:
+	note_activity()
 	var target: float = _destination_view.z if is_transitioning() else view.z
 	if not is_transitioning():
 		_destination_point = focus_point
@@ -317,7 +360,8 @@ func zoom(amount: float) -> void:
 
 
 func drag(relative: Vector2, pan: bool) -> void:
-	_stop_transition()
+	note_activity()
+	_stop_transition(true)
 	if pan:
 		var right := Vector3(cos(deg_to_rad(view.x)), 0.0, -sin(deg_to_rad(view.x)))
 		var forward := Vector3(sin(deg_to_rad(view.x)), 0.0, cos(deg_to_rad(view.x)))
@@ -332,6 +376,8 @@ func drag(relative: Vector2, pan: bool) -> void:
 	else:
 		view.x = clampf(view.x - relative.x * 0.18, MIN_YAW, MAX_YAW)
 		view.y = clampf(view.y + relative.y * 0.18, 50.0 if construction_framing else 32.0 if focused else 10.0, 78.0 if construction_framing else 54.0 if focused else 40.0)
+	_destination_point = focus_point
+	_destination_view = Vector3(view.x, view.y, _zoom_target if _zoom_active else view.z)
 	_apply_pose()
 	if not pan and not focused and not free_view and not neighbor_view and not construction_framing and not _decoration_framing:
 		overview_view.x = view.x
@@ -345,6 +391,7 @@ func is_transitioning() -> bool:
 
 
 func _move_to(point: Vector3, target_view: Vector3) -> void:
+	note_activity()
 	_stop_transition()
 	_destination_point = point
 	_destination_view = target_view
@@ -365,13 +412,14 @@ func _notify_motion_finished() -> void:
 		motion_finished.emit()
 
 
-func _stop_transition() -> void:
+func _stop_transition(preserve_zoom: bool = false) -> void:
 	if _transition and _transition.is_valid():
 		_transition.kill()
 	if _distance_transition and _distance_transition.is_valid():
 		_distance_transition.kill()
-	_zoom_active = false
-	_zoom_velocity = 0.0
+	if not preserve_zoom:
+		_zoom_active = false
+		_zoom_velocity = 0.0
 
 
 func _apply_pose() -> void:

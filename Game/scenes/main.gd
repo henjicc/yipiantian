@@ -1161,6 +1161,7 @@ func _refresh_lanterns() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	camera.observe_input(event)
 	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
 	if island_builder!=null and island_builder.active:
 		island_builder.observe(event);return
@@ -1722,6 +1723,8 @@ func _setup_settings() -> void:
 
 
 func _apply_settings(previous: Dictionary = {}) -> void:
+	if previous.get("sway_enabled") != settings_values.sway_enabled or previous.get("sway_idle_seconds") != settings_values.sway_idle_seconds:
+		camera.configure_sway(settings_values.sway_enabled, settings_values.sway_idle_seconds)
 	if previous.get("master") != settings_values.master or previous.get("music") != settings_values.music or previous.get("effects") != settings_values.effects:
 		farm_audio.set_volumes(settings_values.master, settings_values.music, settings_values.effects)
 	if previous.get("quality") != settings_values.quality:

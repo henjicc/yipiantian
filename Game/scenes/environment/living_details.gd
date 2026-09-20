@@ -248,17 +248,18 @@ func _build_windows() -> void:
 func _build_path_lanterns() -> void:
 	for id: String in ["PathLanternWest", "PathLanternFront", "PathLanternEast"]:
 		var group: Node3D = _group(id)
-		_beam(group, Vector3.ZERO, Vector3(0,2.85,0), .055, _wood)
-		_beam(group, Vector3(-.12,2.85,0), Vector3(.58,2.85,0), .04, _wood)
-		_beam(group, Vector3(0,2.42,0), Vector3(.46,2.85,0), .025, _wood)
-		_beam(group, Vector3(.48,2.85,0), Vector3(.48,2.68,0), .009, _rope)
-		var lantern: Node3D = Assets.place(group, "lantern", Vector3(.48,2.11,0))
-		for mesh: MeshInstance3D in lantern.find_children("*", "MeshInstance3D", true, false):
-			_lantern_meshes.append(mesh)
-			# The opaque paper proxy must not shadow the bulb enclosed inside it.
-			mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if id != "PathLanternFront":
+			_beam(group, Vector3.ZERO, Vector3(0,2.85,0), .055, _wood)
+			_beam(group, Vector3(-.12,2.85,0), Vector3(.58,2.85,0), .04, _wood)
+			_beam(group, Vector3(0,2.42,0), Vector3(.46,2.85,0), .025, _wood)
+			_beam(group, Vector3(.48,2.85,0), Vector3(.48,2.68,0), .009, _rope)
+			var lantern: Node3D = Assets.place(group, "lantern", Vector3(.48,2.11,0))
+			for mesh: MeshInstance3D in lantern.find_children("*", "MeshInstance3D", true, false):
+				_lantern_meshes.append(mesh)
+				# The opaque paper proxy must not shadow the bulb enclosed inside it.
+				mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var light := OmniLight3D.new()
-		light.name = "PathLanternLight"
+		light.name = "GardenFillLight" if id == "PathLanternFront" else "PathLanternLight"
 		light.position = Vector3(.48,2.38,0)
 		light.light_color = Color("ffe0ae")
 		light.omni_range = 5.6
@@ -303,7 +304,7 @@ func set_night_weight(amount: float) -> void:
 
 func set_lamp_shadows(enabled: bool) -> void:
 	for light: OmniLight3D in _lantern_lights:
-		if light.name == "PathLanternLight": light.shadow_enabled = enabled
+		if light.name in ["PathLanternLight", "GardenFillLight"]: light.shadow_enabled = enabled
 
 
 ## Yard set dressing. Layout and animal navigation consume these actual meshes;

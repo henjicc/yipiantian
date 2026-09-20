@@ -33,7 +33,7 @@ func _run() -> void:
 	_expect(not focus.draw_center, "Keyboard focus leaves selected pigment visible")
 	_expect(menu._tabs[0].get_theme_color("font_pressed_color") == preload("res://ui/ui_tokens.gd").INK, "Selected text retains dark readable ink")
 	_expect(menu._tabs[0].get_theme_color("font_hover_pressed_color") == preload("res://ui/ui_tokens.gd").INK, "Hovered selected text cannot fall back to white")
-	menu._quit.grab_focus()
+	menu._close.grab_focus()
 	var tab_event := InputEventKey.new()
 	tab_event.keycode = KEY_TAB
 	tab_event.pressed = true
@@ -57,6 +57,10 @@ func _run() -> void:
 	_expect("低画质暂不启用" in menu._dof.text, "Temporary quality effect is described accurately")
 	menu._dof.button_pressed = false
 	_expect(not emitted.dof_enabled, "DOF toggle changes only its preference")
+	menu._sway.button_pressed = true
+	_expect(emitted.sway_enabled and menu._sway_delay.editable, "Sway toggle enables idle delay")
+	menu._sway_delay.value = 75
+	_expect(emitted.sway_idle_seconds == 75, "Custom idle duration is emitted")
 	menu._show_page(2)
 	_expect(menu._pages[2].visible and not menu._pages[0].visible, "Controls page replaces settings inside one modal")
 	menu._show_page(3)
