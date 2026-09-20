@@ -15,7 +15,7 @@ func _run() -> void:
 	root.size = Vector2i(1600,900)
 	var scene: Node3D = load("res://scenes/main.tscn").instantiate()
 	scene.store = load("res://farm/farm_store.gd").new(output.path_join("farm"))
-	scene.settings_store = load("res://settings/settings_store.gd").new(output.path_join("preferences"))
+	scene.settings_store = load("res://settings/settings_store.gd").new(output.path_join("preferences-%d" % Time.get_ticks_usec()))
 	root.add_child(scene)
 	await create_timer(1).timeout
 	var camera: FarmCamera = scene.camera
@@ -26,10 +26,16 @@ func _run() -> void:
 	for frame: int in 119: camera._process(1.0/60.0)
 	expect(camera.h_offset == 0 and camera.v_offset == 0, "No sway before idle deadline")
 	var largest: float = 0
+	var projected_min := camera.unproject_position(original_point)
+	var projected_max := projected_min
 	for frame: int in 1200:
 		camera._process(1.0/60.0)
 		largest = maxf(largest, Vector2(camera.h_offset,camera.v_offset).length())
-	expect(largest > .01 and largest < .042, "Idle motion exists and stays subtle")
+		var projected := camera.unproject_position(original_point)
+		projected_min = projected_min.min(projected)
+		projected_max = projected_max.max(projected)
+	expect(largest > .04 and largest < .16, "Idle motion exists and stays subtle")
+	expect(projected_max.distance_to(projected_min) > 4.0 and projected_max.distance_to(projected_min) < 22.0, "Sway visibly moves the rendered framing by a few pixels")
 	expect(camera.view == original_view and camera.focus_point == original_point, "Sway does not contaminate remembered framing")
 	var before := Vector2(camera.h_offset,camera.v_offset)
 	var wheel := InputEventMouseButton.new()
@@ -43,11 +49,24 @@ func _run() -> void:
 	for frame: int in 110: camera._process(1.0/60.0)
 	expect(camera.focus_point == panned and camera.view.z < original_view.z - 1.9, "Pan preserves wheel distance and its own target")
 	expect(Vector2(camera.h_offset,camera.v_offset).length() < .0001, "Interaction fades sway away")
-	camera.configure_sway(true,0)
+	scene._open_menu()
+	scene.game_menu._sway.button_pressed = true
+	scene.game_menu._sway_delay.value = 0
+	expect(camera.sway_enabled and camera.sway_idle_seconds == 0, "Actual settings controls apply zero-delay sway")
 	for frame: int in 600: camera._process(1.0/60.0)
+	var hover_motion: float = 0
+	for frame: int in 600:
+		var hover := InputEventMouseMotion.new()
+		hover.relative = Vector2(1,0)
+		root.push_input(hover)
+		camera._process(1.0/60.0)
+		hover_motion = maxf(hover_motion, Vector2(camera.h_offset,camera.v_offset).length())
+	expect(hover_motion > .02, "Hovering and open settings do not suppress idle sway")
+	scene._request_menu_close()
 	for frame: int in 120:
 		var motion := InputEventMouseMotion.new()
 		motion.relative = Vector2(1,0)
+		motion.button_mask = MOUSE_BUTTON_MASK_MIDDLE
 		root.push_input(motion)
 		camera._process(1.0/60.0)
 	expect(Vector2(camera.h_offset,camera.v_offset).length()<.0001, "Zero delay still respects continuous activity")

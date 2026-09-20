@@ -66,12 +66,18 @@ func note_activity() -> void:
 
 
 func observe_input(event: InputEvent) -> void:
-	if event is InputEventMouse or event is InputEventKey or event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > 0.15):
+	# Hovering is observation, not an operation. Dragging and deliberate input
+	# restart the idle timer even when the UI consumes the event afterwards.
+	if event is InputEventMouseMotion:
+		if event.button_mask != 0:
+			note_activity()
+		return
+	if event is InputEventMouseButton or event is InputEventKey or event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf(event.axis_value) > 0.15):
 		note_activity()
 
 
 func _advance_sway(delta: float) -> void:
-	var allowed: bool = sway_enabled and not _activity_since_frame and free_input_enabled and not free_view and not construction_framing and not _decoration_framing and not neighbor_view and not is_transitioning()
+	var allowed: bool = sway_enabled and not _activity_since_frame and not free_view and not construction_framing and not _decoration_framing and not neighbor_view and not is_transitioning()
 	if Input.get_mouse_button_mask() != 0:
 		allowed = false
 	if allowed:
@@ -83,9 +89,10 @@ func _advance_sway(delta: float) -> void:
 	_sway_weight = lerpf(_sway_weight, 1.0 if active else 0.0, 1.0 - exp(-delta * (0.65 if active else 5.0)))
 	_sway_time += delta
 	# Camera-plane offsets never enter the saved orbit, focus target or zoom spring.
-	# Incommensurate slow waves with random phases give a bounded, soft drift.
-	h_offset = _sway_weight * 0.035 * (sin(_sway_time * 0.31 + _sway_phase.x) * 0.7 + sin(_sway_time * 0.53 + _sway_phase.z) * 0.3)
-	v_offset = _sway_weight * 0.022 * (sin(_sway_time * 0.27 + _sway_phase.y) * 0.7 + sin(_sway_time * 0.43 + _sway_phase.x) * 0.3)
+	# Scale with viewing distance so overview and close-up have a similar small
+	# screen-space drift. Random phases keep the slow waves from moving in lockstep.
+	h_offset = _sway_weight * view.z * 0.005 * (sin(_sway_time * 0.31 + _sway_phase.x) * 0.7 + sin(_sway_time * 0.53 + _sway_phase.z) * 0.3)
+	v_offset = _sway_weight * view.z * 0.003 * (sin(_sway_time * 0.27 + _sway_phase.y) * 0.7 + sin(_sway_time * 0.43 + _sway_phase.x) * 0.3)
 
 func view_neighbor(point: Vector3, angles: Vector3) -> void:
 	if not neighbor_view:
