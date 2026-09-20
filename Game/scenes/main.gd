@@ -1237,11 +1237,6 @@ func _input(event: InputEvent) -> void:
 				decoration_layout.cancel_preview()
 			get_viewport().set_input_as_handled()
 		return
-	if selected_tool == "sow" and event is InputEventMouseButton and event.pressed and not event.canceled and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN] and not hud.is_time_preview_open():
-		var ids: Array[String] = Crops.seeds(selected_field==TrellisCrops.INDEX)
-		_select_crop(ids[posmod(ids.find(selected_crop) + (1 if event.button_index == MOUSE_BUTTON_WHEEL_DOWN else -1), ids.size())])
-		get_viewport().set_input_as_handled()
-		return
 	# Cancellation sees even GUI-consumed releases; world gestures start only in unhandled input.
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		_cancel_or_return()
@@ -1583,17 +1578,19 @@ func _field_menu_action(tool: String, crop: String) -> void:
 	var target: Dictionary = _menu_target
 	_menu_target = {}
 	if not _tools_available(): return
-	if not crop.is_empty(): selected_crop = crop
+	# Every crop picker equips the same carried seed; only a later soil click sows.
+	if tool == "sow":
+		_select_crop(crop)
+		return
 	if target.is_empty():
-		if tool == "sow": _select_crop(crop)
-		else: _select_tool(tool)
+		_select_tool(tool)
 		return
 	if not camera.focused or target.field != selected_field: return
 	selected_field = target.field
 	selected_cell = target.cell
 	selected_tool = tool
 	_apply_tool()
-	# A soil-menu action is one-shot; a prop equips a tool for repeated use.
+	# Non-planting soil actions remain one-shot.
 	_cancel_tool()
 
 

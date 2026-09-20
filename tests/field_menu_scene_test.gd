@@ -63,13 +63,26 @@ func run() -> void:
 	while scene.camera.is_transitioning(): await process_frame
 	scene._focus_field(1)
 	while scene.camera.is_transitioning(): await process_frame
+	scene._select_crop("radish")
 	await mouse(Vector2(8,400), true, MOUSE_BUTTON_WHEEL_DOWN)
 	while scene.camera.is_transitioning(): await process_frame
 	await process_frame
 	check(not scene.camera.focused and scene.selected_field == -1, "Backward wheel exits chained field focus")
 	check(scene.camera.global_transform.is_equal_approx(original_pose), "Backward wheel restores pre-focus pose, not previous field or default overview")
+	check(scene.selected_crop == "radish" and actions == 0, "Focused backward wheel returns the camera without cycling crops or planting")
 	scene.camera.reset_view()
 	while scene.camera.is_transitioning(): await process_frame
+	scene._select_crop("radish")
+	for wheel: int in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		var distance: float = scene.camera.view.z
+		await mouse(Vector2(8,400), true, wheel)
+		await create_timer(.5).timeout
+		while scene.camera.is_transitioning(): await process_frame
+		check(scene.selected_tool == "sow" and scene.selected_crop == "radish" and actions == 0, "Overview wheel retains carried seeds without applying them")
+		check(scene.camera.view.z < distance if wheel == MOUSE_BUTTON_WHEEL_UP else scene.camera.view.z > distance, "Both overview wheel directions control zoom while carrying seeds")
+	scene._cancel_tool()
+	# Removing the carried-seed cancel button relayouts this centered toolbar.
+	await process_frame; await process_frame
 	await click(build.get_global_rect().get_center())
 	check(scene.island_builder.active, "Construction entry opens combined building tools")
 	await click(scene.island_builder.choices.categories.objects.get_global_rect().get_center())
@@ -108,10 +121,18 @@ func run() -> void:
 				covered = covered or Geometry2D.is_point_in_polygon(sample, entry.polygon)
 		check(covered, "Crop ring boundaries have no open angular gap")
 	await click(petal("radish"))
-	check(actions==1 and scene.farm_state.get_cell(scene.farm.field_id(0),"cell_01").crop_id=="radish","Selected seed commits once to captured cell")
-	check(scene.selected_tool.is_empty(),"Menu is one-shot")
-	await click(point(0,"cell_01")); await click(petal("water"))
-	check(actions==2 and scene.farm_state.get_cell(scene.farm.field_id(0),"cell_01").watered,"Water reaches captured cell")
+	check(actions==0 and scene.farm_state.get_cell(scene.farm.field_id(0),"cell_01").crop_id.is_empty(),"Radial seed selection never plants at the captured cell")
+	check(scene.selected_tool=="sow" and scene.selected_crop=="radish","Radial picker equips seeds just like the bottom picker")
+	await mouse(Vector2(8,400), true, MOUSE_BUTTON_WHEEL_UP)
+	await create_timer(.5).timeout
+	while scene.camera.is_transitioning(): await process_frame
+	check(scene.selected_crop=="radish" and scene.selected_tool=="sow" and actions==0,"Focused forward wheel keeps the chosen crop and never plants")
+	await click(point(0,"cell_02"))
+	check(actions==1 and scene.farm_state.get_cell(scene.farm.field_id(0),"cell_02").crop_id=="radish","Only a fresh soil click plants at the newly chosen cell")
+	check(scene.selected_tool=="sow" and scene.farm_state.get_cell(scene.farm.field_id(0),"cell_01").crop_id.is_empty(),"Seeds remain equipped and the original menu cell stays empty")
+	scene._cancel_tool()
+	await click(point(0,"cell_02")); await click(petal("water"))
+	check(actions==2 and scene.farm_state.get_cell(scene.farm.field_id(0),"cell_02").watered,"Water remains a one-shot captured-cell action")
 	await click(point(0,"cell_02"))
 	await click(Vector2(8,400))
 	check(not scene.field_menu.active and actions==2,"Outside click cancels without falling through")

@@ -1,5 +1,5 @@
 extends CanvasLayer
-## Presentation only: the caller owns the captured cell and commits each action.
+## Presentation only: the caller equips seeds or applies an action to the captured cell.
 signal action_requested(tool: String, crop: String)
 
 const Crops = preload("res://farm/crop_catalog.gd")
