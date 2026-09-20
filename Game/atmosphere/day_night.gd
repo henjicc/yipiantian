@@ -117,8 +117,10 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	_world.environment.glow_hdr_threshold = 1.35
 	_world.environment.fog_enabled = true
 	_world.environment.fog_mode = Environment.FOG_MODE_DEPTH
-	_world.environment.fog_depth_begin = 48.0
-	_world.environment.fog_depth_end = 135.0
+	# World-space lake haze handles the inhabited islands and headlands.
+	# Depth fog only hides the far clip, rather than washing those shores twice.
+	_world.environment.fog_depth_begin = 160.0
+	_world.environment.fog_depth_end = 400.0
 	_world.environment.fog_depth_curve = 1.5
 	_world.environment.fog_density = 0.33
 	_world.environment.fog_sky_affect = 0.0
@@ -165,6 +167,8 @@ func set_lantern_anchors(anchors: Array[Node3D]) -> void:
 
 func set_backdrop_material(material: ShaderMaterial) -> void:
 	_backdrop_material = material
+	_world.environment.sky.sky_material = material
+	_world.environment.background_mode = Environment.BG_SKY
 	_apply_backdrop()
 
 
@@ -297,12 +301,16 @@ func _apply_lanterns() -> void:
 
 func _apply_backdrop() -> void:
 	if _water_material != null:
+		_water_material.set_shader_parameter("sky_top", _backdrop_values.sky_top)
+		_water_material.set_shader_parameter("sky_horizon", _backdrop_values.sky_horizon)
 		_water_material.set_shader_parameter("reflection_tint", Color.WHITE.lerp(Color("7086a0"), maxf(_night_weight, 0.0)))
 	if _backdrop_material != null:
 		_backdrop_material.set_shader_parameter("atmosphere_tint", _backdrop_values.backdrop_tint)
 		_backdrop_material.set_shader_parameter("sky_top", _backdrop_values.sky_top)
 		_backdrop_material.set_shader_parameter("sky_horizon", _backdrop_values.sky_horizon)
-		_backdrop_material.set_shader_parameter("lake_horizon", _backdrop_values.water_color)
+		_backdrop_material.set_shader_parameter("ground_horizon", _backdrop_values.ground_horizon)
+		_backdrop_material.set_shader_parameter("ground_bottom", _backdrop_values.ground_bottom)
+		_backdrop_material.set_shader_parameter("cloud_offset", Time.get_ticks_msec()*0.000002)
 
 
 func _exit_tree() -> void:

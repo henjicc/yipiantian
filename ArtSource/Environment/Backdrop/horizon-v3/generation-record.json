@@ -1,0 +1,45 @@
+{
+  "date": "2026-09-21",
+  "style_references": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+  ],
+  "assets": [
+    {
+      "name": "west-shoulder",
+      "prompt": "Use case: stylized-concept. Create one isolated distant Jiangnan mountain ridge asset for a painterly 3D farming game. Input 1 is approved material style: selective fine moss/tea-grey contours, layered pale colour washes, broad matte forms. Input 2 is approved world mood only; do NOT reproduce its village, farm, UI, clouds or composition. Subject: one long asymmetric low blue-green ridge, a rounded high shoulder on the LEFT, three smaller descending saddles toward the right, connected naturally, quiet southern Chinese wooded hills, not karst needles or snowy Alps. Front elevation from across a lake, no visible overhead ground plane. Pale slate/celadon pigment, subtle readable rock folds and clustered tree brush shapes, gentle neutral diffuse illumination without baked sunset. This is an independent far-mountain silhouette for angular sky compositing; not a complete landscape. COMPLETE silhouette and base inside frame, hills taper down to low ends with transparent margin on all four sides. Wide 3:1 canvas. TRUE RGBA transparent background including the sky and all space outside the mountain. No white or beige paper rectangle, no checkerboard, no water, reflections, fog clouds, village, pagoda, text, frame or contact shadow. The lower foothill contour should remain solid, alpha only soft at silhouette edge, do not wash the whole asset out.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-2a8f5b56-c042-4dff-bb18-b08569d2ed27.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "tool": "built-in image_gen",
+      "model": null,
+      "seed": null,
+      "cost": null,
+      "source_file": "west-shoulder.png",
+      "runtime_file": "Game/art/environment/backdrop/horizon-v3/west-shoulder.png",
+      "sha256": "CBA1B9CBD83F31CB81217CAD085E74C030211DFF97DCE6EBEB69262B9DD9FEEF"
+    },
+    {
+      "name": "east-twin-peaks",
+      "prompt": "Use case: stylized-concept. Create one isolated distant Jiangnan mountain ridge asset for a painterly 3D farming game. Input 1 is approved material style: selective fine moss/tea-grey contours, layered pale colour washes, broad matte forms. Input 2 is approved world mood only; do NOT reproduce its village, farm, UI, clouds or composition. Subject: one asymmetric range with TWO rounded blue-grey summits on the RIGHT separated by a deep gently curved saddle, long low foothills descending to the LEFT; distinct calm broad undulating silhouette, connected naturally, quiet southern Chinese wooded hills, not karst needles or snowy Alps. Front elevation from across a lake, no visible overhead ground plane. Pale cool slate blue / grey celadon pigment, subtle readable rock folds and clustered tree brush shapes, gentle neutral diffuse illumination without baked sunset. This is an independent far-mountain silhouette for angular sky compositing; not a complete landscape. COMPLETE silhouette and base inside frame, hills taper down to low ends with transparent margin on all four sides. Wide 3:1 canvas. TRUE RGBA transparent background including the sky and all space outside the mountain. No white or beige paper rectangle, no checkerboard, no water, reflections, fog clouds, village, pagoda, text, frame or contact shadow. The lower foothill contour should remain solid, alpha only soft at silhouette edge, do not wash the whole asset out.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-634c0791-4229-4c1b-b5ba-33c07d828a93.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "tool": "built-in image_gen",
+      "model": null,
+      "seed": null,
+      "cost": null,
+      "source_file": "east-twin-peaks.png",
+      "runtime_file": "Game/art/environment/backdrop/horizon-v3/east-twin-peaks.png",
+      "sha256": "700EB36D4FA6DDDF972B8DC0BB4A9C2A95F3DD7EC17E71CE970783CF0A5BEA15"
+    },
+    {
+      "name": "low-rolling-hills",
+      "prompt": "Use case: stylized-concept. Create one isolated distant Jiangnan mountain ridge asset for a painterly 3D farming game. Input 1 is approved material style: selective fine moss/tea-grey contours, layered pale colour washes, broad matte forms. Input 2 is approved world mood only; do NOT reproduce its village, farm, UI, clouds or composition. Subject: one very LOW broad chain of six gently rounded wooded foothills, the highest soft dome just off center, long undulating shoulders, much wider than tall, connected naturally, quiet southern Chinese wooded hills, not karst needles or snowy Alps. Front elevation from across a lake, no visible overhead ground plane. Pale slate/celadon pigment, mostly wooded soft contours with sparse muted grey rock folds and small clustered tree brush shapes, gentle neutral diffuse illumination without baked sunset. This is an independent far-mountain silhouette for angular sky compositing; not a complete landscape. COMPLETE silhouette and base inside frame, hills taper down to low ends with transparent margin on all four sides. Wide 3:1 canvas. TRUE RGBA transparent background including the sky and all space outside the mountain. No white or beige paper rectangle, no checkerboard, no water, reflections, fog clouds, village, pagoda, text, frame or contact shadow. The lower foothill contour should remain solid, alpha only soft at silhouette edge, do not wash the whole asset out.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-735a1bf8-2ba9-4d2e-91ab-0df85df40d6e.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link.",
+      "tool": "built-in image_gen",
+      "model": null,
+      "seed": null,
+      "cost": null,
+      "source_file": "low-rolling-hills.png",
+      "runtime_file": "Game/art/environment/backdrop/horizon-v3/low-rolling-hills.png",
+      "sha256": "68148BBE1E7EC3D847F0F6A9A9F7DB781B99EA437198852D2C2EE6E0C3542432"
+    }
+  ]
+}

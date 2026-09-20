@@ -4,6 +4,8 @@
 
 ## 来源与分工
 
+- 2026-09-21 [方向天空与真实山岸](Backdrop/README.md)：三张新生成原生透明山图用于无限远天空，四段参数化三维岸坡承接既有岛群与同一湖面；取代倾斜的 2.5D 山卡舞台。图片生成、真实几何与共享雾各自职责、提示词、实景验证入口见该记录，本轮没有新增 Tripo 调用。
+
 - 2026-09-18 [远景岛群、水生植物与景深](Archipelago/README.md)：五种新岛及芦苇、香蒲、菱叶共八张独立参考／八个模型，480积分。十座邻居岛统一世界尺度，以三维位置产生透视；沿真实岸线分簇水草、补岛间浮叶，修复水面过早渐隐与远景虚化过渡过长。
 
 - 2026-09-18 [水乡邻居岛](Islets/README.md)：三张独立参考生成三种完整农家岛（180积分），Blender整理高低档，在左右及远层布置五处真实三维院落。[圆润岸坡](Banks/README.md)重建主岛与桥头右岸；[透明远景第二版](Backdrop/README.md)使用三张不同山岸轮廓，各只出现一次。旧模型与背景属于历史源，现役重建以这三个入口为准。
@@ -27,8 +29,8 @@
 - `get_decoration_slots()` 返回8槽 `id,type,transform,allowed_turns,radius`；`get_slot_marker(id)` 返回实际 Marker3D。坐标唯一真相在本场景，3.3存槽ID及quarter_turn，不另存坐标。
 - 地面 `ground_01..04` 半径 .45m，允许0/90/180/270°；悬挂 `hanging_01..04` 固定0°，顶环归零、灯体向下 .65m，实体杆/绳接点。
 - `get_decoration_scene(item_id,low_detail)` 返回 PackedScene；陶罐玩法ID `pot` 映射资源 `jar`；另有 `flowerpot,lantern`。
-- `get_water_surface()` 返回 `WaterSurface`，180×180m XZ水平平面、法线上+Y、y=-.25；静态水shader径向22..35m淡出。3.4必须接管 `material_override`，不能被起始材质盖住。
-- `get_backdrop_material()` 返回 ShaderMaterial，`atmosphere_tint` 默认白，3.4用它改变夜间远景；不使用全时白天的固定未着色背景。
+- `get_water_surface()` 返回 `WaterSurface`，2000×2000m XZ水平平面、法线上+Y、y=-.25；昼夜控制器接管 `material_override`，与真实山岸共用水位，远处渐入地平线雾色。
+- `get_backdrop_material()` 返回方向天空 ShaderMaterial，昼夜控制器将其接入 Environment 的 Sky，并同步天空、远山与水面颜色；不使用全时白天的固定未着色背景。
 - `get_asset_keys()` / `set_asset_detail(key,low_detail)` / `set_low_detail_enabled(bool)` 可独立控制复杂对象，高低来自同一网格与颜色贴图。简单测量模块共用单档，保留Godot导入自动LOD。
 - 六田仍为两排三列、中心 `(-3.3+col*3.25,.2,row*2.8)`；96格土面、渐低土畦及交互由 `farm_layout.gd` 管理，环境不再叠加木田框。`ground_cover.gd` 生成一张合并的短草网格及仅投射到岛顶的根部土色贴花，不持有作物状态。
 - 西侧旧入口棚与葫芦架不再实例化；`climbing_trellis.glb` 为4.64米四段竹架，局部长轴X旋转90°后沿西侧栏杆布置。连续土床仅预留后续攀爬作物；`hanging_03` 保留稳定ID，坐标由场景统一移到朝院内的挂臂。

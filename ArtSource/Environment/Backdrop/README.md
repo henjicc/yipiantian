@@ -1,6 +1,18 @@
 # 远山与河岸背景
 
-## 现役 layers-v2：20260918 去重复与岛村层次
+## 现役 horizon-v3：20260921 方向天空与真实山岸
+
+背景改为 Godot `Sky` 方向投影：三张独立透明山图分别覆盖不同方位，每种只使用一次，以视线方位角和仰角采样。转动镜头自然看到另一段山景，平移不产生无限远背景的视差；不再存在随相机倾斜的有限山卡或底板。远山属于无限远绘景，不代表可到达的三维山脉。[Godot 官方天空着色器文档](https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/sky_shader.html)说明 `EYEDIR` 和环境光立方体通道；项目在 Godot 4.7.2 实测。
+
+内置 image_gen 以已批准的青菜、全景两图为风格参考，分别生成左高右低山肩、右侧双峰和低矮连绵丘陵，三张均为 2172×724 原生 RGBA。原件与完整实际提示词见 [horizon-v3/generation-record.json](horizon-v3/generation-record.json)，源图保存在同目录；正式图原样复制到 `Game/art/environment/backdrop/horizon-v3/`，开启 mipmaps，运行时过滤低 alpha 彩边。未调用 Tripo 或 Blender；图片工具未返回模型版本、种子和费用，不自行推算。
+
+中远处四段山岸由 `Game/scenes/environment/layered_landscape.gd` 生成真实起伏网格，共 11,520 三角形，采用共同的淡彩材质；岸线起始半径 78–95 米，岸脚低于 y=-0.25 的共同水位。岛、岸、湖面使用同一世界坐标，平移、俯仰和遮挡由实际透视决定。2000×2000 米水面延伸至岸下，远裁面前渐入地平线色，不再在 72 米截断露出另一张画。低空雾随高度减弱；引擎深度雾仅在 160–400 米收尾，避免把山岸重复蒙成平色。
+
+天空、环境光、山岸、雾及水面反射色跟随同一昼夜控制器。水面使用柔化天空色，未增加精确山体镜面反射。默认全景调整为偏航 27.5°、俯角 10°、距离 25.5、视野 36°，保留田块清晰带，并为真实地平线留下画面空间。
+
+验证入口：`tests/landscape_sky_test.gd` 检查方向投影、平移不产生天空视差、远裁面不裁天空、±180° 连续性与山岸体积／法线；`tests/foreground_composition_test.gd -- --output=<仓库绝对路径>/.local/verification/landscape-v3` 覆盖旋转、俯仰、真实拍照像素、聚焦、画质、昼夜、小窗和 4K。截图分别在 `.local/verification/landscape-sky/`、`.local/verification/landscape-v3/`。旧图和旧记录作为历史来源保留，下述山卡流程已退役。
+
+## 历史 layers-v2：20260918 去重复与岛村层次
 
 新生成三张独立原生RGBA：`far-west.png`左高峰长谷、`far-east.png`右侧宽峰、`wooded-bank.png`低矮林岸。每张只出现一次，不翻转／平铺复制；完整提示词和工具落点见[layers-v2/generation-record.json](layers-v2/generation-record.json)，正式PNG原样复制到`Game/art/environment/backdrop/layers-v2/`，保留alpha并开启mipmaps。
 

@@ -281,7 +281,7 @@ func _asset(id: String, key: String, at: Vector3, yaw_degrees: float=0, size: fl
 func _build_ground() -> void:
 	_bank("main", plan.rim, Vector3.ZERO)
 	_water=MeshInstance3D.new();_water.name="WaterSurface"
-	var plane:=PlaneMesh.new();plane.size=Vector2(180,180);_water.mesh=plane
+	var plane:=PlaneMesh.new();plane.size=Vector2(2000,2000);_water.mesh=plane
 	var water_material:=ShaderMaterial.new();water_material.shader=load("res://atmosphere/quiet_water.gdshader")
 	_water.material_override=water_material;_water.position.y=-0.25;add_child(_water)
 	for entry: Dictionary in preload("res://presentation/shore_dressing.gd").stones(plan):

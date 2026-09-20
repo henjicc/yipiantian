@@ -79,7 +79,7 @@ var east_path := PackedVector3Array([Vector3(10.52,.112,.23),Vector3(13.35,.112,
 var east_stones := PackedVector3Array()
 var haze_region := Vector4(0,-1,10.8,10)
 var camera_point := Vector3(.25,.75,0)
-var camera_distance: float = 28.6
+var camera_distance: float = 25.5
 var site: String = "original"
 var shore_expansion := Vector2.ZERO
 

@@ -1,70 +1,51 @@
 extends Node3D
-## Distant matte cards are anchored to the authored overview, not the live camera.
-## Orbit and tilt must both move their projection, just like the nearby islands.
-const SHADER = preload("res://scenes/environment/backdrop.gdshader")
-const ROOT := "res://art/environment/backdrop/layers-v2/"
+## Real headlands meet the same lake as the islands. Remote silhouettes live
+## in a directional sky, with no dependency on the camera or overview tuning.
+const SKY_SHADER = preload("res://scenes/environment/landscape_sky.gdshader")
+const LAND_SHADER = preload("res://scenes/environment/pigment.gdshader")
+const ROOT := "res://art/environment/backdrop/horizon-v3/"
 var material: ShaderMaterial
-var _sky: MeshInstance3D
 
 func _ready() -> void:
 	material = ShaderMaterial.new()
-	material.shader = SHADER
-	material.set_shader_parameter("far_mountains", load(ROOT + "far-west.png"))
-	material.set_shader_parameter("mid_hills", load(ROOT + "far-east.png"))
-	material.set_shader_parameter("near_bank", load(ROOT + "wooded-bank.png"))
-	# Keep the diorama's elevated view, but never let orbiting roll its horizon.
-	basis = Basis(Vector3.UP, deg_to_rad(25.0)) * Basis(Vector3.RIGHT, deg_to_rad(-28.0))
-	position = Vector3(0, 0.85, 0)
-	process_priority = 1 # After the camera, before the focus band and drawing.
-	_card("SkyAndDistantWater", 0, Vector3(0, 0, -460), Vector2(1200, 700))
-	_sky = get_node("SkyAndDistantWater")
-	_sky.top_level = true
-	# Each alpha silhouette appears once. Different peaks, widths and depths,
-	# rather than a repeated/mirrored mountain and village strip.
-	_card("WesternRange", 1, Vector3(-102, 105, -400), Vector2(320, 75))
-	_card("EasternRange", 2, Vector3(113, 100, -365), Vector2(310, 80))
-	_card("WoodedShore", 3, Vector3(0, 63, -275), Vector2(380, 30))
-	_card("ValleyMist", 4, Vector3(0, 48, -270), Vector2(500, 24))
+	material.shader = SKY_SHADER
+	material.set_shader_parameter("western_ridge", load(ROOT+"west-shoulder.png"))
+	material.set_shader_parameter("eastern_ridge", load(ROOT+"east-twin-peaks.png"))
+	material.set_shader_parameter("rolling_ridge", load(ROOT+"low-rolling-hills.png"))
+	# Open channels between varied peninsulas, rather than a circular wall.
+	_headland("WesternHeadland", -112.0, -48.0, 78.0, 34.0, 10.0, 1.3)
+	_headland("NorthernHeadland", -40.0, 20.0, 95.0, 43.0, 15.0, 3.9)
+	_headland("EasternHeadland", 32.0, 108.0, 85.0, 37.0, 9.0, 6.1)
+	_headland("SouthernHeadland", 138.0, 231.0, 95.0, 44.0, 12.0, 8.3)
 
-func _process(_delta: float) -> void:
-	var camera: Camera3D = get_viewport().get_camera_3d()
-	if camera == null:
-		return
-	var yaw: float = deg_to_rad(camera.overview_view.x if camera is FarmCamera else 27.5)
-	# Match only explicit overview tuning, never transient orbit or photo poses. Otherwise
-	# lowering the overview pushes the entire painted mountain band out of frame.
-	var pitch: float = camera.overview_view.y if camera is FarmCamera else 28.0
-	basis = Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, deg_to_rad(-pitch))
-	# Only the featureless sky/water fill tracks yaw, so its finite support never
-	# exposes a side or clips at the far plane. Painted mountains remain fixed.
-	var sky_yaw: float = atan2(camera.global_basis.z.x, camera.global_basis.z.z)
-	var sky_basis := Basis(Vector3.UP, sky_yaw) * Basis(Vector3.RIGHT, deg_to_rad(-pitch))
-	_sky.global_transform = Transform3D(sky_basis, global_position + sky_basis * Vector3(0, 0, -460))
-
-func _card(label: String, layer: int, at: Vector3, size: Vector2) -> void:
-	var card := MeshInstance3D.new()
-	card.name = label
-	var quad := QuadMesh.new()
-	quad.size = size
-	if layer in [1, 2, 3]:
-		# A gently warped opaque support grid keeps the native alpha artwork;
-		# do not deform UVs over time or repeat mountain motifs in a shader.
-		var surface := SurfaceTool.new()
-		surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-		for x: int in 24:
-			for y: int in 4:
-				for corner: Vector2 in [Vector2(0,0),Vector2(1,0),Vector2(1,1),Vector2(0,0),Vector2(1,1),Vector2(0,1)]:
-					var uv := Vector2((x+corner.x)/24.0,(y+corner.y)/4.0)
-					var bend: float = sin(uv.x*TAU+layer)*sin(uv.x*PI)*1.8
-					surface.set_uv(uv)
-					surface.set_normal(Vector3.FORWARD)
-					surface.add_vertex(Vector3((uv.x-.5)*size.x,(.5-uv.y)*size.y+bend,0))
-		surface.index()
-		card.mesh = surface.commit()
-	else:
-		card.mesh = quad
-	card.material_override = material
-	card.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	card.position = at
-	add_child(card)
-	card.set_instance_shader_parameter("landscape_layer", layer)
+func _headland(label: String, start: float, end: float, radius: float, depth: float, height: float, seed: float) -> void:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for x: int in 80:
+		for z: int in 18:
+			for corner: Vector2 in [Vector2(0,0),Vector2(0,1),Vector2(1,1),Vector2(0,0),Vector2(1,1),Vector2(1,0)]:
+				var u: float = (x+corner.x)/80.0
+				var v: float = (z+corner.y)/18.0
+				var angle: float = deg_to_rad(lerpf(start,end,u))
+				var coast: float = radius + sin(u*13.0+seed)*6.0 + sin(u*31.0+seed)*2.0
+				var distance: float = coast+v*depth
+				var tip: float = smoothstep(0.0,0.12,u)*(1.0-smoothstep(0.86,1.0,u))
+				var ridge: float = 0.55+0.26*sin(u*12.0+seed)+0.16*sin(u*26.0+seed)
+				var slope: float = pow(sin(PI*v),1.25)
+				var y: float = -0.55 + height*tip*slope*ridge
+				y += sin(u*167.0+seed)*sin(v*31.0+seed)*0.22*tip*slope
+				surface.set_uv(Vector2(u,v))
+				surface.add_vertex(Vector3(sin(angle)*distance,y,-cos(angle)*distance))
+	surface.generate_normals()
+	surface.index()
+	var land := MeshInstance3D.new()
+	land.name = label
+	land.mesh = surface.commit()
+	land.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var pigment := ShaderMaterial.new()
+	pigment.shader = LAND_SHADER
+	pigment.set_shader_parameter("base_color",Color("6b7e70"))
+	pigment.set_shader_parameter("wash_scale",0.28)
+	pigment.set_shader_parameter("stone_treatment",0.18)
+	land.material_override = pigment
+	add_child(land)

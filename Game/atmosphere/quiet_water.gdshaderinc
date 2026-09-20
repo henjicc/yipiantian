@@ -17,6 +17,8 @@ uniform vec2 ripple_center = vec2(0.0);
 uniform float ripple_age = 10.0;
 uniform float wave_strength : hint_range(0.0, 1.5) = 1.0;
 uniform vec4 reflection_tint : source_color = vec4(1.0);
+uniform vec4 sky_top : source_color = vec4(0.4,0.53,0.62,1.0);
+uniform vec4 sky_horizon : source_color = vec4(0.72,0.72,0.65,1.0);
 uniform bool boat_mask_enabled = false;
 uniform mat4 world_to_boat;
 varying vec3 world_position;
@@ -40,16 +42,7 @@ void vertex() {
 void fragment() {
 	FOG = vec4(courtyard_haze_color.rgb, courtyard_haze(world_position));
 	vec2 p = world_position.xz;
-	// Fade along the view's horizontal depth, not a circle around the island.
-	// A radial cutout exposed the matte lake earlier at both sides, visually
-	// curling an otherwise flat water plane into a bowl when the camera orbited.
-	float lake_depth = dot(p, normalize(-INV_VIEW_MATRIX[2].xz));
-	// Overview retains its authored horizon. When inspecting a distant island,
-	// advance the fade with the camera so its nearby water remains real water.
-	lake_depth -= max(0.0, dot(CAMERA_POSITION_WORLD.xz, normalize(-INV_VIEW_MATRIX[2].xz)));
-	if (lake_depth >= 72.0) {
-		discard;
-	}
+	float lake_depth = length(p-CAMERA_POSITION_WORLD.xz);
 	// An open hull is not a solid depth occluder. Exclude only its inner volume;
 	// the transform follows the actual moored boat through pitch, roll and heave.
 	vec3 boat_local = (world_to_boat*vec4(world_position,1.0)).xyz;
@@ -136,11 +129,8 @@ void fragment() {
 	vec3 to_camera = normalize(CAMERA_POSITION_WORLD - world_position);
 	vec3 reflected_world = reflect(-to_camera, wave_normal);
 	float fresnel = 0.02 + 0.98 * pow(1.0 - max(dot(to_camera, wave_normal), 0.0), 5.0);
-	// The environment fallback samples sky pigment only: mountains and villages
-	// must not become a huge stretched image on the near lake.
-	float sky_u = atan(reflected_world.z, reflected_world.x) / 6.283185 + 0.5;
-	vec2 sky_uv = vec2(sky_u, clamp(0.29 - reflected_world.y * 0.23, 0.015, 0.29));
-	vec3 sky = texture(painted_water, sky_uv).rgb;
+	// Reflection uses the same clock-driven sky palette as the visible horizon.
+	vec3 sky = mix(sky_horizon.rgb,sky_top.rgb,smoothstep(0.0,0.8,asin(clamp(reflected_world.y,0.0,1.0))));
 	vec3 reflection = mix(water_color.rgb * 0.88, sky, 0.48);
 	float reflection_weight = 0.08 + fresnel * 0.20;
 	// Soft sky reflection is stable when orbiting. Local objects are anchored by
@@ -164,8 +154,10 @@ void fragment() {
 	ROUGHNESS = mix(0.28, 0.19, glint * distance_fade);
 	METALLIC = 0.0;
 	SPECULAR = 0.5;
-	// Match the courtyard water-to-painted-distance transition; no opaque horizon.
-	ALPHA = 1.0 - smoothstep(48.0, 72.0, lake_depth);
+	// One physical lake continues beneath the remote headlands. Near the far
+	// plane it converges to the same horizon colour, not a painted water card.
+	FOG.a = mix(FOG.a,1.0,smoothstep(160.0,400.0,lake_depth));
+	ALPHA = 1.0;
 }
 
 void light() {

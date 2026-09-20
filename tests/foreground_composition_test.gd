@@ -12,6 +12,7 @@ func _initialize() -> void:
 	for argument: String in OS.get_cmdline_user_args():
 		if argument.begins_with("--output="):
 			output = argument.trim_prefix("--output=")
+	output = output.simplify_path()
 	assert(output.replace("\\", "/").begins_with(ProjectSettings.globalize_path("res://../.local/").simplify_path().replace("\\", "/")+"/"))
 	_run.call_deferred()
 
@@ -78,18 +79,18 @@ func _run() -> void:
 		scene.camera.view.x = 27.5
 		await process_frame
 		await process_frame
-		var range_node: Node3D = landscape.get_node("WesternRange")
-		var mountain: Vector3 = range_node.global_position
+		var range_node: Node3D = landscape.get_node("NorthernHeadland")
+		var mountain: Vector3 = range_node.global_transform * range_node.get_aabb().get_center()
 		var start_pixel: Vector2 = scene.camera.unproject_position(mountain)
 		scene.camera.view.x += 10.0
 		await process_frame
 		await process_frame
-		expect(range_node.global_position.is_equal_approx(mountain), "Mountains stay anchored while orbiting")
+		expect((range_node.global_transform * range_node.get_aabb().get_center()).is_equal_approx(mountain), "Mountains stay anchored while orbiting")
 		expect(absf(scene.camera.unproject_position(mountain).x-start_pixel.x)>30, "Yaw moves mountain silhouette across the image")
 		scene.camera.view.x = 27.5
 		scene.camera.view.y += 5.0
 		await shot("04-pitch.png")
-		expect(range_node.global_position.is_equal_approx(mountain), "Tilt does not move the mountain stage")
+		expect((range_node.global_transform * range_node.get_aabb().get_center()).is_equal_approx(mountain), "Tilt does not move the mountain stage")
 		scene.camera.view.y = scene.camera.overview_view.y
 		await create_timer(.5).timeout
 		var blur: float = scene.camera.attributes.dof_blur_amount

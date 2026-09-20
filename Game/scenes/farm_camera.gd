@@ -4,7 +4,7 @@ extends Camera3D
 signal motion_finished
 
 const DEFAULT_POINT := Vector3(0.25, 0.75, 0.0)
-const DEFAULT_VIEW := Vector3(27.5, 16.5, 28.6)
+const DEFAULT_VIEW := Vector3(27.5, 10.0, 25.5)
 const FOCUS_DISTANCE: float = 10.4
 const ARRANGEMENT_DISTANCE: float = 31.0
 var construction_framing: bool = false
@@ -68,7 +68,7 @@ func configure_layout(point: Vector3, distance: float) -> void:
 
 
 func _ready() -> void:
-	fov = 29.0
+	fov = 36.0
 	near = 0.1
 	far = 600.0
 	_apply_pose()
