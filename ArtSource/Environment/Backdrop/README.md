@@ -1,6 +1,22 @@
 # 远山与河岸背景
 
-## 现役 horizon-v3：20260921 方向天空与真实山岸
+## 现役 individual-v4：20260921 独立工笔小山组合
+
+用户指出 v3 三维山包轮廓过于光滑，与远山绘景不一致。现保留 v3 无限远方向天空，将四段参数化岸坡降到 1.4–1.8 米设计高度，仅承接湖面；较高的山体改用三个分别生成的透明素材，各使用一次，不复用一张大图裁成多座山。
+
+- `single-peak.png`：不对称单峰，岩层与树丛完整，位于方位 -48°／半径142米。
+- `twin-hills.png`：矮双峰与宽山鞍，位于 -6°／125米。
+- `wooded-knoll.png`：低林岸与小岩丘，位于 -28°／100米。
+
+均由内置 image_gen 以 v3 `west-shoulder.png` 为笔触参考独立生成，1536×1024 原生 RGBA；原图无修改复制到 `Game/art/environment/backdrop/individual-v4/`，保留 alpha、开启 mipmaps。完整实际提示词及输出落点见 [individual-v4/generation-record.json](individual-v4/generation-record.json)。模型版本、种子与费用未返回；本轮没有 Tripo 或 Blender 调用。原始 RGB 在透明像素下包含模糊色彩，alpha 检查确认外围透明，不将预览黑底上的色彩误当实际外发光。
+
+`layered_landscape.gd` 以 UV 去透明留白、保持主体比例，放到固定世界位置的弧形竖直支撑面；不跟随镜头旋转或倾斜。底部贴合共同水位，在低空雾中衔接低矮三维岸脚。`painted_hill.gdshader` 保留绘画明暗，并与天空同步昼夜色；透明轮廓使用深度预通道，避免遮住后景。此方法适用于当前有限活动范围，山体仍是有方位的绘景，不是可绕到背后探索的完整三维模型。
+
+Godot 4.7.2 的材质参数写入不会自动发出 `Resource.changed`；昼夜控制器写完整组天空参数后显式通知一次，由山景同步着色，测试直接检查夜间一致性。[官方空间着色器文档](https://docs.godotengine.org/en/4.7/tutorials/shaders/shader_reference/spatial_shader.html)用于核对透明深度预通道与独立雾处理。
+
+复核入口沿用 `tests/landscape_sky_test.gd`（新增低岸高度、山片不跟随相机、夜间颜色）及 `tests/foreground_composition_test.gd -- --output=<仓库绝对路径>/.local/verification/individual-hills-v4`。后者保留实际农场的默认、侧向、俯仰、拍照、昼夜、聚焦与窗口尺寸截图。下述 v3 的高山岸已退役，方向天空与湖面仍沿用。
+
+## horizon-v3：20260921 方向天空与真实山岸（高山岸已替换）
 
 背景改为 Godot `Sky` 方向投影：三张独立透明山图分别覆盖不同方位，每种只使用一次，以视线方位角和仰角采样。转动镜头自然看到另一段山景，平移不产生无限远背景的视差；不再存在随相机倾斜的有限山卡或底板。远山属于无限远绘景，不代表可到达的三维山脉。[Godot 官方天空着色器文档](https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/sky_shader.html)说明 `EYEDIR` 和环境光立方体通道；项目在 Godot 4.7.2 实测。
 

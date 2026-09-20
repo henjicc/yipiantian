@@ -1,0 +1,26 @@
+{
+  "date": "2026-09-21",
+  "tool": "built-in image_gen",
+  "model": null,
+  "seed": null,
+  "cost": null,
+  "reference": "ArtSource/Environment/Backdrop/horizon-v3/west-shoulder.png",
+  "assets": [
+    {
+      "name": "single-peak",
+      "prompt": "Use case stylized-concept. Generate ONE isolated small Jiangnan wooded mountain, not a panorama or mountain chain. Match the attached reference's Chinese gongbi pale mineral washes, fine rock fold outlines and clustered painted trees. One asymmetric compact peak, tallest left of center, with irregular rocky shoulders stepping down to a complete low base. Front elevation seen across a lake. Muted slate/celadon blue green, neutral soft diffuse lighting, readable painted tree clusters and stone strata, no glossy smooth dome, no photorealism. Landscape 3:2 canvas, mountain occupies middle 85% width and 75% height, entirely inside frame with transparent margins. TRUE RGBA transparent background, no sky, no lake, no mist, no ground rectangle, no cast shadow, no white paper or checkerboard, no village, no text. Reference is style only: create a distinct SINGLE mountain suitable for world-space layering in a game.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-a048dec2-6b8c-44a2-b944-622b912d5a11.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+    },
+    {
+      "name": "twin-hills",
+      "prompt": "Use case stylized-concept. ONE isolated low compact double-hill asset, two unequal rounded wooded summits with a broad saddle, taller on right. NOT a long mountain panorama. Match reference gongbi Chinese painted rock strata, celadon and grey blue foliage clusters, precise soft tea-grey contours and pale layered mineral pigment. Front elevation, neutral diffuse illumination. 3:2 canvas, complete silhouette including low tapering ends and base fits within central 80% width and 55% height. TRUE transparent RGBA background. Sharp clean alpha boundary around foliage with antialiasing only: absolutely NO outer glow, blurred halo, atmospheric haze, ground shadow, background color, sky, water, buildings, text or checkerboard. Preserve detailed irregular tree cluster skyline rather than smooth domes. This is a separate game compositing asset with more width and less height than the reference.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-06ed2721-59a1-4bbd-9441-849d1d4ea485.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+    },
+    {
+      "name": "wooded-knoll",
+      "prompt": "Use case stylized-concept. Generate ONE small low wooded lakeshore knoll asset, a compact cluster of irregular rounded deciduous tree crowns over a low rocky mound. It is a single small forested islet/foothill silhouette, NOT a mountain panorama. Match attached reference Chinese gongbi fine grey contours, restrained celadon, slate and sage pigment washes and small stone strata. Side/front elevation across a lake, neutral diffuse light. Horizontal 3:2 composition. Complete silhouette inside frame, low height, a varied scalloped tree skyline, no large peak. TRUE transparent RGBA background, clean cutout including around leaves; no outer glow, no blurred border, no mist, no water/reflection, no sky, no paper background, no cast shadow, no houses, no text. All space outside trees and rocks must be transparent.",
+      "output": "Generated images are saved to %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39 as %USERPROFILE%\\.codex\\generated_images\\01a0bf9c-9b2e-70a2-ae25-7dbf4f162f39\\exec-122ec3e8-e356-4ff5-aba7-3c9083f59955.png by default.\nIf you need to use a generated image at another path, copy it and leave the original in place unless the user explicitly asks you to delete it.\nThe generated image is already displayed to the user. There is no need to render it in the final response as a Markdown image or file link."
+    }
+  ],
+  "processing": "Original RGBA copied unchanged. Geometry UVs crop transparent margins; runtime shader filters alpha only. No Tripo or Blender generation."
+}

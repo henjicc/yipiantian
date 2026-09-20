@@ -3,8 +3,10 @@ extends Node3D
 ## in a directional sky, with no dependency on the camera or overview tuning.
 const SKY_SHADER = preload("res://scenes/environment/landscape_sky.gdshader")
 const LAND_SHADER = preload("res://scenes/environment/pigment.gdshader")
+const HILL_SHADER = preload("res://scenes/environment/painted_hill.gdshader")
 const ROOT := "res://art/environment/backdrop/horizon-v3/"
 var material: ShaderMaterial
+var _hill_materials: Array[ShaderMaterial] = []
 
 func _ready() -> void:
 	material = ShaderMaterial.new()
@@ -13,10 +15,44 @@ func _ready() -> void:
 	material.set_shader_parameter("eastern_ridge", load(ROOT+"east-twin-peaks.png"))
 	material.set_shader_parameter("rolling_ridge", load(ROOT+"low-rolling-hills.png"))
 	# Open channels between varied peninsulas, rather than a circular wall.
-	_headland("WesternHeadland", -112.0, -48.0, 78.0, 34.0, 10.0, 1.3)
-	_headland("NorthernHeadland", -40.0, 20.0, 95.0, 43.0, 15.0, 3.9)
-	_headland("EasternHeadland", 32.0, 108.0, 85.0, 37.0, 9.0, 6.1)
-	_headland("SouthernHeadland", 138.0, 231.0, 95.0, 44.0, 12.0, 8.3)
+	_headland("WesternHeadland", -112.0, -48.0, 78.0, 34.0, 1.5, 1.3)
+	_headland("NorthernHeadland", -40.0, 20.0, 95.0, 43.0, 1.8, 3.9)
+	_headland("EasternHeadland", 32.0, 108.0, 85.0, 37.0, 1.4, 6.1)
+	_headland("SouthernHeadland", 138.0, 231.0, 95.0, 44.0, 1.7, 8.3)
+	_hill("SinglePeak", "single-peak", -48.0, 142.0, 42.0, Rect2(0.006,0.115,0.988,0.800))
+	_hill("TwinHills", "twin-hills", -6.0, 125.0, 65.0, Rect2(0.010,0.326,0.980,0.423))
+	_hill("WoodedKnoll", "wooded-knoll", -28.0, 100.0, 38.0, Rect2(0.012,0.268,0.976,0.502))
+	material.changed.connect(_sync_hill_palette)
+
+func _sync_hill_palette() -> void:
+	for hill: ShaderMaterial in _hill_materials:
+		hill.set_shader_parameter("atmosphere_tint",material.get_shader_parameter("atmosphere_tint"))
+		hill.set_shader_parameter("horizon_color",material.get_shader_parameter("sky_horizon"))
+
+func _hill(label: String, asset: String, heading: float, radius: float, width: float, crop: Rect2) -> void:
+	# A fixed cylindrical segment faces the lake, not the moving camera.
+	# Curvature and transparent ends avoid a hard rectangular side at orbit limits.
+	var texture: Texture2D = load("res://art/environment/backdrop/individual-v4/"+asset+".png")
+	var height: float = width * texture.get_height()*crop.size.y/(texture.get_width()*crop.size.x)
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for x: int in 40:
+		for corner: Vector2 in [Vector2(0,0),Vector2(0,1),Vector2(1,1),Vector2(0,0),Vector2(1,1),Vector2(1,0)]:
+			var u: float = (x+corner.x)/40.0
+			var angle: float = deg_to_rad(heading)+(u-.5)*width/radius
+			surface.set_uv(crop.position+Vector2(u,1.0-corner.y)*crop.size)
+			surface.add_vertex(Vector3(sin(angle)*radius,-.5+corner.y*height,-cos(angle)*radius))
+	surface.generate_normals()
+	var hill := MeshInstance3D.new()
+	hill.name = label
+	hill.mesh = surface.commit()
+	hill.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var painted := ShaderMaterial.new()
+	painted.shader = HILL_SHADER
+	painted.set_shader_parameter("pigment",texture)
+	hill.material_override = painted
+	_hill_materials.append(painted)
+	add_child(hill)
 
 func _headland(label: String, start: float, end: float, radius: float, depth: float, height: float, seed: float) -> void:
 	var surface := SurfaceTool.new()

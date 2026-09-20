@@ -56,7 +56,14 @@ func _run() -> void:
 	camera.current = true
 	for land: MeshInstance3D in landscape.get_children():
 		var bounds: AABB = land.get_aabb()
-		expect(bounds.size.x>10 and bounds.size.z>10 and bounds.size.y>3, "Headland has real width, depth and height: "+str(land.name))
+		if not str(land.name).ends_with("Headland"):
+			expect(bounds.size.y>5, "Painted hills have independent visible silhouettes")
+			var fixed: Transform3D = land.global_transform
+			camera.rotation_degrees.y += 20
+			await process_frame
+			expect(land.global_transform==fixed, "Painted hill does not billboard with the camera")
+			continue
+		expect(bounds.size.x>10 and bounds.size.z>10 and bounds.size.y<2, "Real shore stays low below painted hills: "+str(land.name))
 		expect(bounds.position.y<-.25 and bounds.end.y>0, "Shore crosses shared lake level: "+str(land.name))
 		var arrays: Array = land.mesh.surface_get_arrays(0)
 		var up: int = 0
@@ -93,6 +100,7 @@ func _run() -> void:
 		camera.rotation_degrees = Vector3(-3,yaw,0)
 		await capture("07-shores-%s"%yaw)
 	atmosphere.set_preview_hour(21.0)
+	expect(landscape.get_node("SinglePeak").material_override.get_shader_parameter("atmosphere_tint")==landscape.material.get_shader_parameter("atmosphere_tint"), "Painted hills share the night sky palette")
 	await capture("08-night")
 	scene.queue_free()
 	await process_frame

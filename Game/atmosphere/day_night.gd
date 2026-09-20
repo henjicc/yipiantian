@@ -311,6 +311,9 @@ func _apply_backdrop() -> void:
 		_backdrop_material.set_shader_parameter("ground_horizon", _backdrop_values.ground_horizon)
 		_backdrop_material.set_shader_parameter("ground_bottom", _backdrop_values.ground_bottom)
 		_backdrop_material.set_shader_parameter("cloud_offset", Time.get_ticks_msec()*0.000002)
+		# Shader parameter writes do not emit Resource.changed automatically.
+		# Notify the layered landscape once the complete clock palette is ready.
+		_backdrop_material.emit_changed()
 
 
 func _exit_tree() -> void:
