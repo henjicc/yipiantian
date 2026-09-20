@@ -1,6 +1,7 @@
 extends SceneTree
 ## Actual input, props and original bird rigs, with isolated player data.
 const ThemeFactory = preload("res://ui/farm_theme.gd")
+const PigmentStyle = preload("res://ui/pigment_style.gd")
 var scene: Node3D
 var folder: String
 var failures: Array[String] = []
@@ -44,8 +45,7 @@ func run() -> void:
 	scene.farm_changed.connect(func(_result: Dictionary) -> void: actions+=1)
 	await create_timer(1.0).timeout
 	var button_frame:=ThemeFactory.create().get_stylebox("normal","Button")
-	check(button_frame is StyleBoxTexture and is_equal_approx(button_frame.texture_margin_left,20.0) and button_frame.texture.resource_path.ends_with("pigment/normal.png"),"Resizable controls use the corner-safe pigment nine-patch")
-	check(button_frame.axis_stretch_horizontal==StyleBoxTexture.AXIS_STRETCH_MODE_TILE and button_frame.axis_stretch_vertical==StyleBoxTexture.AXIS_STRETCH_MODE_TILE,"Resizable controls repeat pigment instead of stretching it")
+	check(button_frame is PigmentStyle,"Controls use continuous-UV pigment with runtime outlines, not sliced bitmaps")
 	scene.atmosphere.set_preview_hour(14.0)
 	var animals: Node3D=scene.get_node("Environment/CourtyardAnimals")
 	while not animals.ready_for_motion: await process_frame
@@ -111,7 +111,7 @@ func run() -> void:
 			check(prop.find_children("*","MeshInstance3D",true,false)[0].material_overlay!=null,"Hover outlines only actual prop: "+id)
 			if id=="weed": await shot("hoe-hover")
 			await click(visible_point)
-			check(scene.field_menu.active if id=="sow" else scene.selected_tool==id,"Prop equips its corresponding action: "+id)
+			check(scene.selected_palette=="sow" if id=="sow" else scene.selected_tool==id,"Prop equips its corresponding action: "+id)
 			scene.field_menu.dismiss(); scene._cancel_tool()
 	scene.field_menu.present_seeds(Vector2(1590,20))
 	await process_frame;await process_frame
@@ -125,29 +125,7 @@ func run() -> void:
 			reached.append(id)
 			used_rings[scene.field_menu.cards.get_node(id).ring_index]=true
 	check(reached.size()==12 and reached.has("garlic") and used_rings.size()==2,"All twelve crops are reachable across two crop rings")
-	check(scene.field_menu.cards.has_node("CenterBezel"),"Full gongbi-painted center bezel exists")
-	var center_bezel: TextureRect=scene.field_menu.cards.get_node("CenterBezel")
-	check(center_bezel.texture.resource_path.ends_with("wood-center-ring-gongbi-slim.png"),"Center bezel uses the slim matched gongbi asset instead of a stretched planar texture")
-	var center_image: Image=center_bezel.texture.get_image()
-	check(center_image.get_pixel(256,256).a<.1 and center_image.get_pixel(470,256).a<.1 and center_image.get_pixel(486,256).a>.9,"Slim center bezel keeps an exact transparent circular opening")
-	for quarter_index: int in 4:
-		var quarter: TextureRect=scene.field_menu.cards.get_node("WoodQuarter%d"%quarter_index)
-		check(quarter.mouse_filter==Control.MOUSE_FILTER_IGNORE and is_equal_approx(quarter.rotation,quarter_index*PI*.5),"Gongbi-painted wood quarter rotates without polar texture stretching")
-	var quarter_image: Image=load("res://art/ui/radial_menu/wood-bezel-quarter-gongbi-slim.png").get_image()
-	var exact_quarter: bool=quarter_image.get_size()==Vector2i(1000,1000)
-	for degrees: float in [10.0,30.0,45.0,60.0,80.0]:
-		var angle: float=deg_to_rad(degrees)
-		var wood_point:=Vector2i(roundi(cos(angle)*965.0),roundi(999.0-sin(angle)*965.0))
-		var opening_point:=Vector2i(roundi(cos(angle)*900.0),roundi(999.0-sin(angle)*900.0))
-		exact_quarter=exact_quarter and quarter_image.get_pixelv(wood_point).a>.9 and quarter_image.get_pixelv(opening_point).a<.1
-	check(exact_quarter,"Slim wood frame keeps a constant mathematical quarter-annulus mask")
-	for index: int in 4:
-		var ornament: TextureRect=scene.field_menu.cards.get_node("Ruyi%d"%index)
-		check(is_equal_approx(ornament.rotation,index*PI*.5) and ornament.texture.resource_path.ends_with("ruyi-joint-gongbi.png"),"Ruyi frame node rotates from one matched reusable transparent asset")
-	var ruyi_image: Image=scene.field_menu.cards.get_node("Ruyi0").texture.get_image()
-	var ruyi_bounds:=ruyi_image.get_used_rect()
-	check(ruyi_bounds.size.x>210 and ruyi_bounds.size.y>220 and ruyi_image.get_pixel(128,24).a>.9 and ruyi_image.get_pixel(128,128).a<.1,"Ruyi keeps the generated artwork and its matching transparent openwork instead of a mismatched mask")
-	check(scene.field_menu.cards.get_node("Ruyi0").size.x<=60.0,"Concept A keeps the ruyi joints visually subordinate to the crop choices")
+	check(not scene.field_menu.cards.has_node("CenterBezel") and not scene.field_menu.cards.has_node("Ruyi0"),"Radial picker uses a clean procedural fine rim without wood ornaments")
 	root.size=Vector2i(960,600);await process_frame;await process_frame
 	scene.field_menu.present_seeds(Vector2(950,20))
 	check(root.get_visible_rect().encloses(scene.field_menu.cards.get_global_rect()),"Concentric crop picker fits the compact window at its edge")
@@ -163,10 +141,18 @@ func run() -> void:
 	root.push_input(escape,true);await process_frame
 	check(not scene.field_menu.active,"Escape closes the crop picker")
 	await click(scene.hud.get_node("Layout/FarmControls/Tools").get_global_rect().get_center())
-	check(scene.field_menu.active and scene.field_menu.cards.has_node("water"),"HUD opens the same fan-style tool picker")
-	await shot("tools-fan")
-	await click(petal("water"))
-	check(scene.selected_tool=="water" and not scene.field_menu.active,"HUD fan equips without applying to stale target")
+	check(not scene.field_menu.active and scene.selected_palette=="tools","Bottom tools open a horizontal tray, never the radial picker")
+	await create_timer(.3).timeout
+	await shot("tools-row")
+	await click(scene.hud.get_node("Layout/ToolChoices/Water").get_global_rect().get_center())
+	check(scene.selected_tool=="water" and not scene.field_menu.active,"Horizontal tray equips without applying to stale target")
+	scene._cancel_tool()
+	await click(scene.hud.get_node("Layout/FarmControls/Sow").get_global_rect().get_center())
+	await create_timer(.3).timeout
+	check(scene.selected_palette=="sow" and not scene.field_menu.active,"Bottom sow opens horizontal crop choices")
+	await shot("crop-row")
+	await click(scene.hud.get_node("Layout/CropChoices/greens").get_global_rect().get_center())
+	check(scene.selected_tool=="sow" and scene.selected_crop=="greens","Horizontal crop card equips the selected seed")
 	scene._cancel_tool()
 	# A short real navigation sample verifies changing speeds, bounded travel and neck motion.
 	var limits: Dictionary={}; var beaks: Dictionary={}

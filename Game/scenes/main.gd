@@ -195,7 +195,7 @@ func _ready() -> void:
 	hud.decoration_requested.connect(_begin_decoration)
 	hud.settings_requested.connect(_open_menu)
 	hud.free_view_requested.connect(_toggle_free_view)
-	if OS.is_debug_build():
+	if (OS.is_debug_build() and OS.has_feature("editor")):
 		camera_tuning = CameraTuning.new()
 		camera_tuning.camera = camera
 		hud.get_node("Layout").add_child(camera_tuning)
@@ -595,9 +595,7 @@ func _open_scene_entry(id: String) -> void:
 		_cancel_input()
 		var tool: String = id.trim_prefix("tool_")
 		if tool=="sow":
-			_cancel_tool()
-			_menu_target = {}
-			field_menu.present_seeds(_pointer_position,selected_field==TrellisCrops.INDEX)
+			_open_palette("sow")
 		else: _select_tool(tool)
 		return
 	if id in ["willow","bamboo","ferry"]:
@@ -1208,7 +1206,7 @@ func _input(event: InputEvent) -> void:
 				_request_menu_close()
 			get_viewport().set_input_as_handled()
 		return
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F8 and OS.is_debug_build():
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F8 and (OS.is_debug_build() and OS.has_feature("editor")):
 		_toggle_free_view()
 		get_viewport().set_input_as_handled()
 		return
@@ -1485,10 +1483,9 @@ func _open_palette(palette: String) -> void:
 		return
 	_cancel_input()
 	selected_tool = ""
-	selected_palette = ""
+	selected_palette = "" if selected_palette == palette else palette
 	_menu_target = {}
-	if palette == "sow": field_menu.present_seeds(_pointer_position,selected_field==TrellisCrops.INDEX)
-	else: field_menu.present_tools(_pointer_position)
+	field_menu.dismiss()
 	farm_audio.play_ui()
 	_refresh_hud()
 
@@ -1641,7 +1638,7 @@ func _reset_view() -> void:
 
 
 func _toggle_free_view() -> void:
-	if not OS.is_debug_build() or not _loaded or _save_failed or (game_menu != null and game_menu.visible):
+	if not (OS.is_debug_build() and OS.has_feature("editor")) or not _loaded or _save_failed or (game_menu != null and game_menu.visible):
 		return
 	var enabled: bool = not camera.free_view
 	_return_overview()
@@ -1696,6 +1693,7 @@ func _setup_settings() -> void:
 	game_menu.close_requested.connect(_request_menu_close)
 	game_menu.quit_requested.connect(_request_exit)
 	game_menu.wallpaper_requested.connect(_enter_wallpaper)
+	get_window().size_changed.connect(_apply_render_resolution)
 	_apply_settings()
 	hud.show_settings_issue(not _settings_issue.is_empty())
 
@@ -1704,6 +1702,7 @@ func _apply_settings() -> void:
 	farm_audio.set_volumes(settings_values.master, settings_values.music, settings_values.effects)
 	focus_detail.set_quality(settings_values.quality)
 	focus_detail.set_depth_of_field(settings_values.dof_enabled, focus_detail.get_settings().dof_strength)
+	_apply_render_resolution()
 	# Headless validation has no OS window; preference validation remains identical.
 	if DisplayServer.get_name() != "headless" and not (desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy)):
 		var window: Window = get_window()
@@ -1715,6 +1714,16 @@ func _apply_settings() -> void:
 			window.mode = desired
 			if not settings_values.fullscreen:
 				window.borderless = false
+
+
+func _apply_render_resolution() -> void:
+	if settings_values.is_empty(): return
+	var output: Vector2i = get_window().size
+	var choice: String = settings_values.resolution
+	# Never lower UI resolution or change the display's video mode for 3D quality.
+	var scale_3d: float = 1.0 if choice == "native" else clampf(float(choice) / maxf(output.y, 1), .25, 1.0)
+	get_viewport().scaling_3d_scale = scale_3d
+	if game_menu != null: game_menu.refresh_resolution_info()
 
 
 func _open_menu() -> void:

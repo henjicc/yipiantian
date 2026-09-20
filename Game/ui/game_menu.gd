@@ -9,6 +9,7 @@ signal wallpaper_requested
 
 const FarmTheme = preload("res://ui/farm_theme.gd")
 const QUALITY_VALUES: Array[String] = ["standard", "low", "high"]
+const RESOLUTION_VALUES: Array[String] = ["native", "1080", "1440", "2160"]
 var _root: Control
 var _pages: Array[Control] = []
 var _tabs: Array[Button] = []
@@ -16,6 +17,8 @@ var _sliders: Dictionary = {}
 var _volume_labels: Dictionary = {}
 var _window: OptionButton
 var _quality: OptionButton
+var _resolution: OptionButton
+var _resolution_info: Label
 var _dof: Button
 var _status: Label
 var _close: Button
@@ -43,9 +46,9 @@ func _ready() -> void:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	panel.offset_left = -310
 	panel.offset_right = 310
-	panel.offset_top = -282
-	panel.offset_bottom = 282
-	var style: StyleBoxTexture = FarmTheme.framed_paper()
+	panel.offset_top = -330
+	panel.offset_bottom = 330
+	var style: StyleBox = FarmTheme.framed_paper()
 	style.content_margin_left = 26
 	style.content_margin_right = 26
 	style.content_margin_top = 20
@@ -64,7 +67,7 @@ func _ready() -> void:
 		_tabs.append(tab)
 	var content := Control.new()
 	content.name = "Pages"
-	content.custom_minimum_size = Vector2(560, 330)
+	content.custom_minimum_size = Vector2(560, 426)
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(content)
 	var settings := VBoxContainer.new()
@@ -95,15 +98,31 @@ func _ready() -> void:
 	_window.name = "WindowMode"
 	_window.add_item("窗口")
 	_window.add_item("全屏")
+	FarmTheme.configure_option(_window)
 	_window.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_window.custom_minimum_size.y = 42
 	_row(settings, "显示").add_child(_window)
 	_window.item_selected.connect(func(index: int) -> void: _change("fullscreen", index == 1))
+	_resolution = OptionButton.new()
+	_resolution.name = "RenderResolution"
+	for title: String in ["原生（最清晰）", "1080p", "1440p", "2160p（4K）"]:
+		_resolution.add_item(title)
+	FarmTheme.configure_option(_resolution)
+	_resolution.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_resolution.custom_minimum_size.y = 42
+	_row(settings, "3D 分辨率").add_child(_resolution)
+	_resolution.item_selected.connect(func(index: int) -> void: _change("resolution", RESOLUTION_VALUES[index]))
+	_resolution_info = Label.new()
+	_resolution_info.add_theme_font_size_override("font_size", 16)
+	_resolution_info.add_theme_color_override("font_color", FarmTheme.Tokens.MUTED)
+	settings.add_child(_resolution_info)
+	get_window().size_changed.connect(refresh_resolution_info)
 	_quality = OptionButton.new()
 	_quality.name = "Quality"
 	_quality.add_item("标准")
 	_quality.add_item("低画质")
 	_quality.add_item("高画质")
+	FarmTheme.configure_option(_quality)
 	_quality.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_quality.custom_minimum_size.y = 42
 	_row(settings, "画质").add_child(_quality)
@@ -123,7 +142,7 @@ func _ready() -> void:
 	_wallpaper.tooltip_text = "在当前屏幕安静展示农场；双击系统托盘图标返回游戏。"
 	_wallpaper.pressed.connect(func() -> void: wallpaper_requested.emit())
 	var operations: RichTextLabel = _text_page(content, "操作说明")
-	operations.text = "[b]照料田地[/b]\n空手点击田格展开菜单，选择动作；播种时再选蔬菜。点空白、右键或 Esc 关闭菜单。门前种子篮、锄头、水壶可拿起对应工具，再点击土地连续操作；底部播种／工具按钮也可选取。拿着种子时滚轮换菜，右键、Esc 或取消按钮放下工具。每轮可浇水一次，不同作物节省的生长时间不同；成熟收获一篮。\n\n[b]照料菜架[/b]\n点击架脚的种植位靠近，再点种植位播种丝瓜；也可点藤蔓或果实浇水、收获。扩架增加位置，缩架前先收获会被移除的作物。\n\n[b]观察院落[/b]\n放下种子后滚轮缩放。点击田块边缘靠近；中键拖动转动视角，Shift＋中键平移。自由视角下左键绕点击处旋转，中键或右键平移，滚轮缩放。\n\n[b]返回与布置[/b]\n右键或 Esc 先放下工具，再清除选格、返回全景。布置时选装饰、点空位，再确认；旋转适用于地面装饰。\n\n作物按现实时间生长。离开后再次进入，会继续上次的农场。"
+	operations.text = "[b]照料田地[/b]\n空手点击田格展开菜单，选择动作；播种时再选蔬菜。点空白、右键或 Esc 关闭菜单。门前种子篮、锄头、水壶可拿起对应工具，再点击土地连续操作；底部播种／工具按钮展开横排选择。拿着种子时滚轮换菜，右键、Esc 或取消按钮放下工具。每轮可浇水一次，不同作物节省的生长时间不同；成熟收获一篮。\n\n[b]照料菜架[/b]\n点击架脚的种植位靠近，再点种植位播种丝瓜；也可点藤蔓或果实浇水、收获。扩架增加位置，缩架前先收获会被移除的作物。\n\n[b]观察院落[/b]\n放下种子后滚轮缩放。点击田块边缘靠近；中键拖动转动视角，Shift＋中键平移。\n\n[b]返回与布置[/b]\n右键或 Esc 先放下工具，再清除选格、返回全景。“建设”调整小岛，“摆件”调整已有装饰：选装饰、点空位，再确认；旋转适用于地面装饰。\n\n作物按现实时间生长。离开后再次进入，会继续上次的农场。"
 	var sources: RichTextLabel = _text_page(content, "制作来源")
 	sources.text = "[b]我有一片田[/b]\n图像：OpenAI 图像生成，依项目定稿参考制作。\n模型草案：Tripo；模型整理与补制：Blender。\n场景、界面与交互：Godot。\n音乐、环境声与操作声：项目内合成制作。\n\n[b]中文字体[/b]\n汇文明朝体 · Huiwen-mincho\n原字体随游戏内置，无需安装。\n字体内版权标记：Public Domain。"
 	_status = Label.new()
@@ -156,6 +175,8 @@ func present(value: Dictionary, message: String = "") -> void:
 		_volume_labels[key].text = "%d%%" % roundi(float(value[key]) * 100.0)
 	_window.select(1 if value.fullscreen else 0)
 	_quality.select(QUALITY_VALUES.find(value.quality))
+	_resolution.select(RESOLUTION_VALUES.find(value.resolution))
+	refresh_resolution_info()
 	_refresh_dof()
 	_populating = false
 	set_status(message)
@@ -174,7 +195,15 @@ func set_status(message: String, can_leave_unsaved: bool = false) -> void:
 func dismiss() -> void:
 	_window.get_popup().hide()
 	_quality.get_popup().hide()
+	_resolution.get_popup().hide()
 	hide()
+
+
+func refresh_resolution_info() -> void:
+	if _resolution_info == null: return
+	var output: Vector2i = get_window().size
+	var rendered := Vector2i(Vector2(output) * get_viewport().scaling_3d_scale)
+	_resolution_info.text = "界面输出 %d × %d  ·  3D 渲染 %d × %d" % [output.x, output.y, rendered.x, rendered.y]
 
 
 func _refresh_dof() -> void:
@@ -195,6 +224,7 @@ func _change(key: String, value: Variant) -> void:
 func _show_page(index: int) -> void:
 	_window.get_popup().hide()
 	_quality.get_popup().hide()
+	_resolution.get_popup().hide()
 	for page: int in _pages.size():
 		_pages[page].visible = page == index
 		_tabs[page].set_pressed_no_signal(page == index)
@@ -210,7 +240,7 @@ func _refresh_focus_chain(index: int) -> void:
 	if index == 0:
 		for key: String in ["master", "music", "effects"]:
 			controls.append(_sliders[key])
-		controls.append_array([_window, _quality, _dof, _wallpaper])
+		controls.append_array([_window, _resolution, _quality, _dof, _wallpaper])
 	else:
 		controls.append(_pages[index])
 	controls.append_array([_save, _close, _quit])
@@ -254,5 +284,6 @@ func _button(parent: Control, title: String) -> Button:
 	var button := Button.new()
 	button.text = title
 	button.custom_minimum_size.y = 44
+	FarmTheme.pointer_focus(button)
 	parent.add_child(button)
 	return button

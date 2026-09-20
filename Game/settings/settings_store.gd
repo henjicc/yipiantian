@@ -8,6 +8,7 @@ const PENDING: String = "settings.pending.json"
 const DEFAULTS: Dictionary = {
 	"master": 0.8, "music": 0.7, "effects": 0.8,
 	"fullscreen": false, "quality": "standard", "dof_enabled": true,
+	"resolution": "native",
 }
 var directory: String
 var _loaded: bool = false
@@ -97,7 +98,7 @@ static func valid_settings(value: Dictionary) -> bool:
 		var volume: Variant = value.get(key)
 		if not (volume is float or volume is int) or not is_finite(float(volume)) or float(volume) < 0.0 or float(volume) > 1.0:
 			return false
-	return value.get("fullscreen") is bool and value.get("dof_enabled") is bool and value.get("quality") in ["standard", "low", "high"]
+	return value.get("fullscreen") is bool and value.get("dof_enabled") is bool and value.get("quality") in ["standard", "low", "high"] and value.get("resolution") in ["native", "1080", "1440", "2160"]
 
 
 func _read(filename: String) -> Dictionary:

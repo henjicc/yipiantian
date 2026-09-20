@@ -9,6 +9,7 @@ var _layout: MarginContainer
 
 
 func _init() -> void:
+	FarmTheme.pointer_focus(self)
 	add_theme_stylebox_override("normal", FarmTheme.framed_paper())
 	_layout = MarginContainer.new()
 	_layout.mouse_filter = Control.MOUSE_FILTER_IGNORE

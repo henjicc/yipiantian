@@ -4,12 +4,8 @@ signal action_requested(tool: String, crop: String)
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const ThemeFactory = preload("res://ui/farm_theme.gd")
-const RUYI_JOINT: Texture2D = preload("res://art/ui/radial_menu/ruyi-joint-gongbi.png")
-const WOOD_BEZEL_QUARTER: Texture2D = preload("res://art/ui/radial_menu/wood-bezel-quarter-gongbi-slim.png")
-const CENTER_BEZEL: Texture2D = preload("res://art/ui/radial_menu/wood-center-ring-gongbi-slim.png")
-const PAPER_TEXTURE: Texture2D = preload("res://art/ui/radial_menu/xuan-paper-texture.png")
+const PAPER_TEXTURE: Texture2D = preload("res://art/ui/pigment/wash-tile.png")
 const CROPS_PER_RING: int = 6
-const WOOD_DARK := Color("68482f")
 const PAPER := ThemeFactory.PAPER
 const CELADON := ThemeFactory.Tokens.WASH_HOVER
 const CELADON_EDGE := ThemeFactory.LEAF
@@ -47,6 +43,7 @@ class Petal extends Button:
 		draw_string(font, center + Vector2(-width * .5, 35), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, INK)
 
 	func _ready() -> void:
+		texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 		mouse_entered.connect(queue_redraw)
 		mouse_exited.connect(queue_redraw)
 
@@ -70,7 +67,7 @@ class RingSegment extends Button:
 			fill = ThemeFactory.Tokens.DISABLED
 		var paper_uvs := PackedVector2Array()
 		for point: Vector2 in polygon:
-			paper_uvs.append(point / size)
+			paper_uvs.append(point / 216.0)
 		draw_colored_polygon(polygon, fill, paper_uvs, PAPER_TEXTURE)
 		var edge := polygon.duplicate()
 		edge.append(polygon[0])
@@ -85,6 +82,7 @@ class RingSegment extends Button:
 			var width: float = font.get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 			draw_string(font, center + Vector2(-width * .5, font_size * .35), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, INK)
 	func _ready() -> void:
+		texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 		mouse_entered.connect(queue_redraw)
 		mouse_exited.connect(queue_redraw)
 
@@ -92,16 +90,13 @@ class RingSegment extends Button:
 class RingFrame extends Control:
 	var center: Vector2
 	var outer_radius: float
-	var center_radius: float
 	var ring_boundaries := PackedFloat32Array()
 
 	func _draw() -> void:
-		# The dark base is only exposed as a narrow inner lip and under the joins.
-		# Four transparent wood quarters form the visible outer bezel above it.
-		draw_circle(center, outer_radius + 3.0, WOOD_DARK, true, -1.0, true)
+		draw_circle(center, outer_radius + 2.0, PAPER, true, -1.0, true)
+		draw_arc(center, outer_radius + 2.0, 0.0, TAU, 512, ThemeFactory.EDGE, 1.2, true)
 		for radius: float in ring_boundaries:
-			draw_arc(center, radius, 0.0, TAU, 192, WOOD_DARK, 2.0, true)
-		draw_circle(center, center_radius + 3.0, WOOD_DARK, true, -1.0, true)
+			draw_arc(center, radius, 0.0, TAU, 512, ThemeFactory.EDGE, 1.0, true)
 
 
 func _ready() -> void:
@@ -164,11 +159,6 @@ func present_seeds(point: Vector2, trellis: bool = false) -> void:
 	_show_seeds()
 
 
-func present_tools(point: Vector2) -> void:
-	present(point, {})
-	_choice_fan(["water", "harvest", "weed", "till"], false)
-
-
 func _show_seeds(_page: int = 0) -> void:
 	var point: Vector2 = anchor
 	_clear()
@@ -179,8 +169,7 @@ func _show_seeds(_page: int = 0) -> void:
 	var view: Vector2 = get_viewport().get_visible_rect().size
 	var ring_count: int = ceili(ids.size() / float(CROPS_PER_RING))
 	var outer_radius: float = clampf(minf(view.x, view.y) * (.27 if ring_count == 1 else .31), 190.0 if ring_count == 1 else 220.0, 238.0 if ring_count == 1 else 282.0)
-	var ornament_size: float = clampf(outer_radius * .20, 48.0, 60.0)
-	var extent: float = outer_radius + ornament_size * .72
+	var extent: float = outer_radius + 6.0
 	anchor = Vector2(clampf(point.x, extent, view.x - extent), clampf(point.y, extent, view.y - extent))
 	cards = Control.new()
 	cards.name = "Seeds"
@@ -199,15 +188,11 @@ func _show_seeds(_page: int = 0) -> void:
 	frame.size = cards.size
 	frame.center = center
 	frame.outer_radius = outer_radius
-	frame.center_radius = center_radius
 	for ring_index: int in ring_count:
 		frame.ring_boundaries.append(crop_inner + ring_index * (band_width + ring_gap))
 		frame.ring_boundaries.append(crop_inner + ring_index * (band_width + ring_gap) + band_width)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cards.add_child(frame)
-	_add_wood_bezel_quarters(center, outer_radius + 18.0)
-	_add_center_bezel(center, center_radius + 8.0)
-	_add_ring_ornaments(center, outer_radius + ornament_size * .24, ornament_size)
 	for ring_index: int in ring_count:
 		var first: int = ring_index * CROPS_PER_RING
 		var ring_ids: Array[String] = ids.slice(first, mini(first + CROPS_PER_RING, ids.size()))
@@ -215,35 +200,6 @@ func _show_seeds(_page: int = 0) -> void:
 		var outer_ring_radius: float = inner_radius + band_width
 		_add_crop_ring(ring_ids, center, inner_radius, outer_ring_radius, outer_radius, ring_index)
 	_add_cancel_button(anchor, center_radius * 1.90)
-
-
-func _add_wood_bezel_quarters(center: Vector2, radius: float) -> void:
-	for index: int in 4:
-		var quarter := TextureRect.new()
-		quarter.name = "WoodQuarter%d" % index
-		quarter.texture = WOOD_BEZEL_QUARTER
-		quarter.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		quarter.stretch_mode = TextureRect.STRETCH_SCALE
-		quarter.position = center + Vector2(0.0, -radius)
-		quarter.size = Vector2.ONE * radius
-		quarter.pivot_offset = Vector2(0.0, radius)
-		quarter.rotation = index * PI * .5
-		quarter.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		quarter.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		cards.add_child(quarter)
-
-
-func _add_center_bezel(center: Vector2, outer_radius: float) -> void:
-	var ring := TextureRect.new()
-	ring.name = "CenterBezel"
-	ring.texture = CENTER_BEZEL
-	ring.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	ring.stretch_mode = TextureRect.STRETCH_SCALE
-	ring.position = center - Vector2.ONE * outer_radius
-	ring.size = Vector2.ONE * outer_radius * 2.0
-	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ring.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	cards.add_child(ring)
 
 
 func _add_crop_ring(ids: Array[String], center: Vector2, inner_radius: float, outer_radius: float, menu_radius: float, ring_index: int) -> void:
@@ -279,25 +235,9 @@ func _configure_ring_button(button: RingSegment) -> void:
 		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 
 
-func _add_ring_ornaments(center: Vector2, radius: float, ornament_size: float) -> void:
-	for i: int in 4:
-		var ornament := TextureRect.new()
-		ornament.name = "Ruyi%d" % i
-		ornament.texture = RUYI_JOINT
-		ornament.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		ornament.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		ornament.size = Vector2.ONE * ornament_size
-		ornament.pivot_offset = ornament.size * .5
-		ornament.rotation = i * PI * .5
-		ornament.position = center + Vector2.from_angle(-PI * .5 + i * PI * .5) * radius - ornament.size * .5
-		ornament.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		ornament.z_index = 3
-		cards.add_child(ornament)
-
-
 func _ring_polygon(center: Vector2, inner_radius: float, outer_radius: float, start: float, finish: float) -> PackedVector2Array:
 	var polygon := PackedVector2Array()
-	var samples: int = maxi(24, ceili(absf(finish - start) * 18.0))
+	var samples: int = maxi(48, ceili(absf(finish - start) * 96.0))
 	for step: int in samples + 1:
 		polygon.append(center + Vector2.from_angle(lerpf(start, finish, float(step) / samples)) * outer_radius)
 	for step: int in samples + 1:
@@ -313,43 +253,13 @@ func _add_cancel_button(at: Vector2, diameter: float) -> void:
 	cancel.size = Vector2.ONE * diameter
 	cancel.focus_mode = Control.FOCUS_NONE
 	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
-		var color: Color = ThemeFactory.LEAF if state == "pressed" else (Color("e8e2d4") if state == "disabled" else (Color("e8dfc9") if state == "hover" else PAPER))
+		var color: Color = ThemeFactory.Tokens.WASH_PRESSED if state == "pressed" else (ThemeFactory.Tokens.DISABLED if state == "disabled" else (CELADON if state == "hover" else PAPER))
 		var style: StyleBoxFlat = ThemeFactory.paper(color, roundi(diameter * .5))
-		style.set_border_width_all(2)
+		style.set_border_width_all(1)
+		style.shadow_size = 0
 		cancel.add_theme_stylebox_override(state, style)
 	veil.add_child(cancel)
 	cancel.pressed.connect(dismiss)
-
-
-func _choice_fan(ids: Array, seeds: bool) -> void:
-	var point: Vector2 = anchor
-	_clear()
-	var view: Vector2 = get_viewport().get_visible_rect().size
-	anchor = Vector2(clampf(point.x, 196, view.x - 196), clampf(point.y, 196, view.y - 110))
-	cards = Control.new()
-	cards.name = "Seeds" if seeds else "Tools"
-	cards.position = anchor - Vector2(190, 190)
-	cards.size = Vector2(380, 190)
-	cards.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	veil.add_child(cards)
-	var labels: Dictionary = {"water": "浇水", "harvest": "收获", "weed": "除草", "till": "开垦"}
-	for i: int in ids.size():
-		var id: String = ids[i]
-		var button := Petal.new()
-		button.name = id
-		button.caption = Crops.definition(id).name if seeds else labels[id]
-		button.picture = load(Crops.icon_path(id) if seeds else "res://art/ui/crops/%s.png" % id)
-		button.size = cards.size
-		button.focus_mode = Control.FOCUS_NONE
-		for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
-			button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-		var start: float = PI + i * PI / ids.size() + .025
-		var finish: float = PI + (i + 1) * PI / ids.size() - .025
-		button.polygon = _ring_polygon(Vector2(190, 190), 48.0, 184.0, start, finish)
-		button.center = Vector2(190, 190) + Vector2.from_angle((start + finish) * .5) * 120
-		cards.add_child(button)
-		button.pressed.connect(_choose.bind("sow" if seeds else id, id if seeds else ""))
-	_add_cancel_button(anchor, 72.0)
 
 
 func _choose(tool: String, crop: String) -> void:

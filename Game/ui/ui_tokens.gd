@@ -15,4 +15,3 @@ const GAP := 12
 const INSET_X := 18
 const INSET_Y := 10
 const ICON_SIZE := 40
-const CORNER_SLICE := 20

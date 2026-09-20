@@ -1,5 +1,18 @@
 # E + F 淡彩 UI 材料
 
+## 20260921：连续肌理与运行时细边
+
+当前入口 `Game/ui/pigment_style.gd` 直接绘制圆角多边形，按整块控件的连续 UV 采样 `wash-tile.png`，外轮廓用运行时抗锯齿折线，不再使用下述九宫格成图。原九宫格中段虽然首尾无缝，但任意控件宽度会截断在不同相位，拼到固定角块时仍有竖直硬缝；低分辨率轮廓随 4K 放大也会软化。旧九宫格图片保留为制作历史。当前颜色由 token 在运行时调制，改 token 无需重烘焙按钮。
+
+圆盘去掉木圈／如意，改用同源淡彩肌理与程序细线。底部播种／工具及门前种子篮使用横排卡片，田格菜单中的播种选择才用圆盘。`configure_option` 统一无圆点下拉列表和箭头内边距；`pointer_focus` 使鼠标释放后不残留键盘圈，键盘导航仍有细圈。覆盖 `hover_pressed`，防止选中并悬停时回落到引擎白字默认值。
+
+设置新增保存字段 `resolution`，显示界面输出与 3D 实际渲染尺寸。选项 native/1080/1440/2160 控制 3D 缓冲比例，上限为当前输出，不改变 UI 输出或显示器模式。旧格式设置按现有严格校验和原件留存机制处理，不新增迁移；农场存档不变。
+
+Godot 4.7 官方接口：[StyleBox 自定义绘制](https://docs.godotengine.org/en/4.7/classes/class_stylebox.html)、[OptionButton 箭头间距](https://docs.godotengine.org/en/4.7/classes/class_optionbutton.html)、[Viewport 3D 分辨率比例](https://docs.godotengine.org/en/4.7/classes/class_viewport.html#class-viewport-property-scaling-3d-scale)。本机 4.7.2 实景验证原生 UI/3D 3840×2160，以及 1080p 时 UI 仍为 4K、3D 为1920×1080。
+
+## 以下为原始素材生产与九宫格历史
+
+
 用户选择：F 的淡彩叠染为主，E 的细边和规整结构为辅。不是把一整张概念图拉伸进界面。
 
 ## 生产与复用

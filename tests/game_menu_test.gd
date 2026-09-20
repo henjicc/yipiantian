@@ -32,6 +32,7 @@ func _run() -> void:
 	var focus: StyleBoxFlat = menu._tabs[0].get_theme_stylebox("focus")
 	_expect(not focus.draw_center, "Keyboard focus leaves selected pigment visible")
 	_expect(menu._tabs[0].get_theme_color("font_pressed_color") == preload("res://ui/ui_tokens.gd").INK, "Selected text retains dark readable ink")
+	_expect(menu._tabs[0].get_theme_color("font_hover_pressed_color") == preload("res://ui/ui_tokens.gd").INK, "Hovered selected text cannot fall back to white")
 	menu._quit.grab_focus()
 	var tab_event := InputEventKey.new()
 	tab_event.keycode = KEY_TAB
@@ -42,6 +43,11 @@ func _run() -> void:
 	tab_event.pressed = false
 	root.push_input(tab_event)
 	_expect(menu._volume_labels.master.text == "80%", "Volume label reflects actual current value")
+	for option: OptionButton in [menu._window, menu._quality, menu._resolution]:
+		for index: int in option.item_count:
+			_expect(not option.get_popup().is_item_radio_checkable(index), "Dropdown has no radio bullet")
+		_expect(option.get_theme_constant("arrow_margin") >= 14, "Arrow has safe right inset")
+	_expect(menu._quality.get_popup().get_theme_stylebox("hover").corner_radius_top_left <= 4, "Dropdown highlight has compact corners")
 	menu._sliders.master.value = 0
 	_expect(emitted.master == 0.0, "Muted master is emitted as exact zero")
 	_expect(Store.DEFAULTS.master == 0.8, "UI preference copy cannot mutate defaults")
@@ -71,11 +77,17 @@ func _run() -> void:
 		_expect(root.get_visible_rect().encloses(panel.get_global_rect()), "Entire modal fits logical viewport for %s" % str(viewport_size))
 		var physical: Rect2 = root.get_stretch_transform() * panel.get_global_rect()
 		_expect(Rect2(Vector2.ZERO, Vector2(viewport_size)).encloses(physical), "Scaled modal fits physical window %s" % str(viewport_size))
-		for control: Control in [menu._close, menu._quit, menu._window, menu._quality, menu._dof]:
+		for control: Control in [menu._close, menu._quit, menu._window, menu._resolution, menu._resolution_info, menu._quality, menu._dof]:
 			_expect(panel.get_global_rect().encloses(control.get_global_rect()), "Control stays inside modal at %s: %s" % [str(viewport_size), control.name])
 		if visual and viewport_size == Vector2i(3840, 2160):
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png(capture_folder.path_join("tiled-frame-4k.png"))
+			menu._quality.show_popup()
+			menu._quality.get_popup().set_focused_item(1)
+			await process_frame
+			await RenderingServer.frame_post_draw
+			root.get_texture().get_image().save_png(capture_folder.path_join("dropdown-refined-4k.png"))
+			menu._quality.get_popup().hide()
 	menu.queue_free()
 	await process_frame
 	print("GAME_MENU_TEST checks=%d failures=%d" % [checks, failures.size()])

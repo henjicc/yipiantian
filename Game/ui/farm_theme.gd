@@ -3,11 +3,7 @@ extends RefCounted
 
 const FONT = preload("res://art/ui/fonts/汇文明朝体.ttf")
 const Tokens = preload("res://ui/ui_tokens.gd")
-const PAPER_FRAME_NORMAL: Texture2D = preload("res://art/ui/pigment/normal.png")
-const PAPER_FRAME_HOVER: Texture2D = preload("res://art/ui/pigment/hover.png")
-const PAPER_FRAME_PRESSED: Texture2D = preload("res://art/ui/pigment/pressed.png")
-const PAPER_FRAME_DISABLED: Texture2D = preload("res://art/ui/pigment/disabled.png")
-const PANEL: Texture2D = preload("res://art/ui/pigment/panel.png")
+const PigmentStyle = preload("res://ui/pigment_style.gd")
 const INK := Tokens.INK
 const PAPER := Tokens.PAPER
 const EDGE := Tokens.EDGE
@@ -23,24 +19,36 @@ static func create() -> Theme:
 		theme.set_color("font_hover_color", type, INK)
 		theme.set_color("font_focus_color", type, INK)
 		theme.set_color("font_pressed_color", type, INK)
+		theme.set_color("font_hover_pressed_color", type, INK)
 		theme.set_color("font_disabled_color", type, Tokens.MUTED)
 	for type: String in ["Button", "OptionButton"]:
-		theme.set_stylebox("normal", type, framed_paper(PAPER_FRAME_NORMAL))
-		theme.set_stylebox("hover", type, framed_paper(PAPER_FRAME_HOVER))
-		theme.set_stylebox("pressed", type, framed_paper(PAPER_FRAME_PRESSED))
-		theme.set_stylebox("disabled", type, framed_paper(PAPER_FRAME_DISABLED))
+		theme.set_stylebox("normal", type, framed_paper(Tokens.WASH))
+		theme.set_stylebox("hover", type, framed_paper(Tokens.WASH_HOVER))
+		theme.set_stylebox("pressed", type, framed_paper(Tokens.WASH_PRESSED, true))
+		theme.set_stylebox("hover_pressed", type, framed_paper(Tokens.WASH_PRESSED, true))
+		theme.set_stylebox("disabled", type, framed_paper(Tokens.DISABLED))
 		var focus := StyleBoxFlat.new()
 		focus.draw_center = false
-		focus.border_color = Tokens.ACCENT
-		focus.set_border_width_all(2)
-		focus.set_corner_radius_all(13)
-		focus.set_expand_margin_all(-3)
+		focus.border_color = LEAF
+		focus.set_border_width_all(1)
+		focus.set_corner_radius_all(10)
+		focus.set_expand_margin_all(-4)
 		theme.set_stylebox("focus", type, focus)
 		theme.set_constant("h_separation", type, 8)
 	theme.set_stylebox("panel", "PanelContainer", framed_paper())
 	theme.set_stylebox("panel", "Panel", framed_paper())
-	theme.set_stylebox("panel", "PopupMenu", framed_paper())
-	theme.set_stylebox("hover", "PopupMenu", paper(Tokens.WASH_HOVER))
+	var popup := framed_paper()
+	popup.content_margin_left = 6
+	popup.content_margin_right = 6
+	popup.content_margin_top = 6
+	popup.content_margin_bottom = 6
+	theme.set_stylebox("panel", "PopupMenu", popup)
+	var highlight := paper(Tokens.WASH_HOVER, 3)
+	highlight.shadow_size = 0
+	highlight.set_border_width_all(0)
+	theme.set_stylebox("hover", "PopupMenu", highlight)
+	theme.set_constant("arrow_margin", "OptionButton", 16)
+	theme.set_constant("modulate_arrow", "OptionButton", 1)
 	theme.set_color("font_hover_color", "PopupMenu", INK)
 	theme.set_constant("v_separation", "PopupMenu", 16)
 	theme.set_constant("separation", "VBoxContainer", Tokens.GAP)
@@ -67,22 +75,29 @@ static func create() -> Theme:
 	return theme
 
 
-static func framed_paper(texture: Texture2D = PANEL) -> StyleBoxTexture:
-	# Keep the antialiased corners intact and repeat the seamless edge cells.
-	# Width changes the pigment tile count, never the corner/brush scale.
-	var style := StyleBoxTexture.new()
-	style.texture = texture
-	style.texture_margin_left = Tokens.CORNER_SLICE
-	style.texture_margin_top = Tokens.CORNER_SLICE
-	style.texture_margin_right = Tokens.CORNER_SLICE
-	style.texture_margin_bottom = Tokens.CORNER_SLICE
-	style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
-	style.axis_stretch_vertical = StyleBoxTexture.AXIS_STRETCH_MODE_TILE
+static func framed_paper(fill: Color = PAPER, selected: bool = false) -> StyleBox:
+	var style := PigmentStyle.new()
+	style.fill = fill
+	style.edge = EDGE
+	style.selected = selected
 	style.content_margin_left = Tokens.INSET_X
 	style.content_margin_right = Tokens.INSET_X
 	style.content_margin_top = Tokens.INSET_Y
 	style.content_margin_bottom = Tokens.INSET_Y
 	return style
+
+
+static func configure_option(button: OptionButton) -> void:
+	for index: int in button.item_count:
+		button.get_popup().set_item_as_radio_checkable(index, false)
+	pointer_focus(button)
+
+
+static func pointer_focus(button: BaseButton) -> void:
+	# Pointer activation need not leave a keyboard-navigation ring behind.
+	button.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and not event.pressed:
+			button.release_focus.call_deferred())
 
 
 static func paper(color: Color = PAPER, radius: int = 18) -> StyleBoxFlat:
@@ -91,6 +106,7 @@ static func paper(color: Color = PAPER, radius: int = 18) -> StyleBoxFlat:
 	style.border_color = EDGE
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(radius)
+	style.corner_detail = 24
 	style.content_margin_left = Tokens.INSET_X
 	style.content_margin_right = Tokens.INSET_X
 	style.content_margin_top = 8

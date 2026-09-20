@@ -80,6 +80,22 @@ func _run() -> void:
 	expect(scene.farm_state.snapshot()==state, "Light preview does not change crop progress or farm data")
 	scene._open_menu()
 	expect(not panel.visible, "Settings hides the debug time panel")
+	var ui_size: Vector2 = root.get_texture().get_size()
+	scene.game_menu._resolution.select(1)
+	scene.game_menu._resolution.item_selected.emit(1)
+	await process_frame
+	expect(is_equal_approx(root.scaling_3d_scale, 1080.0/root.size.y), "1080p choice controls actual 3D buffer scale")
+	expect(root.get_texture().get_size()==ui_size, "3D resolution never lowers UI output resolution")
+	expect("1920 × 1080" in scene.game_menu._resolution_info.text, "UI reports actual low-resolution 3D dimensions")
+	scene.game_menu._resolution.select(0)
+	scene.game_menu._resolution.item_selected.emit(0)
+	expect(root.scaling_3d_scale==1.0, "Native restores pixel-for-pixel 3D rendering")
+	await shot("settings-native-4k.png")
+	var quality: OptionButton = scene.game_menu._quality
+	await pointer(quality.get_global_rect().get_center(),true)
+	await pointer(quality.get_global_rect().get_center(),false)
+	await shot("dropdown-4k.png")
+	quality.get_popup().hide()
 	scene.farm_audio.shutdown();scene.free()
 	await process_frame
 	await process_frame

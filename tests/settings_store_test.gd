@@ -23,6 +23,7 @@ func _run() -> void:
 	values.fullscreen = true
 	values.quality = "low"
 	values.dof_enabled = false
+	values.resolution = "1440"
 	_expect(store.save(values).ok, "All preference categories save")
 	_expect(Store.new(path).load_settings().settings == values, "Reopening preserves exact settings")
 	values.quality = "high"
@@ -49,7 +50,7 @@ func _run() -> void:
 		var invalid: Dictionary = values.duplicate(true)
 		invalid.master = bad
 		_expect(not store.save(invalid).ok, "Invalid volume is rejected: %s" % str(bad))
-	for key: String in ["quality", "fullscreen", "dof_enabled"]:
+	for key: String in ["quality", "fullscreen", "dof_enabled", "resolution"]:
 		var invalid: Dictionary = values.duplicate(true)
 		invalid[key] = "invalid"
 		_expect(not store.save(invalid).ok, "Invalid enum/boolean is rejected: " + key)

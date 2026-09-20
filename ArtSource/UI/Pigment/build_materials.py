@@ -25,6 +25,9 @@ def main():
     tile = np.concatenate((tile, tile[::-1]), axis=0)
     assert np.array_equal(tile[0], tile[-1]) and np.array_equal(tile[:, 0], tile[:, -1])
     tile = (tile - tile.mean()) / max(tile.std(), 1)
+    # Current runtime uses this continuous field, not the historical 9-patches.
+    neutral = np.uint8(np.clip(250 + tile*2.5, 0, 255))
+    Image.fromarray(neutral).convert("RGBA").save(OUT / "wash-tile.png")
     # Fixed 20 px corners; the center is exactly one pigment period.
     y, x = np.mgrid[:SIZE*SCALE, :SIZE*SCALE].astype(float)
     x = (x+.5)/SCALE

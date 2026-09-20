@@ -60,10 +60,11 @@ func _ready() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	root.theme = FarmTheme.create()
-	var build:=Button.new();build.name="BuildIsland";build.text="布置小岛";root.add_child(build)
+	var build:=Button.new();build.name="BuildIsland";build.text="建设";root.add_child(build)
 	build.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	build.offset_left=-532;build.offset_right=-410;build.offset_top=88;build.offset_bottom=130
+	build.offset_left=-544;build.offset_right=-422;build.offset_top=88;build.offset_bottom=132
 	build.pressed.connect(func() -> void: construction_requested.emit())
+	FarmTheme.pointer_focus(build)
 	var basket := StatusBadge.new()
 	basket.name = "OpenBasket"
 	root.add_child(basket)
@@ -88,7 +89,7 @@ func _ready() -> void:
 	_clock = time_badge.title_label
 	_clock.name = "LocalClock"
 	_clock.add_theme_font_size_override("font_size", 26)
-	if OS.is_debug_build():
+	if (OS.is_debug_build() and OS.has_feature("editor")):
 		time_badge.pressed.connect(_toggle_time_preview)
 	else:
 		time_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -107,13 +108,13 @@ func _ready() -> void:
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_button(bar, "全景", 84).pressed.connect(func() -> void: overview_requested.emit())
 	_button(bar, "复位", 84).pressed.connect(func() -> void: reset_requested.emit())
-	var decorate := _button(bar, "布置", 84)
+	var decorate := _button(bar, "摆件", 84)
 	decorate.name = "Decorate"
 	decorate.pressed.connect(func() -> void: decoration_requested.emit())
 	_settings = _button(bar, "设置", 100)
 	_settings.name = "Settings"
 	_settings.pressed.connect(func() -> void: settings_requested.emit())
-	if OS.is_debug_build():
+	if (OS.is_debug_build() and OS.has_feature("editor")):
 		_free_view = _button(root, "自由视角", 160)
 		_free_view.name = "DebugFreeCamera"
 		_free_view.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -161,7 +162,7 @@ func _build_farm_controls(root: Control) -> void:
 	cancel.name = "CancelTool"
 	cancel.pressed.connect(func() -> void: cancel_tool_requested.emit())
 	cancel.hide()
-	_crop_row = _choice_row(root, "CropChoices", 435)
+	_crop_row = _choice_row(root, "CropChoices", Crops.crop_ids().size() * 36.0)
 	for crop_id: String in Crops.crop_ids():
 		var card := _choice_card(_crop_row, crop_id, Crops.definition(crop_id).name, load(Crops.icon_path(crop_id)))
 		card.pressed.connect(func() -> void: crop_requested.emit(crop_id))
@@ -364,7 +365,7 @@ func show_decoration_mode(active: bool) -> void:
 	_decorating = active
 	_view_controls.get_child(0).disabled = active
 	_view_controls.get_child(1).disabled = active
-	_view_controls.get_node("Decorate").text = "完成" if active else "布置"
+	_view_controls.get_node("Decorate").text = "完成" if active else "摆件"
 	_tools.visible = not active
 	_sync_rows()
 
@@ -403,6 +404,7 @@ func _button(parent: Control, text: String, width: float) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(width, 44)
+	FarmTheme.pointer_focus(button)
 	parent.add_child(button)
 	return button
 
