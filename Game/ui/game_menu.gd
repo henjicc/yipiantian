@@ -7,6 +7,7 @@ signal close_requested
 signal quit_requested
 signal wallpaper_requested
 signal developer_requested(action: String)
+signal dismissed
 
 const FarmTheme = preload("res://ui/farm_theme.gd")
 const QUALITY_VALUES: Array[String] = ["standard", "low", "high"]
@@ -34,6 +35,10 @@ var _page_index: int = 0
 var _paper: PanelContainer
 var _quit_confirmation: PanelContainer
 var _keep_playing: Button
+var closing: bool = false
+var _motion: Tween
+var _page_motion: Tween
+var _confirmation_motion: Tween
 
 
 func _ready() -> void:
@@ -207,6 +212,7 @@ func _ready() -> void:
 	_quit.pressed.connect(func() -> void:
 		_paper.hide()
 		_quit_confirmation.show()
+		_animate_confirmation(_quit_confirmation)
 		_keep_playing.grab_focus())
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -221,7 +227,14 @@ func _ready() -> void:
 
 
 func present(value: Dictionary, message: String = "") -> void:
+	if _motion: _motion.kill()
+	closing = false
+	_root.mouse_filter = Control.MOUSE_FILTER_STOP
 	cancel_quit_confirmation()
+	if _confirmation_motion: _confirmation_motion.kill()
+	_paper.modulate.a = 1.0
+	_quit_confirmation.scale = Vector2.ONE
+	_quit_confirmation.modulate.a = 1.0
 	_values = value.duplicate(true)
 	_populating = true
 	for key: String in _sliders:
@@ -237,6 +250,12 @@ func present(value: Dictionary, message: String = "") -> void:
 	set_status(message)
 	_show_page(0)
 	show()
+	_root.modulate.a = 0.0
+	_paper.pivot_offset = _paper.size * .5
+	_paper.scale = Vector2.ONE * .96
+	_motion = create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_motion.tween_property(_root, "modulate:a", 1.0, .20)
+	_motion.tween_property(_paper, "scale", Vector2.ONE, .22)
 	_refresh_focus_chain(0)
 	_tabs[0].grab_focus()
 
@@ -251,11 +270,28 @@ func set_status(message: String, can_leave_unsaved: bool = false) -> void:
 
 
 func dismiss() -> void:
-	cancel_quit_confirmation()
+	if not visible or closing: return
+	closing = true
+	if _motion: _motion.kill()
+	if _confirmation_motion: _confirmation_motion.kill()
 	_window.get_popup().hide()
 	_quality.get_popup().hide()
 	_resolution.get_popup().hide()
-	hide()
+	var panel: Control = _quit_confirmation if _quit_confirmation.visible else _paper
+	panel.pivot_offset = panel.size * .5
+	_motion = create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	_motion.tween_property(_root, "modulate:a", 0.0, .14)
+	_motion.tween_property(panel, "scale", Vector2.ONE * .96, .14)
+	_motion.chain().tween_callback(func() -> void:
+		hide()
+		closing = false
+		dismissed.emit())
+
+
+func _input(event: InputEvent) -> void:
+	# Keep the modal shield until the last frame, including keyboard activation.
+	if visible and closing and (event is InputEventMouse or event is InputEventKey):
+		get_viewport().set_input_as_handled()
 
 
 func _refresh_sway() -> void:
@@ -280,14 +316,21 @@ func _change(key: String, value: Variant) -> void:
 
 
 func _show_page(index: int) -> void:
+	var changed: bool = index != _page_index
+	if _page_motion: _page_motion.kill()
 	_page_index = index
 	_window.get_popup().hide()
 	_quality.get_popup().hide()
 	_resolution.get_popup().hide()
 	for page: int in _pages.size():
 		_pages[page].visible = page == index
+		_pages[page].modulate.a = 1.0
 		_tabs[page].set_pressed_no_signal(page == index)
 	_refresh_focus_chain(index)
+	if visible and changed:
+		_pages[index].modulate.a = 0.0
+		_page_motion = create_tween()
+		_page_motion.tween_property(_pages[index], "modulate:a", 1.0, .14).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 func _refresh_focus_chain(index: int) -> void:
@@ -402,8 +445,20 @@ func _build_quit_confirmation() -> void:
 
 
 func cancel_quit_confirmation() -> bool:
+	if closing: return false
 	if not _quit_confirmation.visible: return false
 	_quit_confirmation.hide()
 	_paper.show()
+	_animate_confirmation(_paper)
 	_quit.grab_focus()
 	return true
+
+
+func _animate_confirmation(panel: Control) -> void:
+	if _confirmation_motion: _confirmation_motion.kill()
+	panel.pivot_offset = panel.size * .5
+	panel.scale = Vector2.ONE * .97
+	panel.modulate.a = 0.0
+	_confirmation_motion = create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_confirmation_motion.tween_property(panel, "scale", Vector2.ONE, .18)
+	_confirmation_motion.tween_property(panel, "modulate:a", 1.0, .14)

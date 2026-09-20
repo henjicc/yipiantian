@@ -22,6 +22,8 @@ func _run() -> void:
 	root.add_child(menu)
 	menu.settings_changed.connect(func(value: Dictionary) -> void: emitted = value)
 	menu.present(Store.DEFAULTS)
+	_expect(menu._root.modulate.a < 1.0, "Settings begins with a visible entrance transition")
+	await create_timer(.28).timeout
 	await process_frame
 	if visual:
 		await process_frame
@@ -97,10 +99,27 @@ func _run() -> void:
 	_expect(menu._tabs[0].text == "音量" and menu._tabs[1].text == "显示" and menu._tabs[3].text == "关于", "Settings categories and About use requested labels")
 	if OS.is_debug_build() and OS.has_feature("editor"):
 		menu._show_page(4)
-		_expect(menu._developer_buttons.size() == 4, "Developer tab contains camera, free view, model and time tools")
+		_expect(menu._developer_buttons.size() == 5, "Developer tab contains camera, sway, free view, model and time tools")
 		if visual:
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png(capture_folder.path_join("developer.png"))
+	menu.dismiss()
+	_expect(menu.visible and menu.closing, "Closing retains modal shield during fade")
+	await create_timer(.04).timeout
+	menu.present(Store.DEFAULTS)
+	await create_timer(.28).timeout
+	_expect(menu.visible and is_equal_approx(menu._root.modulate.a, 1.0), "Reopening cancels stale close completion")
+	menu._quit.pressed.emit()
+	await create_timer(.22).timeout
+	_expect(menu._quit_confirmation.visible, "Quit confirmation animates into view")
+	menu.cancel_quit_confirmation()
+	await create_timer(.22).timeout
+	_expect(menu._paper.visible and is_equal_approx(menu._paper.modulate.a, 1.0), "Returning from quit restores paper")
+	menu.dismiss()
+	menu.dismiss()
+	await create_timer(.20).timeout
+	_expect(not menu.visible, "Repeated close finishes without restarting animation")
+	await _check_field_motion()
 	menu.queue_free()
 	await process_frame
 	print("GAME_MENU_TEST checks=%d failures=%d" % [checks, failures.size()])
@@ -113,3 +132,51 @@ func _expect(condition: bool, description: String) -> void:
 	checks += 1
 	if not condition:
 		failures.append(description)
+
+
+func _check_field_motion() -> void:
+	var field := preload("res://ui/field_menu.gd").new()
+	root.add_child(field)
+	var selected: Array[String] = []
+	field.action_requested.connect(func(tool: String, crop: String) -> void: selected.append(tool + crop))
+	field.present(Vector2(450, 350), {"crop_id": "", "ground": "ready"})
+	var leaf: Control = field.cards.get_node("sow")
+	_expect(leaf.modulate.a < 1.0 and not is_zero_approx(leaf.rotation), "Land menu leaves unfold around their pivot")
+	await create_timer(.08).timeout
+	if visual:
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(capture_folder.path_join("fan-unfolding.png"))
+	field.dismiss()
+	field.present(Vector2(480, 350), {"crop_id": "", "ground": "ready"})
+	await create_timer(.36).timeout
+	_expect(field.active and field.veil.visible, "Cancel then reopen retains the newest land menu")
+	field.cards.get_node("sow").pressed.emit()
+	_expect(field.cards.name == "Seeds" and selected.is_empty(), "Ring transition changes choices without planting")
+	field.cards.get_node("radish").pressed.emit()
+	_expect(selected.is_empty(), "Moving crop sectors cannot commit a late or duplicate action")
+	var early_press := InputEventMouseButton.new()
+	early_press.button_index = MOUSE_BUTTON_LEFT
+	early_press.position = field.cards.position + field.cards.get_node("radish").center
+	early_press.pressed = true
+	root.push_input(early_press, true)
+	await create_timer(.10).timeout
+	if visual:
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(capture_folder.path_join("ring-unfolding.png"))
+	await create_timer(.40).timeout
+	early_press.pressed = false
+	root.push_input(early_press, true)
+	await process_frame
+	_expect(selected.is_empty() and field.active, "Press during unfold cannot plant when released after settling")
+	if visual:
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(capture_folder.path_join("animated-ring-settled.png"))
+	field.cards.get_node("radish").pressed.emit()
+	field.cards.get_node("radish").pressed.emit()
+	_expect(selected.size() == 1 and not field.active and field.veil.visible, "Choice commits once while its presentation folds away")
+	await create_timer(.20).timeout
+	_expect(not field.veil.visible, "Closed menu leaves no invisible input shield")
+	field.present_seeds(Vector2(480, 350), true)
+	await create_timer(.38).timeout
+	_expect(field.cards.has_node("luffa"), "Single ring entry also settles")
+	field.queue_free()

@@ -17,10 +17,12 @@ func mouse(point: Vector2, down: bool, button: int=MOUSE_BUTTON_LEFT) -> void:
 	root.push_input(event,true)
 	await physics_frame; await process_frame
 func click(point: Vector2) -> void:
+	await create_timer(.36).timeout
 	var event := InputEventMouseMotion.new(); event.position=point
 	event.window_id=root.get_window_id()
 	root.push_input(event,true); await physics_frame; await process_frame
 	await mouse(point,true); await mouse(point,false)
+	await create_timer(.36).timeout
 func point(index: int, id: String) -> Vector2:
 	return scene.camera.unproject_position(scene.farm.fields[index].to_global(scene.farm.cell_position(index,id)))
 func petal(id: String) -> Vector2:
@@ -28,6 +30,7 @@ func petal(id: String) -> Vector2:
 	return button.global_position+button.center
 func shot(label: String) -> void:
 	if not visual: return
+	await create_timer(.36).timeout
 	await process_frame; await process_frame; await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(folder.path_join(label+".png"))
 func run() -> void:

@@ -114,6 +114,7 @@ func measure_option(option: OptionButton,index: int,kind: String) -> void:
 	print("SETTING_SWITCH kind=%s index=%d apply_save_ms=%.2f peak_frame_ms=%.2f foreground=%s" % [kind,index,apply_ms,peak_ms,root.has_focus()])
 
 func click(button: Control) -> void:
+	await create_timer(.26).timeout
 	await process_frame; await process_frame
 	var point: Vector2 = button.get_global_rect().get_center()
 	for down: bool in [true,false]:
@@ -121,6 +122,7 @@ func click(button: Control) -> void:
 		event.position=point;event.button_index=MOUSE_BUTTON_LEFT;event.pressed=down
 		root.push_input(event,true)
 		await process_frame;await process_frame
+	await create_timer(.26).timeout
 
 func shot(name: String) -> void:
 	await RenderingServer.frame_post_draw

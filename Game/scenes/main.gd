@@ -1875,6 +1875,7 @@ func _save_settings() -> bool:
 
 
 func _request_menu_close() -> void:
+	if game_menu.closing: return
 	if game_menu.cancel_quit_confirmation(): return
 	_cancel_input()
 	decoration_layout.cancel_pointer_gesture()
@@ -1882,6 +1883,7 @@ func _request_menu_close() -> void:
 		if not _save_settings():
 			return
 	game_menu.dismiss()
+	await game_menu.dismissed
 	_allow_leave_settings = false
 	camera.free_input_enabled = true
 	_refresh_hud()
@@ -1910,7 +1912,7 @@ func _developer_action(action: String) -> void:
 			return
 		farm_audio.shutdown()
 		return
-	_request_menu_close()
+	await _request_menu_close()
 	if game_menu.visible: return
 	match action:
 		"sway_tuning":

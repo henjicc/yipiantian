@@ -16,6 +16,9 @@ var veil: Control
 var cards: Control
 var anchor: Vector2
 var _trellis: bool = false
+var _motion: Tween
+var _opening: bool = false
+var _outgoing: Control
 
 
 class Petal extends Button:
@@ -121,11 +124,13 @@ func present(point: Vector2, cell: Dictionary) -> void:
 	_trellis = cell.get("field_id", "") == "trellis"
 	_clear()
 	active = true
+	veil.modulate.a = 1.0
 	veil.show()
 	var view := get_viewport().get_visible_rect().size
 	anchor = Vector2(clampf(point.x, 166, view.x - 166), clampf(point.y, 160, view.y - 110))
 	cards = Control.new()
 	veil.add_child(cards)
+	cards.size = Vector2(320, 232)
 	cards.position = anchor - Vector2(160, 160)
 	cards.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var harvest: bool = cell.get("stage", "") == "mature"
@@ -151,21 +156,28 @@ func present(point: Vector2, cell: Dictionary) -> void:
 		button.disabled = (id == "sow" and (not empty or cell.get("ground", "ready") != "ready")) or (id == "water" and (empty or harvest or cell.get("watered", false))) or (id in ["weed", "till"] and (not empty or cell.get("ground", "ready") != ("weedy" if id == "weed" else "rough")))
 		cards.add_child(button)
 		button.pressed.connect(func() -> void:
+			if _opening or not active: return
 			if id == "sow":
 				_show_seeds()
 			else:
 				_choose(id, ""))
 	_add_cancel_button(anchor, 72.0)
+	_animate_open(Vector2(160, 160), false)
 
 
 func present_seeds(point: Vector2, trellis: bool = false) -> void:
-	present(point, {"crop_id": "", "ground": "ready", "field_id": "trellis" if trellis else ""})
+	_clear()
+	_trellis = trellis
+	anchor = point
+	active = true
+	veil.modulate.a = 1.0
+	veil.show()
 	_show_seeds()
 
 
 func _show_seeds(_page: int = 0) -> void:
 	var point: Vector2 = anchor
-	_clear()
+	_retire_menu()
 	var ids: Array[String] = Crops.seeds(_trellis)
 	if ids.is_empty():
 		dismiss()
@@ -204,6 +216,7 @@ func _show_seeds(_page: int = 0) -> void:
 		var outer_ring_radius: float = inner_radius + band_width
 		_add_crop_ring(ring_ids, center, inner_radius, outer_ring_radius, outer_radius, ring_index)
 	_add_cancel_button(anchor, center_radius * 2.0)
+	_animate_open(center, true)
 
 
 func _add_crop_ring(ids: Array[String], center: Vector2, inner_radius: float, outer_radius: float, menu_radius: float, ring_index: int) -> void:
@@ -267,19 +280,98 @@ func _add_cancel_button(at: Vector2, diameter: float) -> void:
 
 
 func _choose(tool: String, crop: String) -> void:
-	if not active:
+	if not active or _opening:
 		return
 	dismiss()
 	action_requested.emit(tool, crop)
 
 
 func _clear() -> void:
+	if _motion: _motion.kill()
+	_opening = false
+	_outgoing = null
 	for child: Node in veil.get_children():
 		veil.remove_child(child)
 		child.queue_free()
 
 
 func dismiss() -> void:
+	if not active: return
 	active = false
-	if veil:
-		veil.hide()
+	_opening = false
+	if _motion: _motion.kill()
+	_set_buttons_interactive(veil, false)
+	_motion = create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	_motion.tween_property(veil, "modulate:a", 0.0, .14)
+	_motion.tween_property(cards, "scale", Vector2.ONE * .88, .14)
+	_motion.chain().tween_callback(veil.hide)
+
+
+func _retire_menu() -> void:
+	if _motion: _motion.kill()
+	if is_instance_valid(_outgoing):
+		veil.remove_child(_outgoing)
+		_outgoing.queue_free()
+	_outgoing = Control.new()
+	_outgoing.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_outgoing.pivot_offset = anchor
+	for child: Node in veil.get_children():
+		veil.remove_child(child)
+		_outgoing.add_child(child)
+	veil.add_child(_outgoing)
+	_set_buttons_interactive(_outgoing, false)
+
+
+func _animate_open(center: Vector2, ring: bool) -> void:
+	_opening = true
+	cards.pivot_offset = center
+	_set_buttons_interactive(cards, false)
+	_motion = create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	if is_instance_valid(_outgoing):
+		_motion.tween_property(_outgoing, "modulate:a", 0.0, .10)
+		_motion.tween_property(_outgoing, "scale", Vector2.ONE * .92, .12)
+	var index: int = 0
+	for child: Control in cards.get_children():
+		child.pivot_offset = center
+		child.modulate.a = 0.0
+		child.scale = Vector2.ONE * .78
+		var delay: float = 0.0
+		if child is Button:
+			# Each leaf pivots at the soil point; ring sectors follow around the rim.
+			child.rotation = -.24 if ring else -float(index) * PI / 3.0 - .18
+			delay = (index % CROPS_PER_RING) * .018 + (index / CROPS_PER_RING) * .025 if ring else index * .035
+			index += 1
+		_motion.tween_property(child, "rotation", 0.0, .22).set_delay(delay)
+		_motion.tween_property(child, "scale", Vector2.ONE, .22).set_delay(delay)
+		_motion.tween_property(child, "modulate:a", 1.0, .15).set_delay(delay)
+	var cancel: Control = veil.get_node("Cancel")
+	cancel.pivot_offset = cancel.size * .5
+	cancel.scale = Vector2.ONE * .85
+	cancel.modulate.a = 0.0
+	_motion.tween_property(cancel, "scale", Vector2.ONE, .18)
+	_motion.tween_property(cancel, "modulate:a", 1.0, .15)
+	_motion.chain().tween_callback(func() -> void:
+		_opening = false
+		_set_buttons_interactive(cards, true)
+		if is_instance_valid(_outgoing):
+			veil.remove_child(_outgoing)
+			_outgoing.queue_free()
+			_outgoing = null)
+
+
+func _set_buttons_interactive(node: Node, enabled: bool) -> void:
+	if node is Button:
+		node.mouse_filter = Control.MOUSE_FILTER_STOP if enabled else Control.MOUSE_FILTER_IGNORE
+	for child: Node in node.get_children():
+		_set_buttons_interactive(child, enabled)
+
+
+func _input(event: InputEvent) -> void:
+	if not veil.visible: return
+	# No press may start on a moving sector and complete on a different choice.
+	if _opening and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed and not cards.get_global_rect().has_point(event.position):
+			dismiss()
+		get_viewport().set_input_as_handled()
+	elif not active and (event is InputEventMouse or event is InputEventKey):
+		get_viewport().set_input_as_handled()
