@@ -11,6 +11,13 @@
     },
     {
       "id": "tools",
+      "revision": {
+        "tool": "built-in image_gen edit",
+        "reference": "Previous tools.png at commit 52df1c0",
+        "prompt": "Use case: precise-object-edit. Edit this transparent game toolbar icon. Replace ONLY the hoe at upper left (handle extending to lower right) with a traditional wooden-handled iron HAMMER, short block-shaped double-faced hammer head. Keep the sickle at upper right and its handle extending to lower left unchanged, preserve its silhouette, brush texture, color, size and position. Keep the same crossed composition, canvas framing and padding. Match exactly the existing restrained Chinese gongbi light-color painted illustration: warm bamboo ochre handle, muted grey-olive iron, fine ink contours, pale watercolor pigment texture, slight matte volume, no glossy 3D. Genuine transparent alpha background, no opaque background, no text, no insignia, no border. Only the hoe head changes into a clearly recognizable hammer head; no other alterations.",
+        "source": "%USERPROFILE%\\.codex\\generated_images\\01a0bd2f-bdf8-7412-a4b9-4c80a4f71be2\\exec-02ab0791-66d8-47db-9cb5-43d70fca7a5e.png",
+        "change": "仅将锄头改成锤子，保留镰刀和工笔淡彩交叉构图；下方原始生成记录作为历史保留"
+      },
       "prompt": "Use case: stylized-concept. Generate ONE production game toolbar icon, square PNG with genuine transparent alpha background, not checkerboard drawing, no background paper panel, no ground shadow, no labels, no text. Ming-era Chinese pastoral farming game, gongbi meticulous fine ink contour and restrained pale mineral watercolor pigment, sage green, warm bamboo ochre, muted dark olive ink. Hand-painted botanical illustration feeling, soft internal wash with very slight volume, NOT 3D render, not glossy, not vector/flat emoji, not photographic. Simple legible silhouette designed for 28-40px display. Object centered occupying 85 percent of canvas, consistent generous safe padding, fully visible. A small traditional wooden-handled hoe and curved sickle crossed neatly as a compact farming tools emblem, dark muted iron and pale bamboo wood, chunky readable silhouettes.",
       "source": "%USERPROFILE%\\.codex\\generated_images\\01a0bd2f-bdf8-7412-a4b9-4c80a4f71be2\\exec-5d7c2907-104b-4007-83d5-c4b0d69b28cd.png",
       "destination": "Game/art/ui/toolbar/tools.png"
