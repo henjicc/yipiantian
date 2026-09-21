@@ -24,6 +24,8 @@ const DesktopWallpaper = preload("res://platform/desktop_wallpaper.gd")
 var desktop_wallpaper: DesktopWallpaper
 var _wallpaper_issue: String = ""
 var _wallpaper_click: Vector2 = Vector2.INF
+var _wallpaper_injecting: bool = false
+var _wallpaper_buttons: int = 0
 var _wallpaper_entry: String = ""
 var _wallpaper_layers: Array[CanvasLayer] = []
 var _wallpaper_press: Vector2 = Vector2.INF
@@ -1167,7 +1169,7 @@ func _refresh_lanterns() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if desktop_wallpaper != null and (desktop_wallpaper.busy or (desktop_wallpaper.active and not desktop_wallpaper.interacting)):
+	if desktop_wallpaper != null and (desktop_wallpaper.busy or (desktop_wallpaper.active and not _wallpaper_injecting)):
 		get_viewport().set_input_as_handled()
 		return
 	camera.observe_input(event)
@@ -1273,7 +1275,7 @@ func _consume_focus_return_wheel(event: InputEvent) -> bool:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if sway_tuning != null and sway_tuning.visible: return
-	if desktop_wallpaper != null and (desktop_wallpaper.busy or (desktop_wallpaper.active and not desktop_wallpaper.interacting)):
+	if desktop_wallpaper != null and (desktop_wallpaper.busy or (desktop_wallpaper.active and not _wallpaper_injecting)):
 		get_viewport().set_input_as_handled()
 		return
 	if island_builder!=null and island_builder.active:
@@ -1411,9 +1413,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
 		_request_exit()
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_WM_MOUSE_EXIT:
-		if desktop_wallpaper != null and desktop_wallpaper.active:
-			if desktop_wallpaper.interacting: _wallpaper_leave()
-			return
+		if desktop_wallpaper != null and desktop_wallpaper.active: return
 		if field_menu != null: field_menu.dismiss()
 		if garden_album!=null and garden_album.active: camera.cancel_free_gesture()
 		if what==NOTIFICATION_WM_WINDOW_FOCUS_OUT and animal_panel!=null: animal_panel.dismiss()
@@ -1842,6 +1842,8 @@ func _enter_wallpaper() -> void:
 
 
 func _wallpaper_changed(enabled: bool) -> void:
+	_wallpaper_buttons = 0
+	tool_cursor.set_system_pointer(enabled)
 	_wallpaper_click = Vector2.INF
 	_wallpaper_press = Vector2.INF
 	_cancel_input()
@@ -1883,24 +1885,75 @@ func _restore_wallpaper_layers() -> void:
 	_wallpaper_layers.clear()
 
 
-func _wallpaper_pointer(point: Vector2) -> void:
-	if desktop_wallpaper.interacting: return
-	_pointer_position = point * get_viewport().get_visible_rect().size
+func _inject_wallpaper(event: InputEventMouse, flags: int = 0) -> void:
+	event.shift_pressed = bool(flags & 1)
+	event.ctrl_pressed = bool(flags & 2)
+	event.alt_pressed = bool(flags & 4)
+	_wallpaper_injecting = true
+	get_viewport().push_input(event, true)
+	_wallpaper_injecting = false
 
 
-func _wallpaper_button(point: Vector2, button: int, pressed: bool, _factor: float) -> void:
-	if desktop_wallpaper.interacting: return
-	_wallpaper_pointer(point)
-	if button == MOUSE_BUTTON_LEFT:
-		if pressed:
-			_wallpaper_press = _pointer_position
-		else:
-			if _wallpaper_press.is_finite() and _wallpaper_press.distance_to(_pointer_position) < 7.0:
-				_wallpaper_click = _pointer_position
-			_wallpaper_press = Vector2.INF
+func _wallpaper_pointer(point: Vector2, flags: int = 0) -> void:
+	var position: Vector2 = point * get_viewport().get_visible_rect().size
+	var previous: Vector2 = _pointer_position
+	_pointer_position = position
+	if not desktop_wallpaper.interacting: return
+	var event := InputEventMouseMotion.new()
+	event.position = position
+	event.global_position = position
+	event.relative = position-previous if get_viewport().get_visible_rect().has_point(previous) else Vector2.ZERO
+	event.button_mask = _wallpaper_buttons
+	_inject_wallpaper(event, flags)
+
+
+func _wallpaper_button(point: Vector2, button: int, pressed: bool, factor: float, flags: int) -> void:
+	_wallpaper_pointer(point, flags)
+	if not desktop_wallpaper.interacting:
+		if button == MOUSE_BUTTON_LEFT:
+			if pressed:
+				_wallpaper_press = _pointer_position
+			else:
+				if _wallpaper_press.is_finite() and _wallpaper_press.distance_to(_pointer_position) < 7.0:
+					_wallpaper_click = _pointer_position
+				_wallpaper_press = Vector2.INF
+		return
+	var held: bool = button <= 3 or button >= 8
+	var mask: int = 1 << (button-1)
+	if held:
+		_wallpaper_buttons = (_wallpaper_buttons | mask) if pressed else (_wallpaper_buttons & ~mask)
+	var event := InputEventMouseButton.new()
+	event.position = _pointer_position
+	event.global_position = _pointer_position
+	event.button_index = button as MouseButton
+	event.button_mask = _wallpaper_buttons
+	event.pressed = pressed
+	event.factor = factor
+	event.double_click = held and pressed and bool(flags & 8)
+	_inject_wallpaper(event, flags)
+	if not held:
+		event = event.duplicate()
+		event.pressed = false
+		_inject_wallpaper(event, flags)
 
 
 func _wallpaper_leave() -> void:
+	for button: int in [1, 2, 3, 8, 9]:
+		var mask: int = 1 << (button-1)
+		if not (_wallpaper_buttons & mask): continue
+		_wallpaper_buttons &= ~mask
+		var event := InputEventMouseButton.new()
+		event.button_index = button as MouseButton
+		event.button_mask = _wallpaper_buttons
+		event.position = Vector2(-100, -100)
+		event.global_position = event.position
+		event.canceled = true
+		_inject_wallpaper(event)
+	if desktop_wallpaper.interacting:
+		var motion := InputEventMouseMotion.new()
+		motion.position = Vector2(-100, -100)
+		motion.global_position = motion.position
+		_inject_wallpaper(motion)
 	_wallpaper_press = Vector2.INF
 	_wallpaper_click = Vector2.INF
 	_pointer_position = Vector2(-100, -100)

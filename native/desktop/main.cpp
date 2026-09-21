@@ -12,8 +12,7 @@
 
 namespace {
 constexpr UINT TRAY_MESSAGE = WM_APP + 1;
-HWND game = nullptr, helper = nullptr, desktop = nullptr, icons = nullptr, wallpaper_layer = nullptr;
-bool raised_layer = false;
+HWND game = nullptr, helper = nullptr, desktop = nullptr, icons = nullptr;
 std::string workarea_status;
 HANDLE parent_process = nullptr;
 DWORD game_pid = 0;
@@ -29,12 +28,44 @@ constexpr UINT POINTER_BUTTON = WM_APP + 2;
 HHOOK mouse_hook_handle = nullptr;
 bool interacting = false, pointer_available = false;
 POINT pointer_point{};
-struct PointerButton { POINT point; int button; bool pressed; double factor; };
+std::vector<RECT> icon_rects;
+ULONGLONG icons_sampled = 0;
+bool icons_valid = false;
+unsigned captured_buttons = 0, passed_buttons = 0;
+POINT last_click{};
+ULONGLONG last_click_time = 0;
+int last_click_button = 0;
+struct PointerButton { POINT point; int button; bool pressed; double factor; int flags; };
+int modifiers() {
+    return ((GetAsyncKeyState(VK_SHIFT)&0x8000) ? 1 : 0)
+        | ((GetAsyncKeyState(VK_CONTROL)&0x8000) ? 2 : 0)
+        | ((GetAsyncKeyState(VK_MENU)&0x8000) ? 4 : 0);
+}
+void refresh_icons() {
+    // IPC stays outside the mouse hook. Bounds include icon labels.
+    HWND list = FindWindowExW(icons, nullptr, L"SysListView32", nullptr);
+    if (!list) { icons_valid=false; return; }
+    if (!IsWindowVisible(list)) { icon_rects.clear(); icons_sampled=GetTickCount64(); icons_valid=true; return; }
+    IAccessible *accessible = nullptr;
+    if (FAILED(AccessibleObjectFromWindow(list, OBJID_CLIENT, __uuidof(IAccessible), reinterpret_cast<void **>(&accessible)))) { icons_valid=false; return; }
+    long count = 0;
+    bool valid = SUCCEEDED(accessible->get_accChildCount(&count)) && count >= 0 && count <= 10000;
+    std::vector<RECT> bounds;
+    for (long i=1; valid && i<=count; ++i) {
+        VARIANT child{}; child.vt=VT_I4; child.lVal=i;
+        long x=0,y=0,w=0,h=0;
+        valid = accessible->accLocation(&x,&y,&w,&h,child) == S_OK;
+        if (valid && w>0 && h>0) bounds.push_back(RECT{x,y,x+w,y+h});
+    }
+    accessible->Release();
+    if (valid) { icon_rects=std::move(bounds); icons_sampled=GetTickCount64(); icons_valid=true; }
+    else icons_valid=false;
+}
 LRESULT CALLBACK mouse_hook(int code, WPARAM message, LPARAM data);
 void stop_mouse() {
     if (mouse_hook_handle) UnhookWindowsHookEx(mouse_hook_handle);
     mouse_hook_handle = nullptr;
-    interacting = false; pointer_available = false;
+    interacting = false; pointer_available = false; captured_buttons=0; passed_buttons=0; icons_valid=false;
 }
 
 void emit(const std::string &line) {
@@ -125,8 +156,6 @@ bool attach() {
         styles_saved = true;
     }
     desktop = raised ? progman : worker;
-    wallpaper_layer = desktop;
-    raised_layer = raised;
     interacting = false;
     LONG_PTR style = (old_style & ~(WS_POPUP | WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX)) | WS_CHILD;
     LONG_PTR ex_style = (old_ex_style & ~(WS_EX_APPWINDOW | WS_EX_TOPMOST)) | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
@@ -209,25 +238,13 @@ void request_restore(bool quit) {
         SetForegroundWindow(game);
     }
 }
-bool desktop_background(POINT point) {
+bool desktop_background(POINT point, bool dragging = false) {
     if (!attached || locked || !PtInRect(&monitor_rect, point)) return false;
     HWND hit = WindowFromPoint(point);
-    const auto cls = window_class(hit);
-    if (hit == game || (hit == desktop && cls == L"WorkerW")) return true;
-    if (hit != icons && !IsChild(icons, hit) && cls != L"Progman" && cls != L"WorkerW") return false;
-    // Inspect only the desktop under this click. A desktop icon (including its
-    // label) must retain its normal action and never wake the farm behind it.
-    IAccessible *accessible = nullptr;
-    VARIANT child{}, role{};
-    bool background = false;
-    if (SUCCEEDED(AccessibleObjectFromPoint(point, &accessible, &child)) && accessible) {
-        if (SUCCEEDED(accessible->get_accRole(child, &role)) && role.vt == VT_I4) {
-            background = role.lVal == ROLE_SYSTEM_LIST || role.lVal == ROLE_SYSTEM_CLIENT || role.lVal == ROLE_SYSTEM_WINDOW;
-        }
-        accessible->Release();
-    }
-    VariantClear(&child); VariantClear(&role);
-    return background;
+    if (hit != game && hit != desktop && hit != icons && !IsChild(icons, hit)) return false;
+    if (!icons_valid || GetTickCount64()-icons_sampled > 1000) return false;
+    if (!dragging) for (const RECT &rect : icon_rects) if (PtInRect(&rect, point)) return false;
+    return true;
 }
 std::string pointer_coordinates(POINT point) {
     RECT client{};
@@ -237,25 +254,61 @@ std::string pointer_coordinates(POINT point) {
 }
 void sample_pointer() {
     POINT point{};
-    const bool available = GetCursorPos(&point) && desktop_background(point);
+    const bool available = GetCursorPos(&point) && (!interacting || !passed_buttons) && desktop_background(point, captured_buttons != 0);
     const bool moved = point.x != pointer_point.x || point.y != pointer_point.y;
     const bool changed = available != pointer_available;
     pointer_point = point;
     pointer_available = available;
     if (available && (moved || changed)) {
         const auto coordinates = pointer_coordinates(point);
-        if (!coordinates.empty()) emit("POINTER " + coordinates);
+        if (!coordinates.empty()) emit("POINTER " + coordinates + " " + std::to_string(modifiers()));
     } else if (changed) emit("LEAVE");
 }
 LRESULT CALLBACK mouse_hook(int code, WPARAM message, LPARAM data) {
-    // Playing uses the Godot window's native input; only observe activation clicks.
-    if (code != HC_ACTION || !attached || locked || interacting
-        || (message != WM_LBUTTONDOWN && message != WM_LBUTTONUP))
-        return CallNextHookEx(nullptr, code, message, data);
+    if (code != HC_ACTION || !attached) return CallNextHookEx(nullptr, code, message, data);
     auto mouse = reinterpret_cast<MSLLHOOKSTRUCT *>(data);
-    auto event = new PointerButton{mouse->pt, 1, message == WM_LBUTTONDOWN, 1.0};
-    if (!PostMessageW(helper, POINTER_BUTTON, 0, reinterpret_cast<LPARAM>(event))) delete event;
-    return CallNextHookEx(nullptr, code, message, data);
+    int button=0; bool pressed=false; double factor=1.0;
+    switch (message) {
+        case WM_LBUTTONDOWN: button=1; pressed=true; break;
+        case WM_LBUTTONUP: button=1; break;
+        case WM_RBUTTONDOWN: button=2; pressed=true; break;
+        case WM_RBUTTONUP: button=2; break;
+        case WM_MBUTTONDOWN: button=3; pressed=true; break;
+        case WM_MBUTTONUP: button=3; break;
+        case WM_XBUTTONDOWN: button=HIWORD(mouse->mouseData)==XBUTTON1 ? 8 : 9; pressed=true; break;
+        case WM_XBUTTONUP: button=HIWORD(mouse->mouseData)==XBUTTON1 ? 8 : 9; break;
+        case WM_MOUSEWHEEL: case WM_MOUSEHWHEEL: {
+            short delta=static_cast<short>(HIWORD(mouse->mouseData));
+            button=message==WM_MOUSEWHEEL ? (delta>0 ? 4 : 5) : (delta>0 ? 7 : 6);
+            factor=abs(double(delta))/WHEEL_DELTA; pressed=true; break;
+        }
+        default: return CallNextHookEx(nullptr, code, message, data);
+    }
+    const bool held_button = button<=3 || button>=8;
+    const unsigned bit = 1u << (button-1);
+    const bool captured = (captured_buttons&bit)!=0;
+    const bool passed = (passed_buttons&bit)!=0;
+    const bool valid = !passed_buttons && desktop_background(mouse->pt, captured_buttons!=0);
+    const bool suppress = captured || (!passed && valid && interacting && pressed);
+    if (held_button) {
+        if (pressed) { if (suppress) captured_buttons|=bit; else passed_buttons|=bit; }
+        else { captured_buttons&=~bit; passed_buttons&=~bit; }
+    }
+    bool passive = !interacting && button==1 && desktop_background(mouse->pt);
+    if (suppress || passive) {
+        int flags=modifiers();
+        if (pressed && held_button) {
+            ULONGLONG now=GetTickCount64();
+            if (button==last_click_button && now-last_click_time<=GetDoubleClickTime()
+                && abs(mouse->pt.x-last_click.x)<=GetSystemMetrics(SM_CXDOUBLECLK)/2
+                && abs(mouse->pt.y-last_click.y)<=GetSystemMetrics(SM_CYDOUBLECLK)/2) {
+                flags|=8; last_click_time=0;
+            } else { last_click_time=now; last_click_button=button; last_click=mouse->pt; }
+        }
+        auto event = new PointerButton{mouse->pt,button,pressed,factor,flags};
+        if (!PostMessageW(helper, POINTER_BUTTON, 0, reinterpret_cast<LPARAM>(event))) delete event;
+    }
+    return suppress ? 1 : CallNextHookEx(nullptr, code, message, data);
 }
 void report_workarea() {
     MONITORINFO info{}; info.cbSize = sizeof(info);
@@ -269,17 +322,8 @@ void report_workarea() {
     if (status != workarea_status) { workarea_status = status; emit(status); }
 }
 bool set_interaction(bool enabled) {
-    if (!attached || !owns_window() || !IsWindow(icons) || !IsWindow(wallpaper_layer)) return false;
-    HWND target = enabled ? GetParent(icons) : wallpaper_layer;
-    LONG_PTR style = GetWindowLongPtrW(game, GWL_EXSTYLE);
-    style = enabled ? (style & ~WS_EX_NOACTIVATE) : (style | WS_EX_NOACTIVATE);
-    if (!target || !set_style(GWL_EXSTYLE, style) || !set_parent(target)) { error("interaction_parent"); return false; }
-    POINT position{monitor_rect.left, monitor_rect.top};
-    if (!ScreenToClient(target, &position) || !SetWindowPos(game,
-        enabled ? HWND_TOP : (raised_layer ? icons : HWND_BOTTOM), position.x, position.y,
-        monitor_rect.right-monitor_rect.left, monitor_rect.bottom-monitor_rect.top,
-        SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_SHOWWINDOW)) { error("interaction_position"); return false; }
-    desktop = target;
+    if (!attached || !owns_window() || !IsWindow(desktop)) return false;
+    // Changing interaction must never alter the wallpaper's parent, style or Z order.
     interacting = enabled;
     pointer_available = false;
     report_workarea();
@@ -287,12 +331,12 @@ bool set_interaction(bool enabled) {
     return true;
 }
 void forward_button(const PointerButton &event) {
-    if (!attached || locked || interacting) return;
-    if (!desktop_background(event.point)) { emit("LEAVE"); return; }
+    if (!attached || locked) return;
+    if (!desktop_background(event.point, true)) { emit("LEAVE"); return; }
     const auto coordinates = pointer_coordinates(event.point);
     if (coordinates.empty()) { emit("LEAVE"); return; }
     emit("BUTTON " + std::to_string(event.button) + " " + (event.pressed ? "1 " : "0 ")
-        + coordinates + " " + std::to_string(event.factor));
+        + coordinates + " " + std::to_string(event.factor) + " " + std::to_string(event.flags));
 }
 LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wp, LPARAM lp) {
     if (message == POINTER_BUTTON) {
@@ -358,8 +402,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     WTSRegisterSessionNotification(helper, NOTIFY_FOR_THIS_SESSION);
     add_tray();
     if (!running || !attach()) running = false;
-    ULONGLONG next_visibility = 0, next_pointer = 0;
+    ULONGLONG next_visibility = 0, next_pointer = 0, next_icons = 0;
     while (running && WaitForSingleObject(parent_process, 0) == WAIT_TIMEOUT) {
+        if (attached && GetTickCount64() >= next_icons) {
+            refresh_icons(); next_icons=GetTickCount64()+100;
+        }
         MSG message;
         while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE)) { TranslateMessage(&message); DispatchMessageW(&message); }
         DWORD available = 0;
@@ -389,11 +436,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
             }
             if (attached) { visibility(); report_workarea(); }
         }
-        if (attached && !interacting && GetTickCount64() >= next_pointer) {
-            next_pointer = GetTickCount64()+33;
+        if (attached && GetTickCount64() >= next_pointer) {
+            next_pointer = GetTickCount64()+(interacting ? 8 : 33);
             sample_pointer();
         }
-        MsgWaitForMultipleObjects(1, &parent_process, FALSE, 16, QS_ALLINPUT);
+        MsgWaitForMultipleObjects(1, &parent_process, FALSE, interacting ? 8 : 16, QS_ALLINPUT);
     }
     if (styles_saved) restore(false);
     stop_mouse();

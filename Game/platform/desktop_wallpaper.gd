@@ -5,11 +5,11 @@ signal visibility_changed(uncovered: bool)
 signal restoring
 signal failed(message: String)
 signal quit_requested
-signal pointer_moved(position: Vector2)
+signal pointer_moved(position: Vector2, flags: int)
 signal interaction_changed(enabled: bool)
 signal workarea_changed(area: Vector4)
 signal pointer_left
-signal pointer_button(position: Vector2, button: int, pressed: bool, factor: float)
+signal pointer_button(position: Vector2, button: int, pressed: bool, factor: float, flags: int)
 
 var interacting: bool = false
 
@@ -129,15 +129,16 @@ func _receive(line: String) -> void:
 		var parts: PackedStringArray = line.split(" ", false)
 		var is_button: bool = parts[0] == "BUTTON"
 		var offset: int = 3 if is_button else 1
-		if active and not busy and parts.size() == (6 if is_button else 3) and parts[offset].is_valid_float() and parts[offset+1].is_valid_float():
+		if active and not busy and parts.size() == (7 if is_button else 4) and parts[offset].is_valid_float() and parts[offset+1].is_valid_float():
 			var point := Vector2(float(parts[offset]), float(parts[offset+1]))
 			if point.is_finite() and point.x >= 0.0 and point.x < 1.0 and point.y >= 0.0 and point.y < 1.0:
 				if not is_button:
-					pointer_moved.emit(point)
-				elif parts[1] in ["1", "2", "3", "4", "5"] and parts[2] in ["0", "1"] and parts[5].is_valid_float():
+					if parts[3].is_valid_int() and int(parts[3]) >= 0 and int(parts[3]) <= 15:
+						pointer_moved.emit(point, int(parts[3]))
+				elif parts[1] in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] and parts[2] in ["0", "1"] and parts[5].is_valid_float() and parts[6].is_valid_int():
 					var factor: float = float(parts[5])
-					if is_finite(factor) and factor >= 0.0 and factor <= 100.0:
-						pointer_button.emit(point, int(parts[1]), parts[2] == "1", factor)
+					if is_finite(factor) and factor >= 0.0 and factor <= 100.0 and int(parts[6]) >= 0 and int(parts[6]) <= 15:
+						pointer_button.emit(point, int(parts[1]), parts[2] == "1", factor, int(parts[6]))
 		return
 	print("DESKTOP_HOST " + line)
 	match line:

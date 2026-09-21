@@ -1,6 +1,7 @@
 extends Node
 ## Arrow and carried item share one hardware cursor, so motion never waits for a frame.
 
+var _system_pointer: bool = false
 var _key: String = ""
 var _cursor_texture: ImageTexture
 var _cursor_pixels: int = 0
@@ -31,6 +32,7 @@ func _resize_cursor() -> void:
 
 
 func _apply_cursor() -> void:
+	if _system_pointer: return
 	if not _textures.has(_key):
 		var scale: float = float(_cursor_pixels) / 64.0
 		var arrow: Image = load("res://art/ui/crops/pointer.png").get_image()
@@ -56,3 +58,12 @@ func _exit_tree() -> void:
 	for shape: Input.CursorShape in [Input.CURSOR_ARROW, Input.CURSOR_POINTING_HAND]:
 		Input.set_custom_mouse_cursor(null, shape)
 	_textures.clear()
+
+
+func set_system_pointer(enabled: bool) -> void:
+	_system_pointer = enabled
+	if enabled:
+		for shape: Input.CursorShape in [Input.CURSOR_ARROW, Input.CURSOR_POINTING_HAND]:
+			Input.set_custom_mouse_cursor(null, shape)
+	else:
+		_apply_cursor()
