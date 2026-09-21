@@ -11,10 +11,10 @@
 开发机需要 CMake、Visual Studio 2022 C++ Build Tools 和 Windows SDK。仓库根目录执行 `pwsh -NoProfile -File scripts/build-desktop.ps1`，输出 `.local/builds/windows/FarmDesktop.exe`；普通开发启动和 Windows 导出已自动调用。MSVC 使用静态运行库，宿主只链接 Windows 系统组件。
 
 - `main.cpp`：校验传入 HWND 属于直接父进程；负责桌面层、原生样式、托盘、显示器和会话通知。通过持有的父进程句柄监测生命周期。宿主正常结束前解除挂接；父游戏结束后退出。
-- `Game/platform/desktop_wallpaper.gd`：启动同包宿主，通过继承的匿名管道收发逐行状态，保存并恢复 Godot 窗口状态。没有网络端口或任意窗口指令。仅挂接期间安装低级鼠标钩子，不采集键盘；操作模式截取已确认空白桌面的按钮与滚轮，其他程序和图标输入不转发。钩子不进行 Accessibility 查询、管道写入或同步消息；宿主在钩子外采样、复核桌面角色，缓存过期或点位变化时不截取。离开有效区域取消手势。
+- `Game/platform/desktop_wallpaper.gd`：启动同包宿主，通过继承的匿名管道收发逐行状态，保存并恢复 Godot 窗口状态。没有网络端口或任意窗口指令。观赏模式观察桌面空白鼠标激活，游玩模式把游戏子窗口放到图标宿主前层，所有操作使用 Godot 原生输入；不做全局键盘采集或转发，不拦截其他程序操作。退出游玩恢复到图标下方。
 - `Game/atmosphere/window_activity.gd`：唯一的呈现帧率管理者。壁纸可见时最高 30 fps，目标屏幕被普通不透明窗口覆盖超过 95% 或锁屏时最高 2 fps；不暂停场景树和现实时间结算。此限帧策略不是 CPU/GPU 耗电达标证明。
 
-输入状态为 `POINTER x y`、`BUTTON button pressed x y factor`、`LEAVE`；坐标为游戏客户区归一化坐标。`INTERACT` / `OBSERVE` 切换操作与观赏，不解除桌面挂接；不传递键盘或其他程序输入。
+输入状态为 `POINTER x y`、`BUTTON button pressed x y factor`、`LEAVE`；坐标为游戏客户区归一化坐标。`INTERACT` / `OBSERVE` 请求切换，收到 `INTERACTIVE` / `OBSERVING` 后才切换游戏输入门禁；始终留在桌面层，游玩期间不发送模拟指针事件。`WORKAREA left top right bottom` 以归一化工作区边界用于任务栏避让；不传递键盘或其他程序输入。
 
 管道命令只有 `RESTORE` 和 `STOP`；状态为 `ATTACHING`、`ATTACHED`、`VISIBLE`、`COVERED`、`RESTORING`、`RESTORED`、`QUIT`、`ERROR <阶段> <Windows错误码>`。退出意图先发送，窗口恢复完成、宿主退出后才由游戏执行正常保存退出。
 
@@ -49,3 +49,7 @@
 实现参考：[Raw Input](https://learn.microsoft.com/en-us/windows/win32/inputdev/using-raw-input)、[AccessibleObjectFromPoint](https://learn.microsoft.com/en-us/windows/win32/api/oleacc/nf-oleacc-accessibleobjectfrompoint)。
 ## 2026-09-22 Demo 0.1.2
 改为原位桌面交互和悬停高亮，提供 FolderOnly 构建；用户要求仅构建，未运行交互验收。低级鼠标钩子约束参考 [LowLevelMouseProc](https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelmouseproc)。
+
+## 2026-09-22 Demo 0.1.3
+游玩使用图标宿主前层的真实游戏子窗口，暂时遮挡本屏桌面图标，结束后恢复；硬件鼠标、滚轮与拖动不再依赖采样转发。座椅休息保留画面与页面，HUD避让任务栏，游玩取消壁纸帧率上限。仅构建，无运行验收。
+实现契约参考 [SetParent](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setparent) 和 [SetWindowPos](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos)。父窗口变更与普通窗口恢复不同，保持 WS_CHILD 与桌面坐标，不把游戏置于所有应用前方。

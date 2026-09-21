@@ -14,6 +14,7 @@ func _ready() -> void:
 	add_child(chair)
 	chair.position = pose * Vector3(-.90,.30,.05)
 	chair.rotation.y = deg_to_rad(environment.plan.angles.veranda) - PI*.5
+	tools["rest"] = chair
 	# All working props are at the open front of the porch, clear of the door.
 	for item: Array in [
 		["harvest",Vector3(-2.25,.28,.28),0.0,0.0],

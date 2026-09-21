@@ -344,3 +344,11 @@ func _fit_toolbar_button(button: Button) -> void:
 	var text_width: float = button.get_theme_font("font").get_string_size(button.text, HORIZONTAL_ALIGNMENT_LEFT, -1, button.get_theme_font_size("font_size")).x
 	# Expanded icons do not contribute to Button minimum width; reserve their slot.
 	button.custom_minimum_size.x = maxf(112.0, text_width + 70.0)
+
+
+func set_workarea(area: Vector4) -> void:
+	var root: Control = $Layout
+	root.anchor_left = area.x
+	root.anchor_top = area.y
+	root.anchor_right = area.z
+	root.anchor_bottom = area.w

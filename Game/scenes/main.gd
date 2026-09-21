@@ -24,8 +24,8 @@ const DesktopWallpaper = preload("res://platform/desktop_wallpaper.gd")
 var desktop_wallpaper: DesktopWallpaper
 var _wallpaper_issue: String = ""
 var _wallpaper_click: Vector2 = Vector2.INF
-var _wallpaper_forwarding: bool = false
-var _wallpaper_buttons: int = 0
+var _wallpaper_entry: String = ""
+var _wallpaper_layers: Array[CanvasLayer] = []
 var _wallpaper_press: Vector2 = Vector2.INF
 const CameraTuning = preload("res://ui/camera_tuning.gd")
 const CourtyardPlan = preload("res://layout/courtyard_plan.gd")
@@ -261,6 +261,8 @@ func _ready() -> void:
 	desktop_wallpaper.name = "DesktopWallpaper"
 	add_child(desktop_wallpaper)
 	desktop_wallpaper.changed.connect(_wallpaper_changed)
+	desktop_wallpaper.interaction_changed.connect(_wallpaper_interaction_changed)
+	desktop_wallpaper.workarea_changed.connect(hud.set_workarea)
 	desktop_wallpaper.pointer_moved.connect(_wallpaper_pointer)
 	desktop_wallpaper.pointer_left.connect(_wallpaper_leave)
 	desktop_wallpaper.pointer_button.connect(_wallpaper_button)
@@ -574,6 +576,7 @@ func _scene_entry_at(point: Vector2) -> String:
 	var hit: MeshInstance3D=decoration_layout.environment_surface_at(point)
 	if hit==null: return ""
 	var tool: String = $Environment/DoorTools.tool_for_mesh(hit)
+	if tool == "rest": return "rest"
 	if not tool.is_empty(): return "tool_" + tool
 	for item: String in ["drying_rack","tea_table","pot"]:
 		var placed: Node=decoration_layout._instances.get(item)
@@ -589,6 +592,9 @@ func _scene_entry_at(point: Vector2) -> String:
 	return ""
 
 func _open_scene_entry(id: String) -> void:
+	if id == "rest":
+		if desktop_wallpaper.active and desktop_wallpaper.interacting: _end_wallpaper_interaction()
+		return
 	if not _tools_available(): return
 	if id.begins_with("tool_"):
 		_cancel_input()
@@ -1161,7 +1167,7 @@ func _refresh_lanterns() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if desktop_wallpaper != null and (desktop_wallpaper.busy or (desktop_wallpaper.active and not _wallpaper_forwarding)):
+	if desktop_wallpaper != null and (desktop_wallpaper.busy or (desktop_wallpaper.active and not desktop_wallpaper.interacting)):
 		get_viewport().set_input_as_handled()
 		return
 	camera.observe_input(event)
@@ -1267,7 +1273,7 @@ func _consume_focus_return_wheel(event: InputEvent) -> bool:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if sway_tuning != null and sway_tuning.visible: return
-	if desktop_wallpaper != null and (desktop_wallpaper.busy or (desktop_wallpaper.active and not _wallpaper_forwarding)):
+	if desktop_wallpaper != null and (desktop_wallpaper.busy or (desktop_wallpaper.active and not desktop_wallpaper.interacting)):
 		get_viewport().set_input_as_handled()
 		return
 	if island_builder!=null and island_builder.active:
@@ -1328,16 +1334,13 @@ func _physics_process(_delta: float) -> void:
 			var entry: String = ""
 			if get_viewport().get_visible_rect().has_point(_pointer_position) and $Environment/DoorTools.may_hit(camera, _pointer_position):
 				entry = _scene_entry_at(_pointer_position)
-			$Environment/DoorTools.set_hover(entry.trim_prefix("tool_") if entry.begins_with("tool_") else "")
+			$Environment/DoorTools.set_hover(entry.trim_prefix("tool_") if entry.begins_with("tool_") or entry == "rest" else "")
 			if _wallpaper_click.is_finite():
 				entry = _scene_entry_at(_wallpaper_click)
 				_wallpaper_click = Vector2.INF
-				if entry.begins_with("tool_"):
+				if entry.begins_with("tool_") or entry == "rest":
+					_wallpaper_entry = entry
 					desktop_wallpaper.set_interacting(true)
-					get_viewport().gui_disable_input = false
-					camera.free_input_enabled = true
-					hud.show()
-					_open_scene_entry(entry)
 			return
 	if field_menu != null and field_menu.active:
 		$Environment/DoorTools.set_hover("")
@@ -1363,7 +1366,7 @@ func _physics_process(_delta: float) -> void:
 		if selected_tool.is_empty() or $Environment/DoorTools.may_hit(camera,pick.position):
 			var animal: String=_animal_at(pick.position) if selected_tool.is_empty() else ""
 			var entry: String=_scene_entry_at(pick.position) if animal.is_empty() else ""
-			if not selected_tool.is_empty() and not entry.begins_with("tool_"): entry=""
+			if not selected_tool.is_empty() and not entry.begins_with("tool_") and entry != "rest": entry=""
 			if pick.down:
 				_pressed_animal=animal
 				_pressed_entry=entry
@@ -1408,7 +1411,9 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
 		_request_exit()
 	elif what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_WM_MOUSE_EXIT:
-		if desktop_wallpaper != null and desktop_wallpaper.active: return
+		if desktop_wallpaper != null and desktop_wallpaper.active:
+			if desktop_wallpaper.interacting: _wallpaper_leave()
+			return
 		if field_menu != null: field_menu.dismiss()
 		if garden_album!=null and garden_album.active: camera.cancel_free_gesture()
 		if what==NOTIFICATION_WM_WINDOW_FOCUS_OUT and animal_panel!=null: animal_panel.dismiss()
@@ -1467,7 +1472,6 @@ func _farm_hit(screen_point: Vector2) -> Dictionary:
 
 func _focus_field(index: int) -> void:
 	_cancel_input()
-	selected_tool = ""
 	selected_palette = ""
 	selected_field = index
 	selected_cell = ""
@@ -1840,17 +1844,17 @@ func _enter_wallpaper() -> void:
 func _wallpaper_changed(enabled: bool) -> void:
 	_wallpaper_click = Vector2.INF
 	_wallpaper_press = Vector2.INF
-	_wallpaper_buttons = 0
 	_cancel_input()
 	window_activity.set_wallpaper(enabled)
 	camera.free_input_enabled = not enabled
 	get_viewport().gui_disable_input = enabled
 	game_menu.set_wallpaper_mode(enabled)
-	tool_cursor.set_wallpaper_pointer(enabled, Vector2.INF)
 	if enabled:
 		game_menu.dismiss()
 		hud.hide()
 	else:
+		_restore_wallpaper_layers()
+		hud.set_workarea(Vector4(0, 0, 1, 1))
 		hud.show()
 		_refresh_hud()
 		settle_farm()
@@ -1858,61 +1862,47 @@ func _wallpaper_changed(enabled: bool) -> void:
 			game_menu.present(settings_values, _wallpaper_issue)
 
 
-func _push_wallpaper_input(event: InputEvent) -> void:
-	_wallpaper_forwarding = true
-	get_viewport().push_input(event, true)
-	_wallpaper_forwarding = false
+func _wallpaper_interaction_changed(enabled: bool) -> void:
+	window_activity.set_wallpaper_interacting(enabled)
+	get_viewport().gui_disable_input = not enabled
+	camera.free_input_enabled = enabled
+	if enabled:
+		_restore_wallpaper_layers()
+		hud.show()
+		var entry: String = _wallpaper_entry
+		_wallpaper_entry = ""
+		if entry.begins_with("tool_"): _open_scene_entry(entry)
+		_refresh_hud()
+	else:
+		_wallpaper_entry = ""
+
+
+func _restore_wallpaper_layers() -> void:
+	for canvas: CanvasLayer in _wallpaper_layers:
+		if is_instance_valid(canvas): canvas.show()
+	_wallpaper_layers.clear()
 
 
 func _wallpaper_pointer(point: Vector2) -> void:
-	var position: Vector2 = point * get_viewport().get_visible_rect().size
-	var previous: Vector2 = _pointer_position
-	_pointer_position = position
-	tool_cursor.set_wallpaper_pointer(true, position)
-	if not desktop_wallpaper.interacting: return
-	var event := InputEventMouseMotion.new()
-	event.position = position
-	event.global_position = position
-	event.relative = position - previous if get_viewport().get_visible_rect().has_point(previous) else Vector2.ZERO
-	event.button_mask = _wallpaper_buttons
-	_push_wallpaper_input(event)
+	if desktop_wallpaper.interacting: return
+	_pointer_position = point * get_viewport().get_visible_rect().size
 
 
-func _wallpaper_button(point: Vector2, button: int, pressed: bool, factor: float) -> void:
+func _wallpaper_button(point: Vector2, button: int, pressed: bool, _factor: float) -> void:
+	if desktop_wallpaper.interacting: return
 	_wallpaper_pointer(point)
-	if not desktop_wallpaper.interacting:
-		if button == MOUSE_BUTTON_LEFT:
-			if pressed:
-				_wallpaper_press = _pointer_position
-			else:
-				if _wallpaper_press.is_finite() and _wallpaper_press.distance_to(_pointer_position) < 7.0:
-					_wallpaper_click = _pointer_position
-				_wallpaper_press = Vector2.INF
-		return
-	var mask: int = 1 << (button - 1)
-	if button <= MOUSE_BUTTON_MIDDLE:
-		_wallpaper_buttons = (_wallpaper_buttons | mask) if pressed else (_wallpaper_buttons & ~mask)
-	var event := InputEventMouseButton.new()
-	event.position = _pointer_position
-	event.global_position = _pointer_position
-	event.button_index = button as MouseButton
-	event.pressed = pressed
-	event.factor = factor
-	event.button_mask = _wallpaper_buttons
-	_push_wallpaper_input(event)
+	if button == MOUSE_BUTTON_LEFT:
+		if pressed:
+			_wallpaper_press = _pointer_position
+		else:
+			if _wallpaper_press.is_finite() and _wallpaper_press.distance_to(_pointer_position) < 7.0:
+				_wallpaper_click = _pointer_position
+			_wallpaper_press = Vector2.INF
 
 
 func _wallpaper_leave() -> void:
 	_wallpaper_press = Vector2.INF
 	_wallpaper_click = Vector2.INF
-	for button: int in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
-		if _wallpaper_buttons & (1 << (button - 1)):
-			var event := InputEventMouseButton.new()
-			event.button_index = button as MouseButton
-			event.position = Vector2(-100, -100)
-			event.canceled = true
-			_push_wallpaper_input(event)
-	_wallpaper_buttons = 0
 	_pointer_position = Vector2(-100, -100)
 	_cancel_input()
 	if _layout_active(): courtyard_edit.editor.chart.cancel_drag()
@@ -1921,18 +1911,22 @@ func _wallpaper_leave() -> void:
 	camera.cancel_free_gesture()
 	camera.cancel_zoom()
 	$Environment/DoorTools.set_hover("")
-	tool_cursor.set_wallpaper_pointer(true, Vector2.INF)
-	if field_menu != null: field_menu.dismiss()
+	tool_cursor.show_tool("", selected_crop)
 
 
 func _end_wallpaper_interaction() -> void:
+	if desktop_wallpaper.busy: return
 	_wallpaper_leave()
-	_return_overview()
-	game_menu.dismiss()
+	# Keep the camera, selected tool, and open pages for the next interaction.
+	_wallpaper_layers.clear()
+	for node: Node in find_children("*", "CanvasLayer", true, false):
+		var canvas := node as CanvasLayer
+		if canvas.visible:
+			_wallpaper_layers.append(canvas)
+			canvas.hide()
 	desktop_wallpaper.set_interacting(false)
 	get_viewport().gui_disable_input = true
 	camera.free_input_enabled = false
-	hud.hide()
 	settle_farm()
 	_save_farm()
 

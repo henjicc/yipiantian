@@ -6,6 +6,8 @@ signal restoring
 signal failed(message: String)
 signal quit_requested
 signal pointer_moved(position: Vector2)
+signal interaction_changed(enabled: bool)
+signal workarea_changed(area: Vector4)
 signal pointer_left
 signal pointer_button(position: Vector2, button: int, pressed: bool, factor: float)
 
@@ -69,8 +71,11 @@ func restore() -> void:
 	_send("RESTORE")
 
 func set_interacting(value: bool) -> void:
-	interacting = value and active and not busy
-	_send("INTERACT" if interacting else "OBSERVE")
+	if not active or busy: return
+	busy = true
+	_deadline = Time.get_ticks_msec() + 5000
+	restoring.emit()
+	_send("INTERACT" if value else "OBSERVE")
 
 func _send(command: String) -> void:
 	if _pipe == null: return
@@ -108,6 +113,15 @@ func _process(_delta: float) -> void:
 		failed.emit("桌面切换超时，正在取消；请稍后重试。")
 
 func _receive(line: String) -> void:
+	if line.begins_with("WORKAREA "):
+		var values: PackedStringArray = line.split(" ", false)
+		if values.size() != 5: return
+		for i: int in range(1, 5):
+			if not values[i].is_valid_float(): return
+		var area := Vector4(float(values[1]), float(values[2]), float(values[3]), float(values[4]))
+		if area.is_finite() and area.x >= 0 and area.y >= 0 and area.z <= 1 and area.w <= 1 and area.z > area.x and area.w > area.y:
+			workarea_changed.emit(area)
+		return
 	if line == "LEAVE":
 		pointer_left.emit()
 		return
@@ -131,7 +145,12 @@ func _receive(line: String) -> void:
 			busy = true
 			_deadline = Time.get_ticks_msec() + 5000
 			restoring.emit()
+		"INTERACTIVE", "OBSERVING":
+			interacting = line == "INTERACTIVE"
+			busy = false
+			interaction_changed.emit(interacting)
 		"ATTACHED":
+			interacting = false
 			active = true
 			busy = false
 			changed.emit(true)

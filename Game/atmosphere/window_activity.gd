@@ -7,6 +7,7 @@ var _foreground_cap: int = 0
 var _active: bool = true
 var _elapsed: float = 0.0
 var _wallpaper: bool = false
+var _wallpaper_interacting: bool = false
 var _wallpaper_visible: bool = true
 var _wallpaper_transition: bool = false
 
@@ -42,8 +43,15 @@ func is_foreground() -> bool:
 
 func set_wallpaper(enabled: bool) -> void:
 	_wallpaper = enabled
+	_wallpaper_interacting = false
 	_wallpaper_transition = false
 	_wallpaper_visible = true
+	_refresh()
+
+
+func set_wallpaper_interacting(enabled: bool) -> void:
+	_wallpaper_interacting = enabled
+	_wallpaper_transition = false
 	_refresh()
 
 
@@ -78,6 +86,8 @@ func _apply_frame_limit() -> void:
 	var visible_preview: bool = OS.has_feature("editor") and OS.get_cmdline_user_args().has("--dev-preview") and get_window().visible and get_window().mode != Window.MODE_MINIMIZED
 	if _wallpaper_transition:
 		Engine.max_fps = 60
+	elif _wallpaper and _wallpaper_interacting and _wallpaper_visible:
+		Engine.max_fps = 0
 	elif _wallpaper:
 		# Keep settlement/timers alive while avoiding rendering an occluded desktop.
 		var cap: int = 30 if _wallpaper_visible else 2

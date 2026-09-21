@@ -2,9 +2,10 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{7,40}$')][string]$Commit,
-    [ValidatePattern('^\d+\.\d+\.\d+(-rc\.\d+)?$')][string]$Version = '0.1.2',
+    [ValidatePattern('^\d+\.\d+\.\d+(-rc\.\d+)?$')][string]$Version = '0.1.3',
     [string]$GodotPath = $env:GODOT_EXE,
-    [switch]$FolderOnly
+    [switch]$FolderOnly,
+    [switch]$ReuseImportCache
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
@@ -57,6 +58,15 @@ if (Invoke-Git @('-C',$source,'status','--porcelain')) { throw 'Source checkout 
 foreach ($ignored in @('Game/.godot','.local','制作留档')) {
     if (Test-Path -LiteralPath (Join-Path $source $ignored)) { throw "Fresh clone unexpectedly contains ignored data: $ignored" }
 }
+# Fast iteration may reuse derived imports from the same pinned engine. The
+# clone still owns all source assets; Godot verifies their import fingerprints.
+if ($ReuseImportCache) {
+    if ((Get-Content -LiteralPath (Join-Path $repo '.godot-version') -Raw).Trim() -ne $engineVersion) { throw 'Import cache engine version differs.' }
+    $cache = Join-Path $repo 'Game/.godot/imported'
+    if (-not (Test-Path -LiteralPath $cache)) { throw 'No local import cache to reuse.' }
+    New-Item -ItemType Directory -Path (Join-Path $source 'Game/.godot') -Force | Out-Null
+    Copy-Item -LiteralPath $cache -Destination (Join-Path $source 'Game/.godot/imported') -Recurse
+}
 if (-not $GodotPath) { $GodotPath = Join-Path $env:LOCALAPPDATA "Godot/$engineVersion/Godot_v${engineVersion}_win64_console.exe" }
 $GodotPath = (Resolve-Path -LiteralPath $GodotPath).Path
 $template = Join-Path $env:APPDATA ('Godot/export_templates/'+$engineVersion.Replace('-','.')+'/windows_release_x86_64.exe')
@@ -98,7 +108,7 @@ Copy-Item -LiteralPath (Join-Path $source 'Game/art/ui/fonts/字体来源.txt') 
 $signature = Get-AuthenticodeSignature -LiteralPath (Join-Path $package 'Farm.exe')
 if ($signature.Status -ne 'NotSigned') { throw "Unexpected signing status: $($signature.Status)" }
 $payload = @(Get-ChildItem -LiteralPath $package -Recurse -File | Sort-Object FullName | ForEach-Object { [ordered]@{path=[IO.Path]::GetRelativePath($package,$_.FullName).Replace('\','/'); bytes=$_.Length; sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()} })
-$manifest = [ordered]@{version=$Version; commit=$revision; engine=$engineVersion; built_utc=[DateTime]::UtcNow.ToString('o'); platform='Windows x86_64'; signed=$false; channel='demo'; source='independent local clone; no remote configured or claimed'; engine_sha256=(Get-FileHash -LiteralPath $GodotPath).Hash.ToLowerInvariant(); template_sha256=(Get-FileHash -LiteralPath $template).Hash.ToLowerInvariant(); files=$payload}
+$manifest = [ordered]@{version=$Version; commit=$revision; engine=$engineVersion; built_utc=[DateTime]::UtcNow.ToString('o'); platform='Windows x86_64'; signed=$false; channel='demo'; reused_import_cache=[bool]$ReuseImportCache; source='independent local clone; no remote configured or claimed'; engine_sha256=(Get-FileHash -LiteralPath $GodotPath).Hash.ToLowerInvariant(); template_sha256=(Get-FileHash -LiteralPath $template).Hash.ToLowerInvariant(); files=$payload}
 $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $package 'version.json') -Encoding utf8
 $checksums = Get-ChildItem -LiteralPath $package -Recurse -File | Sort-Object FullName | ForEach-Object { (Get-FileHash -LiteralPath $_.FullName).Hash.ToLowerInvariant()+'  '+[IO.Path]::GetRelativePath($package,$_.FullName).Replace('\','/') }
 $checksums | Set-Content -LiteralPath (Join-Path $package 'SHA256SUMS.txt') -Encoding utf8

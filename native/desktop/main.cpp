@@ -12,7 +12,9 @@
 
 namespace {
 constexpr UINT TRAY_MESSAGE = WM_APP + 1;
-HWND game = nullptr, helper = nullptr, desktop = nullptr, icons = nullptr;
+HWND game = nullptr, helper = nullptr, desktop = nullptr, icons = nullptr, wallpaper_layer = nullptr;
+bool raised_layer = false;
+std::string workarea_status;
 HANDLE parent_process = nullptr;
 DWORD game_pid = 0;
 LONG_PTR old_style = 0, old_ex_style = 0;
@@ -27,15 +29,12 @@ constexpr UINT POINTER_BUTTON = WM_APP + 2;
 HHOOK mouse_hook_handle = nullptr;
 bool interacting = false, pointer_available = false;
 POINT pointer_point{};
-HWND pointer_window = nullptr;
-ULONGLONG pointer_sampled = 0;
-unsigned captured_buttons = 0;
 struct PointerButton { POINT point; int button; bool pressed; double factor; };
 LRESULT CALLBACK mouse_hook(int code, WPARAM message, LPARAM data);
 void stop_mouse() {
     if (mouse_hook_handle) UnhookWindowsHookEx(mouse_hook_handle);
     mouse_hook_handle = nullptr;
-    interacting = false; pointer_available = false; captured_buttons = 0;
+    interacting = false; pointer_available = false;
 }
 
 void emit(const std::string &line) {
@@ -126,6 +125,9 @@ bool attach() {
         styles_saved = true;
     }
     desktop = raised ? progman : worker;
+    wallpaper_layer = desktop;
+    raised_layer = raised;
+    interacting = false;
     LONG_PTR style = (old_style & ~(WS_POPUP | WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX)) | WS_CHILD;
     LONG_PTR ex_style = (old_ex_style & ~(WS_EX_APPWINDOW | WS_EX_TOPMOST)) | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
     if (raised) ex_style |= WS_EX_LAYERED;
@@ -240,54 +242,52 @@ void sample_pointer() {
     const bool changed = available != pointer_available;
     pointer_point = point;
     pointer_available = available;
-    pointer_window = available ? WindowFromPoint(point) : nullptr;
-    pointer_sampled = GetTickCount64();
     if (available && (moved || changed)) {
         const auto coordinates = pointer_coordinates(point);
         if (!coordinates.empty()) emit("POINTER " + coordinates);
     } else if (changed) emit("LEAVE");
 }
 LRESULT CALLBACK mouse_hook(int code, WPARAM message, LPARAM data) {
-    // Never call Accessibility, write pipes, or send synchronous messages here.
-    // The host samples the desktop outside the hook; stale/moved points fail closed.
-    if (code != HC_ACTION || !attached || locked) return CallNextHookEx(nullptr, code, message, data);
+    // Playing uses the Godot window's native input; only observe activation clicks.
+    if (code != HC_ACTION || !attached || locked || interacting
+        || (message != WM_LBUTTONDOWN && message != WM_LBUTTONUP))
+        return CallNextHookEx(nullptr, code, message, data);
     auto mouse = reinterpret_cast<MSLLHOOKSTRUCT *>(data);
-    int button = 0; bool pressed = false; double factor = 1.0;
-    switch (message) {
-        case WM_LBUTTONDOWN: button=1; pressed=true; break;
-        case WM_LBUTTONUP: button=1; break;
-        case WM_RBUTTONDOWN: button=2; pressed=true; break;
-        case WM_RBUTTONUP: button=2; break;
-        case WM_MBUTTONDOWN: button=3; pressed=true; break;
-        case WM_MBUTTONUP: button=3; break;
-        case WM_MOUSEWHEEL: {
-            const short delta = static_cast<short>(HIWORD(mouse->mouseData));
-            button = delta > 0 ? 4 : 5; pressed = true;
-            factor = abs(double(delta))/WHEEL_DELTA;
-            break;
-        }
-        default: return CallNextHookEx(nullptr, code, message, data);
-    }
-    const bool valid = pointer_available && GetTickCount64()-pointer_sampled < 150
-        && mouse->pt.x == pointer_point.x && mouse->pt.y == pointer_point.y
-        && WindowFromPoint(mouse->pt) == pointer_window;
-    const unsigned bit = 1u << button;
-    const bool captured = (captured_buttons & bit) != 0;
-    const bool suppress = captured || (valid && interacting);
-    if (button <= 3) {
-        if (pressed && suppress) captured_buttons |= bit;
-        if (!pressed) captured_buttons &= ~bit;
-    }
-    // Passive clicks are only candidates: the game decides whether a tool was hit.
-    if (valid || captured || !interacting) {
-        auto event = new PointerButton{mouse->pt, button, pressed, factor};
-        if (!PostMessageW(helper, POINTER_BUTTON, 0, reinterpret_cast<LPARAM>(event))) delete event;
-    }
-    if (suppress) return 1;
+    auto event = new PointerButton{mouse->pt, 1, message == WM_LBUTTONDOWN, 1.0};
+    if (!PostMessageW(helper, POINTER_BUTTON, 0, reinterpret_cast<LPARAM>(event))) delete event;
     return CallNextHookEx(nullptr, code, message, data);
 }
+void report_workarea() {
+    MONITORINFO info{}; info.cbSize = sizeof(info);
+    if (!GetMonitorInfoW(MonitorFromWindow(game, MONITOR_DEFAULTTONEAREST), &info)) return;
+    const double width = monitor_rect.right-monitor_rect.left, height = monitor_rect.bottom-monitor_rect.top;
+    if (width <= 0 || height <= 0) return;
+    std::string status = "WORKAREA " + std::to_string((info.rcWork.left-monitor_rect.left)/width)
+        + " " + std::to_string((info.rcWork.top-monitor_rect.top)/height)
+        + " " + std::to_string((info.rcWork.right-monitor_rect.left)/width)
+        + " " + std::to_string((info.rcWork.bottom-monitor_rect.top)/height);
+    if (status != workarea_status) { workarea_status = status; emit(status); }
+}
+bool set_interaction(bool enabled) {
+    if (!attached || !owns_window() || !IsWindow(icons) || !IsWindow(wallpaper_layer)) return false;
+    HWND target = enabled ? GetParent(icons) : wallpaper_layer;
+    LONG_PTR style = GetWindowLongPtrW(game, GWL_EXSTYLE);
+    style = enabled ? (style & ~WS_EX_NOACTIVATE) : (style | WS_EX_NOACTIVATE);
+    if (!target || !set_style(GWL_EXSTYLE, style) || !set_parent(target)) { error("interaction_parent"); return false; }
+    POINT position{monitor_rect.left, monitor_rect.top};
+    if (!ScreenToClient(target, &position) || !SetWindowPos(game,
+        enabled ? HWND_TOP : (raised_layer ? icons : HWND_BOTTOM), position.x, position.y,
+        monitor_rect.right-monitor_rect.left, monitor_rect.bottom-monitor_rect.top,
+        SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_SHOWWINDOW)) { error("interaction_position"); return false; }
+    desktop = target;
+    interacting = enabled;
+    pointer_available = false;
+    report_workarea();
+    emit(enabled ? "INTERACTIVE" : "OBSERVING");
+    return true;
+}
 void forward_button(const PointerButton &event) {
-    if (!attached || locked) return;
+    if (!attached || locked || interacting) return;
     if (!desktop_background(event.point)) { emit("LEAVE"); return; }
     const auto coordinates = pointer_coordinates(event.point);
     if (coordinates.empty()) { emit("LEAVE"); return; }
@@ -374,8 +374,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
                 std::string command = input.substr(0, newline); input.erase(0, newline+1);
                 if (command == "RESTORE") request_restore(false);
                 else if (command == "STOP") running = false;
-                else if (command == "INTERACT") interacting = true;
-                else if (command == "OBSERVE") interacting = false;
+                else if (command == "INTERACT" || command == "OBSERVE") {
+                    if (!set_interaction(command == "INTERACT")) request_restore(false);
+                }
                 else { emit("ERROR command 87"); running = false; }
             }
         }
@@ -386,9 +387,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
                 // Bounded recovery. A failed recovery reveals the normal game instead.
                 if (!attach()) request_restore(false);
             }
-            if (attached) visibility();
+            if (attached) { visibility(); report_workarea(); }
         }
-        if (attached && GetTickCount64() >= next_pointer) {
+        if (attached && !interacting && GetTickCount64() >= next_pointer) {
             next_pointer = GetTickCount64()+33;
             sample_pointer();
         }
