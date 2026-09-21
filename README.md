@@ -1,6 +1,8 @@
 # 我有一片田
 
-当前分享版本为 **Demo 0.1.1（开发中试玩版）**：[Windows 分享包](<.local/releases/0.1.1-74d24e5e/我有一片田 Demo 0.1.1 Windows.zip>)，源码 `74d24e5e`。包含壁纸农具唤醒、连续点击关于10次开启开发者模式、全部作物成熟，以及当前已提交的母鸡蒙皮修复。操作见 [使用说明](发行材料/使用说明.txt)。按用户要求本轮只构建打包，未运行功能测试、桌面实机验收或开发预览；旧版本证据不能视为本次功能验证。构建入口 `scripts/package-release.ps1 -Commit 74d24e5e -Version 0.1.1`，构建记录在 `.local/releases/0.1.1-74d24e5e/evidence/`。
+当前分享版本为 **Demo 0.1.2（开发中试玩版）**：[Windows 可运行文件夹](<.local/releases/0.1.2-b1ff06cf/我有一片田 Demo 0.1.2 Windows/>)，源码 `b1ff06cf`。悬停壁纸农具高亮，点击后直接在桌面原位操作；设置中的“结束桌面操作”收起控件，托盘仍可返回窗口。保留连续点击关于10次开启开发者模式和全部作物成熟功能。双击文件夹内的 `Farm.exe` 启动，不需要解压。操作见 [使用说明](发行材料/使用说明.txt)。按用户要求仅构建打包，未运行功能测试、实机验收或开发预览。构建入口 `scripts/package-release.ps1 -Commit b1ff06cf -Version 0.1.2 -FolderOnly`，构建记录在 `.local/releases/0.1.2-b1ff06cf/evidence/`。
+
+历史分享版本 **Demo 0.1.1** 的源码为 `74d24e5e`，旧包保存在 `.local/releases/0.1.1-74d24e5e/`。此版本的壁纸点击行为为返回普通窗口，已在 0.1.2 修正。
 
 历史分享版本为 **Demo 0.1.0（开发中试玩版）**，以 [随包说明](发行材料/使用说明.txt) 和 [版本说明](发行材料/版本说明.txt) 为准；下方 rc 与留存包为历史记录。使用 `scripts/package-release.ps1 -Commit <提交哈希> -Version 0.1.0` 从固定源码独立构建，输出在 `.local/releases/`。本次包为 [我有一片田 Demo 0.1.0 Windows.zip](<.local/releases/0.1.0-c2451af7/我有一片田 Demo 0.1.0 Windows.zip>)，源码 `c2451af7`，约1.95 GB。独立导入／导出、1126项资源审计、ZIP解压哈希、仓库外中文空格路径启动／菜单版本／保存重开／正常退出均通过；设置界面80项检查通过。证据在 `.local/releases/0.1.0-c2451af7/evidence/` 与 `.local/verification/demo-0.1.0/`。未验证其他硬件，首次启动需等待资源加载。分享 ZIP 即可，不包含开发者存档；当前存档目录为 `farm-v27/`，格式以 `Game/farm/farm_store.gd` 为准，不承诺后续版本兼容。
 
