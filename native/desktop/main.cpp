@@ -1,4 +1,4 @@
-// Native desktop lifecycle only. The parent Godot process owns all farm data.
+// Native desktop lifecycle and filtered pointer forwarding. The parent Godot process owns all farm data.
 // Design references and supported boundaries are documented in README.md.
 #include <windows.h>
 #include <shellapi.h>
@@ -23,16 +23,19 @@ bool styles_saved = false;
 NOTIFYICONDATAW tray{};
 UINT taskbar_created = 0;
 std::string input;
-bool mouse_registered = false, desktop_press = false;
-POINT press_point{};
-ULONGLONG press_time = 0;
-
-bool observe_mouse(bool enabled) {
-    desktop_press = false;
-    RAWINPUTDEVICE device{0x01, 0x02, static_cast<DWORD>(enabled ? RIDEV_INPUTSINK : RIDEV_REMOVE), enabled ? helper : nullptr};
-    if (!RegisterRawInputDevices(&device, 1, sizeof(device))) return false;
-    mouse_registered = enabled;
-    return true;
+constexpr UINT POINTER_BUTTON = WM_APP + 2;
+HHOOK mouse_hook_handle = nullptr;
+bool interacting = false, pointer_available = false;
+POINT pointer_point{};
+HWND pointer_window = nullptr;
+ULONGLONG pointer_sampled = 0;
+unsigned captured_buttons = 0;
+struct PointerButton { POINT point; int button; bool pressed; double factor; };
+LRESULT CALLBACK mouse_hook(int code, WPARAM message, LPARAM data);
+void stop_mouse() {
+    if (mouse_hook_handle) UnhookWindowsHookEx(mouse_hook_handle);
+    mouse_hook_handle = nullptr;
+    interacting = false; pointer_available = false; captured_buttons = 0;
 }
 
 void emit(const std::string &line) {
@@ -77,7 +80,7 @@ BOOL CALLBACK locate_monitor(HMONITOR monitor, HDC, LPRECT, LPARAM data) {
     return TRUE;
 }
 bool restore(bool announce = true) {
-    if (mouse_registered) observe_mouse(false);
+    stop_mouse();
     if (styles_saved) emit("RESTORING");
     if (!owns_window()) return false;
     if (styles_saved) {
@@ -138,7 +141,8 @@ bool attach() {
         error("attach_position"); restore(false); return false;
     }
     attached = true;
-    if (!observe_mouse(true)) { error("desktop_input"); restore(false); return false; }
+    if (!mouse_hook_handle) mouse_hook_handle = SetWindowsHookExW(WH_MOUSE_LL, mouse_hook, GetModuleHandleW(nullptr), 0);
+    if (!mouse_hook_handle) { error("desktop_input"); restore(false); return false; }
     was_visible = false;
     emit("ATTACHED");
     emit("COVERED");
@@ -223,34 +227,78 @@ bool desktop_background(POINT point) {
     VariantClear(&child); VariantClear(&role);
     return background;
 }
-void desktop_mouse(LPARAM handle) {
-    if (!attached || locked) { desktop_press = false; return; }
-    RAWINPUT raw{}; UINT bytes = sizeof(raw);
-    if (GetRawInputData(reinterpret_cast<HRAWINPUT>(handle), RID_INPUT, &raw, &bytes, sizeof(RAWINPUTHEADER)) == UINT(-1)
-        || raw.header.dwType != RIM_TYPEMOUSE) return;
+std::string pointer_coordinates(POINT point) {
+    RECT client{};
+    if (!ScreenToClient(game, &point) || !GetClientRect(game, &client)
+        || client.right <= 0 || client.bottom <= 0 || !PtInRect(&client, point)) return "";
+    return std::to_string(double(point.x)/client.right) + " " + std::to_string(double(point.y)/client.bottom);
+}
+void sample_pointer() {
     POINT point{};
-    if (!GetCursorPos(&point)) { desktop_press = false; return; }
-    const USHORT buttons = raw.data.mouse.usButtonFlags;
-    if (buttons & RI_MOUSE_LEFT_BUTTON_DOWN) {
-        desktop_press = desktop_background(point);
-        press_point = point; press_time = GetTickCount64();
+    const bool available = GetCursorPos(&point) && desktop_background(point);
+    const bool moved = point.x != pointer_point.x || point.y != pointer_point.y;
+    const bool changed = available != pointer_available;
+    pointer_point = point;
+    pointer_available = available;
+    pointer_window = available ? WindowFromPoint(point) : nullptr;
+    pointer_sampled = GetTickCount64();
+    if (available && (moved || changed)) {
+        const auto coordinates = pointer_coordinates(point);
+        if (!coordinates.empty()) emit("POINTER " + coordinates);
+    } else if (changed) emit("LEAVE");
+}
+LRESULT CALLBACK mouse_hook(int code, WPARAM message, LPARAM data) {
+    // Never call Accessibility, write pipes, or send synchronous messages here.
+    // The host samples the desktop outside the hook; stale/moved points fail closed.
+    if (code != HC_ACTION || !attached || locked) return CallNextHookEx(nullptr, code, message, data);
+    auto mouse = reinterpret_cast<MSLLHOOKSTRUCT *>(data);
+    int button = 0; bool pressed = false; double factor = 1.0;
+    switch (message) {
+        case WM_LBUTTONDOWN: button=1; pressed=true; break;
+        case WM_LBUTTONUP: button=1; break;
+        case WM_RBUTTONDOWN: button=2; pressed=true; break;
+        case WM_RBUTTONUP: button=2; break;
+        case WM_MBUTTONDOWN: button=3; pressed=true; break;
+        case WM_MBUTTONUP: button=3; break;
+        case WM_MOUSEWHEEL: {
+            const short delta = static_cast<short>(HIWORD(mouse->mouseData));
+            button = delta > 0 ? 4 : 5; pressed = true;
+            factor = abs(double(delta))/WHEEL_DELTA;
+            break;
+        }
+        default: return CallNextHookEx(nullptr, code, message, data);
     }
-    if (desktop_press && (abs(point.x-press_point.x) >= GetSystemMetrics(SM_CXDRAG)
-        || abs(point.y-press_point.y) >= GetSystemMetrics(SM_CYDRAG)
-        || (buttons & (RI_MOUSE_RIGHT_BUTTON_DOWN | RI_MOUSE_MIDDLE_BUTTON_DOWN)))) desktop_press = false;
-    if (buttons & RI_MOUSE_LEFT_BUTTON_UP) {
-        const bool click = desktop_press && GetTickCount64()-press_time < 1000;
-        desktop_press = false;
-        if (!click || !desktop_background(point)) return;
-        RECT client{};
-        if (!ScreenToClient(game, &point) || !GetClientRect(game, &client)
-            || client.right <= 0 || client.bottom <= 0 || !PtInRect(&client, point)) return;
-        emit("CLICK " + std::to_string(double(point.x)/client.right) + " " + std::to_string(double(point.y)/client.bottom));
+    const bool valid = pointer_available && GetTickCount64()-pointer_sampled < 150
+        && mouse->pt.x == pointer_point.x && mouse->pt.y == pointer_point.y
+        && WindowFromPoint(mouse->pt) == pointer_window;
+    const unsigned bit = 1u << button;
+    const bool captured = (captured_buttons & bit) != 0;
+    const bool suppress = captured || (valid && interacting);
+    if (button <= 3) {
+        if (pressed && suppress) captured_buttons |= bit;
+        if (!pressed) captured_buttons &= ~bit;
     }
+    // Passive clicks are only candidates: the game decides whether a tool was hit.
+    if (valid || captured || !interacting) {
+        auto event = new PointerButton{mouse->pt, button, pressed, factor};
+        if (!PostMessageW(helper, POINTER_BUTTON, 0, reinterpret_cast<LPARAM>(event))) delete event;
+    }
+    if (suppress) return 1;
+    return CallNextHookEx(nullptr, code, message, data);
+}
+void forward_button(const PointerButton &event) {
+    if (!attached || locked) return;
+    if (!desktop_background(event.point)) { emit("LEAVE"); return; }
+    const auto coordinates = pointer_coordinates(event.point);
+    if (coordinates.empty()) { emit("LEAVE"); return; }
+    emit("BUTTON " + std::to_string(event.button) + " " + (event.pressed ? "1 " : "0 ")
+        + coordinates + " " + std::to_string(event.factor));
 }
 LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wp, LPARAM lp) {
-    if (message == WM_INPUT) {
-        desktop_mouse(lp);
+    if (message == POINTER_BUTTON) {
+        auto event = reinterpret_cast<PointerButton *>(lp);
+        forward_button(*event);
+        delete event;
     } else if (message == taskbar_created && taskbar_created) {
         Shell_NotifyIconW(NIM_ADD, &tray);
         // The timer also checks ownership and parent liveness after shell rebuilds.
@@ -310,7 +358,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     WTSRegisterSessionNotification(helper, NOTIFY_FOR_THIS_SESSION);
     add_tray();
     if (!running || !attach()) running = false;
-    ULONGLONG next_visibility = 0;
+    ULONGLONG next_visibility = 0, next_pointer = 0;
     while (running && WaitForSingleObject(parent_process, 0) == WAIT_TIMEOUT) {
         MSG message;
         while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE)) { TranslateMessage(&message); DispatchMessageW(&message); }
@@ -326,6 +374,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
                 std::string command = input.substr(0, newline); input.erase(0, newline+1);
                 if (command == "RESTORE") request_restore(false);
                 else if (command == "STOP") running = false;
+                else if (command == "INTERACT") interacting = true;
+                else if (command == "OBSERVE") interacting = false;
                 else { emit("ERROR command 87"); running = false; }
             }
         }
@@ -338,10 +388,14 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
             }
             if (attached) visibility();
         }
-        MsgWaitForMultipleObjects(1, &parent_process, FALSE, 50, QS_ALLINPUT);
+        if (attached && GetTickCount64() >= next_pointer) {
+            next_pointer = GetTickCount64()+33;
+            sample_pointer();
+        }
+        MsgWaitForMultipleObjects(1, &parent_process, FALSE, 16, QS_ALLINPUT);
     }
     if (styles_saved) restore(false);
-    if (mouse_registered) observe_mouse(false);
+    stop_mouse();
     Shell_NotifyIconW(NIM_DELETE, &tray);
     WTSUnRegisterSessionNotification(helper);
     DestroyWindow(helper);

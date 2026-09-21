@@ -484,3 +484,8 @@ func _animate_confirmation(panel: Control) -> void:
 	_confirmation_motion = create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_confirmation_motion.tween_property(panel, "scale", Vector2.ONE, .18)
 	_confirmation_motion.tween_property(panel, "modulate:a", 1.0, .14)
+
+
+func set_wallpaper_mode(active: bool) -> void:
+	_wallpaper.text = "结束桌面操作" if active else "设为桌面壁纸"
+	_wallpaper.tooltip_text = "收起操作控件，继续展示壁纸。" if active else "悬停农具高亮，点击后直接在桌面照料农场；托盘可返回窗口。"

@@ -1,6 +1,6 @@
 # 独立桌面壁纸组件
 
-设置 →「设为桌面壁纸」把正在运行的农场放到当前显示器的桌面图标下方。双击系统托盘图标返回游戏；托盘右键可返回或保存退出。进入前保存农场与设置；壁纸隐藏操作界面、保持静音；点击未被窗口或桌面图标遮挡的门口农具，会返回游戏并拿起对应工具。桌面图标保持正常操作，拖动不唤醒。没有开机启动或退出后常驻。
+设置 →「设为桌面壁纸」把正在运行的农场放到当前显示器的桌面图标下方。双击系统托盘图标返回游戏；托盘右键可返回或保存退出。进入前保存农场与设置；壁纸保持静音；未遮挡农具悬停高亮，点击后在壁纸原位显示控件并拿起工具，结束桌面操作后收起控件。桌面图标保持正常操作，拖动不唤醒。没有开机启动或退出后常驻。
 
 发行文件为同目录的 `Farm.exe`、`Farm.pck`、`FarmDesktop.exe`。玩家无需安装 Godot、Lively、Wallpaper Engine 或编译环境。桌面宿主只在壁纸模式存在，不读取农场存档。
 
@@ -11,10 +11,10 @@
 开发机需要 CMake、Visual Studio 2022 C++ Build Tools 和 Windows SDK。仓库根目录执行 `pwsh -NoProfile -File scripts/build-desktop.ps1`，输出 `.local/builds/windows/FarmDesktop.exe`；普通开发启动和 Windows 导出已自动调用。MSVC 使用静态运行库，宿主只链接 Windows 系统组件。
 
 - `main.cpp`：校验传入 HWND 属于直接父进程；负责桌面层、原生样式、托盘、显示器和会话通知。通过持有的父进程句柄监测生命周期。宿主正常结束前解除挂接；父游戏结束后退出。
-- `Game/platform/desktop_wallpaper.gd`：启动同包宿主，通过继承的匿名管道收发逐行状态，保存并恢复 Godot 窗口状态。没有网络端口、任意窗口指令或全局输入钩子。宿主仅在挂接期间注册鼠标 Raw Input，不注册键盘，不吞掉鼠标事件；仅将目标屏幕桌面空白处的短左键点击通过管道传给游戏做农具可见表面命中，返回窗口时注销。桌面图标通过 Windows Accessibility 的角色排除，无法确认时不唤醒。
+- `Game/platform/desktop_wallpaper.gd`：启动同包宿主，通过继承的匿名管道收发逐行状态，保存并恢复 Godot 窗口状态。没有网络端口或任意窗口指令。仅挂接期间安装低级鼠标钩子，不采集键盘；操作模式截取已确认空白桌面的按钮与滚轮，其他程序和图标输入不转发。钩子不进行 Accessibility 查询、管道写入或同步消息；宿主在钩子外采样、复核桌面角色，缓存过期或点位变化时不截取。离开有效区域取消手势。
 - `Game/atmosphere/window_activity.gd`：唯一的呈现帧率管理者。壁纸可见时最高 30 fps，目标屏幕被普通不透明窗口覆盖超过 95% 或锁屏时最高 2 fps；不暂停场景树和现实时间结算。此限帧策略不是 CPU/GPU 耗电达标证明。
 
-新增状态 `CLICK <归一化x> <归一化y>`，只承载桌面空白点击；不传递键盘或其他程序输入。
+输入状态为 `POINTER x y`、`BUTTON button pressed x y factor`、`LEAVE`；坐标为游戏客户区归一化坐标。`INTERACT` / `OBSERVE` 切换操作与观赏，不解除桌面挂接；不传递键盘或其他程序输入。
 
 管道命令只有 `RESTORE` 和 `STOP`；状态为 `ATTACHING`、`ATTACHED`、`VISIBLE`、`COVERED`、`RESTORING`、`RESTORED`、`QUIT`、`ERROR <阶段> <Windows错误码>`。退出意图先发送，窗口恢复完成、宿主退出后才由游戏执行正常保存退出。
 
@@ -47,3 +47,5 @@
 
 加入点击门口农具返回游戏，构建随包宿主。按用户要求本轮仅构建打包，不运行功能测试或桌面实机验收；上方2026-09-18证据仅属于旧的托盘返回实现，不能作为新增唤醒入口的通过证明。
 实现参考：[Raw Input](https://learn.microsoft.com/en-us/windows/win32/inputdev/using-raw-input)、[AccessibleObjectFromPoint](https://learn.microsoft.com/en-us/windows/win32/api/oleacc/nf-oleacc-accessibleobjectfrompoint)。
+## 2026-09-22 Demo 0.1.2
+改为原位桌面交互和悬停高亮，提供 FolderOnly 构建；用户要求仅构建，未运行交互验收。低级鼠标钩子约束参考 [LowLevelMouseProc](https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelmouseproc)。

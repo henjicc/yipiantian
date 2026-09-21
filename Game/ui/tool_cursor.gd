@@ -1,6 +1,9 @@
 extends Node
 ## Arrow and carried item share one hardware cursor, so motion never waits for a frame.
 
+var _wallpaper_item: TextureRect
+var _wallpaper: bool = false
+var _wallpaper_position: Vector2 = Vector2.INF
 var _key: String = ""
 var _cursor_texture: ImageTexture
 var _cursor_pixels: int = 0
@@ -17,6 +20,7 @@ func show_tool(tool: String, crop_id: String) -> void:
 	if key == _key:
 		return
 	_key = key
+	_update_wallpaper_item()
 	_apply_cursor()
 
 
@@ -56,3 +60,26 @@ func _exit_tree() -> void:
 	for shape: Input.CursorShape in [Input.CURSOR_ARROW, Input.CURSOR_POINTING_HAND]:
 		Input.set_custom_mouse_cursor(null, shape)
 	_textures.clear()
+
+
+func set_wallpaper_pointer(enabled: bool, position: Vector2) -> void:
+	_wallpaper = enabled
+	_wallpaper_position = position
+	if enabled and _wallpaper_item == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 100
+		add_child(layer)
+		_wallpaper_item = TextureRect.new()
+		_wallpaper_item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_wallpaper_item.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_wallpaper_item.size = Vector2(48, 48)
+		layer.add_child(_wallpaper_item)
+	_update_wallpaper_item()
+
+
+func _update_wallpaper_item() -> void:
+	if _wallpaper_item == null: return
+	_wallpaper_item.visible = _wallpaper and _wallpaper_position.is_finite() and not _key.is_empty()
+	if _wallpaper_item.visible:
+		_wallpaper_item.position = _wallpaper_position + Vector2(24, 28)
+		_wallpaper_item.texture = load("res://art/ui/crops/%s.png" % _key)

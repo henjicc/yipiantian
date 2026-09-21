@@ -2,8 +2,9 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{7,40}$')][string]$Commit,
-    [ValidatePattern('^\d+\.\d+\.\d+(-rc\.\d+)?$')][string]$Version = '0.1.1',
-    [string]$GodotPath = $env:GODOT_EXE
+    [ValidatePattern('^\d+\.\d+\.\d+(-rc\.\d+)?$')][string]$Version = '0.1.2',
+    [string]$GodotPath = $env:GODOT_EXE,
+    [switch]$FolderOnly
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
@@ -101,8 +102,11 @@ $manifest = [ordered]@{version=$Version; commit=$revision; engine=$engineVersion
 $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $package 'version.json') -Encoding utf8
 $checksums = Get-ChildItem -LiteralPath $package -Recurse -File | Sort-Object FullName | ForEach-Object { (Get-FileHash -LiteralPath $_.FullName).Hash.ToLowerInvariant()+'  '+[IO.Path]::GetRelativePath($package,$_.FullName).Replace('\','/') }
 $checksums | Set-Content -LiteralPath (Join-Path $package 'SHA256SUMS.txt') -Encoding utf8
-$zip = Join-Path $releaseRoot ($packageName+'.zip')
-Compress-Archive -LiteralPath $package -DestinationPath $zip -CompressionLevel Optimal
-((Get-FileHash -LiteralPath $zip).Hash.ToLowerInvariant()+'  '+[IO.Path]::GetFileName($zip)) | Set-Content -LiteralPath ($zip+'.sha256') -Encoding utf8
+$zip = ''
+if (-not $FolderOnly) {
+    $zip = Join-Path $releaseRoot ($packageName+'.zip')
+    Compress-Archive -LiteralPath $package -DestinationPath $zip -CompressionLevel Optimal
+    ((Get-FileHash -LiteralPath $zip).Hash.ToLowerInvariant()+'  '+[IO.Path]::GetFileName($zip)) | Set-Content -LiteralPath ($zip+'.sha256') -Encoding utf8
+}
 Write-Output "CANDIDATE_BUILT version=$Version commit=$revision package=$package zip=$zip evidence=$evidence"
-Write-Output 'Build and inventory passed. Native tests outside the repository are still required before acceptance.'
+Write-Output 'Build and inventory complete. Gameplay acceptance has not been performed.'

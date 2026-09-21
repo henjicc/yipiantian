@@ -1,11 +1,15 @@
 extends Node
-## Private inherited pipes bind this host to this game; no network listener or global input hook.
+## Private inherited pipes bind this host to this game; no network listener. Mouse forwarding is limited to the uncovered desktop.
 signal changed(active: bool)
 signal visibility_changed(uncovered: bool)
 signal restoring
 signal failed(message: String)
 signal quit_requested
-signal desktop_clicked(position: Vector2)
+signal pointer_moved(position: Vector2)
+signal pointer_left
+signal pointer_button(position: Vector2, button: int, pressed: bool, factor: float)
+
+var interacting: bool = false
 
 var active: bool = false
 var busy: bool = false
@@ -64,6 +68,10 @@ func restore() -> void:
 	_deadline = Time.get_ticks_msec() + 5000
 	_send("RESTORE")
 
+func set_interacting(value: bool) -> void:
+	interacting = value and active and not busy
+	_send("INTERACT" if interacting else "OBSERVE")
+
 func _send(command: String) -> void:
 	if _pipe == null: return
 	_pipe.store_buffer((command + "\n").to_utf8_buffer())
@@ -100,12 +108,22 @@ func _process(_delta: float) -> void:
 		failed.emit("桌面切换超时，正在取消；请稍后重试。")
 
 func _receive(line: String) -> void:
-	if line.begins_with("CLICK "):
+	if line == "LEAVE":
+		pointer_left.emit()
+		return
+	if line.begins_with("POINTER ") or line.begins_with("BUTTON "):
 		var parts: PackedStringArray = line.split(" ", false)
-		if active and not busy and parts.size() == 3 and parts[1].is_valid_float() and parts[2].is_valid_float():
-			var point := Vector2(float(parts[1]), float(parts[2]))
+		var is_button: bool = parts[0] == "BUTTON"
+		var offset: int = 3 if is_button else 1
+		if active and not busy and parts.size() == (6 if is_button else 3) and parts[offset].is_valid_float() and parts[offset+1].is_valid_float():
+			var point := Vector2(float(parts[offset]), float(parts[offset+1]))
 			if point.is_finite() and point.x >= 0.0 and point.x < 1.0 and point.y >= 0.0 and point.y < 1.0:
-				desktop_clicked.emit(point)
+				if not is_button:
+					pointer_moved.emit(point)
+				elif parts[1] in ["1", "2", "3", "4", "5"] and parts[2] in ["0", "1"] and parts[5].is_valid_float():
+					var factor: float = float(parts[5])
+					if is_finite(factor) and factor >= 0.0 and factor <= 100.0:
+						pointer_button.emit(point, int(parts[1]), parts[2] == "1", factor)
 		return
 	print("DESKTOP_HOST " + line)
 	match line:
@@ -148,6 +166,7 @@ func _finish() -> void:
 	await get_tree().process_frame
 	_reset_window()
 	active = false
+	interacting = false
 	busy = false
 	if _pipe != null: _pipe.close()
 	_pipe = null

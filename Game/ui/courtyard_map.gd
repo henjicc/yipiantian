@@ -94,7 +94,7 @@ func _gui_input(event: InputEvent) -> void:
 					break
 		accept_event()
 	elif event is InputEventMouseMotion and _dragging:
-		if not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		if not (event.button_mask & MOUSE_BUTTON_MASK_LEFT):
 			cancel_drag()
 			return
 		var point: Vector2=(event.position-_origin)/_scale+_bounds.position+_offset
