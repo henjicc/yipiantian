@@ -32,8 +32,9 @@ static func valid(data: Variant) -> bool:
 		if data.trellis[0]<2 or data.trellis[0]>6 or data.trellis[1]<.8 or data.trellis[1]>2 or data.trellis[2]<1.6 or data.trellis[2]>3: return false
 		if absf(data.trellis[3])>24 or absf(data.trellis[4])>24 or data.trellis[5]<-180 or data.trellis[5]>=180: return false
 	if not data.bridge.is_empty():
-		if not numbers(data.bridge,6): return false
+		if not numbers(data.bridge,6) and not numbers(data.bridge,7): return false
 		if float(data.bridge[5]) not in [0.0,1.0]: return false
+		if data.bridge.size()==7 and (data.bridge[6]<.35 or data.bridge[6]>1.2): return false
 		for i: int in 4:
 			if absf(data.bridge[i])>24: return false
 		if data.bridge[4]<.8 or data.bridge[4]>1.8: return false
@@ -142,9 +143,12 @@ static func bridge_style(plan: RefCounted) -> int:
 	return 1 if plan.construction.bridge.is_empty() else int(plan.construction.bridge[5])
 
 static func bridge_parameters(plan: RefCounted) -> Array:
-	if not plan.construction.bridge.is_empty(): return plan.construction.bridge.duplicate()
+	if not plan.construction.bridge.is_empty():
+		var values: Array=plan.construction.bridge.duplicate()
+		if values.size()==6: values.append(.65)
+		return values
 	var ends: Array[Vector3]=bridge_points(plan)
-	return [ends[0].x,ends[0].z,ends[1].x,ends[1].z,1.2,bridge_style(plan)]
+	return [ends[0].x,ends[0].z,ends[1].x,ends[1].z,1.2,bridge_style(plan),.65]
 
 static func bridge_crown(ends: Array[Vector3]) -> float:
 	return maxf(.42,maxf(ends[0].y,ends[1].y)+.22)
@@ -193,3 +197,14 @@ static func snap_bridge_end(plan: RefCounted, point: Vector2, end: int, width: f
 			var candidate: Vector2=Geometry2D.get_closest_point_to_segment(point,polygon[i],polygon[(i+1)%polygon.size()])
 			if point.distance_to(candidate)<distance: nearest=candidate;distance=point.distance_to(candidate)
 	return nearest
+
+static func bridge_rail_height(plan: RefCounted) -> float:
+	return .65 if plan.construction.bridge.size()<7 else float(plan.construction.bridge[6])
+
+static func bridge_handles(plan: RefCounted) -> Array[Vector3]:
+	var ends: Array[Vector3]=bridge_points(plan)
+	var direction: Vector3=(ends[1]-ends[0]).normalized()
+	var side: Vector3=Vector3.UP.cross(direction).normalized()
+	var middle: Vector3=bridge_profile(ends,bridge_style(plan),.5)+Vector3.UP*.12
+	var half_width: float=bridge_parameters(plan)[4]*.5+.16
+	return [ends[0]+Vector3.UP*.12,ends[1]+Vector3.UP*.12,middle+side*half_width,middle-side*half_width]

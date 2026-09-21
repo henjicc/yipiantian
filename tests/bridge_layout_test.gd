@@ -26,7 +26,7 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(folder);print("EVIDENCE "+folder)
 	scene=load("res://scenes/main.tscn").instantiate();scene.name="FarmExperience"
 	if OS.get_cmdline_user_args().has("--views-only"):
-		var layout: Dictionary=Plan.new().snapshot();layout.construction.bridge=[5.4,-.1,11.0,.1,1.2,1]
+		var layout: Dictionary=Plan.new().snapshot();layout.construction.bridge=[5.4,-.1,11.0,.1,1.2,1,.65]
 		scene.courtyard_plan=Plan.from_snapshot(layout)
 	scene.store=Store.new(folder.path_join("farm"));scene.settings_store=Settings.new(folder.path_join("settings"));scene.clock=func() -> float: return now
 	root.add_child(scene);current_scene=scene;await frames(8)
@@ -72,6 +72,19 @@ func _run() -> void:
 	for entry: Dictionary in builder.bridge_preview._dressing:
 		if entry.node.visible and preload("res://layout/island_space.gd").overlaps(builder.bridge_preview.footprint,entry.footprint): automatic_clear=false
 	expect(automatic_clear,"Automatic bank stones clear the bridge during preview")
+	# Four live handles: width drags keep both endpoints, end drags keep width.
+	var handles: Array[Vector3]=Construction.bridge_handles(builder.candidate)
+	expect(handles.size()==4,"Bridge exposes four spatial control points")
+	var prior: Array=builder.draft.construction.bridge.duplicate()
+	var side: Vector3=(handles[2]-handles[3]).normalized()
+	await drag(handles[2],handles[2]+side*.12)
+	var widened: Array=builder.draft.construction.bridge
+	expect(widened[4]>prior[4]+.1,"Side handle changes width through real pointer input")
+	for i: int in 4: expect(is_equal_approx(widened[i],prior[i]),"Width handle preserves endpoint %d"%i)
+	builder._values.bridge_width.value=1.2
+	builder._values.bridge_rail_height.value=.95
+	expect(is_equal_approx(builder.bridge_preview.structure.get_meta("rail_height"),.95),"Railing control rebuilds actual geometry")
+	if not await ready_draft(): await finish();return
 	await shot("01-preview")
 	var preview: Node3D=builder.bridge_preview.structure
 	var support: Vector2=preview.get_meta("bridge_supports")[2]
@@ -193,7 +206,7 @@ func edge_checks(builder: Node) -> void:
 	scene.decoration_layout.refresh_confirmed()
 	var bench: Node3D=scene.decoration_layout._instances.bench
 	var bench_pose: Transform3D=bench.global_transform
-	builder.draft.construction.bridge=[5.4,.8,11.0,.1,1.0,1];builder._refresh()
+	builder.draft.construction.bridge=[5.4,.8,11.0,.1,1.0,1,.65];builder._refresh()
 	expect(builder._confirm.disabled and builder.issue().contains("摆件"),"Bridge placement protects the player's bench")
 	expect(bench.visible and bench.global_transform==bench_pose,"Rejected bridge never hides or moves player content")
 	builder.cancel_draft()

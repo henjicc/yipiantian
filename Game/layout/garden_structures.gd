@@ -74,28 +74,35 @@ static func bridge(plan: RefCounted) -> Node3D:
 		# Adjacent segments meet; thickness extends below the walking surface.
 		deck.append(_plank_arrays,Transform3D(basis,(a+b)*.5-up*.0375))
 	var spans: int=ceili(length/.9)
+	var rail_height: float=Construction.bridge_rail_height(plan)
 	var supports:=PackedVector2Array()
+	# Assemble masonry courses independently: rail thickness never scales with
+	# span or deck width. New bays are added as the bridge becomes longer.
 	for edge: float in [-1.0,1.0]:
-		var previous:=Vector3.ZERO
 		for i: int in spans+1:
-			var t: float=float(i)/spans
-			var bottom: Vector3=Construction.bridge_profile(ends,style,t)+side*(edge*width*.5)
-			var top: Vector3=bottom+Vector3.UP*.65
-			Poles._pole(rails,bottom,top,.036)
-			if i>0:
-				Poles._pole(rails,previous,top,.03)
-				Poles._pole(rails,previous-Vector3.UP*.32,top-Vector3.UP*.32,.022)
-			previous=top
+			var bottom: Vector3=Construction.bridge_profile(ends,style,float(i)/spans)+side*(edge*width*.5)
+			_block(rails,bottom+Vector3.UP*(rail_height*.5),Vector3(.10,rail_height,.10),Basis(side,Vector3.UP,direction))
+			_block(rails,bottom+Vector3.UP*(rail_height+.025),Vector3(.13,.05,.13),Basis(side,Vector3.UP,direction))
+		for i: int in spans:
+			var a: Vector3=Construction.bridge_profile(ends,style,float(i)/spans)+side*(edge*width*.5)
+			var b: Vector3=Construction.bridge_profile(ends,style,float(i+1)/spans)+side*(edge*width*.5)
+			var tangent: Vector3=(b-a).normalized()
+			var up: Vector3=tangent.cross(side).normalized()
+			var rail_basis:=Basis(side,up,tangent)
+			_block(rails,(a+b)*.5+Vector3.UP*(rail_height-.055),Vector3(.10,.11,a.distance_to(b)),rail_basis)
+			_block(rails,(a+b)*.5+Vector3.UP*(rail_height*.48),Vector3(.065,rail_height*.62,maxf(.1,a.distance_to(b)-.13)),rail_basis)
 	for bottom: Vector3 in Passage.supports(plan):
-		Poles._pole(rails,Vector3(bottom.x,-.8,bottom.z),bottom,.052)
+		_block(rails,Vector3(bottom.x,(bottom.y-.8)*.5,bottom.z),Vector3(.104,bottom.y+.8,.104),Basis.IDENTITY)
 		supports.append(Vector2(bottom.x,bottom.z))
+	root.set_meta("rail_height",rail_height)
+	root.set_meta("rail_bays",spans)
 	root.set_meta("bridge_ends",ends)
 	root.set_meta("bridge_style",style)
 	root.set_meta("bridge_supports",supports)
 	root.set_meta("bridge_water_shapes",Passage.water_shapes(plan))
 	root.set_meta("deck_sections",pieces)
-	_finish(root,deck,Color("867354"));root.get_child(0).name="Deck"
-	_finish(root,rails,Color("61543c"))
+	_finish(root,deck,Color("b8b9aa"));root.get_child(0).name="Deck"
+	_finish(root,rails,Color("c4c5b8"))
 	return root
 
 static func trellis_support(plan: RefCounted) -> Node3D:
@@ -110,3 +117,6 @@ static func trellis_support(plan: RefCounted) -> Node3D:
 	else: Poles._pole(surface,hook+Vector3.UP*.3,hook,.012)
 	_finish(root,surface,Color("89794c"))
 	return root
+
+static func _block(surface: ConstructionMesh, center: Vector3, size: Vector3, basis: Basis) -> void:
+	surface.append(_plank_arrays,Transform3D(basis*Basis.from_scale(size),center))

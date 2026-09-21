@@ -122,7 +122,7 @@ func _ready() -> void:
 	choices=Choices.new();content.add_child(choices);_tools=choices.items
 	choices.item_selected.connect(choose)
 	choices.category_selected.connect(func(_category: String) -> void: choose(""))
-	for entry: Array in [["columns","田块列数",2,8,1],["rows","田块行数",2,8,1],["length","架长",2,6,.1],["width","架宽",.8,2,.1],["height","架高",1.6,3,.1],["bridge_width","桥宽",.8,1.8,.1],["count","鸭子数量",0,12,1],["radius","笔刷半径",.3,3,.1],["density","疏密（1–3）",1,3,1]]:
+	for entry: Array in [["columns","田块列数",2,8,1],["rows","田块行数",2,8,1],["length","架长",2,6,.1],["width","架宽",.8,2,.1],["height","架高",1.6,3,.1],["bridge_width","桥宽",.8,1.8,.1],["bridge_rail_height","栏高",.35,1.2,.05],["count","鸭子数量",0,12,1],["radius","笔刷半径",.3,3,.1],["density","疏密（1–3）",1,3,1]]:
 		var row:=HBoxContainer.new();content.add_child(row);_rows[entry[0]]=row
 		var label:=Label.new();label.text=entry[1];label.size_flags_horizontal=Control.SIZE_EXPAND_FILL;row.add_child(label)
 		var spin:=SpinBox.new();spin.name=entry[0];spin.min_value=entry[2];spin.max_value=entry[3];spin.step=entry[4];spin.custom_minimum_size.x=106
@@ -218,7 +218,7 @@ func choose(id: String) -> void:
 	choices.select_item(id);choices.present(main.decoration_state.snapshot(),busy)
 	_land_actions.visible=id=="land"
 	if id=="land": _land_support={0:LandSupport.capture(main,0),1:LandSupport.capture(main,1)}
-	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key=="bridge_width") or (id in Flocks.TOOLS and key=="count") or (id=="fields" and key in ["columns","rows"]) or (id in Plants.KINDS and key in ["radius","density"])
+	for key: String in _rows: _rows[key].visible=(id=="trellis" and key in ["length","width","height"]) or (id=="bridge" and key in ["bridge_width","bridge_rail_height"]) or (id in Flocks.TOOLS and key=="count") or (id=="fields" and key in ["columns","rows"]) or (id in Plants.KINDS and key in ["radius","density"])
 	_route_actions.visible=id in Routes.KINDS;_route_buttons.gate.visible=id=="fence"
 	_route_index=-1;_route_message=""
 	if id=="road" and _route_mode=="gate": _select_route_mode("draw")
@@ -243,6 +243,7 @@ func choose(id: String) -> void:
 		_values.count.set_block_signals(true);_values.count.max_value=Flocks.SPECIES[kind].limit
 		_values.count.set_value_no_signal(draft.construction.flocks[kind].count);_values.count.set_block_signals(false)
 	_values.bridge_width.set_value_no_signal(1.2 if draft.construction.bridge.is_empty() else draft.construction.bridge[4])
+	_values.bridge_rail_height.set_value_no_signal(Construction.bridge_rail_height(Plan.from_snapshot(draft)))
 	if _is_decoration():
 		main.decoration_layout.begin_mode();main.decoration_layout.hud.hide()
 		main.decoration_layout.select_item(id)
@@ -430,8 +431,8 @@ func _parameter_changed(_value: float) -> void:
 		parameters[0]=_values.length.value;parameters[1]=_values.width.value;parameters[2]=_values.height.value
 		draft.construction.trellis=parameters
 	elif tool=="bridge":
-		var parameters: Array=Construction.bridge_parameters(main.courtyard_plan) if draft.construction.bridge.is_empty() else draft.construction.bridge.duplicate()
-		parameters[4]=_values.bridge_width.value;parameters[5]=_bridge_style.selected
+		var parameters: Array=Construction.bridge_parameters(Plan.from_snapshot(draft))
+		parameters[4]=_values.bridge_width.value;parameters[5]=_bridge_style.selected;parameters[6]=_values.bridge_rail_height.value
 		draft.construction.bridge=parameters
 	elif tool in Flocks.TOOLS: draft.construction.flocks[Flocks.TOOLS[tool]].count=int(_values.count.value)
 	_refresh()
@@ -690,10 +691,10 @@ func _press(screen: Vector2) -> void:
 		_press_field(point,screen)
 		return
 	if tool=="bridge":
-		var points: Array[Vector3]=Construction.bridge_points(candidate if candidate!=null else main.courtyard_plan)
+		var points: Array[Vector3]=Construction.bridge_handles(candidate if candidate!=null else main.courtyard_plan)
 		var nearest: float=18
 		for i: int in points.size():
-			var distance: float=main.camera.unproject_position(points[i]+Vector3.UP*.12).distance_to(screen)
+			var distance: float=main.camera.unproject_position(points[i]).distance_to(screen)
 			if distance<nearest: nearest=distance;_bridge_end=i
 		if _bridge_end<0:
 			var structure: Node3D=bridge_preview.structure if is_instance_valid(bridge_preview) else main.get_node("Environment").get_bridge()
@@ -802,10 +803,16 @@ func _drag(screen: Vector2) -> void:
 				# Snap the translation, never each end separately: moving a whole
 				# bridge must preserve its span, heading and width at either shore.
 				for i: int in ends.size(): ends[i]+=Vector3(delta.x,0,delta.y)
+			elif _bridge_end>=2:
+				var axis: Vector2=Vector2(ends[1].x-ends[0].x,ends[1].z-ends[0].z).normalized()
+				var side:=Vector2(axis.y,-axis.x)
+				var width: float=Construction.bridge_parameters(Plan.from_snapshot(_drag_snapshot))[4]
+				width=clampf(width+delta.dot(side)*2.0*(1.0 if _bridge_end==2 else -1.0),.8,1.8)
+				_values.bridge_width.set_value_no_signal(width)
 			else:
 				point=Construction.snap_bridge_end(main.courtyard_plan,point,_bridge_end,_values.bridge_width.value)
 				ends[_bridge_end]=Vector3(point.x,0,point.y)
-			draft.construction.bridge=[ends[0].x,ends[0].z,ends[1].x,ends[1].z,_values.bridge_width.value,_bridge_style.selected]
+			draft.construction.bridge=[ends[0].x,ends[0].z,ends[1].x,ends[1].z,_values.bridge_width.value,_bridge_style.selected,_values.bridge_rail_height.value]
 	_refresh()
 
 func issue() -> String:
@@ -962,7 +969,7 @@ func _render_preview(valid: bool) -> void:
 			_outline(corners,level,tint,false)
 			for at: Vector2 in corners: _handle(Vector3(at.x,level,at.y),tint)
 	elif tool=="bridge":
-		for point: Vector3 in Construction.bridge_points(plan): _handle(point+Vector3.UP*.12,tint)
+		for point: Vector3 in Construction.bridge_handles(plan): _handle(point,tint)
 	elif Buildings.BASE.has(tool):
 		var parts: Dictionary={}
 		for key: String in Buildings.STRUCTURES[tool]+Buildings.PROPS[tool]:

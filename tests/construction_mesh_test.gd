@@ -30,11 +30,22 @@ func _initialize() -> void:
 		expect(assembled.indices==expected[Mesh.ARRAY_INDEX] and assembled.uvs==expected[Mesh.ARRAY_TEX_UV],"Pole preserves triangle winding and UV layout")
 		var uploaded: Array=assembled.commit().surface_get_arrays(0)
 		expect(uploaded[Mesh.ARRAY_VERTEX].size()==points.size(),"Upload retains indexed vertices")
-	var plan:=Plan.new();plan.construction.bridge=[5.4,-.1,11.0,.1,1.2,1]
+	var plan:=Plan.new();plan.construction.bridge=[5.4,-.1,11.0,.1,1.2,1,.65]
 	var bridge: Node3D=Structures.bridge(plan)
 	expect(bridge.get_meta("bridge_supports").size()==6,"Paired supports leave wider water passages between posts")
 	expect(bridge.get_meta("deck_sections")==26,"Bridge retains planks at the requested span")
 	bridge.free()
+	plan.construction.bridge[2]+=1.0
+	bridge=Structures.bridge(plan)
+	expect(bridge.scale==Vector3.ONE and plan.construction.bridge[4]==1.2,"Longer bridge rebuilds at unit scale without changing width")
+	expect(bridge.get_meta("deck_sections")>26,"Longer span adds deck sections instead of stretching a whole model")
+	bridge.free()
+	plan.construction.bridge[6]=1.1
+	var roundtrip: RefCounted=Plan.from_snapshot(plan.snapshot())
+	expect(roundtrip!=null and roundtrip.construction.bridge[6]==1.1,"Railing dimension survives the real layout serialization")
+	plan.construction.bridge[6]=1.3
+	expect(Plan.from_snapshot(plan.snapshot())==null,"Out of range rail height is rejected")
+	plan.construction.bridge=[5.4,-.1,11.0,.1,1.2,1,.65]
 	var construction=preload("res://layout/island_construction.gd")
 	for bank_offset: float in [-.02,.35]:
 		plan.anchors.east_bank.y=bank_offset
