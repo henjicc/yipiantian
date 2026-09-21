@@ -5,6 +5,8 @@ const Assets = preload("res://scenes/environment/courtyard_assets.gd")
 const Passage=preload("res://layout/bridge_passage.gd")
 const Space = preload("res://scenes/environment/animal_space.gd")
 const Pose = preload("res://scenes/environment/bird_pose.gd")
+const STUCK_TIMEOUT: float = 1.5
+const ROUTE_PROGRESS: float = .01
 const Interaction=preload("res://scenes/environment/bird_interaction.gd")
 var interaction:=Interaction.new()
 const PROFILES := {
@@ -257,6 +259,7 @@ func _spawn(kind: String, label: String, start: Vector2, size: float, model: Nod
 		"radius": PROFILES[kind].radius, "buddy": null, "follow_time": 0.0, "repath": 0.0,
 		"state": "observe", "timer": _rng.randf_range(.5, 3.0), "route": PackedVector2Array(),
 		"waypoint": 0, "stuck": 0.0, "phase": _rng.randf_range(0, TAU), "wake_strength": 0.0,
+		"progress_corner": Vector2.INF, "progress_distance": INF,
 		"wake": null if kind == "hen" else _wake(.32 if kind == "duck" else .43), "recoveries": 0,"interest":Vector2.INF}
 	birds.append(entry)
 	if kind == "hen": _hens.append(bird)
@@ -380,6 +383,10 @@ func _advance(entry: Dictionary, delta: float) -> void:
 			var pace: float = Gait.hen_pace(entry.pose.phase) if entry.kind == "hen" else Gait.pace(entry.kind, _time + entry.phase)
 			desired = offset.normalized() * entry.speed * arrival * pace
 			route_velocity = desired
+			if entry.stuck == 0.0 or entry.progress_corner != route[entry.waypoint]:
+				entry.progress_corner = route[entry.waypoint]
+				entry.progress_distance = offset.length()
+				entry.stuck = 0.0
 	else:
 		entry.timer -= delta
 		if entry.timer <= 0: _choose(entry)
@@ -397,10 +404,6 @@ func _advance(entry: Dictionary, delta: float) -> void:
 			desired += away.normalized() * urgency * entry.speed
 			if moving and urgency > .1: desired += Vector2(-away.y, away.x).normalized() * .09
 	var velocity: Vector2 = (entry.velocity as Vector2).move_toward(desired.limit_length(entry.speed), delta * (2.3 if entry.kind=="hen" else .65))
-	if velocity.length() > .015:
-		var target_heading: float = atan2(velocity.x, velocity.y)
-		entry.heading = rotate_toward(entry.heading, target_heading, delta * PROFILES[entry.kind].turn)
-		velocity *= maxf(0.0, cos(angle_difference(entry.heading, target_heading)))
 	var next: Vector2 = p + velocity * delta
 	if moving and entry.waypoint < entry.route.size() and absf(velocity.cross(route_velocity))>.0001:
 		# Separation and turn inertia may push a safe route around the wrong side
@@ -416,6 +419,15 @@ func _advance(entry: Dictionary, delta: float) -> void:
 		velocity = route_velocity
 		next = p + velocity * delta
 		safe_step = entry.space.clear_segment(p, next)
+	# Face the navigable motion, after rejecting separation into plants/walls.
+	# Turning toward the rejected vector made the body sway while the route
+	# fallback moved in a different direction on every frame.
+	if safe_step and velocity.length() > .015:
+		var target_heading: float = atan2(velocity.x, velocity.y)
+		entry.heading = rotate_toward(entry.heading, target_heading, delta * PROFILES[entry.kind].turn)
+		velocity *= maxf(0.0, cos(angle_difference(entry.heading, target_heading)))
+		next = p + velocity * delta
+		safe_step = entry.space.clear_segment(p, next)
 	for other: Dictionary in birds:
 		if other == entry or (other.kind=="hen") != (entry.kind=="hen"): continue
 		if next.distance_to(other.position) < entry.radius + other.radius and next.distance_to(other.position) < p.distance_to(other.position): safe_step = false
@@ -425,9 +437,15 @@ func _advance(entry: Dictionary, delta: float) -> void:
 	entry.velocity = velocity
 	entry.position = next
 	var distance: float = next.distance_to(p)
-	if moving:
-		entry.stuck = entry.stuck + delta if distance < .001 * delta else 0.0
-		if entry.stuck > 2.5:
+	if not route_velocity.is_zero_approx():
+		# Only new progress toward the current corner counts. Sideways movement,
+		# retreat and revisiting the same small loop must not reset recovery.
+		var remaining: float = next.distance_to(entry.progress_corner)
+		if remaining <= entry.progress_distance - ROUTE_PROGRESS:
+			entry.stuck = 0.0
+		else:
+			entry.stuck += delta
+		if entry.stuck >= STUCK_TIMEOUT:
 			entry.recoveries += 1
 			_choose(entry)
 	var bird: Node3D = entry.node

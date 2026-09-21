@@ -35,6 +35,7 @@ func _run() -> void:
 	var traveled: Dictionary = {}
 	var extents: Dictionary = {}
 	var states: Dictionary = {}
+	var motion_windows: Dictionary = {}
 	for entry: Dictionary in animals.birds:
 		traveled[entry.node.name] = 0.0
 		extents[entry.node.name] = Rect2(entry.position, Vector2.ZERO)
@@ -49,6 +50,22 @@ func _run() -> void:
 			var label: String = entry.node.name
 			var distance: float = old[i].distance_to(entry.position)
 			traveled[label] += distance
+			if not motion_windows.has(label):
+				motion_windows[label] = {"origin": entry.position, "elapsed": 0.0}
+			var window: Dictionary = motion_windows[label]
+			if entry.state not in ["walk", "swim"] or entry.position.distance_to(window.origin) >= .08:
+				window.origin = entry.position
+				window.elapsed = 0.0
+			else:
+				window.elapsed += 1.0 / 30.0
+				# Allow recovery plus a full turn at the goose's natural turn rate.
+				# Measure displacement, so a small repeated loop cannot pass.
+				if window.elapsed >= 5.0 and window.elapsed < 5.0 + 1.0 / 30.0:
+					print("BLOCKED_CORNER bird=", label, " position=", entry.position, " velocity=", entry.velocity, " route=", entry.route, " waypoint=", entry.waypoint, " recovery=", entry.recoveries)
+					for neighbor: Dictionary in animals.birds:
+						if neighbor != entry and neighbor.position.distance_to(entry.position) < 1.5:
+							print("NEIGHBOR ", neighbor.node.name, " position=", neighbor.position, " state=", neighbor.state)
+				check(window.elapsed < 5.0, label + " leaves a blocked corner instead of oscillating in place")
 			extents[label] = (extents[label] as Rect2).expand(entry.position)
 			states[entry.kind + "/" + entry.state] = true
 			check(entry.space.contains(entry.position), label + " remains in navigable space")
@@ -135,4 +152,3 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	quit(0 if failures.is_empty() else 1)
-
