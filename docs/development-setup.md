@@ -171,6 +171,22 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 
 测试文件位于被忽略的 `.local/blender-validation/`，包含 `AI连接验证.blend`、`AI连接验证.fbx`、`blender-window.png` 和 MCP 测试结果。它们用于环境验证，不是正式美术资产。系统窗口截图接口本次报 `SetIsBorderRequired / 0x80004002`，已使用 Blender 官方截图工具取得有效画面，不需要关闭系统安全功能。
 
+## Premiere Pro MCP 接入与排错（2026-09-21）
+
+适用本机 Windows、Premiere Pro 26.0.0.72、Node.js 24.18.0、`leancoderkavy/premiere-pro-mcp` 1.16.4 的 CEP 连接。已实测只读连通，不代表所有编辑接口或其他版本已验收。[项目说明](https://github.com/leancoderkavy/premiere-pro-mcp)
+
+- **当前入口**：Codex 全局条目 `premiere-pro-leancoderkavy`；PR「窗口 → 扩展 → MCP for Adobe Premiere Pro」。PR 面板的 Bridge directory 和服务环境变量 `PREMIERE_TEMP_DIR` 均为 `D:\PremiereMCPBridgePrivate`，面板须点 **Save** 保存，再点 **Start Bridge**。CEP 路线不需要 Token；不要把 UXP 的配置说明套用到 CEP。
+- **安装与连接分开验收**：`--doctor --json` 的 ready 只说明本地组件就绪。还要经标准 MCP 协议调用 `verify_premiere_connection`，确认 connector、project、active sequence 均 ready，再读取一次 `get_active_sequence`。本次两条请求均返回成功，面板三项变绿；顶部黄色 `Connector running / Ready for an AI assistant connection` 可以是空闲等待状态，历史红字不代表最新一次仍失败。没有写入或保存 PR 工程、替换媒体。
+- **权限报错定位**：`Bridge directory grants write access to untrusted identities` 是桥接目录可被其他账户写入，不是缺少密钥。默认 `%TEMP%\premiere-mcp-bridge` 在本机继承了沙盒账户的写权限；插件同时校验所有上级目录。检查目录 owner、写入 ACE 和上级 replacement rights；只看当前目录或直接重装都可能漏掉原因。不要关闭或修改插件的安全检查。
+- **本机最终处理**：管理员确认后，将 D 盘根目录上一条仅作用于根目录的 Authenticated Users ACE 从 `0x1301bf` 调整为 `0x1201bf`，只移除 DELETE 位；保留其他 ACE 及可继承规则。随后新建私有桥接目录，仅当前账户、SYSTEM、Administrators 可写。最终插件检查 `unsafeWriteAces=[]`、`unsafeAncestorEntries=[]`。这是针对本机既有权限的修复，不是通用安装步骤；其他机器先找权限合格的私有路径，不能照抄根目录权限修改。
+- **必须保留的教训**：初次对根目录使用 `Set-Acl` 出现长时间处理，助手已中止；这类操作可能自动传播继承权限，不能因为命令没写 `-Recurse` 就声称只触及目录自身。最终使用只写目标目录的 `SetFileSecurityW`；该旧 API 不传播到子项，但实测清除了根 DACL 的 auto-inherited 标志，故原样比较 SDDL 报不一致，需要区分 ACE 内容与控制标志。没有全盘 ACL 前后审计，不能宣称初次尝试绝未触及子项；后续不要重跑本次临时修复脚本。[微软 API 说明](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-setfilesecurityw)、[自动传播说明](https://learn.microsoft.com/en-us/windows/win32/secauthz/automatic-propagation-of-inheritable-aces)
+- **桌面工具失败不等于 PR 不能操作**：本机 Computer Use 截图报 `SetIsBorderRequired / 0x80004002`；UIA 能读出按钮却报缓存元素不可用，且文字树可能滞后。实测 FFmpeg GDI 桌面截图可见浮动扩展面板，而按 PR 主窗口标题截取可能漏掉它。替代操作仍须遵守当前工具边界、核验最新画面和目标进程；CEP 面板可能属于 `CEPHtmlEngine.exe`，应核验它是目标 PR 的子进程，不能只比较 PID 是否与 PR 主进程相同。点击后以新截图、面板日志及真实请求结果交叉确认。
+- **后续编辑边界**：连接成功不等于变速、透明、位置和替换保真已验证。安装时审查的 `replace_clip` 是删除旧片段再插入，不能假定保留原入出点、效果或周边剪辑；使用前核对已安装版本实现，并在副本序列验证。当前任务工具列表未热加载时，可用标准 MCP 客户端做明确范围内的只读检查；重载 Codex 后再确认原生工具发现情况，不用安装参数代替实测。
+
+本机复核入口：`codex mcp get premiere-pro-leancoderkavy --json`；服务为 `D:/Software/nvm/v24.18.0/node_modules/premiere-pro-mcp/dist/index.js`，由 `D:/Software/nodejs/node.exe` 启动。Node 版本切换后检查这个绝对入口是否仍存在。协议客户端的标准输出与错误输出分开读取，设超时并在结束后关闭自己启动的进程；中文输出需明确 UTF-8，不能按乱码名称匹配媒体。
+
+证据与回退资料保存在本机 `%USERPROFILE%/.codex/`：`premiere-mcp-connection-verified.json` 为最终连接记录，`premiere-mcp-D-root-acl-before.txt` 为原根目录权限备份；不是可盲目执行的恢复指令。绿色面板截图在 `%TEMP%/premiere-mcp-panel-connected.png`，临时截图可能被清理。`D:/PremiereMCPBridge` 是保留的空测试目录，实际连接不用它。
+
 ## Tripo 接入选择与当前状态
 
 2026-09-17 核验了 [Codex 插件说明](https://developers.tripo3d.ai/en/docs/codex-plugin)、[CLI 说明](https://developers.tripo3d.ai/en/docs/cli)、已安装 npm 包及本机插件清单。用户安装后，当前任务已加载 Tripo 3D 0.2.2 的 `tripo-3d` 与 `tripo-game-asset` 两个技能；安装目录的插件清单确认发布者为 VAST，并声明技能入口。此前目录搜索未找到的结果已经过时，不能据此继续判断插件不可用。
