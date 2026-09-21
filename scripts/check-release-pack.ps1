@@ -38,7 +38,9 @@ try {
     }
 } finally { $reader.Dispose(); $stream.Dispose() }
 $paths = @($entries | ForEach-Object { $_.path })
-$forbidden = @($paths | Where-Object { $_ -match '(?i)(^|/)(development|tests?|\.local|ArtSource)/|(?:environment|style|crop|atmosphere|greens)_sample|manual_low|\.(blend[0-9]*|py|ps1|exe|bat|cmd|pem|key)$|ffmpeg|export_credentials' })
+# The hidden release developer mode deliberately includes only this model viewer.
+$reviewResource = '^res://development/(?:(?:model_gallery|model_catalog|greens_material_comparison)\.(?:gd|gdc|tscn)(?:\.remap)?|greens_pbr/[^/]+\.(?:glb|jpg|png)(?:\.import)?)$'
+$forbidden = @($paths | Where-Object { $_ -match '(?i)(^|/)(development|tests?|\.local|ArtSource)/|(?:environment|style|crop|atmosphere|greens)_sample|manual_low|\.(blend[0-9]*|py|ps1|exe|bat|cmd|pem|key)$|ffmpeg|export_credentials' -and $_ -notmatch $reviewResource })
 $missing = [Collections.Generic.List[string]]::new()
 # all_resources is deliberate: the game loads crop, decoration and environment
 # paths dynamically. Verify every adopted runtime asset has its exported mapping.

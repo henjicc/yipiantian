@@ -23,6 +23,8 @@ const GameMenu = preload("res://ui/game_menu.gd")
 const DesktopWallpaper = preload("res://platform/desktop_wallpaper.gd")
 var desktop_wallpaper: DesktopWallpaper
 var _wallpaper_issue: String = ""
+var _wallpaper_click: Vector2 = Vector2.INF
+var _wallpaper_entry: String = ""
 const CameraTuning = preload("res://ui/camera_tuning.gd")
 const CourtyardPlan = preload("res://layout/courtyard_plan.gd")
 const CourtyardEditSession = preload("res://layout/courtyard_edit_session.gd")
@@ -196,20 +198,8 @@ func _ready() -> void:
 	hud.recovery_requested.connect(_recover_storage)
 	hud.exit_requested.connect(_finish_exit)
 	hud.settings_requested.connect(_open_menu)
-	if (OS.is_debug_build() and OS.has_feature("editor")):
-		sway_tuning = preload("res://ui/sway_tuning.gd").new()
-		sway_tuning.camera = camera
-		hud.get_node("Layout").add_child(sway_tuning)
-		sway_tuning.visibility_changed.connect(_refresh_hud)
-		camera_tuning = CameraTuning.new()
-		camera_tuning.camera = camera
-		hud.get_node("Layout").add_child(camera_tuning)
-		camera_tuning.visibility_changed.connect(_refresh_hud)
-		camera_tuning.depth_of_field_changed.connect(func(enabled: bool, strength: float) -> void:
-			settings_values.dof_enabled = enabled
-			focus_detail.set_depth_of_field(enabled, strength))
-		camera_tuning.fog_strength_changed.connect(func(strength: float) -> void:
-			focus_detail.set_fog_strength(strength))
+	if OS.is_debug_build() and OS.has_feature("editor"):
+		_ensure_developer_controls()
 	camera.motion_finished.connect(_refresh_hud)
 	camera.motion_finished.connect(func() -> void:
 		if not camera.neighbor_view and focus_detail!=null: focus_detail.protect_neighbor(null))
@@ -269,6 +259,7 @@ func _ready() -> void:
 	desktop_wallpaper.name = "DesktopWallpaper"
 	add_child(desktop_wallpaper)
 	desktop_wallpaper.changed.connect(_wallpaper_changed)
+	desktop_wallpaper.desktop_clicked.connect(func(point: Vector2) -> void: _wallpaper_click = point)
 	desktop_wallpaper.visibility_changed.connect(window_activity.set_wallpaper_visible)
 	desktop_wallpaper.restoring.connect(window_activity.begin_wallpaper_restore)
 	desktop_wallpaper.quit_requested.connect(_request_exit)
@@ -1217,7 +1208,7 @@ func _input(event: InputEvent) -> void:
 				_request_menu_close()
 			get_viewport().set_input_as_handled()
 		return
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F8 and (OS.is_debug_build() and OS.has_feature("editor")):
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F8 and _developer_enabled():
 		_toggle_free_view()
 		get_viewport().set_input_as_handled()
 		return
@@ -1323,6 +1314,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if desktop_wallpaper != null and desktop_wallpaper.active and not desktop_wallpaper.busy and _wallpaper_click.is_finite():
+		var point: Vector2 = _wallpaper_click * get_viewport().get_visible_rect().size
+		_wallpaper_click = Vector2.INF
+		var entry: String = _scene_entry_at(point)
+		if entry.begins_with("tool_"):
+			_wallpaper_entry = entry
+			desktop_wallpaper.restore()
 	if desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy): return
 	if field_menu != null and field_menu.active:
 		$Environment/DoorTools.set_hover("")
@@ -1663,7 +1661,7 @@ func _reset_view() -> void:
 
 
 func _toggle_free_view() -> void:
-	if not (OS.is_debug_build() and OS.has_feature("editor")) or not _loaded or _save_failed or (game_menu != null and game_menu.visible):
+	if not _developer_enabled() or not _loaded or _save_failed or (game_menu != null and game_menu.visible):
 		return
 	var enabled: bool = not camera.free_view
 	_return_overview()
@@ -1807,6 +1805,8 @@ func _enter_wallpaper() -> void:
 	settle_farm()
 	if not _save_farm(): return
 	_wallpaper_issue = ""
+	_wallpaper_entry = ""
+	_wallpaper_click = Vector2.INF
 	_cancel_input()
 	_cancel_tool()
 	camera.cancel_free_gesture()
@@ -1816,6 +1816,7 @@ func _enter_wallpaper() -> void:
 
 
 func _wallpaper_changed(enabled: bool) -> void:
+	_wallpaper_click = Vector2.INF
 	_cancel_input()
 	window_activity.set_wallpaper(enabled)
 	camera.free_input_enabled = not enabled
@@ -1827,8 +1828,12 @@ func _wallpaper_changed(enabled: bool) -> void:
 		hud.show()
 		_refresh_hud()
 		settle_farm()
+		var entry: String = _wallpaper_entry
+		_wallpaper_entry = ""
 		if not _wallpaper_issue.is_empty():
 			game_menu.present(settings_values, _wallpaper_issue)
+		elif not entry.is_empty():
+			_open_scene_entry.call_deferred(entry)
 
 
 func _change_settings(value: Dictionary) -> void:
@@ -1892,9 +1897,22 @@ func _report_preview_ready() -> void:
 	await RenderingServer.frame_post_draw
 	print("DEV_PREVIEW_READY screen=%d mode=%d size=%s" % [DisplayServer.window_get_current_screen(), get_window().mode, DisplayServer.window_get_size()])
 
+func _developer_enabled() -> bool:
+	return game_menu != null and game_menu.developer_enabled()
+
+
 func _developer_action(action: String) -> void:
-	if not (OS.is_debug_build() and OS.has_feature("editor")): return
+	if not _developer_enabled(): return
 	if not _loaded or _save_failed: return
+	_ensure_developer_controls()
+	if action == "mature":
+		var result: Dictionary = farm_state.mature_all_crops(clock.call())
+		if not result.ok:
+			game_menu.set_status("作物成熟操作未完成，请重试。")
+			return
+		refresh_farm()
+		if _save_farm(): game_menu.set_status("田地和菜架上的作物已成熟。")
+		return
 	if action == "models":
 		var path := "res://development/model_gallery.tscn"
 		if not ResourceLoader.exists(path):
@@ -1918,3 +1936,20 @@ func _developer_action(action: String) -> void:
 		"camera_tuning": _toggle_camera_tuning()
 		"free_camera": _toggle_free_view()
 		"time": hud._toggle_time_preview()
+
+
+func _ensure_developer_controls() -> void:
+	if camera_tuning != null: return
+	sway_tuning = preload("res://ui/sway_tuning.gd").new()
+	sway_tuning.camera = camera
+	hud.get_node("Layout").add_child(sway_tuning)
+	sway_tuning.visibility_changed.connect(_refresh_hud)
+	camera_tuning = CameraTuning.new()
+	camera_tuning.camera = camera
+	hud.get_node("Layout").add_child(camera_tuning)
+	camera_tuning.visibility_changed.connect(_refresh_hud)
+	camera_tuning.depth_of_field_changed.connect(func(enabled: bool, strength: float) -> void:
+		settings_values.dof_enabled = enabled
+		focus_detail.set_depth_of_field(enabled, strength))
+	camera_tuning.fog_strength_changed.connect(func(strength: float) -> void:
+		focus_detail.set_fog_strength(strength))

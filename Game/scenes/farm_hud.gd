@@ -187,6 +187,7 @@ func _build_time_preview(root: Control) -> void:
 
 
 func _toggle_time_preview() -> void:
+	if _time_panel == null: _build_time_preview(get_node("Layout"))
 	if _time_panel.visible:
 		hide_time_preview()
 	else:

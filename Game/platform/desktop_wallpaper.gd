@@ -5,6 +5,7 @@ signal visibility_changed(uncovered: bool)
 signal restoring
 signal failed(message: String)
 signal quit_requested
+signal desktop_clicked(position: Vector2)
 
 var active: bool = false
 var busy: bool = false
@@ -99,6 +100,13 @@ func _process(_delta: float) -> void:
 		failed.emit("桌面切换超时，正在取消；请稍后重试。")
 
 func _receive(line: String) -> void:
+	if line.begins_with("CLICK "):
+		var parts: PackedStringArray = line.split(" ", false)
+		if active and not busy and parts.size() == 3 and parts[1].is_valid_float() and parts[2].is_valid_float():
+			var point := Vector2(float(parts[1]), float(parts[2]))
+			if point.is_finite() and point.x >= 0.0 and point.x < 1.0 and point.y >= 0.0 and point.y < 1.0:
+				desktop_clicked.emit(point)
+		return
 	print("DESKTOP_HOST " + line)
 	match line:
 		"RESTORING", "ATTACHING":

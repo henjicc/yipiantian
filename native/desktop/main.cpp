@@ -5,6 +5,7 @@
 #include <dwmapi.h>
 #include <wtsapi32.h>
 #include <tlhelp32.h>
+#include <oleacc.h>
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -22,6 +23,17 @@ bool styles_saved = false;
 NOTIFYICONDATAW tray{};
 UINT taskbar_created = 0;
 std::string input;
+bool mouse_registered = false, desktop_press = false;
+POINT press_point{};
+ULONGLONG press_time = 0;
+
+bool observe_mouse(bool enabled) {
+    desktop_press = false;
+    RAWINPUTDEVICE device{0x01, 0x02, static_cast<DWORD>(enabled ? RIDEV_INPUTSINK : RIDEV_REMOVE), enabled ? helper : nullptr};
+    if (!RegisterRawInputDevices(&device, 1, sizeof(device))) return false;
+    mouse_registered = enabled;
+    return true;
+}
 
 void emit(const std::string &line) {
     DWORD written = 0;
@@ -65,6 +77,7 @@ BOOL CALLBACK locate_monitor(HMONITOR monitor, HDC, LPRECT, LPARAM data) {
     return TRUE;
 }
 bool restore(bool announce = true) {
+    if (mouse_registered) observe_mouse(false);
     if (styles_saved) emit("RESTORING");
     if (!owns_window()) return false;
     if (styles_saved) {
@@ -125,6 +138,7 @@ bool attach() {
         error("attach_position"); restore(false); return false;
     }
     attached = true;
+    if (!observe_mouse(true)) { error("desktop_input"); restore(false); return false; }
     was_visible = false;
     emit("ATTACHED");
     emit("COVERED");
@@ -189,8 +203,55 @@ void request_restore(bool quit) {
         SetForegroundWindow(game);
     }
 }
+bool desktop_background(POINT point) {
+    if (!attached || locked || !PtInRect(&monitor_rect, point)) return false;
+    HWND hit = WindowFromPoint(point);
+    const auto cls = window_class(hit);
+    if (hit == game || (hit == desktop && cls == L"WorkerW")) return true;
+    if (hit != icons && !IsChild(icons, hit) && cls != L"Progman" && cls != L"WorkerW") return false;
+    // Inspect only the desktop under this click. A desktop icon (including its
+    // label) must retain its normal action and never wake the farm behind it.
+    IAccessible *accessible = nullptr;
+    VARIANT child{}, role{};
+    bool background = false;
+    if (SUCCEEDED(AccessibleObjectFromPoint(point, &accessible, &child)) && accessible) {
+        if (SUCCEEDED(accessible->get_accRole(child, &role)) && role.vt == VT_I4) {
+            background = role.lVal == ROLE_SYSTEM_LIST || role.lVal == ROLE_SYSTEM_CLIENT || role.lVal == ROLE_SYSTEM_WINDOW;
+        }
+        accessible->Release();
+    }
+    VariantClear(&child); VariantClear(&role);
+    return background;
+}
+void desktop_mouse(LPARAM handle) {
+    if (!attached || locked) { desktop_press = false; return; }
+    RAWINPUT raw{}; UINT bytes = sizeof(raw);
+    if (GetRawInputData(reinterpret_cast<HRAWINPUT>(handle), RID_INPUT, &raw, &bytes, sizeof(RAWINPUTHEADER)) == UINT(-1)
+        || raw.header.dwType != RIM_TYPEMOUSE) return;
+    POINT point{};
+    if (!GetCursorPos(&point)) { desktop_press = false; return; }
+    const USHORT buttons = raw.data.mouse.usButtonFlags;
+    if (buttons & RI_MOUSE_LEFT_BUTTON_DOWN) {
+        desktop_press = desktop_background(point);
+        press_point = point; press_time = GetTickCount64();
+    }
+    if (desktop_press && (abs(point.x-press_point.x) >= GetSystemMetrics(SM_CXDRAG)
+        || abs(point.y-press_point.y) >= GetSystemMetrics(SM_CYDRAG)
+        || (buttons & (RI_MOUSE_RIGHT_BUTTON_DOWN | RI_MOUSE_MIDDLE_BUTTON_DOWN)))) desktop_press = false;
+    if (buttons & RI_MOUSE_LEFT_BUTTON_UP) {
+        const bool click = desktop_press && GetTickCount64()-press_time < 1000;
+        desktop_press = false;
+        if (!click || !desktop_background(point)) return;
+        RECT client{};
+        if (!ScreenToClient(game, &point) || !GetClientRect(game, &client)
+            || client.right <= 0 || client.bottom <= 0 || !PtInRect(&client, point)) return;
+        emit("CLICK " + std::to_string(double(point.x)/client.right) + " " + std::to_string(double(point.y)/client.bottom));
+    }
+}
 LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wp, LPARAM lp) {
-    if (message == taskbar_created && taskbar_created) {
+    if (message == WM_INPUT) {
+        desktop_mouse(lp);
+    } else if (message == taskbar_created && taskbar_created) {
         Shell_NotifyIconW(NIM_ADD, &tray);
         // The timer also checks ownership and parent liveness after shell rebuilds.
     } else if (message == TRAY_MESSAGE) {
@@ -240,6 +301,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     MONITORINFOEXW monitor{}; monitor.cbSize = sizeof(monitor);
     if (!GetMonitorInfoW(MonitorFromWindow(game, MONITOR_DEFAULTTONEAREST), &monitor)) { error("monitor"); CloseHandle(parent_process); return 1; }
     monitor_name = monitor.szDevice;
+    const HRESULT com = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    if (FAILED(com)) { emit("ERROR accessibility 1"); CloseHandle(parent_process); return 1; }
     WNDCLASSW cls{}; cls.lpfnWndProc = window_proc; cls.hInstance = instance; cls.lpszClassName = L"FarmDesktopHost";
     RegisterClassW(&cls);
     helper = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, cls.lpszClassName, L"我有一片田 · 桌面宿主", WS_POPUP, 0,0,0,0,nullptr,nullptr,instance,nullptr);
@@ -278,9 +341,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
         MsgWaitForMultipleObjects(1, &parent_process, FALSE, 50, QS_ALLINPUT);
     }
     if (styles_saved) restore(false);
+    if (mouse_registered) observe_mouse(false);
     Shell_NotifyIconW(NIM_DELETE, &tray);
     WTSUnRegisterSessionNotification(helper);
     DestroyWindow(helper);
     CloseHandle(parent_process);
+    CoUninitialize();
     return 0;
 }

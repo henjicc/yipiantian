@@ -211,6 +211,17 @@ func sow(field_id: String, cell_id: String, crop_id: String, now_utc_seconds: fl
 	return _act("sow", field_id, cell_id, crop_id, now_utc_seconds)
 
 
+func mature_all_crops(now_utc_seconds: float) -> Dictionary:
+	if not _valid_time(now_utc_seconds): return _result(false, "invalid_time")
+	var changed: Array[String] = _settle_data(_data, now_utc_seconds)
+	for field_id: String in _data.fields:
+		for cell: Dictionary in _data.fields[field_id].cells.values():
+			if cell.crop_id.is_empty(): continue
+			cell.growth_seconds = Crops.definition(cell.crop_id).duration_seconds
+			if not changed.has(field_id): changed.append(field_id)
+	return _result(true, "", changed)
+
+
 func water(field_id: String, cell_id: String, now_utc_seconds: float) -> Dictionary:
 	return _act("water", field_id, cell_id, "", now_utc_seconds)
 

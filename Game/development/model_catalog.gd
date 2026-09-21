@@ -4,11 +4,10 @@ const NAMES := {"greens":"青菜","radish":"白萝卜","tatsoi":"塌菜","mustar
 
 static func scan(path: String = "res://") -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	for folder: String in DirAccess.get_directories_at(path):
-		if not folder.begins_with("."):
-			result.append_array(scan(path.path_join(folder)))
-	for file: String in DirAccess.get_files_at(path):
-		if file.get_extension() in ["glb","gltf","obj","fbx"]:
+	for file: String in ResourceLoader.list_directory(path):
+		if file.ends_with("/") and not file.begins_with("."):
+			result.append_array(scan(path.path_join(file.trim_suffix("/"))))
+		elif file.get_extension() in ["glb","gltf","obj","fbx"]:
 			result.append(describe(path.path_join(file)))
 	return result
 

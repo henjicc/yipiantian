@@ -12,6 +12,9 @@ signal dismissed
 const FarmTheme = preload("res://ui/farm_theme.gd")
 const QUALITY_VALUES: Array[String] = ["standard", "low", "high"]
 const RESOLUTION_VALUES: Array[String] = ["native", "1080", "1440", "2160"]
+static var developer_unlocked: bool = false
+var _about_clicks: int = 0
+var _last_about_click: int = 0
 var _root: Control
 var _pages: Array[Control] = []
 var _tabs: Array[Button] = []
@@ -71,16 +74,15 @@ func _ready() -> void:
 	panel.add_child(column)
 	var tabs := HBoxContainer.new()
 	column.add_child(tabs)
-	var titles: Array[String] = ["音量", "显示", "操作", "关于"]
-	if OS.is_debug_build() and OS.has_feature("editor"):
-		titles.append("开发者")
+	var titles: Array[String] = ["音量", "显示", "操作", "关于", "开发者"]
 	for title: String in titles:
 		var tab: Button = _button(tabs, title)
 		tab.toggle_mode = true
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var index: int = _tabs.size()
-		tab.pressed.connect(func() -> void: _show_page(index))
+		tab.pressed.connect(func() -> void: _tab_pressed(index))
 		_tabs.append(tab)
+	_tabs[4].visible = developer_enabled()
 	var content := Control.new()
 	content.name = "Pages"
 	content.custom_minimum_size = Vector2(560, 340)
@@ -183,18 +185,17 @@ func _ready() -> void:
 	operations.text = "[b]照料田地[/b]\n空手点击田格展开菜单，选择动作；播种时先选蔬菜拿起种子，再点击土地种植。点空白、右键或 Esc 关闭菜单。门前种子篮、锄头、水壶可拿起对应工具，再点击土地连续操作；底部种植／工具按钮展开横排选择。选菜后鼠标携带种子，点击土地可连续种植；右键、Esc 或取消按钮放下工具。每轮可浇水一次，不同作物节省的生长时间不同；成熟收获一篮。\n\n[b]照料菜架[/b]\n点击架脚的种植位靠近，再点种植位播种丝瓜；也可点藤蔓或果实浇水、收获。扩架增加位置，缩架前先收获会被移除的作物。\n\n[b]观察院落[/b]\n滚轮用于调整镜头，拿着种子时也不会切换菜品。点击田块靠近，向后滚轮返回聚焦前的机位；中键拖动转动视角，Shift＋中键平移。\n\n[b]返回与布置[/b]\n右键或 Esc 先放下工具，再清除选格、返回全景。“建设”内选择土地、建筑或摆件：选装饰、点空位，再确认；旋转适用于地面装饰。\n\n作物按现实时间生长。离开后再次进入，会继续上次的农场。"
 	var sources: RichTextLabel = _text_page(content, "关于")
 	sources.text = "[b]我有一片田 · Demo %s[/b]\n开发中试玩版，内容与体验仍在完善。\n\n图像：OpenAI 图像生成，依项目定稿参考制作。\n模型草案：Tripo；模型整理与补制：Blender。\n场景、界面与交互：Godot。\n音乐、环境声与操作声：项目内合成制作。\n\n[b]中文字体[/b]\n汇文明朝体 · Huiwen-mincho\n原字体随游戏内置，无需安装。\n字体内版权标记：Public Domain。" % ProjectSettings.get_setting("application/config/version", "")
-	if OS.is_debug_build() and OS.has_feature("editor"):
-		var developer := VBoxContainer.new()
-		developer.name = "Developer"
-		developer.add_theme_constant_override("separation", 10)
-		content.add_child(developer)
-		developer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_pages.append(developer)
-		for entry: Array in [["camera_tuning", "相机调节"], ["sway_tuning", "镜头晃动"], ["free_camera", "自由视角"], ["models", "模型检查"], ["time", "昼夜预览"]]:
-			var button := _button(developer, entry[1])
-			button.name = entry[0]
-			_developer_buttons[entry[0]] = button
-			button.pressed.connect(func() -> void: developer_requested.emit(entry[0]))
+	var developer := VBoxContainer.new()
+	developer.name = "Developer"
+	developer.add_theme_constant_override("separation", 10)
+	content.add_child(developer)
+	developer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_pages.append(developer)
+	for entry: Array in [["camera_tuning", "相机调节"], ["sway_tuning", "镜头晃动"], ["free_camera", "自由视角"], ["models", "模型检查"], ["time", "昼夜预览"], ["mature", "全部作物成熟"]]:
+		var button := _button(developer, entry[1])
+		button.name = entry[0]
+		_developer_buttons[entry[0]] = button
+		button.pressed.connect(func() -> void: developer_requested.emit(entry[0]))
 	_status = Label.new()
 	_status.name = "SettingsStatus"
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -270,6 +271,7 @@ func set_status(message: String, can_leave_unsaved: bool = false) -> void:
 
 
 func dismiss() -> void:
+	_about_clicks = 0
 	if not visible or closing: return
 	closing = true
 	if _motion: _motion.kill()
@@ -315,6 +317,26 @@ func _change(key: String, value: Variant) -> void:
 	settings_changed.emit(_values.duplicate(true))
 
 
+func developer_enabled() -> bool:
+	return developer_unlocked or (OS.is_debug_build() and OS.has_feature("editor"))
+
+
+func _tab_pressed(index: int) -> void:
+	if index == 3 and not developer_enabled():
+		var now: int = Time.get_ticks_msec()
+		_about_clicks = _about_clicks + 1 if now - _last_about_click <= 2000 else 1
+		_last_about_click = now
+		if _about_clicks >= 10:
+			developer_unlocked = true
+			_tabs[4].show()
+			_show_page(4)
+			return
+	else:
+		_about_clicks = 0
+	if index == 4 and not developer_enabled(): return
+	_show_page(index)
+
+
 func _show_page(index: int) -> void:
 	var changed: bool = index != _page_index
 	if _page_motion: _page_motion.kill()
@@ -338,7 +360,7 @@ func _refresh_focus_chain(index: int) -> void:
 	# reach HUD buttons. Explicit wrapping keeps both Tab and arrows in this menu.
 	var controls: Array[Control] = []
 	for tab: Button in _tabs:
-		controls.append(tab)
+		if tab.visible: controls.append(tab)
 	_collect_focus(_pages[index], controls)
 	if _retry.visible: controls.append(_retry)
 	controls.append_array([_quit, _close])
