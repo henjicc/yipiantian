@@ -27,7 +27,7 @@
       ],
       "dimensions_godot_xyz": [
         0.25742000341415405,
-        0.4300001859664917,
+        0.4300001710653305,
         0.38403114676475525
       ]
     },
@@ -52,5 +52,9 @@
         0.3846241235733032
       ]
     }
+  },
+  "foot_weight_repair": {
+    "changed_vertices": 806,
+    "cross_leg_vertices_over_5_percent": 39
   }
 }

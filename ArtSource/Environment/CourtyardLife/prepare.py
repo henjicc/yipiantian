@@ -106,6 +106,47 @@ def author_bird_motion(armature,name):
         armature.animation_data.action.name='Forage' if name=='hen' else 'Paddle'
     bpy.context.scene.frame_set(1)
 
+def repair_hen_feet(obj,rig):
+    """Remove cross-leg/to-body toe weights in the immutable rig's working copy.
+
+    The two feet are disconnected below the ankles and lie on opposite sides of
+    the rig midline. Keep their authored toe chains; fade back to the original
+    shin weights above the ankle so this does not create a hard weight seam.
+    """
+    mesh_to_rig=rig.matrix_world.inverted()@obj.matrix_world
+    midline=rig.data.bones['tripo::Root'].head_local.x
+    groups={g.index:g.name for g in obj.vertex_groups}
+    report={'changed_vertices':0,'cross_leg_vertices_over_5_percent':0}
+    for side in ['Left','Right']:
+        foot=rig.data.bones[f'tripo::0_{side}_Limb_1']
+        foot_groups={obj.vertex_groups[b.name].index for b in [foot,*foot.children_recursive]}
+        leg_groups=foot_groups|{obj.vertex_groups[foot.parent.name].index,
+                               obj.vertex_groups[foot.parent.parent.name].index}
+        opposite='Right' if side=='Left' else 'Left'
+        other_hip=rig.data.bones[f'tripo::0_{opposite}_Limb_0'].parent.name
+        # 4 cm in the unnormalized Tripo rig (~1.76 cm in the game).
+        transition=.04
+        for v in obj.data.vertices:
+            p=mesh_to_rig@v.co
+            if (p.x>midline)!=(side=='Left') or p.z>=foot.head_local.z+transition: continue
+            old={g.group:g.weight for g in v.groups}
+            if sum(w for i,w in old.items() if opposite in groups[i] or groups[i]==other_hip)>.05:
+                report['cross_leg_vertices_over_5_percent']+=1
+            own={i:w for i,w in old.items() if i in foot_groups}
+            total=sum(own.values())
+            own={i:w/total for i,w in own.items()} if total>1e-8 else {obj.vertex_groups[foot.name].index:1.0}
+            t=min(1.0,max(0.0,(p.z-foot.head_local.z)/transition))
+            t=t*t*(3-2*t)
+            shin={i:w for i,w in old.items() if i in leg_groups}
+            total=sum(shin.values())
+            shin={i:w/total for i,w in shin.items()} if total>1e-8 else own
+            new={i:(1-t)*own.get(i,0)+t*shin.get(i,0) for i in own.keys()|shin.keys()}
+            for i in old: obj.vertex_groups[i].remove([v.index])
+            for i,w in new.items():
+                if w>0: obj.vertex_groups[i].add([v.index],w,'REPLACE')
+            report['changed_vertices']+=1
+    return report
+
 for name in (sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else SPECS):
     size,budget=SPECS[name]
     semantic=semantic_regions() if name=='osmanthus' else None
@@ -123,9 +164,10 @@ for name in (sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else SPECS):
     hi=Vector([max(p[i] for p in points) for i in range(3)])
     extent=hi-lo; pivot=Vector(((lo.x+hi.x)/2,(lo.y+hi.y)/2,lo.z))
     factor=size/(max(extent.x,extent.y) if name in {'kitchen','pepper','slices'} else extent.z)
-    rig=None; semantic_groups=[]
+    rig=None; semantic_groups=[]; skin_repair=None
     if name in BIRDS:
         rig=next(o for o in bpy.context.scene.objects if o.type=='ARMATURE')
+        if name=='hen': skin_repair=repair_hen_feet(high,rig)
         root=bpy.data.objects.new(name+'_MetricRoot',None); bpy.context.collection.objects.link(root)
         for obj in list(bpy.context.scene.objects):
             if obj!=root and obj.parent is None: obj.parent=root
@@ -153,6 +195,7 @@ for name in (sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else SPECS):
     reduce_mesh(low,budget)
     report=dict(blender=bpy.app.version_string,source=str(raw.relative_to(ROOT)),original=original,
         semantic_regions=semantic_groups,rig=rig.name if rig else None,meshes={})
+    if skin_repair: report['foot_weight_repair']=skin_repair
     for obj in [high,low]:
         bpy.ops.object.select_all(action='DESELECT')
         obj.hide_set(False);obj.select_set(True);bpy.context.view_layer.objects.active=obj
@@ -163,7 +206,9 @@ for name in (sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else SPECS):
         report['meshes'][obj.name]=stats(obj)
         resource='res://'+str(path.relative_to(REPO/'Game')).replace('\\','/')
         cache='res://.godot/imported/'+path.name+'-'+hashlib.md5(resource.encode()).hexdigest()+'.scn'
-        path.with_suffix('.glb.import').write_text('[remap]\nimporter="scene"\nimporter_version=1\ntype="PackedScene"\npath="'+cache+'"\n\n[deps]\nsource_file="'+resource+'"\ndest_files=["'+cache+'"]\n\n[params]\nmeshes/generate_lods=false\n',encoding='utf-8')
+        # Rebuilding an existing asset must retain its Godot UID and import settings.
+        if not path.with_suffix('.glb.import').exists():
+            path.with_suffix('.glb.import').write_text('[remap]\nimporter="scene"\nimporter_version=1\ntype="PackedScene"\npath="'+cache+'"\n\n[deps]\nsource_file="'+resource+'"\ndest_files=["'+cache+'"]\n\n[params]\nmeshes/generate_lods=false\n',encoding='utf-8')
     low.hide_render=True;low.hide_set(True)
     bpy.ops.file.pack_all();bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/(name+'.blend')))
     for tier,result in report['meshes'].items():
