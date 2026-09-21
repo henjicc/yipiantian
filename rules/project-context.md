@@ -8,6 +8,8 @@ template_state: ready
 
 ## 当前事实
 
+- 视频制作素材根目录为 `D:/视频制作/2026-09-19_Tripo/素材`；`2026-09-19_Tripo` 是一个完整目录名，下划线不应被拆成新的路径段。任何素材复制、导入或 AE 自动化前都必须按主 `AGENTS.md` 的 Windows 路径规则，对这段原始字符串执行 `-LiteralPath` 只读验证，不从历史聊天中的相似路径推断。
+
 - 2026-09-21 前景显隐统一约0.45秒柔和淡入淡出，移除低画质与调试自由检查的立即隐藏入口；沿用不透明覆盖渐变保留深度与景深，中途反向切换保留当前进度。历史视频工程仍可能保留旧的投影矩形整组隐藏，须在拍摄副本中另行检查和修正。定向验证入口 `tests/foreground_composition_test.gd -- --fade-only`，证据 `.local/verification/foreground-soft-fade/`。
 
 - 2026-09-21 设置窗口采用约 0.2 秒轻缩放淡入、0.14 秒淡出，分类页与退出确认同步短过渡；田格动作以同中心扇叶错峰展开，种植同心环逐扇区显现，切换时旧菜单短暂收拢淡出。关闭期间保留输入遮挡，动画重入取消旧 Tween，移动中的扇区不接收动作，非种植动作仍为一次性即时操作；种植圆盘只拿起种子，后续点击土地才种植。开发者工具在设置关闭完成后进入。验证入口为 `tests/game_menu_test.gd`、`tests/field_menu_scene_test.gd` 和 `tests/debug_time_preview_test.gd`，视觉证据沿用 `.local/verification/game-menu/` 与 `field-menu/`。
