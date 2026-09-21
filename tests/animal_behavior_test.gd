@@ -11,6 +11,12 @@ func check(value: bool, message: String) -> void:
 	if not value and not failures.has(message): failures.append(message)
 
 func _run() -> void:
+	seed(20260921)
+	var simulation_fps: int = 60
+	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--fps="): simulation_fps = int(argument.get_slice("=", 1))
+	assert(simulation_fps in [30, 60])
+	var simulation_step: float = 1.0 / simulation_fps
 	output = ProjectSettings.globalize_path("res://../.local/verification/animal-behavior")
 	DirAccess.make_dir_recursive_absolute(output)
 	root.size = Vector2i(1920, 1080)
@@ -41,10 +47,10 @@ func _run() -> void:
 		extents[entry.node.name] = Rect2(entry.position, Vector2.ZERO)
 	var begin: int = Time.get_ticks_usec()
 	var pose_only: bool = "--poses-only" in OS.get_cmdline_user_args()
-	for frame: int in (0 if pose_only else 10800):
+	for frame: int in (0 if pose_only else 360 * simulation_fps):
 		var old: Array[Vector2] = []
 		for entry: Dictionary in animals.birds: old.append(entry.position)
-		animals._process(1.0 / 30.0)
+		animals._process(simulation_step)
 		for i: int in animals.birds.size():
 			var entry: Dictionary = animals.birds[i]
 			var label: String = entry.node.name
@@ -57,10 +63,10 @@ func _run() -> void:
 				window.origin = entry.position
 				window.elapsed = 0.0
 			else:
-				window.elapsed += 1.0 / 30.0
+				window.elapsed += simulation_step
 				# Allow recovery plus a full turn at the goose's natural turn rate.
 				# Measure displacement, so a small repeated loop cannot pass.
-				if window.elapsed >= 5.0 and window.elapsed < 5.0 + 1.0 / 30.0:
+				if window.elapsed >= 5.0 and window.elapsed < 5.0 + simulation_step:
 					print("BLOCKED_CORNER bird=", label, " position=", entry.position, " velocity=", entry.velocity, " route=", entry.route, " waypoint=", entry.waypoint, " recovery=", entry.recoveries)
 					for neighbor: Dictionary in animals.birds:
 						if neighbor != entry and neighbor.position.distance_to(entry.position) < 1.5:
@@ -69,7 +75,7 @@ func _run() -> void:
 			extents[label] = (extents[label] as Rect2).expand(entry.position)
 			states[entry.kind + "/" + entry.state] = true
 			check(entry.space.contains(entry.position), label + " remains in navigable space")
-			check(distance <= entry.speed / 30.0 + .00001, label + " never teleports")
+			check(distance <= entry.speed * simulation_step + .00001, label + " never teleports")
 			check(entry.node.transform.is_finite(), label + " valid pose")
 			for j: int in range(i + 1, animals.birds.size()):
 				var other: Dictionary = animals.birds[j]
@@ -84,7 +90,7 @@ func _run() -> void:
 		print(label, " travel=", snappedf(traveled[label], .01), " area=", extents[label], " recovery=", entry.recoveries)
 	if not pose_only:
 		for required: String in ["hen/peck", "hen/observe", "duck/probe", "duck/preen", "goose/probe", "goose/preen"]: check(states.has(required), "Behavior seen: " + required)
-	print("ANIMAL_SIM_MS ", elapsed, " per_step_ms=", elapsed / 10800.0)
+	print("ANIMAL_SIM_MS ", elapsed, " fps=", simulation_fps, " per_step_ms=", elapsed / (360 * simulation_fps))
 	if pose_only:
 		scene.camera.set_free_view(true)
 		scene.focus_detail.set_depth_of_field(false)

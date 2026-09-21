@@ -317,6 +317,43 @@ func _idle(entry: Dictionary) -> void:
 	entry.stuck = 0.0
 	entry.buddy = null
 
+func _recover(entry: Dictionary) -> void:
+	# Re-picking a distant goal can repeatedly choose the same occupied exit.
+	# First take a short, verified clear detour, then keep the original goal.
+	var start: Vector2 = entry.position
+	var best := Vector2.INF
+	var best_score: float = -INF
+	for index: int in 16:
+		var direction: Vector2 = Vector2.from_angle(index * TAU / 16.0)
+		var target: Vector2 = entry.space.nearest(start + direction * .9)
+		if start.distance_to(target) < .5 or not entry.space.clear_segment(start, target): continue
+		var clearance: float = 3.0
+		var free: bool = true
+		for other: Dictionary in birds:
+			if other == entry or (other.kind == "hen") != (entry.kind == "hen"): continue
+			var closest: Vector2 = Geometry2D.get_closest_point_to_segment(other.position, start, target)
+			var required: float = minf(start.distance_to(other.position), entry.radius + other.radius + .10)
+			if closest.distance_to(other.position) < required - .00001:
+				free = false
+				break
+			clearance = minf(clearance, target.distance_to(other.position))
+		if not free: continue
+		var score: float = clearance + .1 * direction.dot(Vector2(sin(entry.heading), cos(entry.heading)))
+		if score > best_score:
+			best = target
+			best_score = score
+	if not best.is_finite():
+		_choose(entry)
+		return
+	var detour := PackedVector2Array([best])
+	if not entry.route.is_empty():
+		detour.append_array(entry.space.path(best, entry.route[-1]))
+	entry.route = detour
+	entry.waypoint = 0
+	entry.buddy = null
+	entry.stuck = 0.0
+	entry.progress_corner = Vector2.INF
+
 func _wake(radius: float) -> MeshInstance3D:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -422,7 +459,9 @@ func _advance(entry: Dictionary, delta: float) -> void:
 	# Face the navigable motion, after rejecting separation into plants/walls.
 	# Turning toward the rejected vector made the body sway while the route
 	# fallback moved in a different direction on every frame.
-	if safe_step and velocity.length() > .015:
+	# A 60 Hz acceleration step is only 0.01083 m/s. A 0.015 gate
+	# prevented turning from rest when the next motion was behind the bird.
+	if safe_step and not velocity.is_zero_approx():
 		var target_heading: float = atan2(velocity.x, velocity.y)
 		entry.heading = rotate_toward(entry.heading, target_heading, delta * PROFILES[entry.kind].turn)
 		velocity *= maxf(0.0, cos(angle_difference(entry.heading, target_heading)))
@@ -447,7 +486,7 @@ func _advance(entry: Dictionary, delta: float) -> void:
 			entry.stuck += delta
 		if entry.stuck >= STUCK_TIMEOUT:
 			entry.recoveries += 1
-			_choose(entry)
+			_recover(entry)
 	var bird: Node3D = entry.node
 	bird.position.x=next.x
 	bird.position.z=next.y

@@ -110,6 +110,23 @@ func clear_segment(a: Vector2, b: Vector2) -> bool:
 	var count: int = maxi(1, ceili(a.distance_to(b) / (CELL * .45)))
 	for i: int in range(count + 1):
 		if not contains(a.lerp(b, float(i) / count)): return false
+	for edge: int in allowed.size():
+		if Geometry2D.segment_intersects_segment(a, b, allowed[edge], allowed[(edge + 1) % allowed.size()]) != null:
+			return false
+	# Sampling alone can miss a narrow polygon tip. Such a route looks clear
+	# to the planner, but every small movement step stops at the same obstacle.
+	var candidates: Dictionary = {}
+	var low: Vector2i = Vector2i(a.min(b).floor())
+	var high: Vector2i = Vector2i(a.max(b).floor())
+	for y: int in range(low.y, high.y + 1):
+		for x: int in range(low.x, high.x + 1):
+			for index: int in _obstacle_cells.get(Vector2i(x, y), []):
+				candidates[index] = true
+	for index: int in candidates:
+		var polygon: PackedVector2Array = obstacles[index]
+		for edge: int in polygon.size():
+			if Geometry2D.segment_intersects_segment(a, b, polygon[edge], polygon[(edge + 1) % polygon.size()]) != null:
+				return false
 	return true
 
 func nearest(p: Vector2) -> Vector2:

@@ -8,7 +8,7 @@ const WATER_SHADER = preload("res://atmosphere/quiet_water.gdshader")
 const WATER_HIGH_SHADER = preload("res://atmosphere/quiet_water_high.gdshader")
 const WATER_PIGMENT = preload("res://art/environment/backdrop/river-distance.png")
 const HOURS: Array[float] = [0.0, 5.0, 6.5, 9.0, 12.0, 16.5, 18.5, 20.0, 24.0]
-const SUN: Array[float] = [0.24, 0.24, 0.88, 1.18, 1.25, 1.28, 0.66, 0.24, 0.24]
+const SUN: Array[float] = [0.0, 0.0, 0.88, 1.18, 1.25, 1.28, 0.24, 0.0, 0.0]
 # Daylight fill is deliberately far below the key light: an even sky term carries no
 # surface orientation, so raising it flattens every form. Night keeps a usable floor.
 const AMBIENT: Array[float] = [0.20, 0.20, 0.13, 0.11, 0.115, 0.075, 0.105, 0.20, 0.20]
@@ -23,12 +23,13 @@ const SKY_HORIZON: Array[Color] = [Color("3b485e"), Color("3b485e"), Color("c3b6
 const BACKDROP_TINT: Array[Color] = [Color("354d69"), Color("354d69"), Color("a8b2b9"), Color.WHITE, Color.WHITE, Color("b4afa5"), Color("65768c"), Color("354d69"), Color("354d69")]
 const GROUND_HORIZON: Array[Color] = [Color("232a2c"), Color("232a2c"), Color("8a7f68"), Color("a09880"), Color("a89c82"), Color("b0997a"), Color("8f7a66"), Color("232a2c"), Color("232a2c")]
 const GROUND_BOTTOM: Array[Color] = [Color("12171a"), Color("12171a"), Color("3a352c"), Color("44403a"), Color("4a4238"), Color("52443a"), Color("3a3230"), Color("12171a"), Color("12171a")]
-const ELEVATION: Array[float] = [48.0, 48.0, 25.0, 47.0, 58.0, 34.0, 16.0, 48.0, 48.0]
-const AZIMUTH: Array[float] = [-35.0, -35.0, 30.0, 5.0, -25.0, -55.0, -68.0, -35.0, -35.0]
+const ELEVATION: Array[float] = [-30.0, -12.0, 8.0, 47.0, 58.0, 34.0, 4.0, -12.0, -30.0]
+const AZIMUTH: Array[float] = [-110.0, 40.0, 30.0, 5.0, -25.0, -55.0, -68.0, -80.0, -110.0]
 # Interior paper windows retain subtle warmth; outdoor lamps use NIGHT separately.
 const WINDOW_WARMTH: Array[float] = [1.0, 1.0, 0.62, 0.30, 0.26, 0.45, 0.9, 1.0, 1.0]
 const WATER_COLORS: Array[Color] = [Color("254653"), Color("254653"), Color("79a9ad"), Color("69a3a4"), Color("68a4a3"), Color("83aaa2"), Color("618c9a"), Color("254653"), Color("254653")]
 
+var _moon_fill: DirectionalLight3D
 var _sun: DirectionalLight3D
 var _world: WorldEnvironment
 var _sky_material: ProceduralSkyMaterial
@@ -60,6 +61,14 @@ func get_preview_hour() -> float:
 
 func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInstance3D = null) -> void:
 	_sun = sun
+	# Independent weak night fill never inherits or reverses the solar arc.
+	_moon_fill = DirectionalLight3D.new()
+	_moon_fill.name = "MoonFill"
+	_moon_fill.rotation_degrees = Vector3(-48.0, -35.0, 0.0)
+	_moon_fill.light_color = Color("a8c5ed")
+	_moon_fill.light_energy = 0.0
+	_moon_fill.shadow_enabled = false
+	add_child(_moon_fill)
 	_world = world
 	_world.environment = world.environment.duplicate() as Environment
 	# Linear clipped every bright surface flat at 1.0, which removed the highlight
@@ -231,7 +240,9 @@ static func sample_hour(hour: float) -> Dictionary:
 	# Open the unlit beds gently while keeping the night distinct from daytime.
 	# Using the same smooth clock weight preserves dawn/dusk and midnight continuity.
 	var night: float = values.night_weight
-	values.sun_energy += 0.07 * night
+	# The solar shadow grows toward sunset, then fades below the horizon.
+	values.sun_energy *= smoothstep(0.0, 4.0, float(values.elevation))
+	values.moon_energy = 0.31 * night
 	values.ambient_energy += 0.035 * night
 	values.sun_color = values.sun_color.lerp(Color("f6f7ef"), 0.30 * (1.0 - night))
 	values.ambient_color = values.ambient_color.lerp(Color("c6d2d3"), 0.32 * (1.0 - night))
@@ -265,6 +276,7 @@ func _apply_clock() -> void:
 		values.sun_color = values.sun_color.lerp(Color("ffe3ae"),daylight*.25)
 		values.backdrop_tint = values.backdrop_tint.lerp(Color("f5e5c8"),daylight*.07)
 	_backdrop_values = values
+	_moon_fill.light_energy = values.moon_energy
 	_sun.light_energy = values.sun_energy
 	_sun.light_color = values.sun_color
 	_sun.rotation_degrees = Vector3(-values.elevation, values.azimuth, 0.0)
