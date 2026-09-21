@@ -3,6 +3,7 @@ extends Node3D
 ## Instances stay in world space so orbit and dolly retain real parallax.
 const PlantWind = preload("res://presentation/plant_wind.gd")
 const ROOT := "res://art/environment/"
+const FADE_SECONDS: float = 0.45
 var _camera: Camera3D
 var _groups: Array[Dictionary] = []
 var _meshes: Array[MeshInstance3D] = []
@@ -44,11 +45,8 @@ func _add_orbit_patches() -> void:
 		_groups.append({"node":patch,"anchor":patch.position,"height":1.5})
 
 
-func set_overview_visible(value: bool, immediate: bool = false) -> void:
+func set_overview_visible(value: bool) -> void:
 	_wanted = value
-	if immediate:
-		_amount = 1.0 if value else 0.0
-		visible = value
 
 
 func _add_bank(screen_anchor: Vector2, side: int) -> void:
@@ -209,8 +207,9 @@ func _instance(parent: Node3D, path: String, at: Vector3, size: Vector3, yaw: fl
 
 func _process(delta: float) -> void:
 	if _camera == null: return
-	_amount = move_toward(_amount,1.0 if _wanted else 0.0,delta*3.5)
-	visible = _amount > .001
+	# Reverse from the current progress; no mode may bypass the visual fade.
+	_amount = move_toward(_amount,1.0 if _wanted else 0.0,delta / FADE_SECONDS)
+	visible = _amount > 0.0
 	if visible:
 		_motion_time += delta
 		for index: int in _water_plants.size():
@@ -219,6 +218,6 @@ func _process(delta: float) -> void:
 			patch.node.position = patch.origin + Vector3(sin(phase)*.014,sin(phase*.8)*.012,cos(phase)*.009)
 			patch.node.rotation.z = sin(phase*.8)*.012
 	for mesh: MeshInstance3D in _meshes:
-		mesh.set_instance_shader_parameter("foreground_visibility",_amount)
+		mesh.set_instance_shader_parameter("foreground_visibility",smoothstep(0.0,1.0,_amount))
 	# World-space scenery uses normal depth occlusion and frustum clipping.
 	# Never hide a whole bank because a projected sample crosses the farm.

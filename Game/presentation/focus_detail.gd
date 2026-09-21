@@ -130,7 +130,7 @@ func _apply_quality() -> void:
 	# Sun shadows and selected crop detail stay intact at every quality level.
 	# Low quality removes the decorative foreground without changing sample count.
 	if _quality == "low" and _foreground != null:
-		_foreground.set_overview_visible(false, true)
+		_foreground.set_overview_visible(false)
 	# Keep the pipeline sample count fixed across presets. Changing MSAA forces
 	# material pipeline recompilation; low still reduces geometry, DOF and lighting.
 	_camera.get_viewport().msaa_3d = Viewport.MSAA_4X
@@ -232,7 +232,7 @@ func _process(delta: float) -> void:
 	var constructing: bool=_camera.get("construction_framing")==true
 	_construction_clear=move_toward(_construction_clear,1.0 if constructing else 0.0,delta/.7)
 	var framing: bool = not inspecting and not constructing and not is_instance_valid(_neighbor) and not is_instance_valid(_target) and not _decorations.active and _quality != "low"
-	_foreground.set_overview_visible(framing, inspecting)
+	_foreground.set_overview_visible(framing)
 	var allowed: bool = not inspecting and _dof_enabled and _quality != "low" and _dof_strength > 0.0
 	var effect_active: bool = allowed and not _decorations.active
 	var target_amount: float = 0.115 * _dof_strength if effect_active else 0.0

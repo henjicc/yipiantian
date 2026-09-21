@@ -34,6 +34,11 @@ func _run() -> void:
 	root.add_child(scene)
 	scene.atmosphere.set_preview_hour(16.5)
 	await create_timer(1.0).timeout
+	if OS.get_cmdline_user_args().has("--fade-only"):
+		scene.camera.restore_overview_angles(Vector2(27.5,10.0))
+		await fade_checks(scene.camera.get_node("CameraForeground"))
+		await finish({"scope": "foreground fades"})
+		return
 	expect(scene.camera.overview_view.x==43.0 and scene.camera.view.y==14.0,"Actual game startup restores saved overview angles")
 	await overview_memory_checks(isolated.path_join("preferences"))
 	scene.camera.restore_overview_angles(Vector2(27.5,10.0))
@@ -148,13 +153,11 @@ func _run() -> void:
 		await shot("07-4k.png")
 		scene.atmosphere.set_preview_hour(21.0)
 		await shot("08-night.png")
-		scene.focus_detail.set_quality("low")
-		await create_timer(.5).timeout
-		expect(not frame.visible, "Low quality retains foreground opt-out")
-		scene.focus_detail.set_quality("standard")
-		scene._toggle_free_view()
-		await process_frame
-		expect(not frame.visible, "Free inspection hides framing scenery")
+		await fade_checks(frame)
+	await finish(report)
+
+
+func finish(report: Dictionary) -> void:
 	report["failures"] = failures
 	var file := FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)
 	file.store_string(JSON.stringify(report,"\t"))
@@ -165,6 +168,39 @@ func _run() -> void:
 	await process_frame
 	print("FOREGROUND_PASS " + str(report) if failures.is_empty() else "FOREGROUND_FAIL " + str(failures))
 	quit(0 if failures.is_empty() else 1)
+
+
+func fade_checks(frame: Node3D) -> void:
+	await shot("fade-01-visible.png")
+	for mode: String in ["quality", "inspection", "focus"]:
+		if mode == "quality": scene.focus_detail.set_quality("low")
+		elif mode == "inspection": scene._toggle_free_view()
+		else: scene._focus_field(0)
+		expect(frame.is_visible_in_tree(), mode + " keeps foreground visible when fade starts")
+		await create_timer(.15).timeout
+		var coverage: float = frame._meshes[0].get_instance_shader_parameter("foreground_visibility")
+		expect(frame.is_visible_in_tree() and coverage > 0.0 and coverage < 1.0, mode + " has intermediate visibility")
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(output.path_join("fade-02-"+mode+"-partial.png"))
+		await create_timer(.5).timeout
+		expect(not frame.visible, mode + " hides only after fade completes")
+		if mode == "quality": scene.focus_detail.set_quality("standard")
+		else: scene._return_overview()
+		await create_timer(.15).timeout
+		coverage = frame._meshes[0].get_instance_shader_parameter("foreground_visibility")
+		expect(frame.is_visible_in_tree() and coverage > 0.0 and coverage < 1.0, mode + " fades back in")
+		await create_timer(.5).timeout
+		expect(is_equal_approx(frame._meshes[0].get_instance_shader_parameter("foreground_visibility"),1.0), mode + " restores full visibility")
+	# A reversal must not reset to fully visible or disappear for a frame.
+	scene.focus_detail.set_quality("low")
+	await create_timer(.15).timeout
+	var partial: float = frame._meshes[0].get_instance_shader_parameter("foreground_visibility")
+	scene.focus_detail.set_quality("standard")
+	expect(is_equal_approx(frame._meshes[0].get_instance_shader_parameter("foreground_visibility"),partial), "Reversal retains current visibility")
+	await create_timer(.08).timeout
+	var reversed: float = frame._meshes[0].get_instance_shader_parameter("foreground_visibility")
+	expect(reversed > partial and reversed < 1.0, "Reversal continues smoothly toward visible")
+	await shot("fade-03-restored.png")
 
 
 func shot(filename: String) -> void:
