@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{7,40}$')][string]$Commit,
-    [ValidatePattern('^\d+\.\d+\.\d+-rc\.\d+$')][string]$Version = '0.1.0-rc.5',
+    [ValidatePattern('^\d+\.\d+\.\d+(-rc\.\d+)?$')][string]$Version = '0.1.0',
     [string]$GodotPath = $env:GODOT_EXE
 )
 $ErrorActionPreference = 'Stop'
@@ -75,7 +75,7 @@ foreach ($log in @('import.log','export.log')) {
 if (Invoke-Git @('-C',$source,'status','--porcelain')) { throw 'Import changed source files or generated untracked resources; fix and commit before cutting a candidate.' }
 $build = Join-Path $source '.local/builds/windows'
 & (Join-Path $source 'scripts/check-release-pack.ps1') -PackPath (Join-Path $build 'Farm.pck') -ProjectDirectory (Join-Path $source 'Game') -ReportPath (Join-Path $evidence 'pack-audit.json')
-$packageName = '我有一片田 '+$Version+' Windows'
+$packageName = '我有一片田 Demo '+$Version+' Windows'
 $package = Join-Path $releaseRoot $packageName
 New-Item -ItemType Directory -Path (Join-Path $package 'notices') | Out-Null
 foreach ($filename in @('Farm.exe','Farm.pck','FarmDesktop.exe')) { Copy-Item -LiteralPath (Join-Path $build $filename) -Destination $package }
@@ -85,7 +85,7 @@ Copy-Item -LiteralPath (Join-Path $source 'Game/art/ui/fonts/字体来源.txt') 
 $signature = Get-AuthenticodeSignature -LiteralPath (Join-Path $package 'Farm.exe')
 if ($signature.Status -ne 'NotSigned') { throw "Unexpected signing status: $($signature.Status)" }
 $payload = @(Get-ChildItem -LiteralPath $package -Recurse -File | Sort-Object FullName | ForEach-Object { [ordered]@{path=[IO.Path]::GetRelativePath($package,$_.FullName).Replace('\','/'); bytes=$_.Length; sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()} })
-$manifest = [ordered]@{version=$Version; commit=$revision; engine=$engineVersion; built_utc=[DateTime]::UtcNow.ToString('o'); platform='Windows x86_64'; signed=$false; channel='local-release-candidate'; source='independent local clone; no remote configured or claimed'; engine_sha256=(Get-FileHash -LiteralPath $GodotPath).Hash.ToLowerInvariant(); template_sha256=(Get-FileHash -LiteralPath $template).Hash.ToLowerInvariant(); files=$payload}
+$manifest = [ordered]@{version=$Version; commit=$revision; engine=$engineVersion; built_utc=[DateTime]::UtcNow.ToString('o'); platform='Windows x86_64'; signed=$false; channel='demo'; source='independent local clone; no remote configured or claimed'; engine_sha256=(Get-FileHash -LiteralPath $GodotPath).Hash.ToLowerInvariant(); template_sha256=(Get-FileHash -LiteralPath $template).Hash.ToLowerInvariant(); files=$payload}
 $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $package 'version.json') -Encoding utf8
 $checksums = Get-ChildItem -LiteralPath $package -Recurse -File | Sort-Object FullName | ForEach-Object { (Get-FileHash -LiteralPath $_.FullName).Hash.ToLowerInvariant()+'  '+[IO.Path]::GetRelativePath($package,$_.FullName).Replace('\','/') }
 $checksums | Set-Content -LiteralPath (Join-Path $package 'SHA256SUMS.txt') -Encoding utf8
