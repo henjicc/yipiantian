@@ -1395,7 +1395,7 @@ func _physics_process(_delta: float) -> void:
 					if not selected_tool.is_empty() and not cell_id.is_empty():
 						selected_field = index
 						selected_cell = cell_id
-						_apply_tool()
+						_apply_tool(pick.position)
 					elif not cell_id.is_empty():
 						_present_field_menu(index,cell_id,pick.position)
 					elif index != selected_field or not camera.focused:
@@ -1590,6 +1590,7 @@ func _present_field_menu(index: int, cell_id: String, point: Vector2) -> void:
 	selected_cell = cell_id
 	_menu_target = {"field":index,"cell":cell_id}
 	_select_cell_visual(index,cell_id)
+	tool_cursor.show_tool("", selected_crop)
 	field_menu.present(point,farm_state.get_cell(_planting_id(index),cell_id))
 	_refresh_hud()
 
@@ -1614,7 +1615,7 @@ func _field_menu_action(tool: String, crop: String) -> void:
 	_cancel_tool()
 
 
-func _apply_tool() -> void:
+func _apply_tool(menu_point: Vector2 = Vector2.INF) -> void:
 	if not _can_work_cell() or selected_tool.is_empty():
 		return
 	var field_id: String = _planting_id(selected_field)
@@ -1628,21 +1629,25 @@ func _apply_tool() -> void:
 		"harvest": result = candidate.harvest(field_id, selected_cell, now)
 		"weed", "till": result = candidate.tidy(selected_tool,field_id,selected_cell,now)
 		_: return
-	if result.ok:
-		var decorations:=DecorationState.new()
-		decorations.restore_snapshot(decoration_state.snapshot())
-		decorations.unlock(candidate.snapshot().harvested,candidate.snapshot().kitchen)
-		var saved: Dictionary=store.save(candidate.snapshot(),decorations.snapshot())
-		if not saved.ok:
-			_save_failed=true
-			_cancel_tool()
-			hud.show_storage_issue(saved.kind,true)
-			return
-		farm_state.restore_snapshot(candidate.snapshot())
-		decoration_state.restore_snapshot(decorations.snapshot())
-		farm_audio.play_action(selected_tool, result)
-		refresh_farm()
-		farm_changed.emit(result)
+	if not result.ok:
+		# A selected tool must not turn incompatible soil clicks into silent no-ops.
+		if menu_point.is_finite() and result.reason in ["empty", "not_mature", "mature", "already_watered", "occupied", "wrong_ground", "unprepared", "wrong_support"]:
+			_present_field_menu(selected_field, selected_cell, menu_point)
+		return
+	var decorations:=DecorationState.new()
+	decorations.restore_snapshot(decoration_state.snapshot())
+	decorations.unlock(candidate.snapshot().harvested,candidate.snapshot().kitchen)
+	var saved: Dictionary=store.save(candidate.snapshot(),decorations.snapshot())
+	if not saved.ok:
+		_save_failed=true
+		_cancel_tool()
+		hud.show_storage_issue(saved.kind,true)
+		return
+	farm_state.restore_snapshot(candidate.snapshot())
+	decoration_state.restore_snapshot(decorations.snapshot())
+	farm_audio.play_action(selected_tool, result)
+	refresh_farm()
+	farm_changed.emit(result)
 
 
 func _cancel_or_return() -> void:
@@ -1899,6 +1904,7 @@ func _wallpaper_pointer(point: Vector2, flags: int = 0) -> void:
 	var previous: Vector2 = _pointer_position
 	_pointer_position = position
 	if not desktop_wallpaper.interacting: return
+	tool_cursor.update_pointer(position)
 	var event := InputEventMouseMotion.new()
 	event.position = position
 	event.global_position = position
@@ -1938,6 +1944,7 @@ func _wallpaper_button(point: Vector2, button: int, pressed: bool, factor: float
 
 
 func _wallpaper_leave() -> void:
+	tool_cursor.update_pointer(Vector2.INF)
 	for button: int in [1, 2, 3, 8, 9]:
 		var mask: int = 1 << (button-1)
 		if not (_wallpaper_buttons & mask): continue

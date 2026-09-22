@@ -1,7 +1,9 @@
 extends Node
-## Arrow and carried item share one hardware cursor, so motion never waits for a frame.
+## Window mode uses a composite hardware cursor; wallpaper keeps the system arrow and draws only the carried item.
 
 var _system_pointer: bool = false
+var _carried_item: TextureRect
+var _pointer_position: Vector2 = Vector2.INF
 var _key: String = ""
 var _cursor_texture: ImageTexture
 var _cursor_pixels: int = 0
@@ -18,6 +20,7 @@ func show_tool(tool: String, crop_id: String) -> void:
 	if key == _key:
 		return
 	_key = key
+	_refresh_carried_item()
 	_apply_cursor()
 
 
@@ -62,8 +65,39 @@ func _exit_tree() -> void:
 
 func set_system_pointer(enabled: bool) -> void:
 	_system_pointer = enabled
+	_pointer_position = Vector2.INF
+	if enabled and _carried_item == null:
+		var canvas := CanvasLayer.new()
+		canvas.layer = 100
+		add_child(canvas)
+		_carried_item = TextureRect.new()
+		_carried_item.name = "CarriedItem"
+		_carried_item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_carried_item.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_carried_item.size = Vector2(48, 48)
+		canvas.add_child(_carried_item)
+	_refresh_carried_item()
 	if enabled:
 		for shape: Input.CursorShape in [Input.CURSOR_ARROW, Input.CURSOR_POINTING_HAND]:
 			Input.set_custom_mouse_cursor(null, shape)
 	else:
 		_apply_cursor()
+
+
+func update_pointer(position: Vector2) -> void:
+	_pointer_position = position
+	_refresh_carried_item()
+
+
+func _refresh_carried_item() -> void:
+	if _carried_item == null: return
+	_carried_item.visible = _system_pointer and _pointer_position.is_finite() and not _key.is_empty()
+	if not _carried_item.visible: return
+	var path: String = "res://art/ui/crops/%s.png" % _key
+	if _carried_item.texture == null or _carried_item.texture.resource_path != path:
+		_carried_item.texture = load(path)
+	var view: Vector2 = get_viewport().get_visible_rect().size
+	var point: Vector2 = _pointer_position + Vector2(22, 26)
+	if point.x + 48 > view.x: point.x = _pointer_position.x - 54
+	if point.y + 48 > view.y: point.y = _pointer_position.y - 54
+	_carried_item.position = point.clamp(Vector2.ZERO, (view-Vector2(48,48)).max(Vector2.ZERO))
