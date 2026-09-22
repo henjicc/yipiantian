@@ -1,6 +1,8 @@
 # 我有一片田
 
-当前分享版本为 **Demo 0.1.5（开发中试玩版）**：[Windows 可运行文件夹](<.local/releases/0.1.5-1fb4b894/我有一片田 Demo 0.1.5 Windows/>)，源码 `1fb4b894`。双击 `Farm.exe`。修复0.1.4壁纸全无交互的根因：MSAA报36个子项，实际桌面只有35图标，读取不存在的末项导致输入缓存被整体禁用。改用桌面列表实际数量并核对，不改变窗口层级、桌面图标或系统鼠标。本机只读诊断确认缓存恢复有效，216个可见空白采样点通过、35个图标中心全部排除；未启动游戏做实机操作验收。构建入口 `scripts/package-release.ps1 -Commit 1fb4b894 -Version 0.1.5 -FolderOnly -ReuseImportCache`，证据位于 `.local/releases/0.1.5-1fb4b894/evidence/`。
+当前分享版本为 **Demo 0.1.6（开发中试玩版）**：[Windows 可运行文件夹](<.local/releases/0.1.6-06c7bce9/我有一片田 Demo 0.1.6 Windows/>)，源码 `06c7bce9`。双击 `Farm.exe`。壁纸保持系统鼠标，恢复单独跟随的种子／工具图标，图标不挡点击。修复收获篮点空田格等不适用工具操作的静默失败，改为打开该田格动作菜单；适用的工具仍直接连续使用。保留桌面图标、窗口层级及0.1.5输入修复。本轮仅编译打包，未启动游戏验收。构建入口 `scripts/package-release.ps1 -Commit 06c7bce9 -Version 0.1.6 -FolderOnly -ReuseImportCache`，证据位于 `.local/releases/0.1.6-06c7bce9/evidence/`。
+
+历史 **Demo 0.1.5** 源码 `1fb4b894`，位于 `.local/releases/0.1.5-1fb4b894/`；已修复辅助访问接口子项计数导致整张壁纸输入失效的问题。
 
 历史 **Demo 0.1.4** 源码 `23250882`，位于 `.local/releases/0.1.4-23250882/`；此版存在上述图标枚举错误，已由0.1.5修复。
 
