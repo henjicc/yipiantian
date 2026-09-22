@@ -57,3 +57,7 @@
 ## 2026-09-22 Demo 0.1.4
 废弃0.1.3的图标前层方案，用户要求桌面始终保持普通壁纸外观。模式切换只改变输入状态，不改变窗口父级、位置、样式或层级。系统鼠标不变，输入筛选改为图标矩形排除；不再依赖旧版精确点位缓存。游戏按钮、滚轮、拖动、双击及鼠标修饰键沿同一路径处理，离开桌面有效区域发取消释放。
 图标矩形参考 [accLocation](https://learn.microsoft.com/en-us/windows/win32/api/oleacc/nf-oleacc-iaccessible-acclocation)，包含图标与文字外接矩形。失败时不截取未知区域。本轮仅编译打包，未进行实机交互验收。
+
+## 2026-09-22 Demo 0.1.5：输入全失效根因
+本机只读诊断发现 MSAA get_accChildCount 返回36，但 SysListView32实际只有35项；accLocation(36)为E_INVALIDARG。0.1.4因此将整份图标缓存判为无效，所有桌面点位都被拒绝。现用 [LVM_GETITEMCOUNT](https://learn.microsoft.com/en-us/windows/win32/controls/lvm-getitemcount) 作为枚举上界，读取后再核对数量，不跳过未知真实图标。新增 `INPUT_READY <count>` / `INPUT_UNAVAILABLE <stage>`，只在状态变化时输出。
+诊断证据在 `.local/desktop-input-inspect/before.txt` 和 `after.txt`。修复后缓存有效、35项边界齐全，当前可见桌面216个空白采样点通过、35个图标中心均被排除。诊断不装钩子、不移动鼠标、不启动游戏，不等同于游戏实机验收。

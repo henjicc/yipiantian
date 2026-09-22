@@ -6,6 +6,7 @@
 #include <wtsapi32.h>
 #include <tlhelp32.h>
 #include <oleacc.h>
+#include <commctrl.h>
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -31,6 +32,8 @@ POINT pointer_point{};
 std::vector<RECT> icon_rects;
 ULONGLONG icons_sampled = 0;
 bool icons_valid = false;
+std::string input_status;
+std::string input_failure;
 unsigned captured_buttons = 0, passed_buttons = 0;
 POINT last_click{};
 ULONGLONG last_click_time = 0;
@@ -42,22 +45,33 @@ int modifiers() {
         | ((GetAsyncKeyState(VK_MENU)&0x8000) ? 4 : 0);
 }
 void refresh_icons() {
-    // IPC stays outside the mouse hook. Bounds include icon labels.
+    // SysListView32 MSAA child count may include a non-item (observed 36 vs 35).
+    // Use the control's actual item count, and never query a phantom child ID.
     HWND list = FindWindowExW(icons, nullptr, L"SysListView32", nullptr);
-    if (!list) { icons_valid=false; return; }
+    if (!list) { icons_valid=false; input_failure="list_missing"; return; }
     if (!IsWindowVisible(list)) { icon_rects.clear(); icons_sampled=GetTickCount64(); icons_valid=true; return; }
+    DWORD_PTR count = 0;
+    if (!SendMessageTimeoutW(list, LVM_GETITEMCOUNT, 0, 0, SMTO_ABORTIFHUNG, 100, &count) || count>10000) {
+        icons_valid=false; input_failure="item_count"; return;
+    }
     IAccessible *accessible = nullptr;
-    if (FAILED(AccessibleObjectFromWindow(list, OBJID_CLIENT, __uuidof(IAccessible), reinterpret_cast<void **>(&accessible)))) { icons_valid=false; return; }
-    long count = 0;
-    bool valid = SUCCEEDED(accessible->get_accChildCount(&count)) && count >= 0 && count <= 10000;
+    HRESULT result = AccessibleObjectFromWindow(list, OBJID_CLIENT, __uuidof(IAccessible), reinterpret_cast<void **>(&accessible));
+    if (FAILED(result)) { icons_valid=false; input_failure="accessibility_"+std::to_string(result); return; }
+    bool valid = true;
     std::vector<RECT> bounds;
-    for (long i=1; valid && i<=count; ++i) {
+    for (long i=1; valid && i<=static_cast<long>(count); ++i) {
         VARIANT child{}; child.vt=VT_I4; child.lVal=i;
         long x=0,y=0,w=0,h=0;
-        valid = accessible->accLocation(&x,&y,&w,&h,child) == S_OK;
-        if (valid && w>0 && h>0) bounds.push_back(RECT{x,y,x+w,y+h});
+        result = accessible->accLocation(&x,&y,&w,&h,child);
+        valid = result == S_OK && w>0 && h>0;
+        if (valid) bounds.push_back(RECT{x,y,x+w,y+h});
+        else input_failure="item_bounds_"+std::to_string(i)+"_"+std::to_string(result);
     }
     accessible->Release();
+    DWORD_PTR after = 0;
+    if (valid && (!SendMessageTimeoutW(list, LVM_GETITEMCOUNT, 0, 0, SMTO_ABORTIFHUNG, 100, &after) || after!=count)) {
+        valid=false; input_failure="items_changed";
+    }
     if (valid) { icon_rects=std::move(bounds); icons_sampled=GetTickCount64(); icons_valid=true; }
     else icons_valid=false;
 }
@@ -406,6 +420,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     while (running && WaitForSingleObject(parent_process, 0) == WAIT_TIMEOUT) {
         if (attached && GetTickCount64() >= next_icons) {
             refresh_icons(); next_icons=GetTickCount64()+100;
+            std::string status = icons_valid ? "INPUT_READY " + std::to_string(icon_rects.size()) : "INPUT_UNAVAILABLE " + input_failure;
+            if (status != input_status) { input_status=status; emit(status); }
         }
         MSG message;
         while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE)) { TranslateMessage(&message); DispatchMessageW(&message); }
