@@ -75,6 +75,11 @@ func _find_beak(bird: Node3D) -> void:
 					beak_rest = point
 					beak_bindings = vertex_bindings
 func update(delta: float, distance: float, speed: float, behavior: String, time: float) -> void:
+	advance(delta, distance, speed, behavior)
+	apply_pose(behavior, time)
+
+func advance(delta: float, distance: float, speed: float, behavior: String) -> void:
+	# Gait state is needed by every movement substep; solving the skeleton is not.
 	var target_motion: float = clampf(speed / .3, 0.0, 1.0)
 	if species == "hen": target_motion = 1.0 if behavior == "walk" and speed > .005 else 0.0
 	motion = move_toward(motion, target_motion, delta * 4.0)
@@ -83,6 +88,8 @@ func update(delta: float, distance: float, speed: float, behavior: String, time:
 		action_mix = move_toward(action_mix, 0.0, delta * 3.0)
 		if action_mix == 0.0: action = behavior
 	else: action_mix = move_toward(action_mix, 1.0, delta * 2.0)
+
+func apply_pose(behavior: String, time: float) -> void:
 	skeleton.reset_bone_poses()
 	var sign_forward: float = -1.0 if species == "goose" else 1.0
 	var turn: float = sin(time * .7) * .10

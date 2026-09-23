@@ -131,8 +131,13 @@ func _run() -> void:
 	_expect(not scene.camera.attributes.dof_blur_far_enabled and _field_bias(1) > 1.0 and root.msaa_3d == Viewport.MSAA_2X, "Low quality uses 2x MSAA without DOF while retaining operation detail")
 	_expect(scene.focus_detail.get_settings().dof_enabled, "Low quality retains the user's enabled DOF preference")
 	_expect(not scene.focus_detail.set_quality("invalid") and not scene.focus_detail.set_depth_of_field(true, NAN), "Invalid settings do not become presentation state")
+	var sun: DirectionalLight3D = scene.get_node("DirectionalLight3D")
+	_expect(sun.directional_shadow_mode == DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS, "Low quality retains balanced shadow coverage")
+	scene.focus_detail.set_quality("high")
+	_expect(sun.directional_shadow_mode == DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS and is_equal_approx(sun.directional_shadow_split_1, .1), "High quality restores near shadow detail")
 	scene.focus_detail.set_quality("standard")
 	_expect(root.msaa_3d == Viewport.MSAA_2X and scene.focus_detail.get_settings().dof_enabled, "Standard keeps 2x MSAA and retained DOF preference")
+	_expect(sun.directional_shadow_mode == DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS and is_equal_approx(sun.directional_shadow_split_1, .45) and is_equal_approx(sun.directional_shadow_max_distance, 48.0) and sun.directional_shadow_blend_splits, "Standard restores balanced, blended shadows without shortening coverage")
 	scene._begin_decoration()
 	await create_timer(0.85).timeout
 	_expect(scene.selected_field == -1 and not scene.camera.attributes.dof_blur_far_enabled and _field_bias(1) == 1.0, "Arrangement always returns to clear distance-responsive overview")

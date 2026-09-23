@@ -4,8 +4,14 @@ const Space = preload("res://scenes/environment/animal_space.gd")
 
 class PoseProbe extends RefCounted:
 	var phase: float = 0.0
-	func update(_delta: float, _distance: float, _speed: float, _action: String, _time: float) -> void:
-		pass
+	var advances: int = 0
+	var presentations: int = 0
+	var elapsed: float = 0.0
+	func advance(delta: float, _distance: float, _speed: float, _action: String) -> void:
+		advances += 1
+		elapsed += delta
+	func apply_pose(_action: String, _time: float) -> void:
+		presentations += 1
 
 func _initialize() -> void:
 	var space := Space.new()
@@ -44,6 +50,16 @@ func _initialize() -> void:
 		var closest: Vector2 = Geometry2D.get_closest_point_to_segment(neighbor.position, entry.position, entry.route[0])
 		assert(closest.distance_to(neighbor.position) >= .64, "The escape leg cannot cut through the blocking bird")
 		assert(entry.route[-1].distance_to(Vector2(0,2)) < .2)
+		animals.birds.erase(neighbor)
+		animals.ready_for_motion = true
+		for delta: float in [1.0 / 30.0 + .00001, .10001]:
+			entry.pose.advances = 0
+			entry.pose.presentations = 0
+			entry.pose.elapsed = 0.0
+			animals._process(delta)
+			assert(entry.pose.advances > 1, "Collision integration retains bounded substeps")
+			assert(is_equal_approx(entry.pose.elapsed, delta), "No animation time is lost")
+			assert(entry.pose.presentations == 1, "Only the final pose is solved per visible frame")
 		other.free()
 		bird.free()
 		animals.free()

@@ -3,6 +3,8 @@ shader_type spatial;
 #include "res://scenes/environment/terrain_surface.gdshaderinc"
 render_mode cull_disabled;
 uniform vec4 base_color : source_color = vec4(0.5,0.55,0.4,1.0);
+// Path and shore stones batch together while retaining their authored tint.
+instance uniform vec4 stone_color : source_color = vec4(0.0);
 uniform float wash_scale = 3.0;
 uniform float stone_treatment : hint_range(0.0,1.0) = 0.0;
 uniform float ground_treatment : hint_range(0.0,1.0) = 0.0;
@@ -19,7 +21,8 @@ void fragment(){
 	FOG = vec4(courtyard_haze_color.rgb, courtyard_haze(world_point));
 	float broad=wash(world_point*wash_scale);
 	float fine=wash(world_point*wash_scale*5.0);
-	vec3 painted=base_color.rgb*(0.82+0.27*broad+0.055*fine);
+	vec3 surface_color=stone_color.a>0.0 ? stone_color.rgb : base_color.rgb;
+	vec3 painted=surface_color*(0.82+0.27*broad+0.055*fine);
 	// Broad pigment islands remain legible from the overview. The finer layer
 	// provides restrained mineral flecks without turning the stone into noise.
 	float mineral=wash(world_point*vec3(2.7,4.1,2.7));
@@ -31,7 +34,7 @@ void fragment(){
 	if (painted_rock) {
 		vec3 pigment=texture(rock_color,UV).rgb;
 		float value=dot(pigment,vec3(.2126,.7152,.0722));
-		vec3 tint=mix(vec3(dot(base_color.rgb,vec3(.2126,.7152,.0722))),base_color.rgb,.45);
+		vec3 tint=mix(vec3(dot(surface_color,vec3(.2126,.7152,.0722))),surface_color,.45);
 		painted=mix(vec3(value),pigment,.45)*tint*2.6;
 	}
 	float ground_patch=wash(world_point*vec3(.72,.34,.72));

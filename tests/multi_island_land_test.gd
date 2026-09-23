@@ -33,9 +33,7 @@ func shore_rock_checks(before: Dictionary={},preview: bool=true) -> void:
 		var meshes: Array[Node]=rock.find_children("*","MeshInstance3D",true,false)
 		if rock is MeshInstance3D: meshes.push_front(rock)
 		for mesh: MeshInstance3D in meshes:
-			for surface: int in mesh.mesh.get_surface_count():
-				var material: ShaderMaterial=mesh.get_active_material(surface)
-				appearance=appearance and material.get_shader_parameter("base_color")==entry.color
+			appearance=appearance and mesh.get_instance_shader_parameter("stone_color")==entry.color
 		if before.has(key):
 			retained=retained and is_instance_valid(before[key].node) and rock==before[key].node and rock.visible==before[key].visible
 		if not preview: sources=sources and environment._shore_sources.count(rock)==(1 if rock.visible else 0)

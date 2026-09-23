@@ -21,7 +21,7 @@ func path_appearance(paths: Node3D) -> Array:
 			var surfaces: Array=[]
 			for i: int in mesh.mesh.get_surface_count():
 				var material: ShaderMaterial=mesh.get_active_material(i)
-				surfaces.append([material.shader,material.get_shader_parameter("base_color"),material.get_shader_parameter("rock_color"),material.get_shader_parameter("ground_level")])
+				surfaces.append([material.shader,material.get_shader_parameter("base_color"),mesh.get_instance_shader_parameter("stone_color"),material.get_shader_parameter("rock_color"),material.get_shader_parameter("ground_level")])
 			meshes.append([mesh.mesh,mesh.transform,surfaces])
 		result.append([stone.transform,meshes])
 	return result

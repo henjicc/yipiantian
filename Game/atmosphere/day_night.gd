@@ -52,7 +52,16 @@ func set_quality(value: String) -> void:
 		# must survive a quality switch. Both shaders use the same surface code.
 		_water_material.shader = WATER_HIGH_SHADER if _high_quality else WATER_SHADER
 	if _sun != null:
+		_apply_shadow_layout()
 		_apply_clock()
+
+
+func _apply_shadow_layout() -> void:
+	# The default four splits spend two maps within 10 m of the camera: mostly
+	# framing water, while the farm shares the coarse final cascade. Two balanced
+	# splits give the yard more texels and submit fewer overlapping casters.
+	_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if _high_quality else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	_sun.directional_shadow_split_1 = 0.1 if _high_quality else 0.45
 
 
 func get_preview_hour() -> float:
@@ -143,6 +152,7 @@ func configure(sun: DirectionalLight3D, world: WorldEnvironment, water: MeshInst
 	_sun.shadow_normal_bias = 0.35
 	_sun.directional_shadow_blend_splits = true
 	_sun.directional_shadow_max_distance = 48.0
+	_apply_shadow_layout()
 	if water != null:
 		var previous: ShaderMaterial = water.material_override as ShaderMaterial
 		_water_material = ShaderMaterial.new()

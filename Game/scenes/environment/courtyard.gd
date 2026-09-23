@@ -26,6 +26,7 @@ const CONTACT_MODULES := ["veranda", "side_wing", "stone_bridge", "climbing_trel
 const ROOT := "res://art/environment/"
 var plan := preload("res://layout/courtyard_plan.gd").new()
 var _lod_pairs: Dictionary = {}
+var _stone_materials: Dictionary = {}
 var _slots: Node3D
 var _water: MeshInstance3D
 var _rng := RandomNumberGenerator.new()
@@ -260,6 +261,11 @@ func _apply_pigment(node: Node, module_id: String = "") -> void:
 		for surface in node.mesh.get_surface_count():
 			var original: Material = node.get_active_material(surface)
 			if original is StandardMaterial3D:
+				var stone: bool = module_id.begins_with("stone_")
+				var key: int = original.get_instance_id()
+				if stone and _stone_materials.has(key):
+					node.set_surface_override_material(surface, _stone_materials[key])
+					continue
 				var painted := ShaderMaterial.new()
 				painted.shader=PIGMENT
 				painted.set_shader_parameter("ground_level",plan.ground_height)
@@ -274,6 +280,7 @@ func _apply_pigment(node: Node, module_id: String = "") -> void:
 				painted.set_shader_parameter("ground_treatment", 1.0 if module_id in ["island_bank_v2", "east_bank_v2"] else 0.0)
 				painted.set_shader_parameter("foundation_treatment", 1.0 if module_id in ["veranda","side_wing"] else 0.0)
 				node.set_surface_override_material(surface,painted)
+				if stone: _stone_materials[key] = painted
 	for child in node.get_children(): _apply_pigment(child, module_id)
 
 func _asset(id: String, key: String, at: Vector3, yaw_degrees: float=0, size: float=1.0) -> Node3D:
@@ -354,11 +361,7 @@ func _make_styled_path_stone(p: Vector3, style: Dictionary) -> Node3D:
 
 func _tint_stone(node: Node, color: Color) -> void:
 	if node is MeshInstance3D:
-		for index in node.mesh.get_surface_count():
-			var material: Material = node.get_active_material(index)
-			if material is ShaderMaterial:
-				material.set_shader_parameter("base_color",color)
-				material.set_shader_parameter("stone_treatment",1.0)
+		node.set_instance_shader_parameter("stone_color",color)
 	for child in node.get_children():_tint_stone(child,color)
 
 func _build_architecture() -> void:

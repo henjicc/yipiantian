@@ -385,6 +385,11 @@ func _process(delta: float) -> void:
 			if entry.kind==preview_kind: continue
 			_advance(entry, step)
 		remaining -= step
+	# A 30 FPS frame often slightly exceeds 1/30 s. Keep collision substeps,
+	# but solve only the final visible skeleton, even after a longer frame.
+	for entry: Dictionary in birds:
+		if entry.kind != preview_kind:
+			entry.pose.apply_pose(entry.state, _time + entry.phase)
 
 func _advance(entry: Dictionary, delta: float) -> void:
 	interaction.advance(entry,delta)
@@ -494,7 +499,7 @@ func _advance(entry: Dictionary, delta: float) -> void:
 	var height: float = entry.pose.support_height() if entry.kind == "hen" else -.25 - PROFILES[entry.kind].draft * bird.scale.x
 	if entry.kind != "hen": height += sin(_time * 1.3 + entry.phase) * .007
 	bird.position.y=move_toward(bird.position.y,height,delta*(.8 if entry.kind=="hen" else .3))
-	entry.pose.update(delta, distance, velocity.length(), entry.state, _time + entry.phase)
+	entry.pose.advance(delta, distance, velocity.length(), entry.state)
 	if entry.wake != null:
 		entry.wake_strength = move_toward(entry.wake_strength, clampf(velocity.length() / entry.speed, 0, 1), delta * 1.4)
 		entry.wake.position = Vector3(next.x, -.235, next.y)

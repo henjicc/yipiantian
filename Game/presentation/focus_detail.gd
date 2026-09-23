@@ -131,9 +131,10 @@ func _apply_quality() -> void:
 	var low: bool = _quality == "low"
 	_camera.get_viewport().msaa_3d = Viewport.MSAA_4X if high else Viewport.MSAA_2X
 	_camera.get_viewport().positional_shadow_atlas_size = 4096 if high else (1024 if low else 2048)
-	RenderingServer.directional_shadow_atlas_set_size(4096 if high else (1024 if low else 2048), false)
+	# Keep distant leaf shadows stable; standard spends the atlas on two cascades.
+	RenderingServer.directional_shadow_atlas_set_size(2048 if low else 4096, false)
 	RenderingServer.positional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_LOW)
-	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM if high else RenderingServer.SHADOW_QUALITY_SOFT_LOW)
+	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM)
 	RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_MEDIUM if high else RenderingServer.ENV_SSAO_QUALITY_LOW, not high, 0.5, 2, 50.0, 300.0)
 	RenderingServer.camera_attributes_set_dof_blur_quality(RenderingServer.DOF_BLUR_QUALITY_HIGH if high else RenderingServer.DOF_BLUR_QUALITY_MEDIUM, false)
 	var world_environment: Environment = _camera.get_world_3d().environment
