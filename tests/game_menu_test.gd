@@ -99,7 +99,7 @@ func _run() -> void:
 	_expect(menu._tabs[0].text == "音量" and menu._tabs[1].text == "显示" and menu._tabs[3].text == "关于", "Settings categories and About use requested labels")
 	if OS.is_debug_build() and OS.has_feature("editor"):
 		menu._show_page(4)
-		_expect(menu._developer_buttons.size() == 5, "Developer tab contains camera, sway, free view, model and time tools")
+		_expect(menu._developer_buttons.has_all(["camera_tuning", "sway_tuning", "free_camera", "models", "time", "mature"]), "Developer tab contains camera, sway, free view, model, time and crop maturity tools")
 		if visual:
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png(capture_folder.path_join("developer.png"))
