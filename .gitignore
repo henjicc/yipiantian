@@ -31,3 +31,7 @@
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Generated Python bytecode from asset tools
+__pycache__/
+*.pyc
