@@ -30,6 +30,7 @@ jobs:
       - name: Check release target
         shell: pwsh
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
           if ($env:RELEASE_VERSION -notmatch '^\d+\.\d+\.\d+$') { throw 'Expected a version such as 0.1.8.' }
@@ -40,6 +41,9 @@ jobs:
           }
           $existingTag = @(git ls-remote --tags origin "refs/tags/$tag")
           if ($LASTEXITCODE -ne 0 -or $existingTag.Count -ne 0) { throw "Release tag $tag already exists or could not be checked." }
+          $releases = @(& gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" | ConvertFrom-Json)
+          if ($LASTEXITCODE -ne 0) { throw 'Could not check existing releases.' }
+          if (@($releases | Where-Object { $_.tag_name -eq $tag }).Count -ne 0) { throw "Release $tag already exists." }
 
       - name: Install pinned Godot editor and Windows export template
         shell: pwsh
@@ -96,22 +100,36 @@ jobs:
           $version = $env:RELEASE_VERSION
           $tag = 'v' + $version
           $folder = Join-Path '.local/releases' ($version + '-' + $env:GITHUB_SHA.Substring(0, 8))
-          $zip = Join-Path $folder ("我有一片田 Demo $version Windows.zip")
+          $originalZip = Join-Path $folder ("我有一片田 Demo $version Windows.zip")
+          $zip = Join-Path $folder ("Demo.$version.Windows.zip")
+          Move-Item -LiteralPath $originalZip -Destination $zip
+          Move-Item -LiteralPath "$originalZip.sha256" -Destination "$zip.sha256"
           $checksum = "$zip.sha256"
           $zipInfo = Get-Item -LiteralPath $zip
           if ($zipInfo.Length -ge 2GB) { throw 'GitHub release assets must be under 2 GiB each.' }
           $sha = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
           if (-not ((Get-Content -LiteralPath $checksum -Raw).StartsWith($sha + '  '))) { throw 'ZIP checksum does not match.' }
+          [IO.File]::WriteAllText((Resolve-Path -LiteralPath $checksum).Path, "$sha  $($zipInfo.Name)`n", [Text.UTF8Encoding]::new($false))
           & gh release create $tag $zip $checksum --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Demo $version" --notes-file '发行材料/版本说明.txt' --draft
           if ($LASTEXITCODE -ne 0) { throw 'Could not create the draft release with both assets.' }
-          $release = (& gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$tag" | ConvertFrom-Json)
+          $releases = @(& gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" | ConvertFrom-Json)
           if ($LASTEXITCODE -ne 0) { throw 'Could not verify the draft release.' }
-          $asset = @($release.assets | Where-Object { $_.name -eq $zipInfo.Name })
+          $release = @($releases | Where-Object { $_.tag_name -eq $tag })
+          if ($release.Count -ne 1 -or -not $release[0].draft -or $release[0].target_commitish -ne $env:GITHUB_SHA) {
+            throw 'Draft release target could not be verified.'
+          }
+          $asset = @($release[0].assets | Where-Object { $_.name -eq $zipInfo.Name })
           if ($asset.Count -ne 1 -or $asset[0].size -ne $zipInfo.Length -or $asset[0].digest -ne "sha256:$sha") {
             throw 'GitHub ZIP asset size or digest does not match the local package; draft retained for inspection.'
           }
+          $checksumInfo = Get-Item -LiteralPath $checksum
+          $checksumAsset = @($release[0].assets | Where-Object { $_.name -eq $checksumInfo.Name })
+          if ($checksumAsset.Count -ne 1 -or $checksumAsset[0].size -ne $checksumInfo.Length -or
+              $checksumAsset[0].digest -ne ('sha256:' + (Get-FileHash -LiteralPath $checksum -Algorithm SHA256).Hash.ToLowerInvariant())) {
+            throw 'GitHub checksum asset could not be verified; draft retained for inspection.'
+          }
           & gh release edit $tag --repo $env:GITHUB_REPOSITORY --draft=false
           if ($LASTEXITCODE -ne 0) { throw 'Package uploaded but release could not be published; inspect the draft.' }
-          $published = (& gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$tag" | ConvertFrom-Json)
+          $published = (& gh api "repos/$env:GITHUB_REPOSITORY/releases/$($release[0].id)" | ConvertFrom-Json)
           if ($LASTEXITCODE -ne 0 -or $published.draft) { throw 'Release publication could not be verified.' }
           Write-Output "RELEASE_PUBLISHED $($published.html_url) sha256=$sha"

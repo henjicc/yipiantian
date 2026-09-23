@@ -8,7 +8,7 @@
 
 ## 下载试玩
 
-[前往 GitHub Releases 下载 Windows 试玩版](https://github.com/henjicc/yipiantian/releases)。请选择发行附件中的“我有一片田 Demo … Windows.zip”，解压后运行 `Farm.exe`，并保留同目录的 `Farm.pck` 与 `FarmDesktop.exe`。GitHub 自动提供的“Source code”压缩包是源码，不是玩家运行包。当前提供 Windows x86-64 版本，尚未签名。
+[下载 Demo 0.1.8 Windows 试玩版](https://github.com/henjicc/yipiantian/releases/download/v0.1.8/Demo.0.1.8.Windows.zip)（[SHA-256 校验文件](https://github.com/henjicc/yipiantian/releases/download/v0.1.8/Demo.0.1.8.Windows.zip.sha256)；[查看全部版本](https://github.com/henjicc/yipiantian/releases)）。解压后运行 `Farm.exe`，并保留同目录的 `Farm.pck` 与 `FarmDesktop.exe`。GitHub 自动提供的“Source code”压缩包是源码，不是玩家运行包。当前提供 Windows x86-64 版本，尚未签名。
 
 Demo 0.1.8 已完成本机干净导入、发行构建、资源包审计，以及隔离环境中的启动、存档和重开验证；完整发行交互和其他硬件仍待验收。版本说明见 [发行材料/版本说明.txt](发行材料/版本说明.txt)。
 
