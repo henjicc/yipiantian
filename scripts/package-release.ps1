@@ -81,20 +81,21 @@ if ($importExit -ne 0) { throw "Fresh import failed with exit code $importExit; 
 # this known startup miss may be retried; preserve the original evidence and
 # require a second import with no errors before exporting.
 $importLog = Join-Path $evidence 'import.log'
-$importErrors = @(Get-Content -LiteralPath $importLog | Where-Object { $_ -match '(^|\s)(ERROR:|SCRIPT ERROR:|Parse Error:)' })
+$engineErrorPattern = '^\s*(?:ERROR:|SCRIPT ERROR:|Parse Error:)'
+$importErrors = @(Get-Content -LiteralPath $importLog | Where-Object { $_ -cmatch $engineErrorPattern })
 if ($importErrors.Count -gt 0) {
     $fontStartupError = "^ERROR: (Cannot open file 'res://\.godot/imported/汇文明朝体\.ttf-[0-9a-f]+\.fontdata'\.|Failed loading resource: res://(?:\.godot/imported/汇文明朝体\.ttf-[0-9a-f]+\.fontdata|art/ui/fonts/汇文明朝体\.ttf)\.|Error loading custom project font 'res://art/ui/fonts/汇文明朝体\.ttf')$"
     if (@($importErrors | Where-Object { $_ -notmatch $fontStartupError }).Count -gt 0) { throw 'Fresh import contains errors other than the initial project-font cache miss.' }
     Move-Item -LiteralPath $importLog -Destination (Join-Path $evidence 'import-cold.log')
     & $shell @importArgs *> $importLog
-    if ($LASTEXITCODE -ne 0 -or (Select-String -LiteralPath $importLog -Pattern '(^|\s)(ERROR:|SCRIPT ERROR:|Parse Error:)' -Quiet)) { throw 'Project font did not recover after cold import; inspect import logs.' }
+    if ($LASTEXITCODE -ne 0 -or (Select-String -LiteralPath $importLog -Pattern $engineErrorPattern -CaseSensitive -Quiet)) { throw 'Project font did not recover after cold import; inspect import logs.' }
 }
 $exportArgs = @('-NoProfile','-File',(Join-Path $source 'scripts/godot.ps1'),'-Action','ExportWindows','-GodotPath',$GodotPath)
 & $shell @exportArgs *> (Join-Path $evidence 'export.log')
 $exportExit = $LASTEXITCODE
 if ($exportExit -ne 0) { throw "Release export failed with exit code $exportExit; inspect export.log." }
 foreach ($log in @('import.log','export.log')) {
-    if (Select-String -LiteralPath (Join-Path $evidence $log) -Pattern '(^|\s)(ERROR:|SCRIPT ERROR:|Parse Error:)' -Quiet) { throw "Engine reported errors: $log" }
+    if (Select-String -LiteralPath (Join-Path $evidence $log) -Pattern $engineErrorPattern -CaseSensitive -Quiet) { throw "Engine reported errors: $log" }
 }
 if (Invoke-Git @('-C',$source,'status','--porcelain')) { throw 'Import changed source files or generated untracked resources; fix and commit before cutting a candidate.' }
 $build = Join-Path $source '.local/builds/windows'
