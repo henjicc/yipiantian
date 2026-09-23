@@ -1,6 +1,8 @@
 # 我有一片田
 
-当前分享版本为 **Demo 0.1.7（开发中试玩版）**：[Windows 免安装文件夹](<.local/releases/0.1.7-78fd3d32/我有一片田 Demo 0.1.7 Windows/>)，源码 `78fd3d32`。双击 `Farm.exe`；Windows 原生任务栏图标和导出程序图标已指定为多尺寸 ICO。游戏内容沿用 0.1.6；本轮仅导出和审计包体，未启动游戏验收，也未制作安装器。构建入口 `scripts/package-release.ps1 -Commit 78fd3d32 -Version 0.1.7 -FolderOnly -ReuseImportCache`，证据位于 `.local/releases/0.1.7-78fd3d32/evidence/`。
+当前本地候选为 **Demo 0.1.8（开发中试玩版）**：[Windows 免安装文件夹](<.local/releases/0.1.8-7fc08bf8/我有一片田 Demo 0.1.8 Windows/>)、[玩家下载 ZIP](<.local/releases/0.1.8-7fc08bf8/我有一片田 Demo 0.1.8 Windows.zip>)，源码 `7fc08bf87b69bdfd0477b3f55805a7570c065034`。干净克隆导入、导出及包审计通过，ZIP 解压到仓库外后真实启动、保存、重开和正常退出通过；失焦后的进一步点击被验证入口安全拒绝，整套发行交互仍待验收。PCK 1,055,896,704 字节，发行目录 1,165,511,500 字节，ZIP 1,046,911,103 字节。构建及校验记录在 `.local/releases/0.1.8-7fc08bf8/evidence/`；尚未配置 GitHub 远端或上传。
+
+此前分享版本为 **Demo 0.1.7（开发中试玩版）**：[Windows 免安装文件夹](<.local/releases/0.1.7-78fd3d32/我有一片田 Demo 0.1.7 Windows/>)，源码 `78fd3d32`。双击 `Farm.exe`；Windows 原生任务栏图标和导出程序图标已指定为多尺寸 ICO。游戏内容沿用 0.1.6；该版仅导出和审计包体，未启动游戏验收，也未制作安装器。构建入口 `scripts/package-release.ps1 -Commit 78fd3d32 -Version 0.1.7 -FolderOnly -ReuseImportCache`，证据位于 `.local/releases/0.1.7-78fd3d32/evidence/`。
 
 历史 **Demo 0.1.6** 源码 `06c7bce9`，位于 `.local/releases/0.1.6-06c7bce9/`；恢复壁纸系统鼠标旁的种子／工具图标，以及篮子等工具点不适用田格时的扇形菜单。
 
