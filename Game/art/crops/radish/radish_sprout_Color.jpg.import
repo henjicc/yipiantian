@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://f7mibj0qeibx"
-path="res://.godot/imported/radish_sprout_Color.jpg-eb0284b563bc5b943b418ee72b67cc5f.ctex"
+path.bptc="res://.godot/imported/radish_sprout_Color.jpg-eb0284b563bc5b943b418ee72b67cc5f.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "162cf837745dc3b2d56d78f9f01655e6"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/crops/radish/radish_sprout_Color.jpg"
-dest_files=["res://.godot/imported/radish_sprout_Color.jpg-eb0284b563bc5b943b418ee72b67cc5f.ctex"]
+dest_files=["res://.godot/imported/radish_sprout_Color.jpg-eb0284b563bc5b943b418ee72b67cc5f.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1

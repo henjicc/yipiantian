@@ -1,14 +1,23 @@
 #Requires -Version 7.0
 [CmdletBinding()]
 param(
-    [ValidateSet('acceptance','4k','smoke')][string]$Suite = 'acceptance',
+    [ValidateSet('acceptance','4k','smoke','optimization')][string]$Suite = 'acceptance',
     [Parameter(Mandatory)][string]$Directory,
     [ValidateRange(0, 15)][int]$Screen = 0,
+    [ValidateRange(0, 240)][int]$FrameCap = 60,
+    [ValidateSet(12,21)][int]$Hour = 12,
+    [ValidateSet('overview','focus')][string]$View = 'overview',
+    [ValidateSet('native','1080','1440','2160')][string]$RenderResolution = 'native',
+    [switch]$RequestForeground,
+    [string]$ProjectDirectory,
     [string]$GodotPath = $env:GODOT_EXE
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-$allowed = [IO.Path]::GetFullPath((Join-Path $repo '.local/verification'))
+$project = if ($ProjectDirectory) { (Resolve-Path -LiteralPath $ProjectDirectory).Path } else { Join-Path $repo 'Game' }
+if (-not (Test-Path -LiteralPath (Join-Path $project 'project.godot') -PathType Leaf)) { throw 'Expected a Godot project directory.' }
+$projectRepo = Split-Path -Parent $project
+$allowed = [IO.Path]::GetFullPath((Join-Path $projectRepo '.local/verification'))
 $destination = [IO.Path]::GetFullPath($Directory)
 if (-not $destination.StartsWith($allowed + [IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) { throw 'Use a new directory below .local/verification.' }
 if (Test-Path -LiteralPath $destination) { throw 'Evidence directory must be new; earlier runs cannot be overwritten.' }
@@ -27,15 +36,16 @@ using System;
 using System.Runtime.InteropServices;
 public static class PerformanceWindowThread {
  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+ [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr window);
 }
 '@
 $os = Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,BuildNumber
 $processor = Get-CimInstance Win32_Processor | Select-Object Name,NumberOfCores,NumberOfLogicalProcessors
-$hardware = @{ os=$os; cpu=$processor; physical_memory_bytes=(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory; gpu=@(Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion,DriverDate); captured_at=(Get-Date -Format o); suite=$Suite; engine=[string]$actualVersion; commit=(& git -C $repo rev-parse HEAD); runtime='Godot standard executable, production scene; not exported release'; gpu_clock_sampling='unavailable unless nvidia-smi is present' }
-$hardware.working_tree_status = @(& git -C $repo status --porcelain)
+$hardware = @{ os=$os; cpu=$processor; physical_memory_bytes=(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory; gpu=@(Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion,DriverDate); captured_at=(Get-Date -Format o); suite=$Suite; engine=[string]$actualVersion; commit=(& git -C $projectRepo rev-parse HEAD); project_directory=$project; runtime='Godot standard executable, production scene; not exported release'; gpu_clock_sampling='unavailable unless nvidia-smi is present' }
+$hardware.working_tree_status = @(& git -C $projectRepo status --porcelain)
 $hardware.measurement_script_sha256 = (Get-FileHash -LiteralPath (Join-Path $PSScriptRoot 'performance_validation.gd') -Algorithm SHA256).Hash
 $hardware.collector_sha256 = (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash
-$projectGame = [IO.Path]::GetFullPath((Join-Path $repo '.local/builds/windows/Farm.exe'))
+$projectGame = [IO.Path]::GetFullPath((Join-Path $projectRepo '.local/builds/windows/Farm.exe'))
 $hardware.existing_project_game_processes = @(Get-CimInstance Win32_Process -Filter "Name='Farm.exe'" | Where-Object ExecutablePath -eq $projectGame | Select-Object ProcessId,ParentProcessId,CreationDate,ExecutablePath,CommandLine)
 $hardware.background_load_scope = 'Existing user-owned project game instances are observed and left untouched. Foreground belongs to the validation process during samples; whole-GPU telemetry includes other existing desktop loads. Other agents do not render or encode during this run.'
 
@@ -68,10 +78,10 @@ $info.CreateNoWindow = $true
 foreach ($argument in @('--screen', [string]$Screen, '--audio-driver', 'Dummy')) { $info.ArgumentList.Add($argument) }
 $info.RedirectStandardOutput = $true
 $info.RedirectStandardError = $true
-$info.WorkingDirectory = $repo
+$info.WorkingDirectory = $projectRepo
 $info.Environment['APPDATA'] = Join-Path $profile 'roaming'
 $info.Environment['LOCALAPPDATA'] = Join-Path $profile 'local'
-foreach ($argument in @('--path',(Join-Path $repo 'Game'),'--script',(Join-Path $PSScriptRoot 'performance_validation.gd'),'--',('--output='+$destination),('--suite='+$Suite))) { $info.ArgumentList.Add($argument) }
+foreach ($argument in @('--path',$project,'--script',(Join-Path $PSScriptRoot 'performance_validation.gd'),'--',('--output='+$destination),('--suite='+$Suite),('--frame-cap='+$FrameCap),('--opt-hour='+$Hour),('--opt-view='+$View),('--render-resolution='+$RenderResolution))) { $info.ArgumentList.Add($argument) }
 $watch = [Diagnostics.Stopwatch]::new()
 $process = $null
 $writer = $null
@@ -101,9 +111,14 @@ if ($smi) {
 $hardware | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $destination 'hardware.json') -Encoding utf8
 $writer = [IO.StreamWriter]::new((Join-Path $destination 'windows-process.csv'),$false,[Text.UTF8Encoding]::new($false))
 $writer.WriteLine('elapsed_seconds,phase,working_set_bytes,private_bytes,process_cpu_total_ms,window_thread_id,window_thread_cpu_total_ms,window_thread_available,frames_drawn,foreground')
+$gpuMemoryWriter = [IO.StreamWriter]::new((Join-Path $destination 'gpu-process-memory.csv'),$false,[Text.UTF8Encoding]::new($false))
+$gpuMemoryWriter.WriteLine('elapsed_seconds,phase,dedicated_bytes,shared_bytes,matching_adapter_instances')
 $peak = 0L
+$gpuDedicatedPeak = 0L
+$gpuMemorySamples = 0
 $samples = [Collections.Generic.List[object]]::new()
 $threadId = 0
+$foregroundRequested = $false
 $readySeen = $null
 $lastPhase = ''
 $previousMissingReady = 0.0
@@ -139,6 +154,16 @@ Write-Output "PERFORMANCE_STARTED suite=$Suite pid=$($process.Id) evidence=$dest
             $threadId = [PerformanceWindowThread]::GetWindowThreadProcessId($process.MainWindowHandle,[ref]$windowProcess)
             if ($windowProcess -ne $process.Id) { throw 'Window belongs to an unexpected process.' }
         }
+        if ($RequestForeground -and -not $foregroundRequested -and $process.MainWindowHandle -ne [IntPtr]::Zero) {
+            $foregroundRequested = $true
+            $accepted = [PerformanceWindowThread]::SetForegroundWindow($process.MainWindowHandle)
+            if (-not $accepted) {
+                $shellWindow = New-Object -ComObject WScript.Shell
+                try { $accepted = $shellWindow.AppActivate($process.Id) }
+                finally { [Runtime.InteropServices.Marshal]::ReleaseComObject($shellWindow) | Out-Null }
+            }
+            Write-Output "PERFORMANCE_FOCUS_REQUEST accepted=$accepted"
+        }
         $threadCpu = $null
         $threadAvailable = $false
         if ($threadId -ne 0) {
@@ -151,11 +176,26 @@ Write-Output "PERFORMANCE_STARTED suite=$Suite pid=$($process.Id) evidence=$dest
         $samples.Add($sample)
         $writer.WriteLine(([string]::Join(',',@($elapsed.ToString('F6',[Globalization.CultureInfo]::InvariantCulture),$phase,$working,$process.PrivateMemorySize64,$sample.process_cpu_ms,$threadId,$threadCpu,[int]$threadAvailable,$drawn,[int]$foreground))))
         $writer.Flush()
+        try {
+            $gpuMemory = @(Get-Counter -Counter '\GPU Process Memory(*)\Dedicated Usage','\GPU Process Memory(*)\Shared Usage' -ErrorAction Stop).CounterSamples | Where-Object { $_.InstanceName -like "pid_$($process.Id)_*" }
+            $dedicated = [long](($gpuMemory | Where-Object Path -like '*\dedicated usage' | Measure-Object CookedValue -Sum).Sum)
+            $shared = [long](($gpuMemory | Where-Object Path -like '*\shared usage' | Measure-Object CookedValue -Sum).Sum)
+            $adapters = @($gpuMemory | Where-Object Path -like '*\dedicated usage').Count
+            if ($adapters -gt 0) {
+                $gpuDedicatedPeak = [Math]::Max($gpuDedicatedPeak,$dedicated)
+                $gpuMemorySamples++
+                $gpuMemoryWriter.WriteLine("$elapsed,$phase,$dedicated,$shared,$adapters")
+                $gpuMemoryWriter.Flush()
+            }
+        } catch {
+            # Counter absence is explicit in the summary; render timings remain valid.
+        }
         Start-Sleep -Milliseconds $(if ($null -eq $readySeen) { 250 } else { 1000 })
     }
     $process.WaitForExit()
 } finally {
     if ($writer) { $writer.Dispose() }
+    if ($gpuMemoryWriter) { $gpuMemoryWriter.Dispose() }
     if ($process -and -not $process.HasExited) {
         # Only the exact owned validation process, never a name-wide game shutdown.
         $process.Kill()
@@ -176,7 +216,7 @@ $bins = @($samples | Group-Object { [Math]::Floor($_.elapsed/60) } | ForEach-Obj
     $ordered = @($_.Group.working_set | Sort-Object)
     [pscustomobject]@{ minute=[int]$_.Name; samples=$ordered.Count; median_working_set_bytes=$ordered[[int][Math]::Floor($ordered.Count/2)]; min_working_set_bytes=$ordered[0]; max_working_set_bytes=$ordered[-1] }
 })
-$report = @{ exit_code=$process.ExitCode; pid=$process.Id; elapsed_seconds=$watch.Elapsed.TotalSeconds; peak_working_set_bytes=$peak; working_set_target_bytes=2147483648; working_set_target_met=($peak -le 2147483648); startup_upper_bound_seconds=$readySeen; thread_id=$threadId; thread_cpu_samples=@($samples | Where-Object thread_available).Count; sample_count=$samples.Count; memory_minute_bins=$bins; continuous_growth_assessment='Review phase-matched bins and raw CSV; no hidden slope cutoff'; measurement='Windows resident working set, cumulative process CPU and window-owning thread CPU. Thread CPU can be divided by drawn-frame deltas over each 1Hz interval; it is not a per-frame CPU percentile.' }
+$report = @{ exit_code=$process.ExitCode; pid=$process.Id; elapsed_seconds=$watch.Elapsed.TotalSeconds; peak_working_set_bytes=$peak; peak_gpu_dedicated_bytes=$gpuDedicatedPeak; gpu_memory_samples=$gpuMemorySamples; working_set_target_bytes=2147483648; working_set_target_met=($peak -le 2147483648); startup_upper_bound_seconds=$readySeen; thread_id=$threadId; thread_cpu_samples=@($samples | Where-Object thread_available).Count; sample_count=$samples.Count; memory_minute_bins=$bins; continuous_growth_assessment='Review phase-matched bins and raw CSV; no hidden slope cutoff'; measurement='Windows resident working set, private committed bytes, cumulative process CPU, window-owning thread CPU, and GPU Process Memory dedicated/shared usage for this PID. GPU counters include matching adapter instances and may be unavailable; whole-GPU nvidia-smi telemetry is separate.' }
 $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $destination 'windows-summary.json') -Encoding utf8
 if ($process.ExitCode -ne 0) { throw "Validation process failed with exit code $($process.ExitCode)." }
 if (-not (Test-Path -LiteralPath (Join-Path $destination 'results.json'))) { throw 'Validation ended without results.' }

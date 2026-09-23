@@ -6,10 +6,12 @@ var checks: int = 0
 var failures: Array[String] = []
 var records: Array[Dictionary] = []
 var camera: Camera3D
+var load_only: bool = false
 
 func _initialize() -> void:
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("--output="): output = arg.trim_prefix("--output=")
+		if arg == "--load-only": load_only = true
 	_run.call_deferred()
 
 func expect(ok: bool, message: String) -> void:
@@ -17,6 +19,20 @@ func expect(ok: bool, message: String) -> void:
 	if not ok: failures.append(message)
 
 func _run() -> void:
+	if load_only:
+		var load_paths: Array[String] = []
+		_collect("res://art", load_paths)
+		for path: String in load_paths:
+			var packed: PackedScene = load(path)
+			expect(packed != null, "GLB resource loads: " + path)
+			if packed != null:
+				var instance: Node = packed.instantiate()
+				expect(instance != null, "GLB instantiates: " + path)
+				if instance != null: instance.free()
+		for failure: String in failures: push_error(failure)
+		print("MESH_LOAD_TEST assets=%d checks=%d failures=%d" % [load_paths.size(), checks, failures.size()])
+		quit(0 if failures.is_empty() else 1)
+		return
 	assert(output.begins_with(ProjectSettings.globalize_path("res://../.local/").simplify_path()))
 	DirAccess.make_dir_recursive_absolute(output)
 	root.size = Vector2i(1280,720)

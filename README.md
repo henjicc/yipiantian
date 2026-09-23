@@ -1,26 +1,22 @@
 # 我有一片田
 
-当前分享版本为 **Demo 0.1.7（开发中试玩版）**：[Windows 免安装文件夹](<.local/releases/0.1.7-78fd3d32/我有一片田 Demo 0.1.7 Windows/>)，源码 `78fd3d32`。双击 `Farm.exe`；Windows 原生任务栏图标和导出程序图标已指定为多尺寸 ICO。游戏内容沿用 0.1.6；本轮仅导出和审计包体，未启动游戏验收，也未制作安装器。构建入口 `scripts/package-release.ps1 -Commit 78fd3d32 -Version 0.1.7 -FolderOnly -ReuseImportCache`，证据位于 `.local/releases/0.1.7-78fd3d32/evidence/`。
+一款以江南水乡为背景的 Windows 三维田园游戏。照料六块田里的十二种秋菜，布置小院，和动物及邻居相处；光影、植物与水面随时间变化。项目仍在开发中。
 
-历史 **Demo 0.1.6** 源码 `06c7bce9`，位于 `.local/releases/0.1.6-06c7bce9/`；恢复壁纸系统鼠标旁的种子／工具图标，以及篮子等工具点不适用田格时的扇形菜单。
+![我有一片田白天的游戏画面](docs/images/gameplay-main.jpg)
 
-历史 **Demo 0.1.5** 源码 `1fb4b894`，位于 `.local/releases/0.1.5-1fb4b894/`；已修复辅助访问接口子项计数导致整张壁纸输入失效的问题。
+![我有一片田夜晚的游戏画面](docs/images/gameplay-main-night.jpg)
 
-历史 **Demo 0.1.4** 源码 `23250882`，位于 `.local/releases/0.1.4-23250882/`；此版存在上述图标枚举错误，已由0.1.5修复。
+## 下载试玩
 
-历史 **Demo 0.1.3** 源码 `73699975`，位于 `.local/releases/0.1.3-73699975/`。该版会遮挡图标，不符合壁纸外观要求，已由0.1.4替换。
+[前往 GitHub Releases 下载 Windows 试玩版](https://github.com/henjicc/yipiantian/releases)。请选择发行附件中的“我有一片田 Demo … Windows.zip”，解压后运行 `Farm.exe`，并保留同目录的 `Farm.pck` 与 `FarmDesktop.exe`。GitHub 自动提供的“Source code”压缩包是源码，不是玩家运行包。当前提供 Windows x86-64 版本，尚未签名。
 
-历史 **Demo 0.1.2** 源码 `b1ff06cf`，文件夹保存在 `.local/releases/0.1.2-b1ff06cf/`；此版仍使用桌面采样转发，0.1.3已替换为游玩时原生输入。
+Demo 0.1.8 已完成本机干净导入、发行构建、资源包审计，以及隔离环境中的启动、存档和重开验证；完整发行交互和其他硬件仍待验收。版本说明见 [发行材料/版本说明.txt](发行材料/版本说明.txt)。
 
-历史分享版本 **Demo 0.1.1** 的源码为 `74d24e5e`，旧包保存在 `.local/releases/0.1.1-74d24e5e/`。此版本的壁纸点击行为为返回普通窗口，已在 0.1.2 修正。
+## 从源码构建
 
-历史分享版本为 **Demo 0.1.0（开发中试玩版）**，以 [随包说明](发行材料/使用说明.txt) 和 [版本说明](发行材料/版本说明.txt) 为准；下方 rc 与留存包为历史记录。使用 `scripts/package-release.ps1 -Commit <提交哈希> -Version 0.1.0` 从固定源码独立构建，输出在 `.local/releases/`。本次包为 [我有一片田 Demo 0.1.0 Windows.zip](<.local/releases/0.1.0-c2451af7/我有一片田 Demo 0.1.0 Windows.zip>)，源码 `c2451af7`，约1.95 GB。独立导入／导出、1126项资源审计、ZIP解压哈希、仓库外中文空格路径启动／菜单版本／保存重开／正常退出均通过；设置界面80项检查通过。证据在 `.local/releases/0.1.0-c2451af7/evidence/` 与 `.local/verification/demo-0.1.0/`。未验证其他硬件，首次启动需等待资源加载。分享 ZIP 即可，不包含开发者存档；当前存档目录为 `farm-v27/`，格式以 `Game/farm/farm_store.gd` 为准，不承诺后续版本兼容。
+源码及必要资产通过 Git + Git LFS 管理，发行 ZIP 不进入源码仓库。克隆后先确认 LFS 文件已取回，再按下方的开发入口使用 `.godot-version` 指定的 Godot 标准版和匹配的导出模板。
 
-历史完整留存版（2026-09-18）：[打开版本目录](.local/snapshots/20260918-98797da/我有一片田_田园生活版_20260918/)，双击「开始游戏.cmd」。动物、小院参数化及完整低压力生活玩法已接通；按用户要求跳过乘船慢游。包内存档独立，旧版保留。[目标与验证边界](docs/task/动物与田园生活完整目标清单.md#最终交付记录--20260918)。
-
-Windows 三维微缩农场。六块大田各分为4×4小格，可混种十二种江南秋菜，按格播种、浇水、现实时间生长与收获；江南院落含三件可解锁装饰、昼夜、声音、焦点细节及景深。农场和声音／显示设置分别保存在当前用户目录。作物数值、参考图与新模型来源见 [秋菜记录](ArtSource/Crops/Autumn2026/README.md)。当前开发版支持独立桌面壁纸：设置中点击「设为桌面壁纸」，双击系统托盘图标返回游戏；无需其他壁纸软件。账号联网和云存档不在当前范围。桌面组件与实测边界见 [桌面组件](native/desktop/README.md)，页首历史留存包未包含此功能。
-
-制作基准见 [制作基准包](docs/design-baseline/README.md)，首个版本验收见 [首个版本计划](docs/task/首个可发布版本/00-任务总览.md)，当前逐格种植与画面重构已通过功能、实景与本机性能回归，独立候选验证另见[逐格整合交接](docs/task/格子农田与画面重构/handoffs/整体验证-handoff.md)；前一轮动态氛围的历史证据见[氛围整合交接](docs/task/氛围提升/handoffs/整体验证-handoff.md)。单体图、Tripo、Blender 与 Godot 的实际分工见 [三维资产工作流](docs/asset-workflow.md)。商务核验按用户要求暂缓，本地候选不冒称权利清理、签名或商店上架完成。
+仓库的 **Build Windows demo release** 工作流只从 `main` 手动运行：填写与工程配置一致的版本号，GitHub 会取回 LFS、校验固定 Godot 下载、干净导入和导出、审计资源包，再把 ZIP 与 SHA-256 校验文件放入 [Releases](https://github.com/henjicc/yipiantian/releases)。本地仍可使用 `scripts/package-release.ps1` 从固定提交独立构建；自动构建不代替玩家实机验收。
 
 ## 打开与开发
 
@@ -52,6 +48,8 @@ pwsh -NoProfile -File scripts/package-release.ps1 -Commit <完整提交哈希> -
 ```
 
 此入口新建 `.local/releases/<版本>-<提交前8位>/`，从本地独立克隆恢复并校验 LFS 对象，在无原导入缓存的副本导入、构建，审计 PCK 后附中文说明、Godot / 字体通知、版本和 SHA-256。既有候选不会覆盖；本地克隆不是远端或异机同步证明。构建完成后仍须在仓库外中文／空格路径，用非管理员和隔离用户目录进行真实启动、保存、回访与退出验收。首个候选验证状态见 [5.2 任务](docs/task/首个可发布版本/任务/第五阶段-发行候选与交付/5.2-构建发行候选并验证干净环境.md)，历史 rc.2 的独立证据见 [氛围修订交接](docs/task/氛围提升/handoffs/整体验证-handoff.md)。
+
+本地空间：`.local/builds/` 和 `Game/.godot/` 可从源码重建；发行目录中的 `source/` 是逐版重复的独立构建副本，确认包、ZIP、校验和及 `evidence/` 完整后，可在新构建命令加 `-PruneBuildSource`，只清理该次候选的 `source/` 并留下清理记录。历史 `.local/releases/` 的包与证据先保留，逐项核对后再清理；`ArtSource/`、`制作留档/` 和 `视频制作素材/` 可能含唯一源资料，不作为缓存清除。源码和必要资产通过 Git＋LFS 管理，玩家下载 ZIP 放发行附件，不把发行包提交进源码仓库。
 
 历史本地候选 **0.1.0-rc.2** 对应源码 `a3163dcc216e049b9ca873458807e925d6908df2`，包含近景枝叶、植物风动、湖波倒影、轻舟、远云及暖窗与院落细节，仍是整田玩法／v2存档。独立干净构建和仓库外普通程序的收获／播种／浇水／保存重开已通过；96株新场景的1080p烟测164项、4K六组56项均0失败。交付副本 `制作留档/06_发行候选/0.1.0-rc.2-a3163dcc/我有一片田 0.1.0-rc.2 Windows.zip`，旁有同名 `.sha256`；ZIP SHA-256为 `cce4f8face420cff1e252e3c04ec1312a2a0e8a62568439176c60253578598d8`。详情及实测硬件／边界见[氛围整合交接](docs/task/氛围提升/handoffs/整体验证-handoff.md)。
 

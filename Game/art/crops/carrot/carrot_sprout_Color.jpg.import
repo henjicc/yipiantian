@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bl346edfh6xu0"
-path="res://.godot/imported/carrot_sprout_Color.jpg-d2a82e35943296c53994430fd216d569.ctex"
+path.bptc="res://.godot/imported/carrot_sprout_Color.jpg-d2a82e35943296c53994430fd216d569.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "eb6987acdd8ae81f94e80f04e2736e1b"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/crops/carrot/carrot_sprout_Color.jpg"
-dest_files=["res://.godot/imported/carrot_sprout_Color.jpg-d2a82e35943296c53994430fd216d569.ctex"]
+dest_files=["res://.godot/imported/carrot_sprout_Color.jpg-d2a82e35943296c53994430fd216d569.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1
