@@ -198,6 +198,8 @@ func _build_ui() -> void:
 	layout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(layout)
+	var gallery_button := _button(layout,"全部模型",func() -> void: get_tree().change_scene_to_file("res://development/model_gallery.tscn"))
+	gallery_button.position = Vector2(18,105)
 	for side: int in 2:
 		var label := Label.new()
 		label.text = "原材质 · 已摆正" if side == 0 else ("候选 · 清新配色＋叶面细节" if not candidate_materials.is_empty() else "候选 · 资源尚未导入")

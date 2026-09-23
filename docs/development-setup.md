@@ -171,6 +171,10 @@ MCP 会执行模型生成的代码，操作范围限定为明确工程及本机�
 
 测试文件位于被忽略的 `.local/blender-validation/`，包含 `AI连接验证.blend`、`AI连接验证.fbx`、`blender-window.png` 和 MCP 测试结果。它们用于环境验证，不是正式美术资产。系统窗口截图接口本次报 `SetIsBorderRequired / 0x80004002`，已使用 Blender 官方截图工具取得有效画面，不需要关闭系统安全功能。
 
+2026-09-19 在上述 Blender 5.2.2 可见实例中实测：几何节点修改器的输入值通过 `getattr(modifier.properties.inputs, socket.identifier).value` 读取和修改；旧的 `modifier["Socket_1"] = value` 在该环境报不支持 ID properties。应从 `node_group.interface.items_tree` 按输入名称取得 socket，再使用其 identifier，避免按固定序号猜测。修改后调用对象 `update_tag()` 和视图层 `update()` 再检查求值网格。青菜独立生成器已验证随机种子改变几何、相同种子准确复现，叶数、株高、叶宽、开合、弯曲等输入实际影响结果；此结论只覆盖本机版本，不推定旧版也使用同一接口。
+
+单图建模若要求自由旋转，应先用有厚度的基础部件构建完整空间结构，再以参考图校准风格；固定视角的轮廓拼片或整图投影不能代替立体模型。植物生成器应同时检查侧面、背面、俯视和代表性参数组合，并保留独立可编辑的叶片原型。独立演示的本机验证入口为 `制作留档/20260919_青菜_参数化立体重制_043038/青菜_V2_参数化生成器.blend`，未接入游戏。
+
 ## Premiere Pro MCP 接入与排错（2026-09-21）
 
 适用本机 Windows、Premiere Pro 26.0.0.72、Node.js 24.18.0、`leancoderkavy/premiere-pro-mcp` 1.16.4 的 CEP 连接。已实测只读连通，不代表所有编辑接口或其他版本已验收。[项目说明](https://github.com/leancoderkavy/premiere-pro-mcp)
@@ -356,3 +360,11 @@ rc.5交付：源码8f39fd66干净独立克隆、导入和发行导出通过，PC
 Godot4.7.2当前存档v14。`tests/start-isolated-game.ps1` 已改为从 farm_store.gd 的VERSION解析目标存档目录，避免验证入口继续查旧farm-v4而误报不存在；先解析再启动进程。用该入口启动独立候选后，等待真实存档写入及窗口响应，再通过 `tests/native-game-window.ps1 -Action close` 正常关闭，由保留的进程句柄读取退出码。只凭Get-Process新取得对象的ExitCode可能为null，不能将null伪报0。当前原包两次启动／关闭均由启动入口取得真实退出码0；重开stdout明确FARM_LOAD stage=loaded version=14，证据 life-final-native/。
 
 Windows图形独立包stdout在重定向时可能缓冲到退出，期间指定log-file可为空；不要仅凭实时日志空白判断未启动。窗口Responding与真实v14存档更新时间联合判断就绪，退出后审计stdout／stderr。截屏前核验本次窗口真实屏幕范围及遮挡；被其他窗口遮挡时不抓整屏、不为截图夺取主屏焦点，同源码场景截图与普通独立包启动证据分别报告。此轮普通窗口实测位于(3840,0)，Godot全屏客户区为3840×2162；视觉渲染测试为3840×2160。
+
+## 全模型开发检查页
+
+入口：`./scripts/godot.ps1 -Action Run -ExtraArgs @('res://development/model_gallery.tscn')`；青菜材质对照左上角“全部模型”也可进入。运行时扫描工程内独立GLB／glTF／OBJ／FBX模型，下方逐个生成真实模型缩略图，可按名称、来源、文件名搜索和分类；不枚举完整玩法场景或临时源文件。
+
+左键旋转、中键平移、滚轮缩放；开启“双模型”，选择要替换的左／右侧后点击模型图标。模型等比例适配展示，信息区显示原尺寸、三角数、表面数、资源路径和生成来源；悬停查看制作记录入口。来源映射在 `Game/development/model_catalog.gd`，新增／替换资产时依据 ArtSource 更新，未知型号不猜填。朝向、粗糙度、适用植物风动和灯光仅改变本次预览；“恢复原材质”重新加载当前模型，不写入资源或农场存档。单体预览不加载完整农场行为、组合场景或动物AI。
+
+本次按用户要求不新增或运行测试，仅启动开发面板；开发资源沿用发行排除规则，不随旧独立包自动更新。

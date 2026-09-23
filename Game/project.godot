@@ -23,9 +23,13 @@ window/size/viewport_width=1600
 window/size/viewport_height=900
 window/size/window_width_override=1600
 window/size/window_height_override=900
+window/stretch/mode="canvas_items"
 window/size/window_width_override.movie=3840
 window/size/window_height_override.movie=2160
-window/stretch/mode="canvas_items"
+
+[filesystem]
+
+import/blender/enabled=false
 
 [gui]
 
@@ -33,15 +37,11 @@ theme/custom_font="res://art/ui/fonts/汇文明朝体.ttf"
 
 [rendering]
 
-anti_aliasing/quality/msaa_3d=2
-environment/ssao/quality=3
-environment/ssao/half_size=false
 lights_and_shadows/directional_shadow/size=8192
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=5
-
-[filesystem]
-
-import/blender/enabled=false
+environment/ssao/quality=3
+environment/ssao/half_size=false
+anti_aliasing/quality/msaa_3d=2
 
 [shader_globals]
 
