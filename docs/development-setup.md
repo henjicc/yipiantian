@@ -426,3 +426,24 @@ RTX4090、Godot 4.7.2 Forward+、4K UI／1080三维、96格成熟混种、7只�
 测量复用`tests/wallpaper_budget_test.gd`的成熟混种夹具与渲染计数；原始JSON、图标前后图、当前实际缓存纹理／唯一网格清单、隔离试验脚本和检查日志位于`.local/verification/performance-stage-20260924/`。这些是开发实例短测，图标收益只证明引擎纹理驻留下降，未证明CPU常驻内存、功耗、操作长帧或启动时间改善；不限帧整卡功耗也不用于省电结论。原有常驻内存／后台图形资源预算缺口、普通核显及8小时稳定性仍未验收，禁止放宽预算或据此宣布全部性能目标达标。后续若继续，应单独决定更大范围的环境投影／资源生命周期方案。
 
 相关契约：[纹理导入与显存](https://docs.godotengine.org/en/4.7/tutorials/assets_pipeline/importing_images.html)、[discard的性能边界](https://docs.godotengine.org/en/4.7/tutorials/shaders/shader_reference/shading_language.html#discarding)。
+
+### 程序化岛屿研究室（2026-09-24）
+
+独立场景位于 `Game/scenes/procedural_lab/procedural_lab.tscn`；直接指定场景启动，主入口和农场存档不变，Windows导出预设排除此研究目录。使用已有开发预览入口确认静音、第二屏独占全屏与窗口就绪：
+
+```powershell
+# 在 PowerShell 7 的仓库根目录执行；只运行研究场景。
+& ./scripts/godot.ps1 -Action Run -ExtraArgs @('res://scenes/procedural_lab/procedural_lab.tscn')
+# 纯布局定向检查。
+& ./scripts/godot.ps1 -Action Run -ExtraArgs @('--headless','--script','../tests/procedural_island_test.gd')
+# 真实场景和鼠标输入检查，结束后自动退出，不启动主游戏。
+& ./scripts/godot.ps1 -Action Run -ExtraArgs @('--script','../tests/procedural_lab_scene_test.gd')
+```
+
+数字或文字种子配合同一组参数，在当前生成器和 Godot 4.7.2 下复现布局；更改引擎或算法不承诺旧种子结果不变。左侧输入后点击生成，也可换种子、选单岛／三岛／五岛预设；上方切换全景、桥梁与竹架近景。左键旋转、右键／中键平移、滚轮缩放，Esc退出。复制按钮导出当前已生成画面的种子和参数；不保存游戏状态。
+
+生成采用低频径向轮廓，复用主岛圆润岸坡及草土材质；以完整岸坡包围范围保留水道，再用最短连接树选桥线。桥头整宽落在平地，岛内先留通路，再以完整占地布置房屋、菜畦、竹架和植物；放不下的设施省略，面板显示实际数量。桥长改变时增加木板／栏杆／水下支柱，竹架增加开间，构件粗细不随整体尺寸拉伸。路径由有界曲线和青石踏步构成。复用已有房屋与植物，无新增 Blender／Tripo 资产或生成费用。
+
+Godot 4.7.2 实测：种子 `边界-0`、小岛／五岛／最大岸线变化组合的一个腹地点距岸约1.82米，内置 `Geometry2D.is_point_in_polygon` 却返回false；官方该版本源码使用有限射线逐段计交点，顶点交会可能重复计数。本研究室用半开区间射线计数并检查到所有岸段的距离，避免把腹地误判成水面；只影响本研究室。测试另外使用多边形偏移与裁切核对完整道路走廊，不以同一个点判定证明自身正确。[4.7几何契约](https://docs.godotengine.org/en/4.7/classes/class_geometry2d.html)、[对应源码](https://github.com/godotengine/godot/blob/4.7-stable/core/math/geometry_2d.h)、[ArrayMesh生成](https://docs.godotengine.org/en/4.7/tutorials/3d/procedural_geometry/arraymesh.html)、[随机序列的版本边界](https://docs.godotengine.org/en/4.7/classes/class_randomnumbergenerator.html)。
+
+24组种子／参数覆盖单岛、五岛、小尺寸、最大岸线变化、最窄水道、最宽桥与密集植被，验证确定性、连通、岸坡不相交、桥头承托、完整道路走廊和物件间距。场景测试通过真实鼠标按钮命中、输入种子／改参数后的重建、空种子拒绝、规划显示、旋转、跨UI释放、失焦取消及小窗口布局；已观察桥梁与竹架正反近景，截图在 `.local/verification/procedural-lab/`。本机三岛／五岛样本的生成阶段约0.5秒，只含本次短测，不代表低配性能或长期稳定性。本原型验证平坦庭院岛与构件组装，不包含内湖、悬崖、多层地形、可行走角色、农场生长或正式岛际交互。
