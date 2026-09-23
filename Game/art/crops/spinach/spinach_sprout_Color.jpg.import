@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://n8qbgasi0xiy"
-path="res://.godot/imported/spinach_sprout_Color.jpg-0c0fbe241ea9ebea241641aaf15360ac.ctex"
+path.bptc="res://.godot/imported/spinach_sprout_Color.jpg-0c0fbe241ea9ebea241641aaf15360ac.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "e6c5b5bcb4f1f8e70e5138701e2a899c"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/crops/spinach/spinach_sprout_Color.jpg"
-dest_files=["res://.godot/imported/spinach_sprout_Color.jpg-0c0fbe241ea9ebea241641aaf15360ac.ctex"]
+dest_files=["res://.godot/imported/spinach_sprout_Color.jpg-0c0fbe241ea9ebea241641aaf15360ac.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1

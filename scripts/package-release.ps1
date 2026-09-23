@@ -2,10 +2,11 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{7,40}$')][string]$Commit,
-    [ValidatePattern('^\d+\.\d+\.\d+(-rc\.\d+)?$')][string]$Version = '0.1.7',
+    [ValidatePattern('^\d+\.\d+\.\d+(-rc\.\d+)?$')][string]$Version = '0.1.8',
     [string]$GodotPath = $env:GODOT_EXE,
     [switch]$FolderOnly,
-    [switch]$ReuseImportCache
+    [switch]$ReuseImportCache,
+    [switch]$PruneBuildSource
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
@@ -117,6 +118,21 @@ if (-not $FolderOnly) {
     $zip = Join-Path $releaseRoot ($packageName+'.zip')
     Compress-Archive -LiteralPath $package -DestinationPath $zip -CompressionLevel Optimal
     ((Get-FileHash -LiteralPath $zip).Hash.ToLowerInvariant()+'  '+[IO.Path]::GetFileName($zip)) | Set-Content -LiteralPath ($zip+'.sha256') -Encoding utf8
+}
+if ($PruneBuildSource) {
+    # The candidate is complete. This checkout is a reproducible build input;
+    # keep the package, archive, checksums, and evidence beside it.
+    $resolvedRelease = (Resolve-Path -LiteralPath $releaseRoot).Path
+    $resolvedSource = (Resolve-Path -LiteralPath $source).Path
+    if (-not [string]::Equals($resolvedSource, (Join-Path $resolvedRelease 'source'), [StringComparison]::OrdinalIgnoreCase) -or
+        -not $resolvedRelease.StartsWith(([IO.Path]::GetFullPath((Join-Path $repo '.local/releases')) + [IO.Path]::DirectorySeparatorChar), [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Build source path is outside the expected candidate directory.'
+    }
+    $sourceBytes = (Get-ChildItem -LiteralPath $resolvedSource -Recurse -File | Measure-Object Length -Sum).Sum
+    [ordered]@{removed=$resolvedSource; estimated_bytes=$sourceBytes; retained=@($package, $zip, $evidence)} |
+        ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $evidence 'build-source-retention.json') -Encoding utf8
+    Write-Output "PRUNE_BUILD_SOURCE path=$resolvedSource bytes=$sourceBytes retained=$package,$zip,$evidence"
+    Remove-Item -LiteralPath $resolvedSource -Recurse -Force
 }
 Write-Output "CANDIDATE_BUILT version=$Version commit=$revision package=$package zip=$zip evidence=$evidence"
 Write-Output 'Build and inventory complete. Gameplay acceptance has not been performed.'

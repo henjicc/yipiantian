@@ -18,7 +18,7 @@ func _ready() -> void:
 		queue_free()
 		return
 	add_to_group("farm_window_activity_owner")
-	_foreground_cap = Engine.max_fps
+	_foreground_cap = Engine.max_fps if Engine.max_fps > 0 else 60
 	get_window().focus_entered.connect(_refresh)
 	get_window().focus_exited.connect(_refresh)
 	get_window().size_changed.connect(_refresh)
@@ -87,7 +87,7 @@ func _apply_frame_limit() -> void:
 	if _wallpaper_transition:
 		Engine.max_fps = 60
 	elif _wallpaper and _wallpaper_interacting and _wallpaper_visible:
-		Engine.max_fps = 0
+		Engine.max_fps = _foreground_cap
 	elif _wallpaper:
 		# Keep settlement/timers alive while avoiding rendering an occluded desktop.
 		var cap: int = 30 if _wallpaper_visible else 2

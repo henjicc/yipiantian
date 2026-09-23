@@ -9,6 +9,10 @@ const Settings = preload("res://settings/settings_store.gd")
 var scene: Node3D
 var output_dir: String = ""
 var suite: String = "acceptance"
+var requested_frame_cap: int = 60
+var optimization_hour: int = 12
+var optimization_view: String = "overview"
+var render_resolution: String = "native"
 var cases: Array[Dictionary] = []
 var failures: Array[String] = []
 var checks: int = 0
@@ -27,12 +31,20 @@ func _initialize() -> void:
 			output_dir = argument.trim_prefix("--output=").simplify_path()
 		elif argument.begins_with("--suite="):
 			suite = argument.trim_prefix("--suite=")
+		elif argument.begins_with("--frame-cap="):
+			requested_frame_cap = int(argument.trim_prefix("--frame-cap="))
+		elif argument.begins_with("--opt-hour="):
+			optimization_hour = int(argument.trim_prefix("--opt-hour="))
+		elif argument.begins_with("--opt-view="):
+			optimization_view = argument.trim_prefix("--opt-view=")
+		elif argument.begins_with("--render-resolution="):
+			render_resolution = argument.trim_prefix("--render-resolution=")
 	_run.call_deferred()
 
 
 func _run() -> void:
 	var allowed: String = ProjectSettings.globalize_path("res://../").simplify_path().path_join(".local/verification")
-	if output_dir.is_empty() or not output_dir.replace("\\", "/").begins_with(allowed.replace("\\", "/") + "/") or suite not in ["acceptance", "4k", "smoke"]:
+	if output_dir.is_empty() or not output_dir.replace("\\", "/").begins_with(allowed.replace("\\", "/") + "/") or suite not in ["acceptance", "4k", "smoke", "optimization"] or requested_frame_cap < 0 or requested_frame_cap > 240 or optimization_hour not in [12, 21] or optimization_view not in ["overview", "focus"] or render_resolution not in ["native", "1080", "1440", "2160"]:
 		push_error("Use an isolated --output below .local/verification and an explicit supported suite.")
 		quit(1)
 		return
@@ -44,7 +56,10 @@ func _run() -> void:
 	if suite == "smoke":
 		sample_seconds = 2.0
 		warmup_seconds = 1.0
-	var resolution := Vector2i(3840, 2160) if suite == "4k" else Vector2i(1920, 1080)
+	elif suite == "optimization":
+		sample_seconds = 15.0
+		warmup_seconds = 4.0
+	var resolution := Vector2i(3840, 2160) if suite in ["4k", "optimization"] else Vector2i(1920, 1080)
 	root.size = resolution
 	var store := Store.new(output_dir.path_join("farm"))
 	_expect(store.load_state().kind == "missing", "Every run requires a fresh isolated farm directory")
@@ -52,19 +67,23 @@ func _run() -> void:
 	var data: Dictionary = Farm.new(now).snapshot()
 	data.harvested.greens = 10
 	data.harvested.radish = 6
+	data.harvested.spinach = 1
 	for index: int in 6:
 		for cell_index: int in Farm.CELL_IDS.size():
 			var cell: Dictionary = data.fields[Farm.FIELD_IDS[index]].cells[Farm.CELL_IDS[cell_index]]
+			cell.ground = "ready"
 			cell.crop_id = "greens" if (index + cell_index) % 2 == 0 else "radish"
 			cell.growth_seconds = 1800.0 if cell.crop_id == "greens" else 5400.0
 	var decorations := Decorations.new()
 	decorations.unlock(data.harvested)
-	decorations.place("pot", "ground_01", 0)
-	decorations.place("flowerpot", "ground_02", 0)
-	decorations.place("lantern", "hanging_01", 0)
+	_expect(decorations.place("pot", "ground_01", 0).ok, "Fixture places the pot")
+	_expect(decorations.place("flowerpot", "ground_02", 0).ok, "Fixture places the flowerpot")
+	_expect(decorations.place("lantern", "hanging_01", 0).ok, "Fixture unlocks and places the lantern")
 	_expect(store.save(data, decorations.snapshot()).ok, "Maximum 96-plant / 3-decoration fixture is saved through the real owners")
 	var preferences := Settings.new(output_dir.path_join("preferences"))
-	_expect(preferences.load_settings().ok and preferences.save(Settings.DEFAULTS.duplicate(true)).ok, "Windowed standard preferences are isolated")
+	var performance_settings: Dictionary = Settings.DEFAULTS.duplicate(true)
+	performance_settings.resolution = render_resolution
+	_expect(preferences.load_settings().ok and preferences.save(performance_settings).ok, "Windowed standard preferences are isolated")
 	if not failures.is_empty():
 		_finish()
 		return
@@ -73,7 +92,7 @@ func _run() -> void:
 	scene.settings_store = Settings.new(output_dir.path_join("preferences"))
 	root.add_child(scene)
 	root.grab_focus()
-	scene.window_activity.set_foreground_frame_limit(60)
+	scene.window_activity.set_foreground_frame_limit(requested_frame_cap)
 	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(), true)
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
@@ -81,21 +100,21 @@ func _run() -> void:
 	var rendered: Vector2i = root.get_texture().get_image().get_size()
 	_actual_image_size = rendered
 	_expect(rendered == resolution, "Actual rendered image matches the requested native resolution")
-	_expect(scene.farm.fields.size() == 6 and scene.decoration_layout.lantern_anchors().size() == 1, "Full farm and placed lantern are present")
+	_expect(scene.farm.fields.size() == 6 and scene.decoration_layout.lantern_anchors().size() >= 1, "Full farm and active lantern are present")
 	for body: StaticBody3D in scene.farm.fields:
 		_expect(body.get_node("Crops").get_child_count() == 16, "Each field has sixteen mature crop instances")
 	_initial_harvested = scene.farm_state.snapshot().harvested
 	_scene_started = Time.get_ticks_usec()
-	_write("ready.json", {"pid": OS.get_process_id(), "engine_startup_seconds": float(_scene_started) / 1e6, "actual_image_size": [rendered.x, rendered.y], "window_size": [root.size.x, root.size.y], "suite": suite, "runtime": "Godot standard executable, production scene, no editor UI; not export release", "engine": Engine.get_version_info(), "adapter": RenderingServer.get_video_adapter_name(), "renderer": RenderingServer.get_current_rendering_method(), "vsync_mode": DisplayServer.window_get_vsync_mode(), "cap_fps": 60})
+	_write("ready.json", {"pid": OS.get_process_id(), "engine_startup_seconds": float(_scene_started) / 1e6, "actual_image_size": [rendered.x, rendered.y], "window_size": [root.size.x, root.size.y], "render_resolution": render_resolution, "render_scale": root.scaling_3d_scale, "suite": suite, "runtime": "Godot standard executable, production scene, no editor UI; not export release", "engine": Engine.get_version_info(), "adapter": RenderingServer.get_video_adapter_name(), "renderer": RenderingServer.get_current_rendering_method(), "vsync_mode": DisplayServer.window_get_vsync_mode(), "cap_fps": requested_frame_cap})
 	if not failures.is_empty():
 		_finish()
 		return
 	var hours: Array[int] = []
-	hours.assign([12, 21] if suite in ["acceptance", "smoke"] else [12])
+	hours.assign([optimization_hour] if suite == "optimization" else ([12, 21] if suite in ["acceptance", "smoke"] else [12]))
 	var views: Array[String] = []
-	views.assign(["overview", "focus", "arrange"] if suite in ["acceptance", "smoke"] else ["overview", "focus"])
+	views.assign([optimization_view] if suite == "optimization" else (["overview", "focus", "arrange"] if suite in ["acceptance", "smoke"] else ["overview", "focus"]))
 	var modes: Array[String] = []
-	modes.assign(["all_high", "lod", "lod_dof"])
+	modes.assign(["lod_dof"] if suite == "optimization" else ["all_high", "lod", "lod_dof"])
 	for hour: int in hours:
 		for view: String in views:
 			var group_start: int = cases.size()

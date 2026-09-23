@@ -4,6 +4,8 @@
 
 执行入口为项目级 [farm-3d-asset-pipeline](../.agents/skills/farm-3d-asset-pipeline/SKILL.md)，用于资产生产、拆件动画、LOD 修复及过程素材检索；本文件继续维护详细制作规范，避免复制两份参数和流程。
 
+正式 GLB 重导出后，先运行 Godot 导入以生成对应贴图，再运行 `python scripts/share-glb-textures.py --art Game/art --all`，最后重新导入。该脚本按实际图片 SHA-256 使重复模型引用同一张外部贴图，不重采样制作源。移除多余的 `Game/art` 提取贴图前，核对其 `.import` 参数、GLB URI 和场景／动态加载路径；`ArtSource` 原图仍保留。发行包审计会对实际包内字节核验 SHA-256，发现重复项即阻止出包，以免重导出使副本回流。
+
 ## 选择原则
 
 **当前商业目标包含展示 Tripo 平台：在满足游戏质量与可维护性的前提下，优先用 Tripo 制作可见资产及可复用部件。** 图片生成工具负责统一参考，Tripo 负责三维候选与外观生产，Blender 负责组装、尺寸、阶段修正和必要清理，Godot 负责场景组装、玩法表现与最终验收。不要求每个资产经过所有工具。

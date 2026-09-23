@@ -6,6 +6,17 @@ func _initialize() -> void:
 func _run() -> void:
 	var activity: Node=load("res://atmosphere/window_activity.gd").new()
 	root.add_child(activity)
+	activity._active=true
+	activity._apply_frame_limit()
+	assert(Engine.max_fps==60,"Normal foreground defaults to 60 FPS")
+	activity.set_wallpaper(true)
+	activity.set_wallpaper_interacting(true)
+	assert(Engine.max_fps==60,"Interactive desktop remains capped at 60 FPS")
+	activity.set_wallpaper_interacting(false)
+	assert(Engine.max_fps==30,"Visible desktop observation remains at 30 FPS")
+	activity.set_wallpaper_visible(false)
+	assert(Engine.max_fps==2,"Covered desktop remains at 2 FPS")
+	activity.set_wallpaper(false)
 	activity.set_foreground_frame_limit(60)
 	activity._active=false
 	activity._apply_frame_limit()

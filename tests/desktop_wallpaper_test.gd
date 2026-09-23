@@ -40,6 +40,8 @@ func _run() -> void:
 			if controller.active: break
 		check(controller.active, "Native desktop attached cycle %d" % cycle)
 		if not controller.active: break
+		# The menu dismissal is animated; wait for its next covered 2 FPS frame.
+		await create_timer(0.6).timeout
 		check(not scene.hud.visible and not scene.game_menu.visible, "Wallpaper hides gameplay UI")
 		check(root.gui_disable_input, "Wallpaper never handles desktop clicks")
 		var stream := FileAccess.open(evidence.path_join("active.json"), FileAccess.WRITE)
@@ -51,6 +53,17 @@ func _run() -> void:
 		root.get_texture().get_image().save_png(evidence.path_join("wallpaper-%d.png" % cycle))
 		scene.window_activity.set_wallpaper_visible(true)
 		check(Engine.max_fps == 30, "Visible wallpaper cap is 30 fps without focus")
+		if cycle == 0:
+			controller.set_interacting(true)
+			for tick: int in 100:
+				await create_timer(0.1).timeout
+				if controller.interacting and not controller.busy: break
+			check(controller.interacting and Engine.max_fps == 60, "Interactive desktop is capped at 60 fps")
+			controller.set_interacting(false)
+			for tick: int in 100:
+				await create_timer(0.1).timeout
+				if not controller.interacting and not controller.busy: break
+			check(not controller.interacting and Engine.max_fps == 30, "Desktop observation resumes at 30 fps")
 		scene.window_activity.set_wallpaper_visible(false)
 		check(Engine.max_fps == 2, "Covered wallpaper keeps settlement alive at 2 fps")
 		controller.restore()
