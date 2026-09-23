@@ -1,6 +1,6 @@
 # 开发前准备与环境验证
 
-> 环境首次核验：2026-09-16；当前2026-09-17已完成逐格种植与接缝／接触暗部修订，最新本地候选rc.5。目标仍为Windows普通窗口版三维农场：六田各4×4格、同田混种、选格后工具直接操作；技术验证与玩家美术签收分别记录。下文rc.1／rc.2与早期数字只描述对应历史基线。
+> 环境首次核验：2026-09-16。本文保留按日期记录的开发经验；rc.x、早期存档格式和旧测试数字只描述对应历史基线。当前版本以 [Game/project.godot](../Game/project.godot) 和 [Releases](https://github.com/henjicc/yipiantian/releases) 为准。
 
 ## Godot 安装与日常入口
 
@@ -9,8 +9,10 @@
 - 本机桌面已创建 **我有一片田 - Godot** 快捷方式，直接打开正式 `Game/` 工程。它属于本机入口；换电脑使用 README 命令或重新创建快捷方式。
 - Windows x86_64 的 debug / release 模板安装在 `%USERPROFILE%/AppData/Roaming/Godot/export_templates/4.7.2.stable/`，未安装其他平台模板。引擎与模板来自 [官方下载页](https://godotengine.org/download/windows/) 及 [对应发布](https://github.com/godotengine/godot-builds/releases/tag/4.7.2-stable)，两个下载包均通过该发布 `SHA512-SUMS.txt` 校验。
 - 本机软件路径只记在本文，工程启动脚本通过用户目录和根 [.godot-version](../.godot-version) 定位，不把账号路径写死进游戏。换位置时传 `-GodotPath` 或设置环境变量 `GODOT_EXE`，精确版本不符时入口拒绝执行。
-- 标准版包含脚本编辑器、调试器和 CLI，可直接开始；当前无需 .NET SDK、C++ 工具链、Godot MCP、联网账号或 LLM API Key。
-- 日常执行根 [README](../README.md) 的 Editor / Run / Import / ExportWindows 入口。导出结果为 `.local/builds/windows/Farm.exe` 与 `Farm.pck`，两者一起保留；不要只搬 exe。程序已使用正式青菜图标，当前未签名，正式发行打包由5.2处理。
+- 标准版包含脚本编辑器、调试器和 CLI，打开编辑器及导入无需 .NET SDK 或 AI 服务。`Run` 和 `ExportWindows` 会编译 Windows 桌面组件，开发机需 CMake、Visual Studio 2022 C++ Build Tools 与 Windows SDK；玩家无需这些制作工具。
+- 从仓库根目录调用 `pwsh -NoProfile -File scripts/godot.ps1 <Editor|Import|Run|ExportWindows>`。导出结果为 `.local/builds/windows/` 下的 `Farm.exe`、`Farm.pck` 与 `FarmDesktop.exe`，三个文件应一起保留。正式发行从固定提交调用 `scripts/package-release.ps1`，或手动触发 [Windows 发行工作流](../.github/workflows/release-windows.yml)；发行附件与源码仓库分开。
+- Windows 图标有两处配置：`Game/project.godot` 的 `config/windows_native_icon` 用于运行时任务栏，`Game/export_presets.cfg` 的 `application/icon` 用于导出程序，均指向包含 16～256 像素尺寸的 `Game/art/ui/game-icon.ico`。从现有 PNG 重建时可运行 `magick Game/art/ui/game-icon.png -define icon:auto-resize=256,128,64,48,32,16 Game/art/ui/game-icon.ico`；只改通用 `config/icon` 不会更新 Windows 原生图标。
+- `.local/builds/` 与 `Game/.godot/` 可从源码重建。本地发行候选的 `source/` 是逐版独立构建副本；确认包、ZIP、校验和及 `evidence/` 完整后，可在**新候选构建时**使用 `-PruneBuildSource` 仅移除该次副本并保留记录。历史包与证据逐项核对后再清理；`ArtSource/` 和 `制作留档/` 可能含唯一资料，不当作缓存。
 
 ## 工程基线与验证边界
 
@@ -22,10 +24,10 @@
 - Debug 游戏点击右上角时钟可展开时间滑块，范围 00:00–23:59；拖动同步更新时钟与昼夜光照，点击“恢复实时”回到系统时间，“收起”只关闭面板。预览不改系统时间、作物生长或存档，重启恢复实时。
 - 本次仅运行 `tests/debug_time_preview_test.gd` 的原生场景定向检查，覆盖真实时钟点击、滑块拖动、自由镜头输入隔离、日夜变化、恢复实时和开发全屏；通过后观察正午／夜间截图，并实际验证旧实例关闭与新实例就绪。未重跑全场景、资产、性能或旧档测试。复核入口：`./scripts/godot.ps1 -Action Run -ExtraArgs @('--script', (Join-Path $PWD 'tests/debug_time_preview_test.gd'), '--', '--dev-preview')`。
 
-- `Game/project.godot` 使用 GDScript 标准版，Forward+ / Vulkan，1280×720 可调整普通窗口；已接入六田两作物三阶段、江南院落、中文界面与聚焦镜头；本轮改为96格独立状态并重做光影构图，尚未冻结新候选。
+- 2026-09-17 的历史基线：`Game/project.godot` 使用 GDScript 标准版，Forward+ / Vulkan，当时为1280×720可调整普通窗口；当轮改为96格独立状态并重做光影构图。当前配置与玩法请直接检查工程，不沿用这组早期数字。
 - 模型交接采用显式 GLB；项目关闭 `.blend` 自动导入，编辑源文件保留在 `ArtSource/`。
 - 已核验版本、完成资源导入和 Windows x86_64 release 导出，过程退出码为 0。工程直接运行、导出后的独立程序均以 Forward+ / Vulkan 在 RTX 4090 上启动，并在指定迭代数后正常退出，日志无错误。本地日志为 `.local/logs/godot-run.log`、`godot-player.log`；仅证明空工程启动与导出链路可用，不代表画面、窗口交互、玩法或性能验收。
-- 未配置CI或第三方测试框架。本轮纯headless `farm_state_test.gd` 237项、`farm_store_test.gd` 289项、`decoration_state_test.gd` 47项均0失败；覆盖逐格隔离、v1/v2迁移、原件留存、坏档和写入失败。实景回归、普通发行包和性能随本轮另验，不复用旧数字。
+- 当轮尚未配置 CI 或第三方测试框架。纯 headless `farm_state_test.gd` 237项、`farm_store_test.gd` 289项、`decoration_state_test.gd` 47项均0失败；覆盖当时的逐格隔离、v1/v2迁移、原件留存、坏档和写入失败。实景回归、普通发行包和性能在各自版本另验，不复用旧数字。
 - 历史原型 Godot 4.7.2 / RTX 4090 的输入路径已验证点田、GUI 返回、拖动不误选、失焦取消、快速换田、恢复微调和紧凑窗口布局。普通 Windows release 随后另做三次真实进程的播种／浇水、关闭、离线成熟、收获和再次重启，隔离主档保留空田与一篮收获，三个进程均退出0；这是存档闭环证据，不代表完整内容或低配性能通过。
 - 旧 `Game/` Unity 工程、`.local/unity-validation/`、`.local/foundation/` 与根 Unity 日志已按用户要求删除。Unity / Hub 软件保留，当前工程不再依赖它们。
 
@@ -34,7 +36,7 @@
 | 工具 | 状态与用途 |
 |---|---|
 | Windows / 硬件 | Windows 10 Pro 19045，64 GB、RTX 4090；开发机不能代替低配测试 |
-| Git / PowerShell | Git 2.51.1、LFS 3.7.1、PowerShell 7；仓库级 LFS 已配置，远端尚未指定 |
+| Git / PowerShell | Git 2.51.1、LFS 3.7.1、PowerShell 7；仓库级 LFS 已配置，远端为 `henjicc/yipiantian` |
 | 编辑代码 | Godot 内置脚本编辑器即可；VS Code 已安装，外部补全与断点未验证，不是开工前置条件 |
 | Blender | 5.2.2 LTS；官方 Lab MCP 1.0.3，独立 AI 工作区，见下文 |
 | Tripo | 插件 0.2.2 + CLI 0.4.0；青菜经 Blender 整理后已接入 Godot 原型；最终美术与性能验收待做 |
@@ -133,7 +135,7 @@ Godot 4.7.2 本次验证：headless 测试须显式设置根窗口 / Viewport �
 | Windows 截图接口失败 | Win10 19045 的 `SetIsBorderRequired / 0x80004002` 曾影响 WGC；Blender 可用其官方截图接口。普通发行游戏已由主代理在独立验证流程使用 DPI 感知的 GDI 客户区捕获成功，入口 `tests/native-game-window.ps1`，限定当前发行 exe 路径和已知 PID，并验证前台再点击；不要操作同名旧窗口。该经验不取消当前工具／技能自身的操作边界 |
 | 双屏坐标不一致 | 先用 DPI 感知的实际应用核对；2026-09-17 Godot 检测两屏均为 3840×2160，Windows DPI 为 144（150%），先前 2560×1440 属于缩放坐标，不能当作物理像素 |
 | PowerShell 长时间无输出 | 先用不加载个人 profile 的调用排查；本机 `login=false` 有效，未擅自修改用户 profile |
-| Git LFS 本地可用 | 已完成本地 clean / smudge 往返；真实模型与远端对象上传仍未验证，不等同云端备份成功 |
+| Git LFS 本地与远端取回 | 本地 clean / smudge 往返已通过；2026-09-23 GitHub 发行构建从远端检出 LFS 并逐一核对对象 SHA-256，证据见[构建记录](https://github.com/henjicc/yipiantian/actions/runs/35850639148) |
 
 Godot 命令依据：[CLI 文档](https://docs.godotengine.org/en/4.7/tutorials/editor/command_line_tutorial.html)；仓库边界依据：[版本控制文档](https://docs.godotengine.org/en/4.7/tutorials/best_practices/version_control_systems.html)。
 
