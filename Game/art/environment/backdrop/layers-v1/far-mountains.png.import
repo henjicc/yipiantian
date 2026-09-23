@@ -3,20 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://btdpbcslyhovw"
-path="res://.godot/imported/far-mountains.png-1d22be23ef366410c1a1fb5f3ae90184.ctex"
+path.bptc="res://.godot/imported/far-mountains.png-1d22be23ef366410c1a1fb5f3ae90184.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/environment/backdrop/layers-v1/far-mountains.png"
-dest_files=["res://.godot/imported/far-mountains.png-1d22be23ef366410c1a1fb5f3ae90184.ctex"]
+dest_files=["res://.godot/imported/far-mountains.png-1d22be23ef366410c1a1fb5f3ae90184.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -36,5 +37,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1

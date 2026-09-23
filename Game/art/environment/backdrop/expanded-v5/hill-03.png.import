@@ -3,20 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b78yfjdd8mjrg"
-path="res://.godot/imported/hill-03.png-4df94a839b27cb38bb5798fc06e1daf3.ctex"
+path.bptc="res://.godot/imported/hill-03.png-4df94a839b27cb38bb5798fc06e1daf3.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/environment/backdrop/expanded-v5/hill-03.png"
-dest_files=["res://.godot/imported/hill-03.png-4df94a839b27cb38bb5798fc06e1daf3.ctex"]
+dest_files=["res://.godot/imported/hill-03.png-4df94a839b27cb38bb5798fc06e1daf3.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -36,5 +37,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1

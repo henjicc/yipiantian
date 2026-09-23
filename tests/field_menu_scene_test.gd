@@ -169,7 +169,7 @@ func run() -> void:
 			var vertices: PackedVector3Array=mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 			for i: int in range(0,vertices.size(),maxi(1,vertices.size()/70)):
 				var sample: Vector2=scene.camera.unproject_position(mesh.to_global(vertices[i]))
-				if scene._scene_entry_at(sample)=="tool_"+id: visible_point=sample; break
+				if scene._scene_entry_at(sample)==("rest" if id=="rest" else "tool_"+id): visible_point=sample; break
 			if visible_point!=Vector2.INF: break
 		check(visible_point!=Vector2.INF,"Visible prop can be picked: "+id)
 		if visible_point!=Vector2.INF:
@@ -177,7 +177,7 @@ func run() -> void:
 			check(prop.find_children("*","MeshInstance3D",true,false)[0].material_overlay!=null,"Hover outlines only actual prop: "+id)
 			if id=="weed": await shot("hoe-hover")
 			await click(visible_point)
-			check(scene.selected_palette=="sow" if id=="sow" else scene.selected_tool==id,"Prop equips its corresponding action: "+id)
+			check((scene.selected_tool.is_empty() and scene._scene_entry_at(visible_point)=="rest") if id=="rest" else (scene.selected_palette=="sow" if id=="sow" else scene.selected_tool==id),"Prop follows its corresponding action contract: "+id)
 			scene.field_menu.dismiss(); scene._cancel_tool()
 	scene.field_menu.present_seeds(Vector2(1590,20))
 	await process_frame;await process_frame

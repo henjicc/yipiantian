@@ -4,16 +4,23 @@ extends Node3D
 const ROOT := "res://art/environment/archipelago/"
 const SURFACE = preload("res://scenes/environment/marsh_surface.gdshader")
 static var _sources: Dictionary = {}
+static var _shorelines: Resource
 var _tiers: Array[Node3D] = []
 var shoreline_points: PackedVector3Array = []
 var clump_count := 0
 
 func populate(island: Node3D, seed_value: int) -> void:
-	var bins: Dictionary = {}
-	_slice(island,bins)
-	var keys: Array = bins.keys()
-	keys.sort()
-	for key: int in keys: shoreline_points.append(bins[key])
+	if _shorelines == null and ResourceLoader.exists("res://art/environment/islets/shorelines.tres"):
+		_shorelines = load("res://art/environment/islets/shorelines.tres")
+	var key: String = shore_key(island)
+	var baked: Dictionary = _shorelines.get_meta("points", {}) if _shorelines != null else {}
+	if baked.has(key): shoreline_points = baked[key]
+	else:
+		var bins: Dictionary = {}
+		_slice(island,bins)
+		var keys: Array = bins.keys()
+		keys.sort()
+		for bin_id: int in keys: shoreline_points.append(bins[bin_id])
 	if shoreline_points.is_empty():
 		push_error("No waterline found for "+str(get_parent().name))
 		return
@@ -51,6 +58,10 @@ func populate(island: Node3D, seed_value: int) -> void:
 			_batch(group,species,tier,placements[species])
 	for species: String in placements: clump_count += placements[species].size()
 	set_low_detail(true)
+
+
+func shore_key(island: Node3D) -> String:
+	return "%s@%.4f" % [island.scene_file_path, to_local(Vector3(0,-.25,0)).y]
 
 func populate_lake(shore_expansion: Vector2=Vector2.ZERO) -> void:
 	for child: Node in get_children(): child.free()

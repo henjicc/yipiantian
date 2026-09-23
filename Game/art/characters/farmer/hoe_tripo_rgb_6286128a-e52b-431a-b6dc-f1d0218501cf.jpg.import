@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://31le7gd2xw0o"
-path="res://.godot/imported/hoe_tripo_rgb_6286128a-e52b-431a-b6dc-f1d0218501cf.jpg-47139034c93c045a88ce3efb31183ff2.ctex"
+path.bptc="res://.godot/imported/hoe_tripo_rgb_6286128a-e52b-431a-b6dc-f1d0218501cf.jpg-47139034c93c045a88ce3efb31183ff2.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "23543d0c74b81416bf2c7282436ada1b"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/characters/farmer/hoe_tripo_rgb_6286128a-e52b-431a-b6dc-f1d0218501cf.jpg"
-dest_files=["res://.godot/imported/hoe_tripo_rgb_6286128a-e52b-431a-b6dc-f1d0218501cf.jpg-47139034c93c045a88ce3efb31183ff2.ctex"]
+dest_files=["res://.godot/imported/hoe_tripo_rgb_6286128a-e52b-431a-b6dc-f1d0218501cf.jpg-47139034c93c045a88ce3efb31183ff2.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1

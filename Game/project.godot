@@ -19,6 +19,7 @@ config/windows_native_icon="res://art/ui/game-icon.ico"
 
 [display]
 
+window/energy_saving/keep_screen_on=false
 window/size/viewport_width=1600
 window/size/viewport_height=900
 window/size/window_width_override=1600
@@ -37,11 +38,12 @@ theme/custom_font="res://art/ui/fonts/汇文明朝体.ttf"
 
 [rendering]
 
-lights_and_shadows/directional_shadow/size=8192
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality=5
-environment/ssao/quality=3
-environment/ssao/half_size=false
-anti_aliasing/quality/msaa_3d=2
+lights_and_shadows/directional_shadow/size=2048
+lights_and_shadows/positional_shadow/atlas_size=2048
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=2
+environment/ssao/quality=1
+environment/ssao/half_size=true
+anti_aliasing/quality/msaa_3d=1
 
 [shader_globals]
 

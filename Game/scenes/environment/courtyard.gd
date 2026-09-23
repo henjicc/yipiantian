@@ -42,6 +42,7 @@ var layout_obstacles: Dictionary = {}
 var decoration_data: Dictionary = {}
 var prepared_decorations: Dictionary = {}
 var layout_probe: bool = false
+var bake_static_data: bool = false
 var _terrain_refreshing: bool=false
 var _terrain_pending: bool=false
 var _water_pending: bool=false
@@ -109,6 +110,7 @@ func _refresh_shore_obstacles() -> void:
 		else: layout_obstacles.erase(String(child.name))
 
 func _ready() -> void:
+	var started: int = Time.get_ticks_msec()
 	_rng.seed = 32026
 	_build_ground()
 	_build_architecture()
@@ -123,6 +125,7 @@ func _ready() -> void:
 	neighbors.name = "NeighborIslets"
 	neighbors.shore_expansion=plan.scenery_expansion.max(plan.shore_expansion)
 	add_child(neighbors)
+	print("STARTUP neighbors_ms=", Time.get_ticks_msec() - started)
 	_shore_sources.append_array(neighbors.waterline_sources())
 	_build_plants()
 	_build_slots()
@@ -159,8 +162,13 @@ func _ready() -> void:
 	cover.name = "GroundCover"
 	add_child(cover)
 	cover.build(self)
+	print("STARTUP courtyard_geometry_ms=", Time.get_ticks_msec() - started)
 	var water_material: ShaderMaterial = _water.material_override
-	water_material.set_shader_parameter("shore_distance", WaterContacts.build(_shore_sources, _water.position.y))
+	var baked: Resource
+	if not bake_static_data and ResourceLoader.exists("res://art/environment/islets/default_water.res"):
+		baked = load("res://art/environment/islets/default_water.res")
+	var shore: Texture2D = baked if baked != null and baked.get_meta("layout", {}) == plan.snapshot() else WaterContacts.build(_shore_sources, _water.position.y)
+	water_material.set_shader_parameter("shore_distance", shore)
 	water_material.set_shader_parameter("shore_contacts_enabled", true)
 	_build_contact_shading()
 	var animals := CourtyardAnimals.new()
@@ -169,6 +177,7 @@ func _ready() -> void:
 	var door_tools := DoorTools.new()
 	door_tools.name = "DoorTools"
 	add_child(door_tools)
+	print("STARTUP courtyard_ready_ms=", Time.get_ticks_msec() - started)
 
 func _circulation_obstacles() -> Dictionary:
 	var result: Dictionary = {}

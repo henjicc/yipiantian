@@ -4,6 +4,7 @@ extends Node3D
 const PlantWind = preload("res://presentation/plant_wind.gd")
 const ROOT := "res://art/environment/"
 const FADE_SECONDS: float = 0.45
+var _last_visibility: float = -1.0
 var _camera: Camera3D
 var _groups: Array[Dictionary] = []
 var _meshes: Array[MeshInstance3D] = []
@@ -217,7 +218,9 @@ func _process(delta: float) -> void:
 			var phase: float = _motion_time*.72+index*1.7
 			patch.node.position = patch.origin + Vector3(sin(phase)*.014,sin(phase*.8)*.012,cos(phase)*.009)
 			patch.node.rotation.z = sin(phase*.8)*.012
-	for mesh: MeshInstance3D in _meshes:
-		mesh.set_instance_shader_parameter("foreground_visibility",smoothstep(0.0,1.0,_amount))
+	if _amount != _last_visibility:
+		_last_visibility = _amount
+		for mesh: MeshInstance3D in _meshes:
+			mesh.set_instance_shader_parameter("foreground_visibility",smoothstep(0.0,1.0,_amount))
 	# World-space scenery uses normal depth occlusion and frustum clipping.
 	# Never hide a whole bank because a projected sample crosses the farm.

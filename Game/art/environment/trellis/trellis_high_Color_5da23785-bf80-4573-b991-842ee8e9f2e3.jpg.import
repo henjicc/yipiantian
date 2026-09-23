@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d52xialm0ffb"
-path="res://.godot/imported/trellis_high_Color_5da23785-bf80-4573-b991-842ee8e9f2e3.jpg-d675e198b5c9c332262dfcd35fe9fc3c.ctex"
+path.bptc="res://.godot/imported/trellis_high_Color_5da23785-bf80-4573-b991-842ee8e9f2e3.jpg-d675e198b5c9c332262dfcd35fe9fc3c.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "399ac1490eb432e4ce38f1a2f5bbd10d"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/environment/trellis/trellis_high_Color_5da23785-bf80-4573-b991-842ee8e9f2e3.jpg"
-dest_files=["res://.godot/imported/trellis_high_Color_5da23785-bf80-4573-b991-842ee8e9f2e3.jpg-d675e198b5c9c332262dfcd35fe9fc3c.ctex"]
+dest_files=["res://.godot/imported/trellis_high_Color_5da23785-bf80-4573-b991-842ee8e9f2e3.jpg-d675e198b5c9c332262dfcd35fe9fc3c.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1

@@ -10,7 +10,7 @@ extends Node3D
 ## Contacts are found from real vertex positions, so moving or replacing a module
 ## moves its pool with it. Decoration only: no collision, no farm state.
 
-const RESOLUTION := 1024
+const RESOLUTION := 512
 const ORIGIN := Vector2(-8.0, -8.8)
 const EXTENT := Vector2(15.2, 16.0)
 const CELL := 0.20

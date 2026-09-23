@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b52i6ejhahfha"
-path="res://.godot/imported/stir_fry_Color_cc8adf3c-faa1-405f-b6c2-99f9e8ee5767.jpg-7965d23d8ef8ebe805cc65f45710e52b.ctex"
+path.bptc="res://.godot/imported/stir_fry_Color_cc8adf3c-faa1-405f-b6c2-99f9e8ee5767.jpg-7965d23d8ef8ebe805cc65f45710e52b.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "4b75784dcebfecc58c70dc9b4ce62796"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/environment/kitchen/stir_fry_Color_cc8adf3c-faa1-405f-b6c2-99f9e8ee5767.jpg"
-dest_files=["res://.godot/imported/stir_fry_Color_cc8adf3c-faa1-405f-b6c2-99f9e8ee5767.jpg-7965d23d8ef8ebe805cc65f45710e52b.ctex"]
+dest_files=["res://.godot/imported/stir_fry_Color_cc8adf3c-faa1-405f-b6c2-99f9e8ee5767.jpg-7965d23d8ef8ebe805cc65f45710e52b.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=1024
 detect_3d/compress_to=1

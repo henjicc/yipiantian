@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cd4661of5qvb4"
-path="res://.godot/imported/bamboo_high_Color_8f2acec3-9488-4a67-9c87-daa3b3305722.jpg-3474948388f0de7ae67fb7956e96f9c6.ctex"
+path.bptc="res://.godot/imported/bamboo_high_Color_8f2acec3-9488-4a67-9c87-daa3b3305722.jpg-3474948388f0de7ae67fb7956e96f9c6.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "711f3c70be8f9a32975801de8c24d090"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/environment/bamboo/bamboo_high_Color_8f2acec3-9488-4a67-9c87-daa3b3305722.jpg"
-dest_files=["res://.godot/imported/bamboo_high_Color_8f2acec3-9488-4a67-9c87-daa3b3305722.jpg-3474948388f0de7ae67fb7956e96f9c6.ctex"]
+dest_files=["res://.godot/imported/bamboo_high_Color_8f2acec3-9488-4a67-9c87-daa3b3305722.jpg-3474948388f0de7ae67fb7956e96f9c6.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1

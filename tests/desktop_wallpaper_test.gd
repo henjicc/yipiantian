@@ -65,7 +65,7 @@ func _run() -> void:
 				if not controller.interacting and not controller.busy: break
 			check(not controller.interacting and Engine.max_fps == 30, "Desktop observation resumes at 30 fps")
 		scene.window_activity.set_wallpaper_visible(false)
-		check(Engine.max_fps == 2, "Covered wallpaper keeps settlement alive at 2 fps")
+		check(scene.window_activity.is_suspended() and paused and not RenderingServer.is_render_loop_enabled(), "Covered wallpaper suspends scene and rendering, host remains responsive")
 		controller.restore()
 		for tick: int in 100:
 			await create_timer(0.1).timeout

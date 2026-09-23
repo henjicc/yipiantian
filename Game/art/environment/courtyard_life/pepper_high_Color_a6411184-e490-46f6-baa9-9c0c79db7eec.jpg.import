@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bfqudasytpeem"
-path="res://.godot/imported/pepper_high_Color_a6411184-e490-46f6-baa9-9c0c79db7eec.jpg-ca7c7b03ee0ee2664ad6429e4cb8a35f.ctex"
+path.bptc="res://.godot/imported/pepper_high_Color_a6411184-e490-46f6-baa9-9c0c79db7eec.jpg-ca7c7b03ee0ee2664ad6429e4cb8a35f.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "096cf19b3c9ff89997f1f3d7438697f2"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/environment/courtyard_life/pepper_high_Color_a6411184-e490-46f6-baa9-9c0c79db7eec.jpg"
-dest_files=["res://.godot/imported/pepper_high_Color_a6411184-e490-46f6-baa9-9c0c79db7eec.jpg-ca7c7b03ee0ee2664ad6429e4cb8a35f.ctex"]
+dest_files=["res://.godot/imported/pepper_high_Color_a6411184-e490-46f6-baa9-9c0c79db7eec.jpg-ca7c7b03ee0ee2664ad6429e4cb8a35f.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=1024
 detect_3d/compress_to=1

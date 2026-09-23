@@ -72,6 +72,14 @@ func _test_copy_isolation() -> void:
 	var invalid: Dictionary=candidate.snapshot();invalid.inventory.greens=-1
 	var valid: Dictionary=candidate.snapshot()
 	_expect(not candidate.restore_snapshot(invalid) and candidate.snapshot()==valid,"Copy does not bypass validation of later external snapshots")
+	source.accept(candidate)
+	_expect(source.snapshot() == candidate.snapshot(), "Accepted transaction retains every state field")
+	candidate.harvest("field_06", "cell_06", START+99999)
+	_expect(source.snapshot() == valid, "Later candidate edits cannot alter accepted live state")
+	var gradual := Farm.new(START)
+	_expect(gradual.settle(START + 1).visual_changed.is_empty(), "Sub-stage growth does not request a scene rebuild")
+	var advanced: Dictionary = gradual.settle(START + 99999)
+	_expect(advanced.visual_changed.size() == 3 and not advanced.visual_changed.has("field_03"), "Only crops crossing a visual stage refresh")
 
 func _test_mixed_cells() -> void:
 	var farm := Farm.new(START)

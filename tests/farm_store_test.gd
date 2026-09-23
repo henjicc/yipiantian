@@ -35,7 +35,7 @@ func _run() -> void:
 	_expect(FileAccess.file_exists(folder.path_join(Store.MAIN)), "Main file exists")
 	farm.sow("field_01", "cell_06", "greens", 10000.0)
 	farm.water("field_01", "cell_06", 10000.0)
-	_expect(store.save(farm.snapshot(), Decorations.new().snapshot()).ok, "Sow and water snapshot is saved")
+	_expect(store.save_state(farm, Decorations.new()).ok, "Owner transaction saves sow and water through the same durable path")
 	var reopened := Store.new(folder)
 	var loaded: Dictionary = reopened.load_state()
 	_expect(loaded.ok and loaded.farm == farm.snapshot(), "Roundtrip retains exact authoritative state")
@@ -50,7 +50,7 @@ func _run() -> void:
 	_expect(restored.farm.harvested.greens == 1 and restored.farm.fields.field_01.cells.cell_06.crop_id == "", "Reopen never reissues the collected basket")
 	_expect(again.load_state().farm == restored.farm, "Repeated loading does not initialize or reward again")
 	var before_stale: String = FileAccess.get_file_as_string(folder.path_join(Store.MAIN))
-	_expect(not store.save(farm.snapshot(), Decorations.new().snapshot()).ok, "A stale session refuses to overwrite newer on-disk state")
+	_expect(not store.save_state(farm, Decorations.new()).ok, "A stale owner transaction refuses to overwrite newer on-disk state")
 	_expect(FileAccess.get_file_as_string(folder.path_join(Store.MAIN)) == before_stale, "Stale write preserves main")
 	# A legal all-empty farm is not a missing save.
 	var empty := Farm.new(12000.0)

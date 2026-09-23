@@ -8,7 +8,7 @@ const PENDING: String = "settings.pending.json"
 const DEFAULTS: Dictionary = {
 	"master": 0.8, "music": 0.7, "effects": 0.8,
 	"fullscreen": false, "quality": "standard", "dof_enabled": true,
-	"resolution": "native", "sway_enabled": false, "sway_idle_seconds": 30.0,
+	"resolution": "1080", "sway_enabled": false, "sway_idle_seconds": 30.0,
 }
 var directory: String
 var _loaded: bool = false

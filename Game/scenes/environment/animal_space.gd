@@ -16,6 +16,7 @@ var bounds: Rect2
 var obstacles: Array[PackedVector2Array] = []
 var _obstacle_cells: Dictionary = {}
 var allowed := PackedVector2Array()
+var _boundary_cells: Dictionary = {}
 var points := PackedVector2Array()
 var resting := PackedVector2Array()
 var radius: float
@@ -31,6 +32,15 @@ func configure(area: Rect2, clearance: float, polygon: PackedVector2Array = Pack
 	floor_origin=area.position
 	radius = clearance
 	allowed = polygon
+	_boundary_cells.clear()
+	for edge: int in allowed.size():
+		var a: Vector2 = allowed[edge]
+		var b: Vector2 = allowed[(edge + 1) % allowed.size()]
+		for y: int in range(floori(minf(a.y,b.y)),floori(maxf(a.y,b.y))+1):
+			for x: int in range(floori(minf(a.x,b.x)),floori(maxf(a.x,b.x))+1):
+				var cell := Vector2i(x,y)
+				if not _boundary_cells.has(cell): _boundary_cells[cell] = []
+				_boundary_cells[cell].append(edge)
 	grid.region = Rect2i(Vector2i.ZERO, Vector2i(ceil(area.size.x / CELL), ceil(area.size.y / CELL)))
 	grid.cell_size = Vector2.ONE * CELL
 	grid.offset = area.position
@@ -107,21 +117,27 @@ func contains(p: Vector2) -> bool:
 	return true
 
 func clear_segment(a: Vector2, b: Vector2) -> bool:
+	if a == b: return contains(a)
 	var count: int = maxi(1, ceili(a.distance_to(b) / (CELL * .45)))
 	for i: int in range(count + 1):
 		if not contains(a.lerp(b, float(i) / count)): return false
-	for edge: int in allowed.size():
-		if Geometry2D.segment_intersects_segment(a, b, allowed[edge], allowed[(edge + 1) % allowed.size()]) != null:
-			return false
 	# Sampling alone can miss a narrow polygon tip. Such a route looks clear
 	# to the planner, but every small movement step stops at the same obstacle.
 	var candidates: Dictionary = {}
+	var boundary_edges: Dictionary = {}
 	var low: Vector2i = Vector2i(a.min(b).floor())
 	var high: Vector2i = Vector2i(a.max(b).floor())
 	for y: int in range(low.y, high.y + 1):
 		for x: int in range(low.x, high.x + 1):
+			for edge: int in _boundary_cells.get(Vector2i(x,y), []):
+				boundary_edges[edge] = true
 			for index: int in _obstacle_cells.get(Vector2i(x, y), []):
 				candidates[index] = true
+	# Spatial lookup only narrows candidates; exact intersections still reject
+	# narrow shore gaps that endpoint/grid sampling alone cannot detect.
+	for edge: int in boundary_edges:
+		if Geometry2D.segment_intersects_segment(a,b,allowed[edge],allowed[(edge+1)%allowed.size()]) != null:
+			return false
 	for index: int in candidates:
 		var polygon: PackedVector2Array = obstacles[index]
 		for edge: int in polygon.size():

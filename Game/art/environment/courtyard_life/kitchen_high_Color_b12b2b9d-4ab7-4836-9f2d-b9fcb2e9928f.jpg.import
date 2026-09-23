@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cnbqgn0pkj2ii"
-path="res://.godot/imported/kitchen_high_Color_b12b2b9d-4ab7-4836-9f2d-b9fcb2e9928f.jpg-c4926bc63782fb46c10e4add2002392b.ctex"
+path.bptc="res://.godot/imported/kitchen_high_Color_b12b2b9d-4ab7-4836-9f2d-b9fcb2e9928f.jpg-c4926bc63782fb46c10e4add2002392b.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "15d1405b4ea511e933f8087d26f81a5d"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/environment/courtyard_life/kitchen_high_Color_b12b2b9d-4ab7-4836-9f2d-b9fcb2e9928f.jpg"
-dest_files=["res://.godot/imported/kitchen_high_Color_b12b2b9d-4ab7-4836-9f2d-b9fcb2e9928f.jpg-c4926bc63782fb46c10e4add2002392b.ctex"]
+dest_files=["res://.godot/imported/kitchen_high_Color_b12b2b9d-4ab7-4836-9f2d-b9fcb2e9928f.jpg-c4926bc63782fb46c10e4add2002392b.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=1024
 detect_3d/compress_to=1

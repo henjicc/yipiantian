@@ -11,6 +11,7 @@ var _islets: Array[Dictionary] = []
 var _low_quality: bool = false
 var _lake_plants: Node3D
 var shore_expansion:=Vector2.ZERO
+var _last_camera_position := Vector3.INF
 
 func _ready() -> void:
 	_add("WillowNeighbor", "willow", Vector3(-16,-.68,-3), 28)
@@ -79,23 +80,29 @@ func preview_expansion(value: Vector2) -> void:
 		var at: Vector3=entry.base_position
 		entry.node.position=at-Vector3.RIGHT*value.x*(1.0-smoothstep(-10.0,-4.0,at.x))
 	_lake_plants.populate_lake(value)
-	_lake_plants.set_low_detail(_low_quality)
+	_lake_plants.set_low_detail(true)
+	_last_camera_position = Vector3.INF
+	_process(0.0)
 
 func _process(_delta: float) -> void:
 	var camera: Camera3D = get_viewport().get_camera_3d()
 	if camera == null: return
+	if camera.global_position.is_equal_approx(_last_camera_position): return
+	_last_camera_position = camera.global_position
 	for entry: Dictionary in _islets:
 		var distance: float = camera.global_position.distance_to(entry.node.global_position)
 		# Hysteresis prevents tier flicker when orbiting across the boundary.
-		var distant: bool = distance > (45.0 if entry.distant else 52.0)
+		var distant: bool = distance > (28.0 if entry.distant else 34.0)
 		entry.high.visible = not (_low_quality or distant)
 		entry.low.visible = _low_quality or distant
 		entry.distant = distant
-		if entry.has("plants"): entry.plants.set_low_detail(_low_quality or distant)
+		if entry.has("plants"): entry.plants.set_low_detail(_low_quality or distance > 24.0)
 
 func set_low_detail_enabled(enabled: bool) -> void:
 	_low_quality = enabled
-	if _lake_plants != null: _lake_plants.set_low_detail(enabled)
+	_last_camera_position = Vector3.INF
+	# Open-water rosettes occupy only a few pixels even in the nearest cove.
+	if _lake_plants != null: _lake_plants.set_low_detail(true)
 	_process(0.0)
 
 func waterline_sources() -> Array[Node3D]:

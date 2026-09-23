@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://07vgc6eo0ts8"
-path="res://.godot/imported/house_high_Color_d74fa707-1ebe-455f-ade3-b068dd50f704.jpg-ed69bebbe737c4090a5b3480913b6f9a.ctex"
+path.bptc="res://.godot/imported/house_high_Color_d74fa707-1ebe-455f-ade3-b068dd50f704.jpg-ed69bebbe737c4090a5b3480913b6f9a.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "d7c22723988eda7f304ae8b3f45d5fc1"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/environment/house/house_high_Color_d74fa707-1ebe-455f-ade3-b068dd50f704.jpg"
-dest_files=["res://.godot/imported/house_high_Color_d74fa707-1ebe-455f-ade3-b068dd50f704.jpg-ed69bebbe737c4090a5b3480913b6f9a.ctex"]
+dest_files=["res://.godot/imported/house_high_Color_d74fa707-1ebe-455f-ade3-b068dd50f704.jpg-ed69bebbe737c4090a5b3480913b6f9a.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1

@@ -51,10 +51,9 @@ func configure(camera: Camera3D, fields: Array, environment: Node3D, decorations
 	_attributes.dof_blur_near_transition = 2.0
 	_attributes.dof_blur_far_transition = 5.0
 	_camera.attributes = _attributes
-	# Circular, high-sample DOF avoids the coarse polygon pattern on near leaves.
+	# Keep circular bokeh; sampling cost is selected with the quality preset.
 	# Jitter is disabled: the moving foliage already supplies temporal variation.
 	RenderingServer.camera_attributes_set_dof_blur_bokeh_shape(RenderingServer.DOF_BOKEH_CIRCLE)
-	RenderingServer.camera_attributes_set_dof_blur_quality(RenderingServer.DOF_BLUR_QUALITY_HIGH, false)
 	_foreground = CameraForeground.new()
 	_foreground.name = "CameraForeground"
 	_camera.add_child(_foreground)
@@ -127,16 +126,19 @@ func _apply_quality() -> void:
 	_environment.get_node("PlayerPlants").set_low_detail(_quality=="low")
 	_environment.get_node("NeighborIslets").set_low_detail_enabled(_quality == "low")
 	_environment.get_node("LivingDetails").set_lamp_shadows(_quality != "low")
-	# Sun shadows and selected crop detail stay intact at every quality level.
-	# Low quality removes the decorative foreground without changing sample count.
-	if _quality == "low" and _foreground != null:
-		_foreground.set_overview_visible(false)
-	# Keep the pipeline sample count fixed across presets. Changing MSAA forces
-	# material pipeline recompilation; low still reduces geometry, DOF and lighting.
-	_camera.get_viewport().msaa_3d = Viewport.MSAA_4X
+	# Preserve the foreground composition. High remains an explicit costlier choice.
+	var high: bool = _quality == "high"
+	var low: bool = _quality == "low"
+	_camera.get_viewport().msaa_3d = Viewport.MSAA_4X if high else Viewport.MSAA_2X
+	_camera.get_viewport().positional_shadow_atlas_size = 4096 if high else (1024 if low else 2048)
+	RenderingServer.directional_shadow_atlas_set_size(4096 if high else (1024 if low else 2048), false)
+	RenderingServer.positional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_LOW)
+	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM if high else RenderingServer.SHADOW_QUALITY_SOFT_LOW)
+	RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_MEDIUM if high else RenderingServer.ENV_SSAO_QUALITY_LOW, not high, 0.5, 2, 50.0, 300.0)
+	RenderingServer.camera_attributes_set_dof_blur_quality(RenderingServer.DOF_BLUR_QUALITY_HIGH if high else RenderingServer.DOF_BLUR_QUALITY_MEDIUM, false)
 	var world_environment: Environment = _camera.get_world_3d().environment
 	if world_environment != null:
-		world_environment.ssil_enabled = _quality != "low"
+		world_environment.ssil_enabled = high
 	_indirect_lighting.set_enabled(_quality == "high")
 
 
@@ -231,7 +233,7 @@ func _process(delta: float) -> void:
 	var inspecting: bool = _camera.get("free_view") == true and not photo_mode
 	var constructing: bool=_camera.get("construction_framing")==true
 	_construction_clear=move_toward(_construction_clear,1.0 if constructing else 0.0,delta/.7)
-	var framing: bool = not inspecting and not constructing and not is_instance_valid(_neighbor) and not is_instance_valid(_target) and not _decorations.active and _quality != "low"
+	var framing: bool = not inspecting and not constructing and not is_instance_valid(_neighbor) and not is_instance_valid(_target) and not _decorations.active
 	_foreground.set_overview_visible(framing)
 	var allowed: bool = not inspecting and _dof_enabled and _quality != "low" and _dof_strength > 0.0
 	var effect_active: bool = allowed and not _decorations.active

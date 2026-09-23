@@ -21,6 +21,8 @@ LONG_PTR old_style = 0, old_ex_style = 0;
 RECT old_rect{}, monitor_rect{};
 std::wstring monitor_name;
 bool attached = false, running = true, locked = false, was_visible = false;
+bool display_off = false;
+bool visibility_dirty = true;
 bool styles_saved = false;
 NOTIFYICONDATAW tray{};
 UINT taskbar_created = 0;
@@ -39,6 +41,16 @@ POINT last_click{};
 ULONGLONG last_click_time = 0;
 int last_click_button = 0;
 struct PointerButton { POINT point; int button; bool pressed; double factor; int flags; };
+void CALLBACK visibility_event(HWINEVENTHOOK, DWORD event, HWND hwnd, LONG object, LONG child, DWORD, DWORD) {
+    if (event == EVENT_SYSTEM_FOREGROUND || event == EVENT_SYSTEM_MINIMIZESTART || event == EVENT_SYSTEM_MINIMIZEEND) {
+        visibility_dirty = true;
+        return;
+    }
+    if (object != OBJID_WINDOW || child != CHILDID_SELF || !hwnd || hwnd == helper) return;
+    if (event != EVENT_OBJECT_SHOW && event != EVENT_OBJECT_HIDE && event != EVENT_OBJECT_DESTROY
+        && event != EVENT_OBJECT_LOCATIONCHANGE && event != EVENT_OBJECT_CLOAKED && event != EVENT_OBJECT_UNCLOAKED) return;
+    if (event == EVENT_OBJECT_DESTROY || GetAncestor(hwnd, GA_ROOT) == hwnd) visibility_dirty = true;
+}
 int modifiers() {
     return ((GetAsyncKeyState(VK_SHIFT)&0x8000) ? 1 : 0)
         | ((GetAsyncKeyState(VK_CONTROL)&0x8000) ? 2 : 0)
@@ -217,7 +229,7 @@ BOOL CALLBACK subtract_window(HWND hwnd, LPARAM data) {
     return TRUE;
 }
 void visibility() {
-    bool visible = !locked;
+    bool visible = !locked && !display_off;
     if (visible) {
         Coverage coverage{CreateRectRgnIndirect(&monitor_rect)};
         EnumWindows(subtract_window, reinterpret_cast<LPARAM>(&coverage));
@@ -228,12 +240,20 @@ void visibility() {
             auto region = reinterpret_cast<RGNDATA *>(buffer.data());
             auto rects = reinterpret_cast<RECT *>(region->Buffer);
             for (DWORD i=0; i<region->rdh.nCount; ++i) area += static_cast<long long>(rects[i].right-rects[i].left)*(rects[i].bottom-rects[i].top);
-            const long long total = static_cast<long long>(monitor_rect.right-monitor_rect.left)*(monitor_rect.bottom-monitor_rect.top);
-            visible = area > total/20;
+            // Any visible sliver must keep drawing. The old 5% threshold can
+            // freeze a still-visible strip along the edge of another window.
+            visible = area > 0;
         }
         DeleteObject(coverage.visible);
     }
-    if (visible != was_visible) { was_visible = visible; emit(visible ? "VISIBLE" : "COVERED"); }
+    if (visible != was_visible) {
+        was_visible = visible;
+        if (!visible) {
+            icons_valid = false; captured_buttons = 0; passed_buttons = 0;
+            pointer_available = false; emit("LEAVE");
+        }
+        emit(visible ? "VISIBLE" : "COVERED");
+    }
 }
 void add_tray() {
     tray.cbSize = sizeof(tray); tray.hWnd = helper; tray.uID = 1;
@@ -253,7 +273,7 @@ void request_restore(bool quit) {
     }
 }
 bool desktop_background(POINT point, bool dragging = false) {
-    if (!attached || locked || !PtInRect(&monitor_rect, point)) return false;
+    if (!attached || locked || display_off || !was_visible || !PtInRect(&monitor_rect, point)) return false;
     HWND hit = WindowFromPoint(point);
     if (hit != game && hit != desktop && hit != icons && !IsChild(icons, hit)) return false;
     if (!icons_valid || GetTickCount64()-icons_sampled > 1000) return false;
@@ -375,6 +395,15 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wp, LPARAM lp) {
     } else if (message == WM_WTSSESSION_CHANGE) {
         if (wp == WTS_SESSION_LOCK) locked = true;
         if (wp == WTS_SESSION_UNLOCK) locked = false;
+        if (attached) visibility();
+    } else if (message == WM_POWERBROADCAST && wp == PBT_POWERSETTINGCHANGE) {
+        const auto setting = reinterpret_cast<const POWERBROADCAST_SETTING *>(lp);
+        if (setting && setting->PowerSetting == GUID_SESSION_DISPLAY_STATUS && setting->DataLength == sizeof(DWORD)) {
+            DWORD state = 0; CopyMemory(&state, setting->Data, sizeof(state));
+            display_off = state == 0; // Dimmed is still visible.
+            if (attached) visibility();
+        }
+        return TRUE;
     } else if (message == WM_DISPLAYCHANGE && attached) {
         if (!attach()) request_restore(false);
     } else if (message == WM_QUERYENDSESSION) { return TRUE;
@@ -414,11 +443,24 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     helper = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, cls.lpszClassName, L"我有一片田 · 桌面宿主", WS_POPUP, 0,0,0,0,nullptr,nullptr,instance,nullptr);
     taskbar_created = RegisterWindowMessageW(L"TaskbarCreated");
     WTSRegisterSessionNotification(helper, NOTIFY_FOR_THIS_SESSION);
+    HPOWERNOTIFY display_notification = RegisterPowerSettingNotification(helper, &GUID_SESSION_DISPLAY_STATUS, DEVICE_NOTIFY_WINDOW_HANDLE);
+    if (!display_notification) error("display_notification");
+    // Out-of-context callbacks run on this message-pumping thread. They only
+    // invalidate coverage; no foreign UI state or accessibility tree is read.
+    HWINEVENTHOOK visibility_hooks[] = {
+        SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, nullptr, visibility_event, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS),
+        SetWinEventHook(EVENT_SYSTEM_MINIMIZESTART, EVENT_SYSTEM_MINIMIZEEND, nullptr, visibility_event, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS),
+        SetWinEventHook(EVENT_OBJECT_DESTROY, EVENT_OBJECT_LOCATIONCHANGE, nullptr, visibility_event, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS),
+        SetWinEventHook(EVENT_OBJECT_CLOAKED, EVENT_OBJECT_UNCLOAKED, nullptr, visibility_event, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS)
+    };
+    bool visibility_events = true;
+    for (auto hook : visibility_hooks) visibility_events = visibility_events && hook != nullptr;
+    if (!visibility_events) emit("VISIBILITY_POLLING"); // Keep the responsive polling policy on registration failure.
     add_tray();
     if (!running || !attach()) running = false;
     ULONGLONG next_visibility = 0, next_pointer = 0, next_icons = 0;
     while (running && WaitForSingleObject(parent_process, 0) == WAIT_TIMEOUT) {
-        if (attached && GetTickCount64() >= next_icons) {
+        if (attached && was_visible && !locked && !display_off && GetTickCount64() >= next_icons) {
             refresh_icons(); next_icons=GetTickCount64()+100;
             std::string status = icons_valid ? "INPUT_READY " + std::to_string(icon_rects.size()) : "INPUT_UNAVAILABLE " + input_failure;
             if (status != input_status) { input_status=status; emit(status); }
@@ -443,25 +485,28 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
                 else { emit("ERROR command 87"); running = false; }
             }
         }
-        if (attached && GetTickCount64() >= next_visibility) {
-            next_visibility = GetTickCount64()+500;
+        if (attached && (visibility_dirty || GetTickCount64() >= next_visibility)) {
+            visibility_dirty = false;
             if (!owns_window()) { emit("ERROR window_lost 1400"); break; }
             if (!IsWindow(desktop) || GetParent(game) != desktop) {
                 // Bounded recovery. A failed recovery reveals the normal game instead.
                 if (!attach()) request_restore(false);
             }
-            if (attached) { visibility(); report_workarea(); }
+            if (attached) { visibility(); if (was_visible) report_workarea(); }
+            next_visibility = GetTickCount64() + ((!was_visible && visibility_events) ? 1000 : 100);
         }
-        if (attached && GetTickCount64() >= next_pointer) {
+        if (attached && was_visible && GetTickCount64() >= next_pointer) {
             next_pointer = GetTickCount64()+(interacting ? 8 : 33);
             sample_pointer();
         }
-        MsgWaitForMultipleObjects(1, &parent_process, FALSE, interacting ? 8 : 16, QS_ALLINPUT);
+        MsgWaitForMultipleObjects(1, &parent_process, FALSE, was_visible ? (interacting ? 8 : 33) : 50, QS_ALLINPUT);
     }
     if (styles_saved) restore(false);
     stop_mouse();
     Shell_NotifyIconW(NIM_DELETE, &tray);
     WTSUnRegisterSessionNotification(helper);
+    if (display_notification) UnregisterPowerSettingNotification(display_notification);
+    for (auto hook : visibility_hooks) if (hook) UnhookWinEvent(hook);
     DestroyWindow(helper);
     CloseHandle(parent_process);
     CoUninitialize();

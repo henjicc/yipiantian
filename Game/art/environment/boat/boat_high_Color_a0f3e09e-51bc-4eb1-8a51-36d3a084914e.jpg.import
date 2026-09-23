@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dkqgpnvp5aytn"
-path="res://.godot/imported/boat_high_Color_a0f3e09e-51bc-4eb1-8a51-36d3a084914e.jpg-7674319c9c27920c3c63a38bfe809d65.ctex"
+path.bptc="res://.godot/imported/boat_high_Color_a0f3e09e-51bc-4eb1-8a51-36d3a084914e.jpg-7674319c9c27920c3c63a38bfe809d65.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "16d34a709a08342274a5941cf665b4ed"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/environment/boat/boat_high_Color_a0f3e09e-51bc-4eb1-8a51-36d3a084914e.jpg"
-dest_files=["res://.godot/imported/boat_high_Color_a0f3e09e-51bc-4eb1-8a51-36d3a084914e.jpg-7674319c9c27920c3c63a38bfe809d65.ctex"]
+dest_files=["res://.godot/imported/boat_high_Color_a0f3e09e-51bc-4eb1-8a51-36d3a084914e.jpg-7674319c9c27920c3c63a38bfe809d65.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1

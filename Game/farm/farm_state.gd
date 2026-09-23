@@ -52,6 +52,17 @@ func copy() -> RefCounted:
 	result._data=_data.duplicate(true)
 	return result
 
+
+func accept(candidate: RefCounted) -> void:
+	# A transaction built by this state owner already obeys the schema. Keep the
+	# live owner's identity for editors, and isolate it from later candidate edits.
+	assert(candidate.get_script() == get_script())
+	_data = candidate._data.duplicate(true)
+
+
+func hud_state() -> Dictionary:
+	return {"harvested": _data.harvested.duplicate(), "inventory": _data.inventory.duplicate()}
+
 func set_season(id: String) -> bool:
 	if not Seasons.valid(id): return false
 	_data.season = id
@@ -201,8 +212,11 @@ func get_cell(field_id: String, cell_id: String) -> Dictionary:
 func settle(now_utc_seconds: float) -> Dictionary:
 	if not _valid_time(now_utc_seconds):
 		return _result(false, "invalid_time")
-	var changed: Array[String] = _settle_data(_data, now_utc_seconds)
-	return _result(true, "", changed)
+	var visual_changes: Array[String] = []
+	var changed: Array[String] = _settle_data(_data, now_utc_seconds, visual_changes)
+	var result: Dictionary = _result(true, "", changed)
+	result.visual_changed = visual_changes
+	return result
 
 
 func sow(field_id: String, cell_id: String, crop_id: String, now_utc_seconds: float) -> Dictionary:
@@ -244,7 +258,8 @@ func _act(action: String, field_id: String, cell_id: String, crop_id: String, no
 		return _result(false, "invalid_cell")
 	# Failed actions are atomic no-ops, including time. Periodic settle() is independent.
 	var candidate: Dictionary = _data.duplicate(true)
-	var changed: Array[String] = _settle_data(candidate, now_utc_seconds)
+	var visual_changes: Array[String] = []
+	var changed: Array[String] = _settle_data(candidate, now_utc_seconds, visual_changes)
 	var field: Dictionary = candidate.fields[field_id].cells[cell_id]
 	var reward_crop: String = ""
 	if action in ["weed","till"]:
@@ -281,10 +296,13 @@ func _act(action: String, field_id: String, cell_id: String, crop_id: String, no
 	if not changed.has(field_id):
 		changed.append(field_id)
 	_data = candidate
-	return _result(true, "", changed, reward_crop)
+	if not visual_changes.has(field_id): visual_changes.append(field_id)
+	var result: Dictionary = _result(true, "", changed, reward_crop)
+	result.visual_changed = visual_changes
+	return result
 
 
-func _settle_data(data: Dictionary, now_utc_seconds: float) -> Array[String]:
+func _settle_data(data: Dictionary, now_utc_seconds: float, visual_changes: Array[String] = []) -> Array[String]:
 	var changed: Array[String] = []
 	for field_id: String in data.fields:
 		for cell_id: String in data.fields[field_id].cells:
@@ -294,7 +312,10 @@ func _settle_data(data: Dictionary, now_utc_seconds: float) -> Array[String]:
 			var elapsed: float = now_utc_seconds - cell.last_settled_utc_seconds
 			if not cell.crop_id.is_empty():
 				var duration: float = Crops.definition(cell.crop_id).duration_seconds
+				var before: int = int(cell.growth_seconds >= duration * Crops.YOUNG_PROGRESS) + int(cell.growth_seconds >= duration)
 				cell.growth_seconds = minf(duration, cell.growth_seconds + elapsed)
+				var after: int = int(cell.growth_seconds >= duration * Crops.YOUNG_PROGRESS) + int(cell.growth_seconds >= duration)
+				if before != after and not visual_changes.has(field_id): visual_changes.append(field_id)
 			# Empty and mature cells also keep their latest rollback-safe baseline.
 			cell.last_settled_utc_seconds = now_utc_seconds
 			if not changed.has(field_id):

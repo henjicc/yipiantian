@@ -45,7 +45,8 @@ func _run() -> void:
 		for cell_index: int in Farm.CELL_IDS.size():
 			var cell: Dictionary = data.fields[Farm.FIELD_IDS[index]].cells[Farm.CELL_IDS[cell_index]]
 			cell.crop_id = "greens" if (index + cell_index) % 2 == 0 else "radish"
-			cell.growth_seconds = 1800.0 if cell.crop_id == "greens" else 5400.0
+			cell.ground = "ready"
+			cell.growth_seconds = Farm.Crops.definition(cell.crop_id).duration_seconds
 	var decorations = Decoration.new()
 	decorations.unlock(data.harvested)
 	decorations.place("pot", "ground_01", 0)
@@ -58,6 +59,8 @@ func _run() -> void:
 	scene.settings_store = load("res://settings/settings_store.gd").new(scene.store.directory.path_join("preferences"))
 	scene.clock = func() -> float: return now
 	root.add_child(scene)
+	# Stable observation cadence without stealing keyboard focus from the user.
+	if functional_only: scene.window_activity.set_wallpaper(true)
 	if not functional_only: root.grab_focus()
 	scene.atmosphere.set_preview_hour(12.0)
 	scene.window_activity.set_foreground_frame_limit(0 if uncapped else 60)
@@ -129,7 +132,7 @@ func _run() -> void:
 	_expect(scene.focus_detail.get_settings().dof_enabled, "Low quality retains the user's enabled DOF preference")
 	_expect(not scene.focus_detail.set_quality("invalid") and not scene.focus_detail.set_depth_of_field(true, NAN), "Invalid settings do not become presentation state")
 	scene.focus_detail.set_quality("standard")
-	_expect(root.msaa_3d == Viewport.MSAA_4X and scene.focus_detail.get_settings().dof_enabled, "Standard restores 4x MSAA and retained DOF preference")
+	_expect(root.msaa_3d == Viewport.MSAA_2X and scene.focus_detail.get_settings().dof_enabled, "Standard keeps 2x MSAA and retained DOF preference")
 	scene._begin_decoration()
 	await create_timer(0.85).timeout
 	_expect(scene.selected_field == -1 and not scene.camera.attributes.dof_blur_far_enabled and _field_bias(1) == 1.0, "Arrangement always returns to clear distance-responsive overview")

@@ -32,6 +32,7 @@ func _run() -> void:
 	initial.overview_mdeg = [43000.0,14000.0]
 	expect(scene.settings_store.save(initial).ok,"Overview preference written before game startup")
 	root.add_child(scene)
+	scene.window_activity.set_wallpaper(true)
 	scene.atmosphere.set_preview_hour(16.5)
 	await create_timer(1.0).timeout
 	if OS.get_cmdline_user_args().has("--fade-only"):
@@ -172,9 +173,12 @@ func finish(report: Dictionary) -> void:
 
 func fade_checks(frame: Node3D) -> void:
 	await shot("fade-01-visible.png")
-	for mode: String in ["quality", "inspection", "focus"]:
-		if mode == "quality": scene.focus_detail.set_quality("low")
-		elif mode == "inspection": scene._toggle_free_view()
+	scene.focus_detail.set_quality("low")
+	await create_timer(.6).timeout
+	expect(frame.visible, "Low quality preserves foreground composition")
+	scene.focus_detail.set_quality("standard")
+	for mode: String in ["inspection", "focus"]:
+		if mode == "inspection": scene._toggle_free_view()
 		else: scene._focus_field(0)
 		expect(frame.is_visible_in_tree(), mode + " keeps foreground visible when fade starts")
 		await create_timer(.15).timeout
@@ -184,18 +188,17 @@ func fade_checks(frame: Node3D) -> void:
 		root.get_texture().get_image().save_png(output.path_join("fade-02-"+mode+"-partial.png"))
 		await create_timer(.5).timeout
 		expect(not frame.visible, mode + " hides only after fade completes")
-		if mode == "quality": scene.focus_detail.set_quality("standard")
-		else: scene._return_overview()
+		scene._return_overview()
 		await create_timer(.15).timeout
 		coverage = frame._meshes[0].get_instance_shader_parameter("foreground_visibility")
 		expect(frame.is_visible_in_tree() and coverage > 0.0 and coverage < 1.0, mode + " fades back in")
 		await create_timer(.5).timeout
 		expect(is_equal_approx(frame._meshes[0].get_instance_shader_parameter("foreground_visibility"),1.0), mode + " restores full visibility")
 	# A reversal must not reset to fully visible or disappear for a frame.
-	scene.focus_detail.set_quality("low")
+	scene._toggle_free_view()
 	await create_timer(.15).timeout
 	var partial: float = frame._meshes[0].get_instance_shader_parameter("foreground_visibility")
-	scene.focus_detail.set_quality("standard")
+	scene._return_overview()
 	expect(is_equal_approx(frame._meshes[0].get_instance_shader_parameter("foreground_visibility"),partial), "Reversal retains current visibility")
 	await create_timer(.08).timeout
 	var reversed: float = frame._meshes[0].get_instance_shader_parameter("foreground_visibility")

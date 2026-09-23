@@ -12,7 +12,7 @@
 
 - `main.cpp`：校验传入 HWND 属于直接父进程；负责桌面层、原生样式、托盘、显示器和会话通知。通过持有的父进程句柄监测生命周期。宿主正常结束前解除挂接；父游戏结束后退出。
 - `Game/platform/desktop_wallpaper.gd`：启动同包宿主，通过继承的匿名管道收发逐行状态，保存并恢复 Godot 窗口状态。没有网络端口或任意窗口指令。游玩和观赏始终保持图标下层；游玩切换不得调用 SetParent 或 SetWindowPos。壁纸使用系统鼠标，鼠标输入由宿主筛选后注入游戏。图标／文字矩形在钩子外读取，钩子按当前窗口和矩形快速筛选，非游戏拖动不转发；捕获完整游戏按下／释放避免桌面选框。任务栏和其他应用不接管，不采集键盘文本。
-- `Game/atmosphere/window_activity.gd`：唯一的呈现帧率管理者。壁纸可见时最高 30 fps，目标屏幕被普通不透明窗口覆盖超过 95% 或锁屏时最高 2 fps；不暂停场景树和现实时间结算。此限帧策略不是 CPU/GPU 耗电达标证明。
+- `Game/atmosphere/window_activity.gd`：唯一的呈现帧率管理者。观赏30fps、交互60fps。普通不透明窗口完全覆盖、锁屏或熄屏时停止绘制并暂停场景；仍以20Hz处理宿主消息，恢复前按UTC结算。连续不可见5分钟后释放根视口渲染缓冲与无活跃引用的场景缓存。仅遮挡95%不再视作完全不可见。资源、功耗与恢复时延须实测，不能以策略存在宣称达标。
 
 输入状态为 `POINTER x y flags`、`BUTTON button pressed x y factor flags`、`LEAVE`；坐标为游戏客户区归一化坐标。`INTERACT` / `OBSERVE` 请求切换，收到 `INTERACTIVE` / `OBSERVING` 后才切换游戏输入门禁；始终保持同一桌面父窗口及图标下层，flags只包含鼠标修饰键及双击状态。`WORKAREA left top right bottom` 以归一化工作区边界用于任务栏避让；不传递键盘或其他程序输入。
 
@@ -28,7 +28,7 @@
 & ./scripts/godot.ps1 -Action Run -ExtraArgs @('--script', (Join-Path (Get-Location) 'tests/desktop_wallpaper_test.gd'))
 ```
 
-也可直接调用固定版本引擎，以 `--path Game --screen 0 --audio-driver Dummy --script <测试脚本绝对路径>` 运行。测试支持用户参数 `-- --evidence=<证据绝对目录>`，供独立导出程序的定向复核使用。
+也可直接调用固定版本引擎，以 `--path Game --screen 0 --audio-driver Dummy --script <测试脚本绝对路径>` 运行。源代码场景测试支持 `-- --evidence=<证据绝对目录>`。官方4.7.2发行模板禁用路径覆盖，不能把 `--script` 传给普通发行包冒充测试入口；导出程序复核使用 `scripts/build-wallpaper-benchmark.ps1` 与 `tests/measure-wallpaper.ps1`，详见开发准备文档。
 
 实测排错约束：让原生宿主在挂接时扩展到屏幕大小，不要预先把 Godot 窗口铺满屏幕后才保存原生矩形。Godot Windows 后端会按实际矩形判断全屏，此时普通 resize 被忽略。返回时先恢复原生窗口，再显式恢复 DisplayServer 窗口模式与 Godot 几何。挂接／返回期间临时恢复 60 fps 消息处理，完成后恢复原策略，避免低帧率拖慢跨进程同步窗口消息。
 
@@ -61,3 +61,11 @@
 ## 2026-09-22 Demo 0.1.5：输入全失效根因
 本机只读诊断发现 MSAA get_accChildCount 返回36，但 SysListView32实际只有35项；accLocation(36)为E_INVALIDARG。0.1.4因此将整份图标缓存判为无效，所有桌面点位都被拒绝。现用 [LVM_GETITEMCOUNT](https://learn.microsoft.com/en-us/windows/win32/controls/lvm-getitemcount) 作为枚举上界，读取后再核对数量，不跳过未知真实图标。新增 `INPUT_READY <count>` / `INPUT_UNAVAILABLE <stage>`，只在状态变化时输出。
 诊断证据在 `.local/desktop-input-inspect/before.txt` 和 `after.txt`。修复后缓存有效、35项边界齐全，当前可见桌面216个空白采样点通过、35个图标中心均被排除。诊断不装钩子、不移动鼠标、不启动游戏，不等同于游戏实机验收。
+
+## 低耗状态通知（2026-09-24）
+
+宿主注册 `GUID_SESSION_DISPLAY_STATUS`；熄屏与会话锁定沿用 `COVERED`，亮屏／解锁后重新计算目标屏可见区域。变暗仍算可见。隐藏时清除指针／按钮缓存并发送 `LEAVE`，停止图标与指针轮询；可见性每100ms核对，隐藏消息等待50ms。游戏管道节点使用 `PROCESS_MODE_ALWAYS`，不随场景暂停。返回窗口的 `RESTORING` 先解除暂停，避免跨进程窗口消息互等。
+
+本轮真实发行模板＋宿主的隔离检查覆盖完整遮挡、短暂恢复、两次加速进入长期后台、48次播种／浇水／收获及退出；加速路径不证明真实5分钟计时或8小时稳定性。未自动锁屏、断开显示器或重启Explorer，相关实机边界保留。
+
+2026-09-24：遮挡恢复由进程外WinEvent的前台切换、最小化、顶层窗口显隐／位置／隐藏状态变化触发。回调只置脏标志，覆盖计算仍在宿主循环中合并执行；可见时100ms核查，完全遮挡时1秒兜底，任何通知钩子失败则退回100ms轮询并记录`VISIBILITY_POLLING`。后台停止图标枚举与工作区更新；解除遮挡后更新工作区再响应输入。依据：[SetWinEventHook](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwineventhook)、[事件常量](https://learn.microsoft.com/en-us/windows/win32/winauto/event-constants)。

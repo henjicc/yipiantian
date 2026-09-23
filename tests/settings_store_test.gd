@@ -11,12 +11,14 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	_expect(not ProjectSettings.get_setting("display/window/energy_saving/keep_screen_on"), "The resident game respects OS screen power saving")
 	root_path = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir().path_join(".local/verification/settings-%d" % Time.get_ticks_usec())
 	DirAccess.make_dir_recursive_absolute(root_path)
 	var path: String = root_path.path_join("roundtrip")
 	var store := Store.new(path)
 	var loaded: Dictionary = store.load_settings()
 	_expect(loaded.ok and loaded.kind == "first" and loaded.settings == Store.DEFAULTS, "Missing preferences use honest first-run defaults")
+	_expect(loaded.settings.resolution == "1080", "New settings cap only 3D at 1080p")
 	loaded.settings.master = 0.0
 	_expect(Store.DEFAULTS.master == 0.8, "Returned settings cannot mutate defaults")
 	var values: Dictionary = loaded.settings
@@ -41,6 +43,8 @@ func _run() -> void:
 	values.quality = "high"
 	_expect(store.save(values).ok, "High quality is a supported saved preference")
 	_expect(Store.new(path).load_settings().settings.quality == "high", "Reopening preserves high quality")
+	values.resolution = "native"
+	_expect(store.save(values).ok and Store.new(path).load_settings().settings.resolution == "native", "Explicit native resolution survives reopening")
 	var farm_marker: String = root_path.path_join("farm.json")
 	_write(farm_marker, "unchanged farm sentinel")
 	var before: String = FileAccess.get_file_as_string(path.path_join(Store.MAIN))

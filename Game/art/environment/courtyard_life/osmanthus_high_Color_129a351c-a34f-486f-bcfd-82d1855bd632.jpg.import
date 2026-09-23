@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cxd04kc18ux13"
-path="res://.godot/imported/osmanthus_high_Color_129a351c-a34f-486f-bcfd-82d1855bd632.jpg-bd864b74c85e1ecffb84ee52b16bb45b.ctex"
+path.bptc="res://.godot/imported/osmanthus_high_Color_129a351c-a34f-486f-bcfd-82d1855bd632.jpg-bd864b74c85e1ecffb84ee52b16bb45b.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "fbad2e6e1a722464c0f739b289329661"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/environment/courtyard_life/osmanthus_high_Color_129a351c-a34f-486f-bcfd-82d1855bd632.jpg"
-dest_files=["res://.godot/imported/osmanthus_high_Color_129a351c-a34f-486f-bcfd-82d1855bd632.jpg-bd864b74c85e1ecffb84ee52b16bb45b.ctex"]
+dest_files=["res://.godot/imported/osmanthus_high_Color_129a351c-a34f-486f-bcfd-82d1855bd632.jpg-bd864b74c85e1ecffb84ee52b16bb45b.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=1024
 detect_3d/compress_to=1

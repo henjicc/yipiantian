@@ -98,8 +98,8 @@ func _run() -> void:
 	root.mode = Window.MODE_MINIMIZED
 	await create_timer(0.5).timeout
 	_expect(not sample.audio.is_foreground(), "Native minimize mutes audio")
-	_expect(Engine.max_fps > 0 and Engine.max_fps <= 15, "Native minimize caps rendering at 15 fps")
-	_expect(not paused, "Background rendering never pauses the tree")
+	_expect(not RenderingServer.is_render_loop_enabled(), "Native minimize stops rendering")
+	_expect(paused, "Invisible scene pauses until UTC settlement on restore")
 	_expect(sample.audio.get_volumes() == remembered, "Minimize does not rewrite user volumes")
 	capture.clear_buffer()
 	await create_timer(0.2).timeout

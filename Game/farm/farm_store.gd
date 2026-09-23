@@ -13,10 +13,14 @@ var directory: String
 var _writable: bool = false
 var _expected_main: String = ""
 var _expected_missing: bool = true
+var _filesystem: DirAccess
 
 
 func _init(save_directory: String = "user://farm-v27") -> void:
 	directory = ProjectSettings.globalize_path(save_directory).simplify_path()
+	var root: String = directory
+	while root != root.get_base_dir(): root = root.get_base_dir()
+	_filesystem = DirAccess.open(root)
 
 
 func load_state() -> Dictionary:
@@ -61,10 +65,21 @@ func save(farm: Dictionary, decorations: Dictionary) -> Dictionary:
 	var decoration_validator := Decorations.new()
 	if not decoration_validator.restore_snapshot(decorations):
 		return _failure("invalid_decorations")
+	return _save_validated(validator.snapshot(), decoration_validator.snapshot())
+
+
+func save_state(farm: FarmState, decorations: Decorations) -> Dictionary:
+	# Only the authoritative owners enter here. Disk/external dictionaries keep
+	# the full save() admission path; writes, conflicts and verification are shared.
+	if not _writable: return _failure("not_loaded")
+	return _save_validated(farm.snapshot(), decorations.snapshot())
+
+
+func _save_validated(farm: Dictionary, decorations: Dictionary) -> Dictionary:
 	if not FarmState.Kitchen.placement_valid(farm.kitchen,decorations): return _failure("invalid_decorations")
 	if not _safe_paths():
 		return _failure("unsafe_path")
-	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(directory)
+	var mkdir_error: Error = OK if _filesystem.dir_exists(directory) else _filesystem.make_dir_recursive(directory)
 	if mkdir_error != OK:
 		return _failure("create_directory", mkdir_error)
 	# The admitted main was fully validated on load or our previous save. Read
@@ -77,7 +92,7 @@ func save(farm: Dictionary, decorations: Dictionary) -> Dictionary:
 		# replacing them; load/recover must still validate their entire contents.
 		if _read_document(filename).kind == "unsupported":
 			return _failure("unsupported")
-	var text: String = JSON.stringify({"version": VERSION, "farm": validator.snapshot(), "decorations": decoration_validator.snapshot()}, "\t")
+	var text: String = JSON.stringify({"version": VERSION, "farm": farm, "decorations": decorations}, "\t")
 	var result: Dictionary = _write_verified(PENDING, text)
 	if not result.ok:
 		return result
@@ -85,12 +100,12 @@ func save(farm: Dictionary, decorations: Dictionary) -> Dictionary:
 		result = _write_verified(BACKUP_PENDING, current.text)
 		if not result.ok:
 			return result
-		var backup_error: Error = DirAccess.rename_absolute(_path(BACKUP_PENDING), _path(BACKUP))
+		var backup_error: Error = _filesystem.rename(_path(BACKUP_PENDING), _path(BACKUP))
 		if backup_error != OK:
 			return _failure("replace_backup", backup_error)
 	# Windows rename replaces the destination without deleting the main first.
 	# If the last replacement fails, the old main and its validated backup remain.
-	var replace_error: Error = DirAccess.rename_absolute(_path(PENDING), _path(MAIN))
+	var replace_error: Error = _filesystem.rename(_path(PENDING), _path(MAIN))
 	if replace_error != OK:
 		return _failure("replace_main", replace_error)
 	_admit(text, false)
@@ -127,7 +142,7 @@ func recover() -> Dictionary:
 
 func _read_text(filename: String) -> Dictionary:
 	var path: String = _path(filename)
-	if DirAccess.dir_exists_absolute(path):
+	if _filesystem == null or _filesystem.dir_exists(path):
 		return {"kind": "io"}
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
@@ -212,19 +227,19 @@ func _path(filename: String) -> String:
 
 
 func _safe_paths() -> bool:
-	if not directory.is_absolute_path():
+	if not directory.is_absolute_path() or _filesystem == null:
 		return false
+	# Reuse the filesystem accessor, never the admission result. Every ancestor
+	# and every sidecar is checked afresh using an absolute path on every save.
 	var cursor: String = directory
 	while cursor != cursor.get_base_dir():
-		var parent := DirAccess.open(cursor.get_base_dir())
-		if parent != null and parent.is_link(cursor):
+		if _filesystem.is_link(cursor):
 			return false
 		cursor = cursor.get_base_dir()
-	var dir := DirAccess.open(directory)
-	if dir == null:
+	if not _filesystem.dir_exists(directory):
 		return not FileAccess.file_exists(directory)
 	for filename: String in [MAIN, BACKUP, PENDING, BACKUP_PENDING]:
-		if dir.is_link(filename):
+		if _filesystem.is_link(_path(filename)):
 			return false
 	return true
 

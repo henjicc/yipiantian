@@ -1,5 +1,9 @@
 extends RefCounted
 ## One continuous height field across logical cells. Planting remains presentation only.
+static var _baked: Resource
+
+static func patch_key(center: Vector3, span: Vector2, field_seed: int, half_extent: Vector2) -> String:
+	return "%s/%s/%d/%s" % [center, span, field_seed, half_extent]
 
 static func height_at(p: Vector2, half_extent: Vector2 = Vector2(1.2,.88), row_span: float = .44) -> float:
 	var edge: float = minf(half_extent.x - absf(p.x), half_extent.y - absf(p.y))
@@ -9,13 +13,20 @@ static func height_at(p: Vector2, half_extent: Vector2 = Vector2(1.2,.88), row_s
 	return fade * (.010 * furrow + .008 * lumps + .004 * sin(p.x * 37.0 + p.y * 29.0))
 
 
-static func patch(center: Vector3, span: Vector2, field_seed: int = 0, half_extent: Vector2 = Vector2(1.2,.88)) -> ArrayMesh:
+static func patch(center: Vector3, span: Vector2, field_seed: int = 0, half_extent: Vector2 = Vector2(1.2,.88), use_baked: bool = true) -> ArrayMesh:
+	if use_baked:
+		if _baked == null and ResourceLoader.exists("res://art/environment/soil/patches.res"):
+			_baked = load("res://art/environment/soil/patches.res")
+		var meshes: Dictionary = _baked.get_meta("meshes", {}) if _baked != null else {}
+		var key: String = patch_key(center, span, field_seed, half_extent)
+		if meshes.has(key): return meshes[key]
+	# Custom field dimensions follow the same geometry generator as the bake.
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for row: int in 16:
-		for col: int in 20:
+	for row: int in 6:
+		for col: int in 8:
 			for offset: Vector2i in [Vector2i(0,0),Vector2i(1,0),Vector2i(1,1),Vector2i(0,0),Vector2i(1,1),Vector2i(0,1)]:
-				var uv := Vector2((col+offset.x)/20.0, (row+offset.y)/16.0)
+				var uv := Vector2((col+offset.x)/8.0, (row+offset.y)/6.0)
 				var local: Vector2 = (uv - Vector2.ONE * .5) * span
 				var p: Vector2 = local + Vector2(center.x, center.z)
 				var e: float = .002
@@ -29,8 +40,8 @@ static func patch(center: Vector3, span: Vector2, field_seed: int = 0, half_exte
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 71003 + field_seed*100003 + roundi((center.x+1.2)*1000.0) + roundi((center.z+.88)*10000.0)
 	var crumb := SphereMesh.new()
-	crumb.radial_segments = 7
-	crumb.rings = 2
+	crumb.radial_segments = 5
+	crumb.rings = 1
 	crumb.radius = 1.0
 	crumb.height = 2.0
 	var arrays: Array = crumb.surface_get_arrays(0)
@@ -38,8 +49,8 @@ static func patch(center: Vector3, span: Vector2, field_seed: int = 0, half_exte
 	var spread: Vector2 = span*.5-Vector2.ONE*.035
 	for i: int in 5:
 		clusters.append(Vector2(rng.randf_range(-spread.x,spread.x),rng.randf_range(-spread.y,spread.y))*.8)
-	var grain_count: int = maxi(40,roundi(span.x*span.y*621.2))
-	for index: int in grain_count+28:
+	var grain_count: int = maxi(16,roundi(span.x*span.y*155.3))
+	for index: int in grain_count+12:
 		var contact: bool = index >= grain_count
 		var p := Vector2(rng.randf_range(-spread.x,spread.x),rng.randf_range(-spread.y,spread.y))
 		if index < grain_count/2:

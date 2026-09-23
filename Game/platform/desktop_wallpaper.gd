@@ -25,6 +25,7 @@ var _quit_after_restore: bool = false
 var _finishing: bool = false
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(false)
 
 func executable_path() -> String:

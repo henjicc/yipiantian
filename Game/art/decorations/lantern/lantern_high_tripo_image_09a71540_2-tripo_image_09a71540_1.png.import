@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dcp6476ung068"
-path="res://.godot/imported/lantern_high_tripo_image_09a71540_2-tripo_image_09a71540_1.png-69e651c4a4fded721dd65f30233cec2a.ctex"
+path.bptc="res://.godot/imported/lantern_high_tripo_image_09a71540_2-tripo_image_09a71540_1.png-69e651c4a4fded721dd65f30233cec2a.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "3d7f9abe120d501300789607f3a75e5c"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/decorations/lantern/lantern_high_tripo_image_09a71540_2-tripo_image_09a71540_1.png"
-dest_files=["res://.godot/imported/lantern_high_tripo_image_09a71540_2-tripo_image_09a71540_1.png-69e651c4a4fded721dd65f30233cec2a.ctex"]
+dest_files=["res://.godot/imported/lantern_high_tripo_image_09a71540_2-tripo_image_09a71540_1.png-69e651c4a4fded721dd65f30233cec2a.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=1024
 detect_3d/compress_to=1

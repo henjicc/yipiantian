@@ -3,20 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dlja3vm6806iq"
-path="res://.godot/imported/river_stones_color.png-11c65c825262ad895ac3fc843068b196.ctex"
+path.bptc="res://.godot/imported/river_stones_color.png-11c65c825262ad895ac3fc843068b196.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/environment/modules/river_stones_color.png"
-dest_files=["res://.godot/imported/river_stones_color.png-11c65c825262ad895ac3fc843068b196.ctex"]
+dest_files=["res://.godot/imported/river_stones_color.png-11c65c825262ad895ac3fc843068b196.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -36,5 +37,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1

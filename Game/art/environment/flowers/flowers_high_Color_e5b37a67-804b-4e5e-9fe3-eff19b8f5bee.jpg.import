@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ceh6jgqaig2k7"
-path="res://.godot/imported/flowers_high_Color_e5b37a67-804b-4e5e-9fe3-eff19b8f5bee.jpg-5acc0e25bab0d711b4391e4b5a9895d7.ctex"
+path.bptc="res://.godot/imported/flowers_high_Color_e5b37a67-804b-4e5e-9fe3-eff19b8f5bee.jpg-5acc0e25bab0d711b4391e4b5a9895d7.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "6cd5e706ac4865b8b4b1a083efce34bc"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://art/environment/flowers/flowers_high_Color_e5b37a67-804b-4e5e-9fe3-eff19b8f5bee.jpg"
-dest_files=["res://.godot/imported/flowers_high_Color_e5b37a67-804b-4e5e-9fe3-eff19b8f5bee.jpg-5acc0e25bab0d711b4391e4b5a9895d7.ctex"]
+dest_files=["res://.godot/imported/flowers_high_Color_e5b37a67-804b-4e5e-9fe3-eff19b8f5bee.jpg-5acc0e25bab0d711b4391e4b5a9895d7.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
@@ -39,5 +40,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1

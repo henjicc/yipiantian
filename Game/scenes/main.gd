@@ -249,6 +249,9 @@ func _ready() -> void:
 	window_activity = WindowActivity.new()
 	window_activity.name = "WindowActivity"
 	window_activity.foreground_changed.connect(farm_audio.set_foreground)
+	window_activity.presentation_changed.connect(_presentation_changed)
+	window_activity.deep_idle_changed.connect(func(enabled: bool) -> void:
+		if enabled: $Environment.CourtyardAssets.release_cached_scenes())
 	add_child(window_activity)
 	farm_audio.set_foreground(window_activity.is_foreground())
 	decoration_layout.confirmed.connect(_refresh_lanterns)
@@ -304,14 +307,8 @@ func _ready() -> void:
 	timer.timeout.connect(settle_farm)
 	add_child(timer)
 	timer.start()
-	var save_timer := Timer.new()
-	save_timer.name = "SaveTimer"
-	save_timer.wait_time = 30.0
-	save_timer.timeout.connect(func() -> void:
-		if _loaded and not _save_failed and not _layout_active() and not (garden_album!=null and garden_album.busy):
-			_save_farm())
-	add_child(save_timer)
-	save_timer.start()
+	# Every accepted action is saved transactionally. Growth derives from UTC;
+	# writing the same farm every 30 seconds adds I/O without protecting actions.
 	if not _record_session.is_empty():
 		var recording: Node = load("res://development/recording_session.gd").new()
 		recording.session_dir = _record_session
@@ -353,6 +350,7 @@ func _load_game(initial: Dictionary = {}) -> void:
 	trellis_crops.visible=true
 	if seasonal_courtyard!=null: _apply_season()
 	settle_farm()
+	refresh_farm()
 	_save_farm()
 	print("FARM_LOAD stage=%s version=%d migrated=%s saved=%s" % [result.kind, FarmStore.VERSION, result.get("migrated", false), not _save_failed])
 
@@ -384,7 +382,7 @@ func _reload_saved_scene() -> void:
 func _save_farm() -> bool:
 	if not _loaded:
 		return false
-	var result: Dictionary = store.save(farm_state.snapshot(), decoration_state.snapshot())
+	var result: Dictionary = store.save_state(farm_state, decoration_state)
 	_save_failed = not result.ok
 	if _save_failed:
 		if garden_album!=null: garden_album.end_photo()
@@ -466,7 +464,17 @@ func settle_farm() -> void:
 	var result: Dictionary = farm_state.settle(clock.call())
 	harvest_book.update_time(clock.call())
 	if result.ok:
-		refresh_farm()
+		for field_id: String in result.visual_changed:
+			if field_id == TrellisSlots.FIELD_ID: refresh_trellis()
+			else: farm.show_field(farm_state.get_field(field_id))
+		_refresh_hud()
+
+
+func _presentation_changed(visible: bool) -> void:
+	_cancel_input()
+	if visible:
+		settle_farm()
+		atmosphere._apply_clock()
 
 
 func refresh_farm() -> void:
@@ -499,7 +507,7 @@ func _refresh_hud() -> void:
 	if hud == null or not _loaded:
 		return
 	var cell: Dictionary = {} if hover_field < 0 or hover_cell.is_empty() else farm_state.get_cell(_planting_id(hover_field), hover_cell)
-	var state: Dictionary=farm_state.snapshot()
+	var state: Dictionary=farm_state.hud_state()
 	hud.show_state(cell, state.harvested, selected_tool, selected_crop, camera.is_transitioning() or _save_failed or camera.free_view or _basket_active() or (camera_tuning != null and camera_tuning.visible) or (sway_tuning != null and sway_tuning.visible), selected_field, selected_palette, state.inventory)
 	hud.show_decoration_mode(decoration_layout != null and decoration_layout.active)
 	if _layout_active(): hud.show_decoration_mode(true)
@@ -545,15 +553,15 @@ func _animal_action(id: String,action: String,value: Variant,revision: int) -> v
 	if action in ["feed","call"]:
 		approach=interaction.prepare(id,camera,decoration_layout.world_point_visible)
 		if approach.is_empty(): animal_panel.show_issue("这会儿没有能靠近的空位");return
-	var candidate:=FarmState.new();candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: FarmState = farm_state.copy()
 	var result: Dictionary=candidate.animal_action(id,action,value,revision)
 	if not result.ok:
 		animal_panel.show_issue("名字请用一到十二个字" if result.reason=="invalid_name" else "这次操作未完成")
 		return
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok:
 		_save_failed=true;animal_panel.dismiss();hud.show_storage_issue(saved.kind,true);_refresh_hud();return
-	farm_state.restore_snapshot(candidate.snapshot())
+	farm_state.accept(candidate)
 	var data: Dictionary=farm_state.snapshot()
 	interaction.profiles=data.animals
 	if not approach.is_empty(): interaction.begin(id,approach,action=="feed")
@@ -619,22 +627,21 @@ func _open_scene_entry(id: String) -> void:
 
 func _exchange(id: String, visit: int, basket: Dictionary, gift: String) -> void:
 	if not _basket_active() or not _loaded or _save_failed: return
-	var candidate:=FarmState.new()
-	candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: FarmState = farm_state.copy()
 	var result: Dictionary=candidate.share_basket(id,visit,basket) if gift.is_empty() else candidate.claim_gift(id,visit,gift)
 	if not result.ok:
 		harvest_book.refresh(farm_state.snapshot())
 		return
 	# Inventory and delivery receipt are one durable transaction. A failed write
 	# never publishes the draft or charges the player; reopening can retry it.
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok:
 		_save_failed=true
 		harvest_book.dismiss()
 		hud.show_storage_issue(saved.kind,true)
 		_refresh_hud()
 		return
-	farm_state.restore_snapshot(candidate.snapshot())
+	farm_state.accept(candidate)
 	_refresh_neighbor_stories()
 	harvest_book.refresh(farm_state.snapshot())
 	farm_audio.play_ui()
@@ -645,22 +652,21 @@ func _refresh_neighbor_stories() -> void:
 
 func _kitchen_action(action: String, request: Dictionary, revision: int) -> void:
 	if not _basket_active() or not _loaded or _save_failed: return
-	var candidate:=FarmState.new()
-	candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: FarmState = farm_state.copy()
 	var result: Dictionary=candidate.kitchen_action(action,request,revision,clock.call(),decoration_state.snapshot())
 	if not result.ok:
 		harvest_book.refresh(farm_state.snapshot())
 		return
 	var decorations:=DecorationState.new();decorations.restore_snapshot(decoration_state.snapshot())
 	decorations.unlock(candidate.snapshot().harvested,candidate.snapshot().kitchen)
-	var saved: Dictionary=store.save(candidate.snapshot(),decorations.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decorations)
 	if not saved.ok:
 		_save_failed=true
 		harvest_book.dismiss()
 		hud.show_storage_issue(saved.kind,true)
 		_refresh_hud()
 		return
-	farm_state.restore_snapshot(candidate.snapshot())
+	farm_state.accept(candidate)
 	if decorations.snapshot()!=decoration_state.snapshot():
 		decoration_state=decorations;decoration_layout.bind_state(decorations)
 	harvest_book.decorations=decorations.snapshot()
@@ -674,18 +680,17 @@ func _kitchen_action(action: String, request: Dictionary, revision: int) -> void
 
 func _change_season(id: String) -> void:
 	if not _basket_active() or not _loaded or _save_failed: return
-	var candidate:=FarmState.new()
-	candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: FarmState = farm_state.copy()
 	if not candidate.set_season(id): return
 	if candidate.snapshot().season!=farm_state.snapshot().season:
-		var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+		var saved: Dictionary=store.save_state(candidate,decoration_state)
 		if not saved.ok:
 			_save_failed=true
 			harvest_book.dismiss()
 			hud.show_storage_issue(saved.kind,true)
 			_refresh_hud()
 			return
-		farm_state.restore_snapshot(candidate.snapshot())
+		farm_state.accept(candidate)
 		_apply_season()
 	harvest_book.refresh(farm_state.snapshot())
 	farm_audio.play_ui()
@@ -838,7 +843,7 @@ func _apply_construction(snapshot: Dictionary, undo: bool) -> void:
 	var result: Dictionary=candidate.apply_layout(snapshot,clock.call())
 	if not result.ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok:
 		island_builder.set_busy(false,"未能保存，岛屿保持原样。可再次确认重试，或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
@@ -859,7 +864,7 @@ func _apply_plants(snapshot: Dictionary, undo: bool) -> void:
 	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok: island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
 	previous_decorations={};farm_state=candidate
@@ -887,7 +892,7 @@ func _apply_routes(snapshot: Dictionary, undo: bool) -> void:
 	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok:
 		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
@@ -920,7 +925,7 @@ func _apply_bridge(snapshot: Dictionary, undo: bool) -> void:
 	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok:
 		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
@@ -951,7 +956,7 @@ func _apply_flock(snapshot: Dictionary, undo: bool, kind: String) -> void:
 	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"范围不合适，请调整后再试。");return
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok:
 		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
@@ -983,7 +988,7 @@ func _apply_land(snapshot: Dictionary, undo: bool) -> void:
 	var candidate: RefCounted=farm_state.copy()
 	var result: Dictionary=candidate.apply_layout(snapshot,clock.call())
 	if not result.ok: island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok: island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
 	previous_decorations={}
@@ -1019,7 +1024,7 @@ func _apply_fields(snapshot: Dictionary, undo: bool) -> void:
 	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"这些田格里还有作物，请保留它们，或先收获。");return
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok:
 		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
@@ -1054,7 +1059,7 @@ func _apply_trellis(snapshot: Dictionary, undo: bool) -> void:
 	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok:
 		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
@@ -1088,7 +1093,7 @@ func _apply_building(snapshot: Dictionary, undo: bool, id: String) -> void:
 	var candidate: RefCounted=farm_state.copy()
 	if not candidate.apply_layout(snapshot,clock.call()).ok:
 		island_builder.set_busy(false,"已有作物需要保留，请调整范围。");return
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok:
 		island_builder.set_busy(false,"未能保存，可重试或取消调整。");return
 	previous_layout={} if undo else farm_state.snapshot().layout
@@ -1116,8 +1121,7 @@ func _apply_courtyard(snapshot: Dictionary, undo: bool) -> void:
 	if not plants_issue.is_empty(): courtyard_edit.editor.set_busy(false,plants_issue);return
 	var route_issue: String=CourtyardPlan.Routes.terrain_issue(requested_plan)
 	if not route_issue.is_empty(): courtyard_edit.editor.set_busy(false,route_issue);return
-	var candidate:=FarmState.new()
-	candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: FarmState = farm_state.copy()
 	var result: Dictionary=candidate.apply_layout(snapshot,clock.call())
 	if not result.ok:
 		courtyard_edit.editor.set_busy(false,"将移除的田格里还有作物，请先收获，或保留这些田格。")
@@ -1128,7 +1132,7 @@ func _apply_courtyard(snapshot: Dictionary, undo: bool) -> void:
 	if _exiting: return
 	# Commit to disk before replacing either the authoritative state or its scene.
 	# A failed write leaves the old island/crops intact and the draft retryable.
-	var saved: Dictionary=store.save(candidate.snapshot(),decoration_state.snapshot())
+	var saved: Dictionary=store.save_state(candidate,decoration_state)
 	if not saved.ok:
 		courtyard_edit.editor.set_busy(false,"未能保存，本次整理还没有生效。可以重试，或取消保留原来的小院。")
 		return
@@ -1620,8 +1624,7 @@ func _apply_tool(menu_point: Vector2 = Vector2.INF) -> void:
 		return
 	var field_id: String = _planting_id(selected_field)
 	var now: float = clock.call()
-	var candidate:=FarmState.new()
-	candidate.restore_snapshot(farm_state.snapshot())
+	var candidate: FarmState = farm_state.copy()
 	var result: Dictionary
 	match selected_tool:
 		"sow": result = candidate.sow(field_id, selected_cell, selected_crop, now)
@@ -1636,17 +1639,21 @@ func _apply_tool(menu_point: Vector2 = Vector2.INF) -> void:
 		return
 	var decorations:=DecorationState.new()
 	decorations.restore_snapshot(decoration_state.snapshot())
-	decorations.unlock(candidate.snapshot().harvested,candidate.snapshot().kitchen)
-	var saved: Dictionary=store.save(candidate.snapshot(),decorations.snapshot())
+	var unlock_state: Dictionary = candidate.snapshot()
+	decorations.unlock(unlock_state.harvested,unlock_state.kitchen)
+	var saved: Dictionary=store.save_state(candidate,decorations)
 	if not saved.ok:
 		_save_failed=true
 		_cancel_tool()
 		hud.show_storage_issue(saved.kind,true)
 		return
-	farm_state.restore_snapshot(candidate.snapshot())
+	farm_state.accept(candidate)
 	decoration_state.restore_snapshot(decorations.snapshot())
 	farm_audio.play_action(selected_tool, result)
-	refresh_farm()
+	for changed_field: String in result.visual_changed:
+		if changed_field == TrellisSlots.FIELD_ID: refresh_trellis()
+		else: farm.show_field(farm_state.get_field(changed_field))
+	_refresh_hud()
 	farm_changed.emit(result)
 
 

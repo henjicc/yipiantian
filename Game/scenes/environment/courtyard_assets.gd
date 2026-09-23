@@ -4,6 +4,12 @@ const SURFACE = preload("res://scenes/environment/courtyard_surface.gdshader")
 static var _scenes: Dictionary = {}
 static var _materials: Dictionary = {}
 
+static func release_cached_scenes() -> void:
+	# Live instances own their meshes/materials. Packed authoring scenes need not
+	# remain resident after construction; later placement can reload them.
+	_scenes.clear()
+	_materials.clear()
+
 static func instantiate_asset(id: String, tier: String = "high") -> Node3D:
 	var path := "res://art/environment/courtyard_life/%s_%s.glb" % [id,tier]
 	if not _scenes.has(path):
