@@ -1,0 +1,42 @@
+{
+  "task_id": "09a71540-5feb-48bb-bf4b-518d970d5267",
+  "geometry_model": "P2-20260801",
+  "texture_model": "v3.5-20260815",
+  "credits": 130,
+  "height": 0.57,
+  "pivot": "bottom center; hanging attachment at local y=.57 in Godot",
+  "high_triangles": 31600,
+  "original_faces": 17613,
+  "quad_faces": 13987,
+  "low_triangles": 9000,
+  "textures": [
+    {
+      "name": "tripo_image_09a71540_0",
+      "size": [
+        8192,
+        8192
+      ]
+    },
+    {
+      "name": "tripo_image_09a71540_1",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "name": "tripo_image_09a71540_2",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "name": "tripo_image_09a71540_3",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ]
+}

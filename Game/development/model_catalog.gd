@@ -37,7 +37,14 @@ static func describe(path: String) -> Dictionary:
 			if key in ["greens","radish"]:
 				evidence = "ArtSource/Crops/Greens/README.md" if key == "greens" else "ArtSource/Crops/Radish/README.md"
 			elif "_sprout" in path: source = "Blender · 程序建模（幼芽）"
-			if key == "greens" and "_mature" in path: source = "Tripo · P2.0 / P2-20260801"
+			# Adopted P2 stage exports match P2Stages20260919 byte-for-byte.
+			# Garlic sprout/young were not replaced; retain their original provenance.
+			var p2_stage := key in ["greens","radish","tatsoi","mustard","lettuce","spinach","chrysanthemum","carrot","celery","coriander","scallion"] or (key == "garlic" and "_mature" in path)
+			if p2_stage:
+				source = "Tripo · P2.0 / P2-20260801"
+				evidence = "ArtSource/Crops/P2Stages20260919/README.md"
+				if key == "greens" and "_mature" in path:
+					evidence = "ArtSource/Crops/Greens/README.md"
 		elif "/lotus/" in path:
 			source = "Tripo · P2.0 / P2-20260801"
 			evidence = "ArtSource/Environment/Lotus/README.md"
@@ -52,6 +59,9 @@ static func describe(path: String) -> Dictionary:
 			for group: String in ["courtyard_life","archipelago","islets","kitchen","osmanthus","house"]:
 				if ("/"+group+"/") in path:
 					evidence = "ArtSource/Environment/" + {"courtyard_life":"CourtyardLife","archipelago":"Archipelago","islets":"Islets","kitchen":"Kitchen","osmanthus":"Trees","house":"House"}[group] + "/README.md"
+	if path in ["res://art/environment/courtyard_life/lantern_high.glb", "res://art/environment/courtyard_life/lantern_low.glb", "res://art/decorations/lantern/lantern_high.glb", "res://art/decorations/lantern/lantern_low.glb"]:
+		source = "Tripo · P2.0 / P2-20260801"
+		evidence = "ArtSource/Decorations/Lantern/P2_20260923_r01/asset-audit.json"
 	if "/greens_pbr/" in path:
 		name = "青菜 · PBR候选"
 		source = "Tripo · P2.0 / P2-20260801"
