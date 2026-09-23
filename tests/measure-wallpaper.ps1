@@ -33,9 +33,22 @@ if ($Executable) {
  if (-not (Test-Path -LiteralPath $manifest)) {throw 'Release measurement requires the isolated benchmark export.'}
  Copy-Item -LiteralPath $manifest -Destination (Join-Path $auditRoot 'benchmark.json')
 }
-$hardware = @{commit=(& git -C $auditRepo rev-parse HEAD);cpu=(Get-CimInstance Win32_Processor | Select-Object Name,NumberOfLogicalProcessors);os=(Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version);gpu=(Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion);physical_memory=(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory;power_plan=(& powercfg /GETACTIVESCHEME);runtime=$runtime;policy='Isolated farm, owned nonfocusing cover when Native requested';native=[bool]$Native;capacity=[bool]$Capacity;resolution=$Resolution;quality=$Quality;soak_hours=$SoakHours;started=(Get-Date -Format o)}
+$hardware = @{commit=(& git -C $auditRepo rev-parse HEAD);cpu=(Get-CimInstance Win32_Processor | Select-Object Name,NumberOfLogicalProcessors);os=(Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version);gpu=(Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion);physical_memory=(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory;power_plan=(& powercfg /GETACTIVESCHEME);runtime=$runtime;policy='Isolated farm, owned nonfocusing cover when Native requested';native=[bool]$Native;capacity=[bool]$Capacity;resolution=$Resolution;quality=$Quality;soak_hours=$SoakHours;started=(Get-Date -Format o);measurement_keepawake='Temporary display/system request covers both idle baselines and game; power plan unchanged'}
 $hardware | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $auditRoot 'hardware.json') -Encoding utf8
+if (-not ('WallpaperMeasurementPower' -as [type])) {
+ Add-Type -TypeDefinition @'
+using System.Runtime.InteropServices;
+public static class WallpaperMeasurementPower {
+ [DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint flags);
+}
+'@
+}
+$previousExecutionState=[WallpaperMeasurementPower]::SetThreadExecutionState([uint32]2147483651)
+if ($previousExecutionState -eq 0) {throw 'Cannot keep measurement and idle baselines under matching display conditions.'}
+$process=$null
 $gpuProcess=$null
+$csv=$null
+try {
 $smiCommand=Get-Command nvidia-smi.exe -ErrorAction SilentlyContinue
 if ($smiCommand) {
 $smiInfo = [Diagnostics.ProcessStartInfo]::new()
@@ -131,3 +144,14 @@ if ($process.ExitCode -ne 0) {throw 'Benchmark process failed.'}
 if (-not (Test-Path -LiteralPath (Join-Path $auditRoot 'results.json'))) {throw 'Benchmark exited without final evidence.'}
 $result=Get-Content -LiteralPath (Join-Path $auditRoot 'results.json') -Raw | ConvertFrom-Json
 if ($result.failures.Count -gt 0) {throw 'Benchmark functional checks failed.'}
+} finally {
+ # Also cover failures before the process-sampling loop was entered.
+ if ($csv) {$csv.Dispose()}
+ foreach ($owned in @($process,$gpuProcess)) {
+  if ($owned) {
+   if (-not $owned.HasExited) {$owned.Kill();$owned.WaitForExit()}
+   $owned.Dispose()
+  }
+ }
+ [void][WallpaperMeasurementPower]::SetThreadExecutionState($previousExecutionState)
+}
