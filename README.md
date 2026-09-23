@@ -1,6 +1,8 @@
 # 我有一片田
 
-当前分享版本为 **Demo 0.1.6（开发中试玩版）**：[Windows 可运行文件夹](<.local/releases/0.1.6-06c7bce9/我有一片田 Demo 0.1.6 Windows/>)，源码 `06c7bce9`。双击 `Farm.exe`。壁纸保持系统鼠标，恢复单独跟随的种子／工具图标，图标不挡点击。修复收获篮点空田格等不适用工具操作的静默失败，改为打开该田格动作菜单；适用的工具仍直接连续使用。保留桌面图标、窗口层级及0.1.5输入修复。本轮仅编译打包，未启动游戏验收。构建入口 `scripts/package-release.ps1 -Commit 06c7bce9 -Version 0.1.6 -FolderOnly -ReuseImportCache`，证据位于 `.local/releases/0.1.6-06c7bce9/evidence/`。
+当前分享版本为 **Demo 0.1.7（开发中试玩版）**：[Windows 免安装文件夹](<.local/releases/0.1.7-78fd3d32/我有一片田 Demo 0.1.7 Windows/>)，源码 `78fd3d32`。双击 `Farm.exe`；Windows 原生任务栏图标和导出程序图标已指定为多尺寸 ICO。游戏内容沿用 0.1.6；本轮仅导出和审计包体，未启动游戏验收，也未制作安装器。构建入口 `scripts/package-release.ps1 -Commit 78fd3d32 -Version 0.1.7 -FolderOnly -ReuseImportCache`，证据位于 `.local/releases/0.1.7-78fd3d32/evidence/`。
+
+历史 **Demo 0.1.6** 源码 `06c7bce9`，位于 `.local/releases/0.1.6-06c7bce9/`；恢复壁纸系统鼠标旁的种子／工具图标，以及篮子等工具点不适用田格时的扇形菜单。
 
 历史 **Demo 0.1.5** 源码 `1fb4b894`，位于 `.local/releases/0.1.5-1fb4b894/`；已修复辅助访问接口子项计数导致整张壁纸输入失效的问题。
 
@@ -40,6 +42,8 @@ pwsh -NoProfile -File scripts/godot.ps1 ExportWindows
 操作：点击底部“播种”展开蔬菜，选好后悬停土地预览小格，左键点击播种；可连续种植，拿着种子时滚轮切换菜种。点击“工具”展开浇水、收获、除草和开垦，选择后点击目标格执行。右键、Esc 或取消按钮放下工具并收起选项，滚轮恢复缩放。空手点击大田靠近，中键微调角度，Shift + 中键平移。“全景”返回，“复位”恢复构图。自由视角左键绕点击处旋转，中键／右键平移，滚轮缩放。“布置”处理已解锁装饰；“设置”包含音量、显示、操作与来源。空手点击可见的厨房、晒架、陶罐、廊桌可打开厨房，点击三户邻岛可打开对应邻里页面；拖动镜头和拿着农具时不会触发这些入口。厨房食材和邻居回礼采用与播种一致的上图下字卡片。历史候选包的随包说明仅对应其自身版本。
 
 Windows 导出后可直接运行 `.local/builds/windows/Farm.exe`，同目录 `Farm.pck` 和 `FarmDesktop.exe` 必须保留。开发启动／导出会编译桌面组件，开发机需 CMake 与 Visual Studio 2022 C++ Build Tools；玩家不需要编译工具。原型的真实截图、处理后模型和贡献报告副本在本地 `制作留档/`，不参与 Git 同步。
+
+Windows 图标分两处配置：`Game/project.godot` 的 `config/windows_native_icon` 供运行时任务栏使用，`Game/export_presets.cfg` 的 `application/icon` 供导出的程序文件使用，两者都指向包含 16～256 像素尺寸的 `Game/art/ui/game-icon.ico`。ICO 由现有 PNG 用 `magick Game/art/ui/game-icon.png -define icon:auto-resize=256,128,64,48,32,16 Game/art/ui/game-icon.ico` 生成。仅设置通用 `config/icon` 不能代替 Windows 原生任务栏图标；旧图标残留时先刷新 Windows 图标缓存，再判断新包。
 
 发行候选必须从已验收的明确提交构建。待根代理固定候选提交与版本后使用：
 
