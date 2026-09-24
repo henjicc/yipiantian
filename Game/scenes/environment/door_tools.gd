@@ -5,6 +5,8 @@ var chair: Node3D
 var tools: Dictionary = {}
 var _hovered: String = ""
 var _outline: ShaderMaterial
+var _hint_outline: ShaderMaterial
+var _chair_hint: bool = false
 
 func _ready() -> void:
 	var environment: Node3D = get_parent()
@@ -34,6 +36,9 @@ func _ready() -> void:
 		tools[item[0]] = prop
 	_outline = ShaderMaterial.new()
 	_outline.shader = preload("res://scenes/environment/tool_outline.gdshader")
+	_hint_outline = _outline.duplicate()
+	_hint_outline.set_shader_parameter("width", .022)
+	_hint_outline.set_shader_parameter("tint", Color(1.0, .88, .42))
 
 func _ground(prop: Node3D, floor_y: float) -> void:
 	var bottom: float = INF
@@ -52,9 +57,17 @@ func set_hover(id: String) -> void:
 	if not tools.has(id): id = ""
 	if _hovered == id: return
 	_hovered = id
+	_refresh_outline()
+
+func set_chair_hint(enabled: bool) -> void:
+	if _chair_hint == enabled: return
+	_chair_hint = enabled
+	_refresh_outline()
+
+func _refresh_outline() -> void:
 	for tool: String in tools:
 		for mesh: MeshInstance3D in tools[tool].find_children("*","MeshInstance3D",true,false):
-			mesh.material_overlay = _outline if tool==id else null
+			mesh.material_overlay = _hint_outline if tool == "rest" and _chair_hint else (_outline if tool == _hovered else null)
 
 func may_hit(camera: Camera3D, point: Vector2) -> bool:
 	var start: Vector3 = camera.project_ray_origin(point)

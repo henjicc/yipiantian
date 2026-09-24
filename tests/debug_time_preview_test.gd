@@ -60,7 +60,7 @@ func _run() -> void:
 	FileAccess.set_read_only_attribute(file,false)
 	await click(scene.game_menu._retry)
 	expect(not scene._settings_dirty and not scene.game_menu._retry.visible, "Retry saves latest value")
-	scene.game_menu._show_page(1)
+	scene.game_menu._show_page(0)
 	var ui_size: Vector2 = root.get_texture().get_size()
 	for index: int in [1,2,0]:
 		await measure_option(scene.game_menu._resolution,index,"resolution")

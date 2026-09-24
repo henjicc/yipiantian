@@ -10,6 +10,7 @@ const DEFAULTS: Dictionary = {
 	"fullscreen": false, "quality": "standard", "dof_enabled": true,
 	"resolution": "1080", "sway_enabled": false, "sway_idle_seconds": 30.0,
 	"fsr": "off", "shadows": "standard", "lighting": "standard", "antialiasing": "2x",
+	"wallpaper_hint_dismissed": false,
 }
 var directory: String
 var _loaded: bool = false
@@ -122,6 +123,8 @@ static func valid_settings(value: Dictionary) -> bool:
 	if not (delay is int or delay is float) or not is_finite(float(delay)) or float(delay) != floorf(float(delay)) or delay < 0 or delay > 600:
 		return false
 	if not value.get("sway_enabled", DEFAULTS.sway_enabled) is bool:
+		return false
+	if not value.get("wallpaper_hint_dismissed", false) is bool:
 		return false
 	return value.get("fullscreen") is bool and value.get("dof_enabled") is bool and value.get("quality") in ["standard", "low", "high"] and value.get("resolution") in ["native", "720", "1080", "1440", "2160"]
 

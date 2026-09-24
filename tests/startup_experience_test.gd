@@ -52,7 +52,7 @@ func _run() -> void:
 	_expect(scene.settings_values.quality == "low" and not scene.settings_values.dof_enabled, "Manual choice overrides the recommendation")
 	var menu: Node = scene.game_menu
 	scene._open_menu()
-	menu._show_page(1)
+	menu._show_page(0)
 	await create_timer(.3).timeout
 	_expect(menu._quality.selected == 2, "Saved low preset is identified correctly")
 	menu._dof.button_pressed = true

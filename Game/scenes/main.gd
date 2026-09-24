@@ -25,6 +25,8 @@ const HUD = preload("res://scenes/farm_hud.gd")
 const SettingsStore = preload("res://settings/settings_store.gd")
 const GameMenu = preload("res://ui/game_menu.gd")
 const DesktopWallpaper = preload("res://platform/desktop_wallpaper.gd")
+const WallpaperHint = preload("res://ui/wallpaper_hint.gd")
+var wallpaper_hint: WallpaperHint
 var desktop_wallpaper: DesktopWallpaper
 var _wallpaper_issue: String = ""
 var _wallpaper_click: Vector2 = Vector2.INF
@@ -279,6 +281,11 @@ func _ready() -> void:
 	desktop_wallpaper.changed.connect(_wallpaper_changed)
 	desktop_wallpaper.interaction_changed.connect(_wallpaper_interaction_changed)
 	desktop_wallpaper.workarea_changed.connect(hud.set_workarea)
+	wallpaper_hint = WallpaperHint.new()
+	wallpaper_hint.name = "WallpaperHint"
+	add_child(wallpaper_hint)
+	wallpaper_hint.dismissed.connect(_dismiss_wallpaper_hint)
+	desktop_wallpaper.workarea_changed.connect(wallpaper_hint.set_workarea)
 	desktop_wallpaper.pointer_moved.connect(_wallpaper_pointer)
 	desktop_wallpaper.pointer_left.connect(_wallpaper_leave)
 	desktop_wallpaper.pointer_button.connect(_wallpaper_button)
@@ -1352,7 +1359,7 @@ func _physics_process(_delta: float) -> void:
 		if desktop_wallpaper.busy: return
 		if desktop_wallpaper.active and not desktop_wallpaper.interacting:
 			var entry: String = ""
-			if get_viewport().get_visible_rect().has_point(_pointer_position) and $Environment/DoorTools.may_hit(camera, _pointer_position):
+			if not wallpaper_hint.contains(_pointer_position) and get_viewport().get_visible_rect().has_point(_pointer_position) and $Environment/DoorTools.may_hit(camera, _pointer_position):
 				entry = _scene_entry_at(_pointer_position)
 			$Environment/DoorTools.set_hover(entry.trim_prefix("tool_") if entry.begins_with("tool_") or entry == "rest" else "")
 			if _wallpaper_click.is_finite():
@@ -1895,7 +1902,11 @@ func _wallpaper_changed(enabled: bool) -> void:
 	if enabled:
 		game_menu.dismiss()
 		hud.hide()
+		if not settings_values.wallpaper_hint_dismissed:
+			wallpaper_hint.present(camera, $Environment/DoorTools.chair)
+			$Environment/DoorTools.set_chair_hint(true)
 	else:
+		_hide_wallpaper_hint()
 		_restore_wallpaper_layers()
 		hud.set_workarea(Vector4(0, 0, 1, 1))
 		hud.show()
@@ -1910,6 +1921,7 @@ func _wallpaper_interaction_changed(enabled: bool) -> void:
 	get_viewport().gui_disable_input = not enabled
 	camera.free_input_enabled = enabled
 	if enabled:
+		_hide_wallpaper_hint()
 		_restore_wallpaper_layers()
 		hud.show()
 		var entry: String = _wallpaper_entry
@@ -1926,6 +1938,23 @@ func _restore_wallpaper_layers() -> void:
 	_wallpaper_layers.clear()
 
 
+func _hide_wallpaper_hint() -> void:
+	wallpaper_hint.dismiss()
+	$Environment/DoorTools.set_chair_hint(false)
+
+
+func _dismiss_wallpaper_hint(permanently: bool) -> void:
+	if permanently:
+		settings_values.wallpaper_hint_dismissed = true
+		_settings_dirty = true
+		if not _save_settings():
+			# Keep the bubble actionable; a failed write is not an opt-out.
+			settings_values.wallpaper_hint_dismissed = false
+			wallpaper_hint.show_save_failure()
+			return
+	_hide_wallpaper_hint()
+
+
 func _inject_wallpaper(event: InputEventMouse, flags: int = 0) -> void:
 	event.shift_pressed = bool(flags & 1)
 	event.ctrl_pressed = bool(flags & 2)
@@ -1939,7 +1968,9 @@ func _wallpaper_pointer(point: Vector2, flags: int = 0) -> void:
 	var position: Vector2 = point * get_viewport().get_visible_rect().size
 	var previous: Vector2 = _pointer_position
 	_pointer_position = position
-	if not desktop_wallpaper.interacting: return
+	if not desktop_wallpaper.interacting:
+		wallpaper_hint.move_pointer(position)
+		return
 	tool_cursor.update_pointer(position)
 	var event := InputEventMouseMotion.new()
 	event.position = position
@@ -1953,6 +1984,10 @@ func _wallpaper_button(point: Vector2, button: int, pressed: bool, factor: float
 	_wallpaper_pointer(point, flags)
 	if not desktop_wallpaper.interacting:
 		if button == MOUSE_BUTTON_LEFT:
+			if wallpaper_hint.pointer_button(_pointer_position, pressed):
+				_wallpaper_press = Vector2.INF
+				_wallpaper_click = Vector2.INF
+				return
 			if pressed:
 				_wallpaper_press = _pointer_position
 			else:
@@ -1980,6 +2015,7 @@ func _wallpaper_button(point: Vector2, button: int, pressed: bool, factor: float
 
 
 func _wallpaper_leave() -> void:
+	wallpaper_hint.cancel_pointer()
 	tool_cursor.update_pointer(Vector2.INF)
 	for button: int in [1, 2, 3, 8, 9]:
 		var mask: int = 1 << (button-1)

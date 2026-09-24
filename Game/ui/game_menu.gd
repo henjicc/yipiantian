@@ -80,7 +80,7 @@ func _ready() -> void:
 	panel.add_child(column)
 	var tabs := HBoxContainer.new()
 	column.add_child(tabs)
-	var titles: Array[String] = ["音量", "显示", "操作", "关于", "开发者"]
+	var titles: Array[String] = ["显示", "音量", "操作", "关于", "开发者"]
 	for title: String in titles:
 		var tab: Button = _button(tabs, title)
 		tab.toggle_mode = true
@@ -124,7 +124,7 @@ func _ready() -> void:
 	scroll.follow_focus = true
 	content.add_child(scroll)
 	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_pages.append(scroll)
+	_pages.push_front(scroll)
 	var display := VBoxContainer.new()
 	display.name = "Display"
 	display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -176,11 +176,6 @@ func _ready() -> void:
 	_sway_delay.custom_minimum_size.y = 42
 	_row(display, "空闲后晃动").add_child(_sway_delay)
 	_sway_delay.value_changed.connect(func(value: float) -> void: _change("sway_idle_seconds", roundi(value)))
-	_wallpaper = _button(_row(display, "桌面"), "设为桌面壁纸")
-	_wallpaper.name = "DesktopWallpaper"
-	_wallpaper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_wallpaper.tooltip_text = "在当前屏幕安静展示农场；双击系统托盘图标返回游戏。"
-	_wallpaper.pressed.connect(_request_wallpaper)
 	var operations: RichTextLabel = _text_page(content, "操作说明")
 	operations.text = "[b]照料田地[/b]\n空手点击田格展开菜单，选择动作；播种时先选蔬菜拿起种子，再点击土地种植。点空白、右键或 Esc 关闭菜单。门前种子篮、锄头、水壶可拿起对应工具，再点击土地连续操作；底部种植／工具按钮展开横排选择。选菜后鼠标携带种子，点击土地可连续种植；右键、Esc 或取消按钮放下工具。每轮可浇水一次，不同作物节省的生长时间不同；成熟收获一篮。\n\n[b]照料菜架[/b]\n点击架脚的种植位靠近，再点种植位播种丝瓜；也可点藤蔓或果实浇水、收获。扩架增加位置，缩架前先收获会被移除的作物。\n\n[b]观察院落[/b]\n滚轮用于调整镜头，拿着种子时也不会切换菜品。点击田块靠近，向后滚轮返回聚焦前的机位；中键拖动转动视角，Shift＋中键平移。\n\n[b]返回与布置[/b]\n右键或 Esc 先放下工具，再清除选格、返回全景。“建设”内选择土地、建筑或摆件：选装饰、点空位，再确认；旋转适用于地面装饰。\n\n作物按现实时间生长。离开后再次进入，会继续上次的农场。"
 	var sources: RichTextLabel = _text_page(content, "关于")
@@ -205,22 +200,25 @@ func _ready() -> void:
 	_retry.name = "RetrySettings"
 	_retry.pressed.connect(func() -> void: save_requested.emit())
 	var actions := HBoxContainer.new()
+	actions.name = "Actions"
 	column.add_child(actions)
 	_quit = _button(actions, "退出游戏")
 	_quit.name = "QuitGame"
-	_quit.custom_minimum_size.x = 180
+	_quit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_style_exit(_quit)
 	_quit.pressed.connect(func() -> void:
 		_paper.hide()
 		_quit_confirmation.show()
 		_animate_confirmation(_quit_confirmation)
 		_keep_playing.grab_focus())
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	actions.add_child(spacer)
+	_wallpaper = _button(actions, "设为壁纸")
+	_wallpaper.name = "DesktopWallpaper"
+	_wallpaper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_wallpaper.tooltip_text = "在当前屏幕展示农场；右键点击系统托盘图标可返回农场。"
+	_wallpaper.pressed.connect(_request_wallpaper)
 	_close = _button(actions, "返回农场")
 	_close.name = "ReturnToFarm"
-	_close.custom_minimum_size.x = 180
+	_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_close.pressed.connect(func() -> void: close_requested.emit())
 	_build_quit_confirmation()
 	_build_wallpaper_confirmation()
@@ -380,7 +378,7 @@ func _refresh_focus_chain(index: int) -> void:
 		if tab.visible: controls.append(tab)
 	_collect_focus(_pages[index], controls)
 	if _retry.visible: controls.append(_retry)
-	controls.append_array([_quit, _close])
+	controls.append_array([_quit, _wallpaper, _close])
 	for position: int in controls.size():
 		var control: Control = controls[position]
 		control.focus_mode = Control.FOCUS_ALL
@@ -505,7 +503,7 @@ func _animate_confirmation(panel: Control) -> void:
 
 func set_wallpaper_mode(active: bool) -> void:
 	_wallpaper_active = active
-	_wallpaper.text = "结束桌面操作" if active else "设为桌面壁纸"
+	_wallpaper.text = "结束桌面操作" if active else "设为壁纸"
 	_wallpaper.tooltip_text = "收起操作控件，继续展示壁纸。" if active else "悬停农具高亮，点击后直接在桌面照料农场；托盘可返回窗口。"
 
 

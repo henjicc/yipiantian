@@ -76,7 +76,7 @@ func _run() -> void:
 	_expect(menu._close.text == "暂不保存，返回" and menu._quit.text == "仍然退出", "Failed settings save exposes truthful continue and exit choices")
 	menu.present(Store.DEFAULTS, "设置文件无法读取，已使用默认设置。原件保留。")
 	_expect(menu._status.text.begins_with("设置文件无法读取"), "Load failures remain visible on reopen")
-	menu._show_page(1)
+	menu._show_page(0)
 	await create_timer(.28).timeout
 	for viewport_size: Vector2i in [Vector2i(960, 600), Vector2i(1280, 720), Vector2i(1920, 1080), Vector2i(3840, 2160)]:
 		root.size = viewport_size
@@ -86,13 +86,13 @@ func _run() -> void:
 		_expect(root.get_visible_rect().encloses(panel.get_global_rect()), "Entire modal fits logical viewport for %s" % str(viewport_size))
 		var physical: Rect2 = root.get_stretch_transform() * panel.get_global_rect()
 		_expect(Rect2(Vector2.ZERO, Vector2(viewport_size)).encloses(physical), "Scaled modal fits physical window %s" % str(viewport_size))
-		for control: Control in [menu._close, menu._quit, menu._pages[1]]:
+		for control: Control in [menu._close, menu._quit, menu._wallpaper, menu._pages[0]]:
 			_expect(panel.get_global_rect().encloses(control.get_global_rect()), "Footer and scroll viewport stay inside modal")
-		var scroll: ScrollContainer = menu._pages[1]
-		scroll.ensure_control_visible(menu._wallpaper)
+		var scroll: ScrollContainer = menu._pages[0]
+		scroll.ensure_control_visible(menu._sway_delay)
 		await process_frame
 		await process_frame
-		_expect(scroll.get_global_rect().encloses(menu._wallpaper.get_global_rect()), "Last display action is reachable by scrolling: %s in %s at %s" % [menu._wallpaper.get_global_rect(), scroll.get_global_rect(), viewport_size])
+		_expect(scroll.get_global_rect().encloses(menu._sway_delay.get_global_rect()), "Last display action is reachable by scrolling: %s in %s at %s" % [menu._sway_delay.get_global_rect(), scroll.get_global_rect(), viewport_size])
 		_expect(scroll.get_global_rect().end.y <= menu._status.get_global_rect().position.y, "Clipped display content cannot overlap footer")
 		scroll.scroll_vertical = 0
 		if visual and viewport_size == Vector2i(3840, 2160):
@@ -105,7 +105,7 @@ func _run() -> void:
 			root.get_texture().get_image().save_png(capture_folder.path_join("dropdown-refined-4k.png"))
 			menu._quality.get_popup().hide()
 	_expect(not menu.has_node("SaveSettings") and not menu._retry.visible, "No manual save button on normal settings")
-	_expect(menu._tabs[0].text == "音量" and menu._tabs[1].text == "显示" and menu._tabs[3].text == "关于", "Settings categories and About use requested labels")
+	_expect(menu._tabs[0].text == "显示" and menu._tabs[1].text == "音量" and menu._tabs[3].text == "关于", "Settings categories and About use requested labels")
 	if OS.is_debug_build() and OS.has_feature("editor"):
 		menu._show_page(4)
 		_expect(menu._developer_buttons.has_all(["camera_tuning", "sway_tuning", "free_camera", "models", "time", "mature"]), "Developer tab contains camera, sway, free view, model, time and crop maturity tools")

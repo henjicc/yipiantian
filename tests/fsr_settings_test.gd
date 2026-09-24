@@ -20,7 +20,7 @@ func _run() -> void:
 	_expect(RenderingServer.get_current_rendering_method() == "forward_plus", "Test uses the real supported renderer")
 	_expect(scene.settings_values.fsr == "off", "FSR remains opt-in")
 	scene._open_menu()
-	scene.game_menu._show_page(1)
+	scene.game_menu._show_page(0)
 	for index: int in [1, 2, 3]:
 		_choose(scene.game_menu._fsr, index)
 		await create_timer(.4).timeout
