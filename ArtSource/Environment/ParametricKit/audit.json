@@ -40,18 +40,36 @@
       ],
       "uv": true,
       "reimport_verified": true
-    },
-    "post_low": {
-      "triangles": 553,
-      "dimensions_blender": [
-        0.20631800591945648,
-        0.2168341875076294,
-        0.9004191756248474
-      ],
-      "uv": true,
-      "reimport_verified": true
     }
   },
   "new_tripo_calls": 0,
-  "texture_source": "ArtSource/Environment/ProceduralBridge/20260924/painted_elm.png"
+  "texture_source": "Game/art/environment/parametric_kit/bamboo_gongbi_atlas.png",
+  "normal_maps": 0,
+  "roughness_maps": 0,
+  "color_factors_linear": {
+    "GongbiBambooSkin": [
+      0.5,
+      0.5600000023841858,
+      0.41999998688697815,
+      1.0
+    ],
+    "GongbiBambooNode": [
+      0.46000000834465027,
+      0.49000000953674316,
+      0.3700000047683716,
+      1.0
+    ],
+    "GongbiHempBinding": [
+      0.47999998927116394,
+      0.41999998688697815,
+      0.3199999928474426,
+      1.0
+    ],
+    "GongbiBambooCut": [
+      0.6200000047683716,
+      0.5799999833106995,
+      0.41999998688697815,
+      1.0
+    ]
+  }
 }

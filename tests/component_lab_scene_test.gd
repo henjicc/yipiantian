@@ -11,6 +11,9 @@ func expect(ok: bool,message: String) -> void:
 	if not ok: failures.append(message); push_error(message)
 
 func _run() -> void:
+	if "--bamboo-review" in OS.get_cmdline_user_args():
+		await bamboo_review()
+		return
 	root.size=Vector2i(1600,1000)
 	output=ProjectSettings.globalize_path("res://../.local/verification/component-lab")
 	DirAccess.make_dir_recursive_absolute(output)
@@ -115,3 +118,43 @@ func capture(name: String) -> void:
 	await create_timer(.4).timeout
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(output+"/"+name+".png")
+
+func bamboo_review() -> void:
+	var before: bool="--before" in OS.get_cmdline_user_args()
+	output=ProjectSettings.globalize_path("res://../.local/verification/bamboo-material/"+("before" if before else "after"))
+	DirAccess.make_dir_recursive_absolute(output)
+	var scene: Node3D=load("res://scenes/procedural_lab/component_lab.tscn").instantiate()
+	root.add_child(scene)
+	while scene.current_plan.is_empty() or scene.busy: await process_frame
+	scene._select_kind(1)
+	while scene.busy: await process_frame
+	await capture("01-whole")
+	scene.focus("joint"); await capture("02-joint")
+	scene.focus("reverse"); await capture("03-reverse")
+	if not before:
+		var atlas: Texture2D=load("res://art/environment/parametric_kit/bamboo_gongbi_atlas.png")
+		expect(atlas.get_width()<=1024 and atlas.get_image().has_mipmaps(),"bamboo atlas has bounded size and mipmaps")
+		var parts: GDScript=load("res://scenes/procedural_lab/kit_parts.gd")
+		for part: String in ["bamboo","bamboo_low","node","binding"]:
+			for source: Dictionary in parts._source(part):
+				for surface: int in source.mesh.get_surface_count():
+					var mat: StandardMaterial3D=source.mesh.surface_get_material(surface)
+					expect(mat.albedo_texture==atlas,"all bamboo surfaces share the painted atlas: "+part)
+					expect(mat.albedo_color.r<.9 and mat.albedo_color.g<.9,"authored muted tint survives export: "+part)
+					expect(not mat.normal_enabled and mat.normal_texture==null and mat.roughness_texture==null,"bamboo keeps relief off: "+part)
+					expect(mat.transparency==BaseMaterial3D.TRANSPARENCY_DISABLED,"bamboo remains opaque: "+part)
+		for options: Dictionary in [{"length":2.4,"height":1.6,"width":1.0,"slope":-.18},{"length":8.0,"height":2.8,"width":3.0,"slope":.18}]:
+			for key: String in options: scene.controls[key].value=options[key]
+			await click(scene.generate_button)
+			while scene.busy: await process_frame
+			scene.focus("all"); await capture("04-boundary-"+str(options.length))
+		scene.distance=40; scene.desired_distance=40; scene._update_camera(); await capture("05-far")
+		scene.focus("joint"); await capture("06-return")
+		for child: Node in scene.get_children():
+			if child.has_method("set_preview_hour"):
+				child.set_preview_hour(18.5)
+		await capture("07-dusk")
+	scene.queue_free()
+	await process_frame
+	print("BAMBOO_MATERIAL_REVIEW failures=%s"%JSON.stringify(failures))
+	quit(0 if failures.is_empty() else 1)

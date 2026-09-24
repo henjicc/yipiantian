@@ -33,6 +33,9 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_resize)
 	_resize()
 	_setup_environment()
+	for argument: String in OS.get_cmdline_user_args():
+		if argument.begins_with("--component=") and argument.get_slice("=",1) in ["railing","rack","tree","house"]:
+			kind=argument.get_slice("=",1)
 	_setup_ui()
 	brush=RailingBrush.new(); brush.lab=self; add_child(brush)
 	await regenerate()
@@ -65,6 +68,7 @@ func _setup_ui() -> void:
 	title.add_theme_font_size_override("font_size",28)
 	column.add_child(title)
 	for text: String in ["木栏杆","竹架","桂花树","江南民居"]: kind_picker.add_item(text)
+	kind_picker.select(["railing","rack","tree","house"].find(kind))
 	column.add_child(kind_picker)
 	FarmTheme.configure_option(kind_picker)
 	kind_picker.item_selected.connect(_select_kind)

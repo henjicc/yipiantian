@@ -1,0 +1,22 @@
+{
+  "date": "2026-09-25",
+  "baseline": "65f457d8",
+  "tool": "built-in image_gen",
+  "prompt": "Use case: stylized-concept. Asset type: flat base-color texture atlas for a 3D Jiangnan bamboo trellis, NOT a concept scene or a rendered object. Reference image 1 (greens) and 2 (farm) supply ONLY the gongbi fine-line and light-color painting style. Create a square image divided into EXACT four equal quadrants, with NO gaps, borders, labels, text, shadows, lighting gradients or perspective. Each quadrant filled edge-to-edge. TOP LEFT: unwrapped aged bamboo skin, fibers flowing strictly horizontally left-to-right. Muted straw ochre, grey olive and warm umber washes, beautiful sparse long organic fine ink-brown fiber strokes with varied thickness, some wider translucent pigment layers, NOT wood knots, NO transverse bamboo nodes in this quadrant. Organized painterly marks clearly readable at game size, not photographic microtexture or noise. TOP RIGHT: flattened bamboo node collar skin, a narrow irregular dark umber vertical seam right at the horizontal center (x=75% of total image), with pale worn ridge along it, transitions into the SAME bamboo colors as top left on both sides. Horizontal delicate fiber strokes. BOTTOM LEFT: perfectly centered orthographic circular bamboo cut cross-section, fills 85% of quadrant width, pale straw dense ring outer wall and muted dark brown recessed center. Very subtle radial fiber marks, fine hand-painted brown outline around ring, surrounding background same pale straw; no perspective, no protruding cylinder. BOTTOM RIGHT: flat unwrapped hemp rope surface, continuous horizontal warm medium-brown rope grain crossed by orderly curved diagonal twisted strand divisions, dark brown fine gongbi contour lines with restrained pale ochre accents, low contrast and no shiny white highlights. All quadrants harmonious hand-painted gongbi pigments, natural material color, selective articulate ink lines and smooth layered color, no parchment grain, no speckles, no harsh sharpening, no random cracks, no green neon, no photographic pores. This is a usable color-only UV material sheet, all detail is painted and soft matte, no normal map.",
+  "references": [
+    "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+    "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+  ],
+  "output": "Game/art/environment/parametric_kit/bamboo_gongbi_atlas.png",
+  "model": "not returned",
+  "seed": "not returned",
+  "fee": "not returned",
+  "tripo_calls": 0,
+  "selection": "Four material regions used via UVs. Lower-left exterior and bottom of rope region excluded. Opaque color only; generated alpha not connected.",
+  "pipeline": [
+    "Blender 5.2.2: preserve component geometry; replace color texture, correct wrap seam and radial end UVs; pack source image into bamboo_modules.blend",
+    "Export four GLBs, reimport verify, link identical image to shared external atlas",
+    "Godot: compressed color texture with mipmaps and 1024 size limit; no normal or roughness maps"
+  ],
+  "status": "Adopted in independent component lab; user aesthetic acceptance pending."
+}
