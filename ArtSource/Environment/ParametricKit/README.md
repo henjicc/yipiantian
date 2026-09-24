@@ -13,11 +13,11 @@
 
 ## 源与工具贡献
 
-木柱复用 [ProceduralBridge](../ProceduralBridge/README.md) 的 Tripo 任务 `18e92ae5-d11c-4987-81d4-babb51731181`；横杆复用该目录的 Blender 倒角木料。未重新生成木柱。竹杆、竹节、绑绳由本目录 `prepare.py` 在 Blender 5.2.2 LTS 按真实米制尺寸构建；不能称为新的 Tripo 产物。
+木栏杆已按2026-09-25用户反馈改为本目录 `prepare_railing.py` 制作的无孔实木桩、横杆和斜撑，三者共同使用 [ProceduralBridge](../ProceduralBridge/README.md) 的 Tripo 任务 `18e92ae5-d11c-4987-81d4-babb51731181` 原颜色图中的干净木纹区域。没有重新调用Tripo或修改原图。首轮采用的带榫孔木柱和另一套横杆材质不再用于本研究室木栏杆；木桥原模型保持原用途。竹杆、竹节、绑绳仍由 `prepare.py` 在 Blender 5.2.2 LTS 制作。
 
-`bamboo_modules.blend` 保留可编辑网格、UV 与打包贴图。杆件局部长度一米，导出长轴为 Godot Z，绕原点定位；木柱底部为原点。`audit.json` 保存实际三角形、尺寸及干净重导入结果。竹杆高／低 192／44 三角形，竹节156、绑绳1060，木柱低档553；原木柱高档1847。
+`bamboo_modules.blend` 保留可编辑网格、UV 与打包贴图。杆件局部长度一米，导出长轴为 Godot Z，绕原点定位；木柱底部为原点。`audit.json` 保存竹材及首轮木柱处理结果：竹杆高／低192／44三角形，竹节156、绑绳1060；其中旧木柱低档553仅为历史导出，不是现役栏杆木桩。当前木栏杆的源与检查见下节。
 
-新杆件的颜色贴图复用既有 `painted_elm.png`。正式 GLB 直接引用 `Game/art/environment/procedural_bridge/beam_PaintedElm.png`，木柱低档引用原木柱图片；同内容不另存新运行贴图。打包源中的纹理保留，原始 Tripo 模型未修改。
+竹杆颜色贴图复用既有 `painted_elm.png`，正式GLB链接 `Game/art/environment/procedural_bridge/beam_PaintedElm.png`；首轮木柱低档引用原木柱图片。同内容不另存新运行贴图，原始Tripo模型未修改。
 
 重建（仓库根目录）：
 
@@ -27,6 +27,23 @@ blender --background --python-exit-code 1 --python ArtSource/Environment/Paramet
 ```
 
 会覆盖本目录的 `bamboo_modules.blend`、`audit.json` 与五个对应 GLB；不覆盖原木桥源或参考图。脚本先重导入核对 UV、有限坐标、贴图与三角数，再通过项目现有 GLB 打包函数链接已有相同贴图。
+
+## 无孔木栏杆与统一木材（2026-09-25）
+
+用户指出两个问题：横杆／斜撑与立柱质感不同，以及固定榫孔被随机转向后与实际接头不对应。原因是混用了两套纹理，且首轮生成规则没有把原木柱的孔位作为连接约束。本次采用用户允许的“全部无孔”方案，制作封闭八边倒角方木桩、柱帽和绳圈；保留轻微磨边，横杆和斜撑共用相同木纹、粗糙度及反光设置，纤维沿各自长度方向。
+
+- `railing_modules.blend` 是可编辑源，`prepare_railing.py` 为重建入口，`railing-audit.json` 保存实际导出结果。木桩高／低740／116三角形，横杆108三角形；基准桩高0.9米、柱帽0.205米宽、杆截面0.085米。原图不变，只通过UV选择 `[.709,.462]–[.855,.580]` 的木纹区域，细杆与木桩保持接近的横向纹理密度。三份GLB均链接同一原颜色图，无新增运行贴图或付费生成。
+- 立柱依据路径方向放置；种子只允许对称实木桩作半周翻转，改变纹理／磨边朝向。上下横杆和斜撑的实际端帽收进柱体，斜撑位于上下杆之间，不再向侧面偏移后硬穿接头。转角共用一根实木桩，不模拟隐藏榫卯的加工细节。
+- Blender合并部件前统一UV层名为 `WoodGrain`；否则柱帽原 `UVMap` 与柱身的新UV层并存，导出主UV时柱帽可能退回零坐标而变成纯色。重导入检查每个木材面的UV都位于选定区域，另检查有限坐标、三角数、零开边以及四侧16条射线命中旧榫孔高度的实体外壁。人工低档关闭额外自动LOD。
+- 专项 `tests/component_railing_joint_test.gd` 检查实际运行材质共享，直线／转角／折线各自默认、最小、最大尺寸与正负坡度下的横杆／斜撑端部确实进入实体柱。画面覆盖默认、正反近景、三形态、最大／最小坡地和远近返回；沿用 `component_lab_scene_test.gd` 验证接地、种子、按钮与复制。
+
+```powershell
+blender --background --python-exit-code 1 --python ArtSource/Environment/ParametricKit/prepare_railing.py
+& scripts/godot.ps1 -Action Import
+& scripts/godot.ps1 -Action Run -ExtraArgs '--script','../tests/component_railing_joint_test.gd'
+```
+
+重建只覆盖本目录的 `railing_modules.blend`、`railing-audit.json` 和运行目录三份 `fence_*.glb`，不覆盖旧桥源。截图在 `.local/verification/solid-railing/`，用户标注原图与最终证据归档到 `制作留档/03_处理与验证/20260925_木栏杆材质与连接/`。参考来源是既有Tripo木柱纹理和用户反馈，未新增参考图生成；建模由Blender完成，Godot只拼装，未将新柱几何记成Tripo输出。节点基线为 `79223037`；已有截图与源，未另录过程视频。旧2026-09-24组合性能记录属于修改前版本，本次没有重测或声称资源收益。
 
 ## 验证与复现
 

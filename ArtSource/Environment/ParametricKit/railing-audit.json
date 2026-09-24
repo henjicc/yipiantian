@@ -1,0 +1,53 @@
+{
+  "blender": "5.2.2 LTS",
+  "source_task": "18e92ae5-d11c-4987-81d4-babb51731181",
+  "new_tripo_calls": 0,
+  "new_images": 0,
+  "atlas": "Game/art/environment/procedural_bridge/post_Color_18e92ae5-d11c-4987-81d4-babb51731181.jpg",
+  "wood_uv_rectangle": [
+    0.709,
+    0.462,
+    0.855,
+    0.58
+  ],
+  "parts": {
+    "fence_post": {
+      "triangles": 740,
+      "dimensions_blender": [
+        0.20499999821186066,
+        0.20499999821186066,
+        0.9000000357627869
+      ],
+      "materials": 2,
+      "wood_uv_verified": true,
+      "open_edges": 0,
+      "solid_side_rays": 16,
+      "reimport_verified": true
+    },
+    "fence_post_low": {
+      "triangles": 116,
+      "dimensions_blender": [
+        0.20499999821186066,
+        0.20499999821186066,
+        0.9000000357627869
+      ],
+      "materials": 1,
+      "wood_uv_verified": true,
+      "open_edges": 0,
+      "solid_side_rays": 16,
+      "reimport_verified": true
+    },
+    "fence_rail": {
+      "triangles": 108,
+      "dimensions_blender": [
+        0.08500000089406967,
+        1.0,
+        0.08500000089406967
+      ],
+      "materials": 1,
+      "wood_uv_verified": true,
+      "open_edges": 0,
+      "reimport_verified": true
+    }
+  }
+}

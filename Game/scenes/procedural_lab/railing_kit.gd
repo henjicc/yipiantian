@@ -42,19 +42,24 @@ static func build(data: Dictionary) -> Node3D:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = data.seed.hash()
 	if data.kind == "railing":
-		for point: Vector3 in points:
-			var basis := Basis(Vector3.UP,rng.randi_range(0,3)*PI*.5).scaled_local(Vector3(1,p.height/.9,1))
-			parts.add("post",Transform3D(basis,point),"near")
-			parts.add("post_low",Transform3D(basis,point),"far")
+		for i: int in points.size():
+			var along: Vector3=points[mini(i+1,points.size()-1)]-points[maxi(0,i-1)]
+			along.y=0
+			var basis := Basis(Quaternion(Vector3.BACK,along.normalized())).scaled_local(Vector3(1,p.height/.9,1))
+			# A half turn only changes grain/edge wear on the symmetric solid post.
+			basis=basis*Basis(Vector3.UP,rng.randi_range(0,1)*PI)
+			parts.add("fence_post",Transform3D(basis,points[i]),"near")
+			parts.add("fence_post_low",Transform3D(basis,points[i]),"far")
 		for i: int in range(points.size()-1):
 			var a: Vector3 = points[i]
 			var b: Vector3 = points[i+1]
-			var normal: Vector3 = (b-a).cross(Vector3.UP).normalized()*.06
 			for h: float in [.29,.79]:
-				parts.span("rail",a+Vector3.UP*p.height*h,b+Vector3.UP*p.height*h)
-			# Alternating single diagonals avoid coplanar crossings; ends enter the posts.
-			var heights := Vector2(.29,.79) if i%2 == 0 else Vector2(.79,.29)
-			parts.span("rail",a+Vector3.UP*p.height*heights.x+normal,b+Vector3.UP*p.height*heights.y+normal,.64)
+				_fence_member(parts,a+Vector3.UP*p.height*h,b+Vector3.UP*p.height*h)
+			# Braces sit between the rails, on the same centre plane. Their ends
+			# land inside the solid post, not on an arbitrary forward offset.
+			var heights := Vector2(p.height*.29+.06,p.height*.79-.06)
+			if i%2!=0: heights=Vector2(heights.y,heights.x)
+			_fence_member(parts,a+Vector3.UP*heights.x,b+Vector3.UP*heights.y,.64)
 	else:
 		for point: Vector3 in points:
 			for side: float in [-1.0,1.0]:
@@ -83,6 +88,11 @@ static func build(data: Dictionary) -> Node3D:
 	var root: Node3D = parts.build()
 	root.set_meta("plan",data)
 	return root
+
+static func _fence_member(parts: RefCounted,a: Vector3,b: Vector3,thickness: float=1.0) -> void:
+	var axis: Vector3=(b-a).normalized()
+	# Both end caps remain inside the post's solid 0.17m section at every turn.
+	parts.span("fence_rail",a+axis*.035,b-axis*.035,thickness)
 
 static func _bamboo(parts: RefCounted,a: Vector3,b: Vector3,thickness: float,rng: RandomNumberGenerator) -> void:
 	parts.span("bamboo",a,b,thickness,"near")

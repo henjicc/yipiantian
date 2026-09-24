@@ -25,7 +25,7 @@ func _run() -> void:
 			var model: Node3D=Kit.build(plan)
 			if kind == "railing":
 				for child: Node in model.get_children():
-					if not child.name.begins_with("post_"): continue
+					if not child.name.begins_with("fence_post_"): continue
 					var batch: MultiMesh=child.multimesh
 					expect(batch.instance_count==points.size(),"each shared corner has exactly one post")
 					for i: int in batch.instance_count:
