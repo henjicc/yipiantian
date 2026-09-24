@@ -1,6 +1,7 @@
 extends "res://scenes/procedural_lab/procedural_lab.gd"
 const RailingKit = preload("res://scenes/procedural_lab/railing_kit.gd")
 const TreeKit = preload("res://scenes/procedural_lab/tree_kit.gd")
+const HouseKit = preload("res://scenes/procedural_lab/house_kit.gd")
 var kind: String = "railing"
 var kind_picker := OptionButton.new()
 var parameter_box: VBoxContainer
@@ -8,6 +9,7 @@ var compare_check := CheckButton.new()
 var export_button := Button.new()
 var generation_ms: float = 0
 var wind_check := CheckButton.new()
+var joint_view: bool = false
 
 func _ready() -> void:
 	# Island-only controls are constructed by the inherited script, but never used
@@ -50,7 +52,7 @@ func _setup_ui() -> void:
 	title.text="构件生成研究室"
 	title.add_theme_font_size_override("font_size",28)
 	column.add_child(title)
-	for text: String in ["木栏杆","竹架","桂花树"]: kind_picker.add_item(text)
+	for text: String in ["木栏杆","竹架","桂花树","江南民居"]: kind_picker.add_item(text)
 	column.add_child(kind_picker)
 	FarmTheme.configure_option(kind_picker)
 	kind_picker.item_selected.connect(_select_kind)
@@ -114,6 +116,16 @@ func _populate_parameters() -> void:
 	for child: Node in parameter_box.get_children():
 		parameter_box.remove_child(child); child.queue_free()
 	controls.clear()
+	if kind == "house":
+		_slider(parameter_box,"bays","开间数",2,3,1,3)
+		_slider(parameter_box,"depth","进深",3.6,5.2,.2,4.2," 米")
+		_slider(parameter_box,"height","层高",2.4,3.2,.1,2.7," 米")
+		_slider(parameter_box,"pitch","屋顶坡度",22,38,1,30,"°")
+		_slider(parameter_box,"porch","门廊：无 / 有",0,1,1,1)
+		_slider(parameter_box,"openings","门窗：居中 / 靠左 / 靠右",0,2,1,0)
+		_named_choice("porch","门廊",["无","有"])
+		_named_choice("openings","大门位置",["居中","靠左","靠右"])
+		return
 	if kind == "tree":
 		_slider(parameter_box,"height","树高",3,5.8,.2,4.2," 米")
 		_slider(parameter_box,"spread","冠幅",2.8,6,.2,4.4," 米")
@@ -131,11 +143,18 @@ func _populate_parameters() -> void:
 	_slider(parameter_box,"slope","地面坡度",-.18,.18,.02,0)
 
 func _select_kind(index: int) -> void:
-	kind=["railing","rack","tree"][index]
+	kind=["railing","rack","tree","house"][index]
 	kind_picker.select(index)
 	wind_check.visible=kind=="tree"
 	_populate_parameters()
 	regenerate()
+
+func _named_choice(key: String,title: String,choices: Array[String]) -> void:
+	var slider: HSlider=controls[key]
+	var label: Label=slider.get_parent().get_child(0)
+	var update := func(v: float) -> void: label.text=title+"   "+choices[int(v)]
+	slider.value_changed.connect(update)
+	update.call(slider.value)
 
 func _dirty() -> void:
 	status.text="调整后点击「重新生成」"
@@ -162,23 +181,29 @@ func regenerate() -> void:
 			if kind == "railing": variant.path=i
 			elif kind == "rack":
 				variant.length=[2.8,4.6,6.8][i]; variant.width=[1.2,1.8,2.6][i]
-			else:
+			elif kind=="tree":
 				variant.height=[5.4,3.2,4.2][i]; variant.spread=[3.0,4.6,5.8][i]
 				variant.density=[.25,.8,.55][i]; variant.bias=[0,.15,.7][i]
+			else:
+				variant.bays=[2,3,3][i]; variant.depth=[3.6,4.2,5.2][i]
+				variant.height=[2.4,2.7,3.2][i]; variant.pitch=[24,30,38][i]
+				variant.porch=[0,1,1][i]; variant.openings=[0,1,2][i]
 			sample=_plan(variant)
 			data.comparison.append(sample.settings)
 		var holder := Node3D.new()
-		holder.position.z=(i-1)*(8.0 if kind=="tree" else 6.0) if count == 3 else 0.0
+		holder.position.z=(i-1)*({"tree":8.0,"house":10.0}.get(kind,6.0)) if count == 3 else 0.0
 		holder.position.y=_stage_height(sample.settings)
-		holder.add_child(TreeKit.build(sample) if kind=="tree" else RailingKit.build(sample))
+		if kind=="house" and count==3: holder.rotation.y=PI*.5
+		holder.add_child(_build(sample))
 		holder.add_child(_ground(sample.settings))
 		if count == 3:
 			var label := Label3D.new()
 			label.font=preload("res://art/ui/fonts/汇文明朝体.ttf")
-			label.text={"railing":["直线","转角","折线"],"rack":["短窄架","标准架","宽长架"],"tree":["高窄冠","低圆冠","偏冠"]}[kind][i]
+			label.text={"railing":["直线","转角","折线"],"rack":["短窄架","标准架","宽长架"],"tree":["高窄冠","低圆冠","偏冠"],"house":["两间小屋","三间廊屋","深进大屋"]}[kind][i]
 			label.font_size=48; label.pixel_size=.007
-			label.position=Vector3(0,sample.settings.height+.55,0)
+			label.position=Vector3(0,(HouseKit.roof_y(0,sample.settings) if kind=="house" else sample.settings.height)+.55,0)
 			label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+			label.alpha_cut=Label3D.ALPHA_CUT_DISCARD
 			label.modulate=Color("353f30"); label.outline_modulate=Color("ecebd8")
 			holder.add_child(label)
 		next.add_child(holder)
@@ -194,7 +219,14 @@ func regenerate() -> void:
 	busy=false; generate_button.disabled=false
 
 func _plan(options: Dictionary) -> Dictionary:
-	return TreeKit.plan(seed_input.text,options) if kind=="tree" else RailingKit.plan(seed_input.text,options,kind)
+	if kind=="tree": return TreeKit.plan(seed_input.text,options)
+	if kind=="house": return HouseKit.plan(seed_input.text,options)
+	return RailingKit.plan(seed_input.text,options,kind)
+
+func _build(sample: Dictionary) -> Node3D:
+	if kind=="tree": return TreeKit.build(sample)
+	if kind=="house": return HouseKit.build(sample)
+	return RailingKit.build(sample)
 
 func _set_wind(enabled: bool) -> void:
 	if not is_instance_valid(world): return
@@ -204,7 +236,9 @@ func _set_wind(enabled: bool) -> void:
 
 func _ground(p: Dictionary) -> MeshInstance3D:
 	var mesh := PlaneMesh.new()
-	mesh.size=Vector2.ONE*(p.spread+1) if kind=="tree" else Vector2(p.length+1.4,maxf(p.width+1.2,p.length*.7))
+	if kind=="tree": mesh.size=Vector2.ONE*(p.spread+1)
+	elif kind=="house": mesh.size=Vector2(p.bays*HouseKit.BAY+2,p.depth+p.porch+2.4)
+	else: mesh.size=Vector2(p.length+1.4,maxf(p.width+1.2,p.length*.7))
 	var node := MeshInstance3D.new()
 	node.mesh=mesh
 	# Shear the stage to the exact same height function used by the feet.
@@ -218,27 +252,38 @@ func _ground(p: Dictionary) -> MeshInstance3D:
 	return node
 
 func _stage_height(p: Dictionary) -> float:
-	return 0.0 if kind=="tree" else absf(p.slope)*(p.length+1.4)*.5
+	return 0.0 if kind in ["tree","house"] else absf(p.slope)*(p.length+1.4)*.5
 
 func focus(mode: String) -> void:
 	if current_plan.is_empty(): return
 	if mode == "reverse":
 		yaw+=PI
+		if kind=="house" and joint_view:
+			target.x=-target.x; target.z=-target.z
 	else:
+		joint_view=mode=="joint"
 		var p: Dictionary=current_plan.settings
 		if mode == "joint":
-			if kind=="tree":
-				target=current_plan.joint+Vector3.UP*.5
+			if kind in ["tree","house"]:
+				target=current_plan.joint+Vector3.UP*(-.25 if kind=="house" else .5)
 				desired_distance=5
 			else:
 				var at: Vector3=current_plan.points[mini(1,current_plan.points.size()-1)]
 				target=at+Vector3(0,_stage_height(p)+p.height*.75,p.width*.41 if kind == "rack" else 0)
 				desired_distance=3.5
 			pitch=.30
+			if kind=="house":
+				yaw=.8; pitch=.08
+				if compare_check.button_pressed:
+					target=Basis(Vector3.UP,PI*.5)*target; yaw+=PI*.5
 		else:
 			target=Vector3(0,_stage_height(p)+p.height*.4,0)
-			desired_distance=(29 if kind=="tree" else 26) if compare_check.button_pressed else maxf(9,p.height*2.2 if kind=="tree" else p.length*1.75)
-			pitch=.28 if kind=="tree" and compare_check.button_pressed else .55
-			yaw=PI*.5 if kind=="tree" and compare_check.button_pressed else .65
+			if kind=="house": target.y=HouseKit.roof_y(0,p)*.42
+			if compare_check.button_pressed: desired_distance={"tree":29,"house":38}.get(kind,26)
+			elif kind=="house": desired_distance=17
+			else: desired_distance=maxf(9,p.height*2.2 if kind=="tree" else p.length*1.75)
+			pitch=.28 if kind in ["tree","house"] and compare_check.button_pressed else .55
+			if kind=="house" and not compare_check.button_pressed: pitch=.43
+			yaw=PI*.5 if kind in ["tree","house"] and compare_check.button_pressed else .65
 		distance=desired_distance
 	_update_camera()

@@ -543,11 +543,13 @@ Godot 4.7.2 实测：种子 `边界-0`、小岛／五岛／最大岸线变化组
 24组种子／参数覆盖单岛、五岛、小尺寸、最大岸线变化、最窄水道、最宽桥与密集植被，验证确定性、连通、岸坡不相交、桥头承托、完整道路走廊和物件间距。场景测试通过真实鼠标按钮命中、输入种子／改参数后的重建、空种子拒绝、规划显示、旋转、跨UI释放、失焦取消、小窗口与4K界面／1080三维上限；已观察岛屿和桥梁／接头／竹架相反侧近景，截图在 `.local/verification/procedural-lab/`。细节版三岛样本生成约6秒；仅为本机短测，不代表低配性能或长期稳定性。本原型验证平坦庭院岛与构件组装，不包含内湖、悬崖、多层地形、可行走角色、农场生长或正式岛际交互。
 
 
-### 参数化构件研究室（2026-09-24，进行中）
+### 参数化构件研究室（2026-09-24）
 
-新增独立入口 `res://scenes/procedural_lab/component_lab.tscn`，用 `scripts/godot.ps1 -Action Run -ExtraArgs 'res://scenes/procedural_lab/component_lab.tscn'` 启动。它沿用研究室相机与主岛日光，当前提供栏杆／竹架／桂花参数、结构对比和复制。桂花使用连续Tripo树干与共享枝叶簇，已保存主岛同光照对照；民居、栏杆竹架的主岛对照及全阶段验收还未完成。源与当前边界见[ParametricKit](../ArtSource/Environment/ParametricKit/README.md)。
+独立入口 `res://scenes/procedural_lab/component_lab.tscn`，用 `scripts/godot.ps1 -Action Run -ExtraArgs 'res://scenes/procedural_lab/component_lab.tscn'` 启动。沿用研究室相机与主岛日光，提供木栏杆／竹架／桂花／江南民居参数、三种结构对比及复制。桂花使用连续Tripo枝干与共享枝叶簇，民居采用Blender标准墙段、门窗、柱梁与曲面瓦；各类已保存主岛同光照正反对照。没有接入农场存档或替换背景岛。源、重建、验证及用户主观反馈边界见[ParametricKit](../ArtSource/Environment/ParametricKit/README.md)。
 
-验证入口 `tests/component_lab_scene_test.gd`。当前D3D12／RTX4090／1600×1000前台120帧短测：默认栏杆约5.9ms生成、0.43ms CPU渲染、2.34ms GPU；默认竹架约1.1ms生成、0.45ms CPU渲染、1.50ms GPU。场景工作集约501／561MiB，引擎报告显存分配约535／537MiB，包含湖面、界面和已加载资产。原始process监视器另留在JSON，短测未隔离测试脚本与系统调度影响，不用它推算整游戏CPU占用；不宣称背景岛替换收益。
+验证入口 `tests/component_lab_scene_test.gd`、`component_tree_test.gd`、`component_house_test.gd`、`component_collection_test.gd`。D3D12／RTX4090／1600×1000前台120帧四类组合：含规划首生成约901ms、暖生成177ms、CPU渲染0.476ms、GPU2.037ms；工作集535.4MiB，引擎video分配695.9MiB，包含湖面、界面及资产。远景采样失焦，记录保留但不用于前台比较。process监视器不等于整进程CPU负载，引擎video不等于专用显存驻留；无旧背景岛同条件基线，不宣称替换收益。
+
+Godot4.7.2／D3D12下，人工LOD的Self透明淡化与写深度湖面相交时可能丢失树冠／瓦脊；独立研究室现用不透明26米切换，各部件共用整个物件的包围盒，余量0避免首次进入临界距离时两档均未显示。代价为小幅细节跳变；不把它推广为正式游戏全部资产的策略。3D标签使用alpha裁切以避免透明排序。组合专项包含24／25／26／27米及返回的实景与实际像素检查，不能仅凭远40米和回近9米两个端点判断切换正常。
 
 桂花专项 `tests/component_tree_test.gd` 检查默认及参数四种边界组合的真实高度／冠幅／根部接地、枝头连接、固定风动根权重、种子与交互；同光照对照取现役 `osmanthus_high.glb` 和原风动材质，分别正反看轮廓和质感。默认39簇暖生成约206ms，CPU渲染0.38ms、GPU3.15ms，完整研究室工作集541MiB、引擎video约650MiB；近景几何更多，不能推断比原整树节省。原始P2枝叶底部不是模型最低点，必须以实际切口对齐；程序粗圆管无法匹配自然主枝，当前保留连续框架并同步变形连接点。详见资产源及重建入口。
 

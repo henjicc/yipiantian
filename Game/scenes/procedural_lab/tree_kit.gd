@@ -99,8 +99,9 @@ static func build(data: Dictionary) -> Node3D:
 		trunk.name="Framework_"+detail; trunk.mesh=mesh
 		if detail=="near": trunk.visibility_range_end=26
 		else: trunk.visibility_range_begin=26
-		trunk.visibility_range_begin_margin=2; trunk.visibility_range_end_margin=2
-		trunk.visibility_range_fade_mode=GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+		trunk.visibility_range_begin_margin=0; trunk.visibility_range_end_margin=0
+		trunk.visibility_range_fade_mode=GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 		root.add_child(trunk)
+	Parts.shared_detail_bounds(root)
 	root.set_meta("plan",data)
 	return root

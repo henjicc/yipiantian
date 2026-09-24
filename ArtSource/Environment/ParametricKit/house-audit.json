@@ -1,0 +1,164 @@
+{
+  "blender": "5.2.2 LTS",
+  "atlas": "house-material-atlas.png",
+  "tripo_calls": 0,
+  "units": "metres; Godot Y up, facade +Z",
+  "parts": {
+    "house_wall": {
+      "triangles": 12,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_stone": {
+      "triangles": 108,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_post": {
+      "triangles": 108,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_beam": {
+      "triangles": 108,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_roof_deck": {
+      "triangles": 12,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_gable": {
+      "triangles": 8,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_window_a": {
+      "triangles": 1404,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_window_b": {
+      "triangles": 1728,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_door": {
+      "triangles": 4272,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_pan0": {
+      "triangles": 108,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_pan0_low": {
+      "triangles": 36,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_cap0": {
+      "triangles": 108,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_cap0_low": {
+      "triangles": 36,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_pan1": {
+      "triangles": 108,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_pan1_low": {
+      "triangles": 36,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_cap1": {
+      "triangles": 108,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_cap1_low": {
+      "triangles": 36,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_pan2": {
+      "triangles": 108,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_pan2_low": {
+      "triangles": 36,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_cap2": {
+      "triangles": 108,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_tile_cap2_low": {
+      "triangles": 36,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_finial": {
+      "triangles": 1216,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_window_a_low": {
+      "triangles": 702,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_window_b_low": {
+      "triangles": 864,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_door_low": {
+      "triangles": 2130,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    },
+    "house_finial_low": {
+      "triangles": 608,
+      "materials": 1,
+      "open_edges_after_audit_weld": 0,
+      "reimport_verified": true
+    }
+  }
+}

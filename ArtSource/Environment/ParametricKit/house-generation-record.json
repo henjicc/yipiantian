@@ -1,0 +1,37 @@
+{
+  "date": "2026-09-24",
+  "status": "adopted in standalone component lab; structural and rendered checks passed; no player style sign-off claimed",
+  "image": {
+    "tool": "image_gen.imagegen",
+    "model": "not returned",
+    "price": "not returned",
+    "prompt": "Create a flat diffuse material atlas for the modular Jiangnan house in the attached approved reference. Exactly a square image divided into four equal square quadrants with no gutters or dividers: TOP LEFT aged honey taupe elm wood grain, long thin hand painted brown grain strokes running vertically, broad soft pale washes, occasional tiny knots; TOP RIGHT warm ivory lime plaster, restrained irregular very pale cream and warm-grey watercolor pigment patches, mostly clean; BOTTOM LEFT blue charcoal grey handmade ceramic roof tile surface, softly layered grey blue washes and a few understated fine dark brush marks, natural material without photographic pores; BOTTOM RIGHT warm grey limestone, pale beige grey flat mineral colour variation and subtle selective hairline markings. The four swatches touch at exact centre axes, fill entire quadrants edge to edge, flat front-facing colour map, no bevels, no three-dimensional objects, no highlights or directional illumination, no cast shadows, no border, no labels or text, no perspective, no drawn tile grid or brick grid. Only painted material surfaces, no actual building pieces. Match the reference's muted gongbi light colour palette and subtle authored brush structure. Consistent light midtones. Image is to be mapped on precisely modeled wood beams, plaster walls, roof tiles, foundation blocks.",
+    "references": [
+      "ArtSource/Environment/House/house-concept-v1.png"
+    ],
+    "selected": "house-material-atlas.png"
+  },
+  "geometry": {
+    "tool": "Blender 5.2.2 LTS",
+    "source": "prepare_house.py",
+    "editable": "house_modules.blend",
+    "audit": "house-audit.json",
+    "runtime": "Game/art/environment/parametric_kit/house_*.glb",
+    "shared_texture": "Game/art/environment/parametric_kit/house_material_atlas.png",
+    "tripo_calls": 0,
+    "decision": "Precise reusable wall openings, window lattice, beams and overlapping curved tile components. No additional Tripo call for dimensionally constrained architecture."
+  },
+  "assembly": "Game/scenes/procedural_lab/house_kit.gd",
+  "scene": "Game/scenes/procedural_lab/component_lab.tscn",
+  "verification": ["tests/component_house_test.gd", "tests/component_collection_test.gd"],
+  "evidence": "制作留档/03_处理与验证/20260924_参数化基础构件/民居组件/",
+  "processing": [
+    "Create metric wall and gable solids, stone foundations, beveled wooden posts and beams, actual window lattice and double door with ring handles.",
+    "Map wood, plaster, ceramic and stone to guarded quadrants of one image; vertex tint darkens ceramic and warms paper panes.",
+    "Build closed overlapping tile pans and caps with 108-triangle near and 36-triangle far variants; author curled ridge ends.",
+    "Weld curve end-cap seams at 1e-6 metres before low-detail decimation; preserve facade openings.",
+    "Pack editable Blender source, export 26 GLBs, clean reimport to verify UV presence, finite coordinates, triangle counts and zero boundary edges after audit weld.",
+    "Replace embedded image buffers with the single shared external atlas; disable additional Godot automatic LOD on authored tiers."
+  ],
+  "limits": "Single-storey double-pitched house family with 2 or 3 bays, no interior, no opening doors, no village layout. Seed changes tile swatches; structure is controlled by parameters."
+}

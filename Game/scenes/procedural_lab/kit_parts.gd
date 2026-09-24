@@ -34,11 +34,24 @@ func build() -> Node3D:
 			if detail == "near": node.visibility_range_end = 26
 			if detail == "far": node.visibility_range_begin = 26
 			if detail != "both":
-				node.visibility_range_end_margin = 2
-				node.visibility_range_begin_margin = 2
-				node.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+				node.visibility_range_end_margin = 0
+				node.visibility_range_begin_margin = 0
+				# Alpha HLOD fading sorts incorrectly against the depth-writing lake.
+				node.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 			root.add_child(node)
+	shared_detail_bounds(root)
 	return root
+
+static func shared_detail_bounds(root: Node3D) -> void:
+	# Match the distance origin of all near/far components, including meshes with
+	# slightly different reduced bounds. Both tiers switch as one complete object.
+	var bounds := AABB()
+	var first: bool=true
+	for node: GeometryInstance3D in root.get_children():
+		var local_bounds: AABB=node.transform*node.get_aabb()
+		bounds=local_bounds if first else bounds.merge(local_bounds)
+		first=false
+	for node: GeometryInstance3D in root.get_children(): node.custom_aabb=bounds
 
 static func _source(part: String) -> Array:
 	if sources.has(part): return sources[part]
