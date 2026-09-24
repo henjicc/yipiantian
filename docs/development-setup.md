@@ -481,6 +481,16 @@ OpenGL加载时出现669条实例着色器参数容量错误，报告硬件上�
 
 参数及限制见[Windows驱动设置](https://docs.godotengine.org/en/4.7/classes/class_projectsettings.html#class-projectsettings-property-rendering-rendering-device-driver-windows)、[驱动内存报告](https://docs.godotengine.org/en/4.7/classes/class_renderingdevice.html#class-renderingdevice-method-get-driver-and-device-memory-report)、[WPR堆快照](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/record-heap-snapshot)。
 
+### FSR设置（2026-09-24）
+
+Godot 4.7.2／Forward+：显示页提供FSR关闭、画质优先、平衡、性能优先；后三者内部三维比例依次为输出的1/1.5、1/1.7、1/2，不与既有1080p上限相乘。开启后原分辨率控件置灰并说明由FSR接管，关闭后恢复保存的选择；UI分辨率不变。默认关闭，设置自动保存。非Forward+禁用FSR控件并沿用原分辨率，不修改保存的偏好。使用FSR2自身抗锯齿，关闭时恢复标准／低档2×MSAA、高档4×；高画质延迟应用与窗口改变尺寸也遵守此规则。不开放锐化等专业参数，不含帧生成。
+
+官方契约：[Viewport缩放模式](https://docs.godotengine.org/en/4.7/classes/class_viewport.html#enum-viewport-scaling3dmode)、[FSR与抗锯齿](https://docs.godotengine.org/en/4.7/tutorials/3d/resolution_scaling.html)。FSR有重建计算与历史缓冲成本，不保证比原来的低分辨率双线性缩放更省资源；本次不作帧率／内存收益结论。
+
+复核入口：`scripts/godot.ps1 -Action Run -ExtraArgs @('--script','../tests/fsr_settings_test.gd')`，使用隔离农场及偏好目录。RTX4090／D3D12实景14项通过，覆盖各档、MSAA配合、高画质延迟切换、窗口缩放、关闭恢复与重开；画面留在`.local/verification/fsr-1714026/`。菜单专项97项与偏好读写50项通过，已观察新增控件和场景画面，修复新增行挤压状态／底栏的问题。
+
+尝试扩展旧`ui_settings_scene_test.gd`时出现8项田格选择、菜单关闭时机及农场快照等失败；未将该综合集报告为通过，原用例保持不变。FSR新增检查改为上述独立实景入口。短测不等于低端显卡、长时运行或运动拖影已全面验收。
+
 ### 程序化岛屿研究室（2026-09-24）
 
 独立场景位于 `Game/scenes/procedural_lab/procedural_lab.tscn`；直接指定场景启动，主入口和农场存档不变，Windows导出预设排除此研究目录。使用已有开发预览入口确认静音、第二屏独占全屏与窗口就绪：

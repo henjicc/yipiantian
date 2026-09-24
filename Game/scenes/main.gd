@@ -1789,7 +1789,7 @@ func _apply_settings(previous: Dictionary = {}) -> void:
 			focus_detail.set_quality(settings_values.quality)
 	if previous.get("dof_enabled") != settings_values.dof_enabled:
 		focus_detail.set_depth_of_field(settings_values.dof_enabled, focus_detail.get_settings().dof_strength)
-	if previous.get("resolution") != settings_values.resolution:
+	if previous.get("resolution") != settings_values.resolution or previous.get("fsr") != settings_values.fsr:
 		_apply_render_resolution()
 	# Headless validation has no OS window; preference validation remains identical.
 	if DisplayServer.get_name() != "headless" and not (desktop_wallpaper != null and (desktop_wallpaper.active or desktop_wallpaper.busy)):
@@ -1810,8 +1810,19 @@ func _apply_render_resolution() -> void:
 	var choice: String = settings_values.resolution
 	# Never lower UI resolution or change the display's video mode for 3D quality.
 	var scale_3d: float = 1.0 if choice == "native" else clampf(float(choice) / maxf(output.y, 1), .25, 1.0)
+	var fsr_enabled: bool = settings_values.fsr != "off" and RenderingServer.get_current_rendering_method() == "forward_plus"
+	if fsr_enabled:
+		# Presets are relative to the output, never multiplied by the old 3D cap.
+		match settings_values.fsr:
+			"quality": scale_3d = 1.0 / 1.5
+			"balanced": scale_3d = 1.0 / 1.7
+			"performance": scale_3d = 0.5
+	var mode: Viewport.Scaling3DMode = Viewport.SCALING_3D_MODE_FSR2 if fsr_enabled else Viewport.SCALING_3D_MODE_BILINEAR
+	if get_viewport().scaling_3d_mode != mode:
+		get_viewport().scaling_3d_mode = mode
 	if not is_equal_approx(get_viewport().scaling_3d_scale, scale_3d):
 		get_viewport().scaling_3d_scale = scale_3d
+	focus_detail.refresh_antialiasing()
 
 
 func _open_menu() -> void:

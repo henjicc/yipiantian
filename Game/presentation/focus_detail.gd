@@ -122,6 +122,12 @@ func get_settings() -> Dictionary:
 	return {"quality": _quality, "dof_enabled": _dof_enabled, "dof_strength": _dof_strength, "fog_strength": _fog_strength}
 
 
+func refresh_antialiasing() -> void:
+	var viewport: Viewport = _camera.get_viewport()
+	# FSR2 already reconstructs antialiased edges; avoid stacking MSAA's cost.
+	viewport.msaa_3d = Viewport.MSAA_DISABLED if viewport.scaling_3d_mode == Viewport.SCALING_3D_MODE_FSR2 else (Viewport.MSAA_4X if _quality == "high" else Viewport.MSAA_2X)
+
+
 func _apply_quality() -> void:
 	_environment.get_node("PlayerPlants").set_low_detail(_quality=="low")
 	_environment.get_node("NeighborIslets").set_low_detail_enabled(_quality == "low")
@@ -129,7 +135,7 @@ func _apply_quality() -> void:
 	# Preserve the foreground composition. High remains an explicit costlier choice.
 	var high: bool = _quality == "high"
 	var low: bool = _quality == "low"
-	_camera.get_viewport().msaa_3d = Viewport.MSAA_4X if high else Viewport.MSAA_2X
+	refresh_antialiasing()
 	_camera.get_viewport().positional_shadow_atlas_size = 4096 if high else (1024 if low else 2048)
 	# Keep distant leaf shadows stable; standard spends the atlas on two cascades.
 	RenderingServer.directional_shadow_atlas_set_size(2048 if low else 4096, false)

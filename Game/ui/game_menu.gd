@@ -12,6 +12,7 @@ signal dismissed
 const FarmTheme = preload("res://ui/farm_theme.gd")
 const QUALITY_VALUES: Array[String] = ["standard", "low", "high"]
 const RESOLUTION_VALUES: Array[String] = ["native", "1080", "1440", "2160"]
+const FSR_VALUES: Array[String] = ["off", "quality", "balanced", "performance"]
 static var developer_unlocked: bool = false
 var _about_clicks: int = 0
 var _last_about_click: int = 0
@@ -23,6 +24,7 @@ var _volume_labels: Dictionary = {}
 var _window: OptionButton
 var _quality: OptionButton
 var _resolution: OptionButton
+var _fsr: OptionButton
 var _sway: Button
 var _sway_delay: SpinBox
 var _dof: Button
@@ -62,8 +64,8 @@ func _ready() -> void:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	panel.offset_left = -310
 	panel.offset_right = 310
-	panel.offset_top = -275
-	panel.offset_bottom = 275
+	panel.offset_top = -330
+	panel.offset_bottom = 330
 	var style: StyleBox = FarmTheme.framed_paper()
 	style.content_margin_left = 26
 	style.content_margin_right = 26
@@ -85,7 +87,7 @@ func _ready() -> void:
 	_tabs[4].visible = developer_enabled()
 	var content := Control.new()
 	content.name = "Pages"
-	content.custom_minimum_size = Vector2(560, 340)
+	content.custom_minimum_size = Vector2(560, 450)
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(content)
 	var settings := VBoxContainer.new()
@@ -135,6 +137,17 @@ func _ready() -> void:
 	_resolution.custom_minimum_size.y = 42
 	_row(display, "分辨率").add_child(_resolution)
 	_resolution.item_selected.connect(func(index: int) -> void: _change("resolution", RESOLUTION_VALUES[index]))
+	_fsr = OptionButton.new()
+	_fsr.name = "FSR"
+	for title: String in ["关闭", "画质优先", "平衡", "性能优先"]:
+		_fsr.add_item(title)
+	FarmTheme.configure_option(_fsr)
+	_fsr.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_fsr.custom_minimum_size.y = 42
+	_row(display, "FSR 超分").add_child(_fsr)
+	_fsr.item_selected.connect(func(index: int) -> void:
+		_change("fsr", FSR_VALUES[index])
+		_refresh_fsr())
 	_quality = OptionButton.new()
 	_quality.name = "Quality"
 	_quality.add_item("标准")
@@ -244,6 +257,8 @@ func present(value: Dictionary, message: String = "") -> void:
 	_window.select(1 if value.fullscreen else 0)
 	_quality.select(QUALITY_VALUES.find(value.quality))
 	_resolution.select(RESOLUTION_VALUES.find(value.resolution))
+	_fsr.select(FSR_VALUES.find(value.get("fsr", "off")))
+	_refresh_fsr()
 	_refresh_dof()
 	_refresh_sway()
 	_sway_delay.set_value_no_signal(value.sway_idle_seconds)
@@ -279,6 +294,7 @@ func dismiss() -> void:
 	_window.get_popup().hide()
 	_quality.get_popup().hide()
 	_resolution.get_popup().hide()
+	_fsr.get_popup().hide()
 	var panel: Control = _quit_confirmation if _quit_confirmation.visible else _paper
 	panel.pivot_offset = panel.size * .5
 	_motion = create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
@@ -300,6 +316,14 @@ func _refresh_sway() -> void:
 	_sway.set_pressed_no_signal(_values.sway_enabled)
 	_sway.text = "已开启" if _values.sway_enabled else "已关闭"
 	_sway_delay.editable = _values.sway_enabled
+
+
+func _refresh_fsr() -> void:
+	var supported: bool = RenderingServer.get_current_rendering_method() == "forward_plus"
+	_fsr.disabled = not supported
+	_fsr.tooltip_text = "用较低清晰度绘制，再重建画面；性能优先可能更模糊。不是补帧。" if supported else "当前显示模式不支持 FSR。"
+	_resolution.disabled = supported and _values.get("fsr", "off") != "off"
+	_resolution.tooltip_text = "已由 FSR 档位控制；关闭 FSR 后恢复此选择。" if _resolution.disabled else ""
 
 
 func _refresh_dof() -> void:
@@ -344,6 +368,7 @@ func _show_page(index: int) -> void:
 	_window.get_popup().hide()
 	_quality.get_popup().hide()
 	_resolution.get_popup().hide()
+	_fsr.get_popup().hide()
 	for page: int in _pages.size():
 		_pages[page].visible = page == index
 		_pages[page].modulate.a = 1.0

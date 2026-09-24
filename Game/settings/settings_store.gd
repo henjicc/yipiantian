@@ -9,6 +9,7 @@ const DEFAULTS: Dictionary = {
 	"master": 0.8, "music": 0.7, "effects": 0.8,
 	"fullscreen": false, "quality": "standard", "dof_enabled": true,
 	"resolution": "1080", "sway_enabled": false, "sway_idle_seconds": 30.0,
+	"fsr": "off",
 }
 var directory: String
 var _loaded: bool = false
@@ -94,7 +95,9 @@ func save(settings: Dictionary) -> Dictionary:
 
 
 static func valid_settings(value: Dictionary) -> bool:
-	if value.size() != DEFAULTS.size() - 2 + int(value.has("sway_enabled")) + int(value.has("sway_idle_seconds")) + int(value.has("overview_mdeg")):
+	if value.size() != DEFAULTS.size() - 3 + int(value.has("fsr")) + int(value.has("sway_enabled")) + int(value.has("sway_idle_seconds")) + int(value.has("overview_mdeg")):
+		return false
+	if value.get("fsr", DEFAULTS.fsr) not in ["off", "quality", "balanced", "performance"]:
 		return false
 	# Absence means the player has not customized the overview yet.
 	if value.has("overview_mdeg"):

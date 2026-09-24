@@ -26,6 +26,7 @@ func _run() -> void:
 	values.quality = "low"
 	values.dof_enabled = false
 	values.resolution = "1440"
+	values.fsr = "balanced"
 	values.sway_enabled = true
 	values.sway_idle_seconds = 75.0
 	for bad: Variant in [-1, 601, NAN, INF, 1.5, "30", true]:
@@ -66,7 +67,7 @@ func _run() -> void:
 		var invalid: Dictionary = values.duplicate(true)
 		invalid.master = bad
 		_expect(not store.save(invalid).ok, "Invalid volume is rejected: %s" % str(bad))
-	for key: String in ["quality", "fullscreen", "dof_enabled", "resolution"]:
+	for key: String in ["quality", "fullscreen", "dof_enabled", "resolution", "fsr"]:
 		var invalid: Dictionary = values.duplicate(true)
 		invalid[key] = "invalid"
 		_expect(not store.save(invalid).ok, "Invalid enum/boolean is rejected: " + key)

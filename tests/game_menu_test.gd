@@ -45,7 +45,7 @@ func _run() -> void:
 	tab_event.pressed = false
 	root.push_input(tab_event)
 	_expect(menu._volume_labels.master.text == "80%", "Volume label reflects actual current value")
-	for option: OptionButton in [menu._window, menu._quality, menu._resolution]:
+	for option: OptionButton in [menu._window, menu._quality, menu._resolution, menu._fsr]:
 		for index: int in option.item_count:
 			_expect(not option.get_popup().is_item_radio_checkable(index), "Dropdown has no radio bullet")
 		_expect(option.get_theme_constant("arrow_margin") >= 14, "Arrow has safe right inset")
@@ -84,8 +84,9 @@ func _run() -> void:
 		_expect(root.get_visible_rect().encloses(panel.get_global_rect()), "Entire modal fits logical viewport for %s" % str(viewport_size))
 		var physical: Rect2 = root.get_stretch_transform() * panel.get_global_rect()
 		_expect(Rect2(Vector2.ZERO, Vector2(viewport_size)).encloses(physical), "Scaled modal fits physical window %s" % str(viewport_size))
-		for control: Control in [menu._close, menu._quit, menu._window, menu._resolution, menu._quality, menu._dof]:
+		for control: Control in [menu._close, menu._quit, menu._window, menu._resolution, menu._fsr, menu._quality, menu._dof, menu._wallpaper]:
 			_expect(panel.get_global_rect().encloses(control.get_global_rect()), "Control stays inside modal at %s: %s" % [str(viewport_size), control.name])
+		_expect(menu._wallpaper.get_global_rect().end.y <= menu._status.get_global_rect().position.y, "Display rows never overlap the settings status or footer")
 		if visual and viewport_size == Vector2i(3840, 2160):
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png(capture_folder.path_join("tiled-frame-4k.png"))
