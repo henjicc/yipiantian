@@ -280,6 +280,7 @@ func _input(event: InputEvent) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		print("LAB_EXIT_REQUEST reason=escape uptime_ms=%d" % Time.get_ticks_msec())
 		get_tree().quit()
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT,MOUSE_BUTTON_MIDDLE]: dragging = event.button_index
@@ -293,8 +294,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			target += (-camera.basis.x*event.relative.x+Vector3(camera.basis.z.x,0,camera.basis.z.z).normalized()*event.relative.y)*distance*.0011
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		print("LAB_EXIT_REQUEST reason=window_close uptime_ms=%d" % Time.get_ticks_msec())
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT or what == NOTIFICATION_WM_MOUSE_EXIT:
 		dragging = 0
+
+func _exit_tree() -> void:
+	print("LAB_SCENE_EXIT uptime_ms=%d" % Time.get_ticks_msec())
 
 func _resize() -> void:
 	dragging = 0

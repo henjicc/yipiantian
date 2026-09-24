@@ -2,8 +2,9 @@ extends "component_lab_scene_test.gd"
 const Parts = preload("res://scenes/procedural_lab/kit_parts.gd")
 
 func _run() -> void:
-	root.size=Vector2i(1600,1000)
-	output=ProjectSettings.globalize_path("res://../.local/verification/railing-relief")
+	var review_4k: bool="--railing-review-4k" in OS.get_cmdline_user_args()
+	root.size=Vector2i(3840,2160) if review_4k else Vector2i(1600,1000)
+	output=ProjectSettings.globalize_path("res://../.local/verification/railing-soft")
 	DirAccess.make_dir_recursive_absolute(output)
 	var rail_texture: Texture2D=Parts._source("fence_rail")[0].mesh.surface_get_material(0).albedo_texture
 	var rail_normal: Texture2D=Parts._source("fence_rail")[0].mesh.surface_get_material(0).normal_texture
@@ -21,6 +22,8 @@ func _run() -> void:
 					expect(material.roughness_texture!=null,"timber imports the baked roughness variation")
 					expect(not source.mesh.surface_get_arrays(surface)[Mesh.ARRAY_TANGENT].is_empty(),"normal mapping has imported mesh tangents")
 					if not material in timber_materials: timber_materials.append(material)
+	var relief_bytes: int=rail_normal.get_image().get_data().size()+timber_materials[0].roughness_texture.get_image().get_data().size()
+	print("RAILING_RELIEF_TEXTURE_BYTES=%d shared_maps=2" % relief_bytes)
 	for path: int in 3:
 		for options: Dictionary in [{"path":path},{"path":path,"length":2.4,"height":.7,"bay":.8,"slope":-.18},{"path":path,"length":8,"height":1.4,"bay":1.8,"slope":.18}]:
 			var model: Node3D=Kit.build(Kit.plan("实木连接验收",options,"railing"))
@@ -41,6 +44,26 @@ func _run() -> void:
 	while scene.current_plan.is_empty() or scene.busy: await process_frame
 	await capture("railing-default")
 	scene.focus("joint"); await capture("railing-joint")
+	if review_4k:
+		expect(root.scaling_3d_mode==Viewport.SCALING_3D_MODE_BILINEAR and is_equal_approx(root.scaling_3d_scale,.5),"actual 4K lab is bilinear 1080p, not FSR")
+	if "--measure-relief" in OS.get_cmdline_user_args():
+		# Interleave runs to expose timing drift. Off retains map allocations,
+		# measuring shader cost only; report texture storage separately above.
+		var packed_roughness: Texture2D=timber_materials[0].roughness_texture
+		for enabled: bool in [false,true,false,true]:
+			for material: StandardMaterial3D in timber_materials:
+				material.normal_enabled=enabled
+				material.roughness_texture=packed_roughness if enabled else null
+				material.metallic_texture=packed_roughness if enabled else null
+				material.metallic=1.0 if enabled else 0.0
+				material.roughness=1.0 if enabled else .94
+			await measure(scene,"relief-on" if enabled else "relief-off")
+		var valid: bool=true
+		for sample: Dictionary in measurements:
+			if sample.focused_frames!=sample.frames: valid=false
+		var report := FileAccess.open(output+"/relief-measurements.json",FileAccess.WRITE)
+		report.store_string(JSON.stringify({"valid_foreground_comparison":valid,"shared_texture_bytes":relief_bytes,"runs":measurements},"\t"))
+		report.close()
 	for material: StandardMaterial3D in timber_materials: material.normal_enabled=false
 	await capture("railing-joint-normal-off")
 	for material: StandardMaterial3D in timber_materials: material.normal_enabled=true
@@ -71,6 +94,12 @@ func _run() -> void:
 	scene.focus("all"); scene.distance=40; scene.desired_distance=40
 	await capture("railing-far")
 	scene.focus("all"); await capture("railing-return")
-	scene.queue_free(); await process_frame
 	print("SOLID_RAILING_TEST failures=%s"%JSON.stringify(failures))
+	if failures.is_empty():
+		var escape := InputEventKey.new()
+		escape.keycode=KEY_ESCAPE; escape.pressed=true
+		root.push_input(escape,true)
+		await process_frame
+		return
+	scene.queue_free(); await process_frame
 	quit(0 if failures.is_empty() else 1)

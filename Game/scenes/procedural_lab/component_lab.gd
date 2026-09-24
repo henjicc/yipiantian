@@ -27,6 +27,7 @@ func _ready() -> void:
 	await regenerate()
 	await RenderingServer.frame_post_draw
 	print("COMPONENT_LAB_READY kind=%s seed=%s"%[kind,current_plan.seed])
+	print("LAB_RENDER_SETTINGS scaling_mode=%d scale=%.3f msaa=%d taa=%s fsr_sharpness=%.2f" % [get_viewport().scaling_3d_mode,get_viewport().scaling_3d_scale,get_viewport().msaa_3d,get_viewport().use_taa,get_viewport().fsr_sharpness])
 	print("DEV_PREVIEW_READY screen=%d mode=%d size=%s"%[DisplayServer.window_get_current_screen(),DisplayServer.window_get_mode(),DisplayServer.window_get_size()])
 
 func _setup_ui() -> void:

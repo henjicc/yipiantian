@@ -53,14 +53,14 @@
   },
   "baked_relief": {
     "fence_wood_normal": [
-      2048,
-      2048
-    ],
-    "fence_wood_orm": [
       1024,
       1024
+    ],
+    "fence_wood_orm": [
+      512,
+      512
     ]
   },
-  "relief_method": "Cycles tangent normal from shallow colour-guided grain and fine stretched fibres; packed G roughness / B metallic=0",
-  "normal_strength": 1.4
+  "relief_method": "Cycles tangent normal from nine-tap prefiltered shallow wood grain, no added fibre noise; packed G roughness .88-.96 / B metallic=0",
+  "normal_strength": 0.65
 }

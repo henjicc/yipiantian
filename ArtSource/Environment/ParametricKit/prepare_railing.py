@@ -104,8 +104,8 @@ bpy.ops.file.pack_all()
 bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/'railing_modules.blend'))
 report={'blender':bpy.app.version_string,'source_task':'18e92ae5-d11c-4987-81d4-babb51731181','new_tripo_calls':0,'new_ai_images':0,'baked_image_count':2,'atlas':str(ATLAS.relative_to(ROOT)).replace('\\','/'),'wood_uv_rectangle':[.709,.462,.855,.580],'parts':{}}
 report['baked_relief']={name:list(image.size) for name,image in relief_images.items()}
-report['relief_method']='Cycles tangent normal from shallow colour-guided grain and fine stretched fibres; packed G roughness / B metallic=0'
-report['normal_strength']=1.4
+report['relief_method']='Cycles tangent normal from nine-tap prefiltered shallow wood grain, no added fibre noise; packed G roughness .88-.96 / B metallic=0'
+report['normal_strength']=.65
 for name,obj in parts.items():
     obj.data.calc_loop_triangles()
     report['parts'][name]={'triangles':len(obj.data.loop_triangles),'dimensions_blender':list(obj.dimensions),'materials':len(obj.data.materials)}
