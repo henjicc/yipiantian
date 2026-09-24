@@ -4,26 +4,26 @@ const Parts = preload("res://scenes/procedural_lab/kit_parts.gd")
 func _run() -> void:
 	var review_4k: bool="--railing-review-4k" in OS.get_cmdline_user_args()
 	root.size=Vector2i(3840,2160) if review_4k else Vector2i(1600,1000)
-	output=ProjectSettings.globalize_path("res://../.local/verification/railing-soft")
+	output=ProjectSettings.globalize_path("res://../.local/verification/railing-rope")
 	DirAccess.make_dir_recursive_absolute(output)
 	var rail_texture: Texture2D=Parts._source("fence_rail")[0].mesh.surface_get_material(0).albedo_texture
-	var rail_normal: Texture2D=Parts._source("fence_rail")[0].mesh.surface_get_material(0).normal_texture
-	var timber_materials: Array[StandardMaterial3D]=[]
-	expect(rail_normal!=null,"railing imports its baked tangent normal texture")
-	if rail_normal:
-		expect(rail_normal.get_image().has_mipmaps(),"normal map filters into the distance instead of producing sparkling grain")
+	var rope_surfaces: int=0
 	for part: String in ["fence_rail","fence_post","fence_post_low"]:
 		for source: Dictionary in Parts._source(part):
 			for surface: int in source.mesh.get_surface_count():
 				var material: StandardMaterial3D=source.mesh.surface_get_material(surface)
-				if material.albedo_texture:
-					expect(material.albedo_texture==rail_texture,"upright and rail share the same authored timber texture")
-					expect(material.normal_enabled and material.normal_texture==rail_normal,"all timber detail tiers use the same active relief map")
-					expect(material.roughness_texture!=null,"timber imports the baked roughness variation")
-					expect(not source.mesh.surface_get_arrays(surface)[Mesh.ARRAY_TANGENT].is_empty(),"normal mapping has imported mesh tangents")
-					if not material in timber_materials: timber_materials.append(material)
-	var relief_bytes: int=rail_normal.get_image().get_data().size()+timber_materials[0].roughness_texture.get_image().get_data().size()
-	print("RAILING_RELIEF_TEXTURE_BYTES=%d shared_maps=2" % relief_bytes)
+				expect(material.albedo_texture==rail_texture,"timber and rope reuse one original colour atlas")
+				expect(not material.normal_enabled and material.normal_texture==null,"all railing relief is disabled and unreferenced")
+				expect(material.roughness_texture==null and material.metallic_texture==null,"no extra roughness/metallic maps are sampled")
+				if material.resource_name.begins_with("MutedHemp"):
+					rope_surfaces+=1
+					expect(material.albedo_color.r<.85 and material.albedo_color.g<.85,"rope uses a darker hemp tint")
+					var uvs: PackedVector2Array=source.mesh.surface_get_arrays(surface)[Mesh.ARRAY_TEX_UV]
+					var uv_bounds := Rect2(uvs[0],Vector2.ZERO)
+					for uv: Vector2 in uvs: uv_bounds=uv_bounds.expand(uv)
+					expect(uv_bounds.size.x>.005 and uv_bounds.size.y>.03,"rope retains its strand texture UVs after joining/export")
+	expect(rope_surfaces==1,"near upright includes one textured hemp surface")
+	print("RAILING_MATERIALS shared_atlases=1 normal_maps=0 roughness_maps=0")
 	for path: int in 3:
 		for options: Dictionary in [{"path":path},{"path":path,"length":2.4,"height":.7,"bay":.8,"slope":-.18},{"path":path,"length":8,"height":1.4,"bay":1.8,"slope":.18}]:
 			var model: Node3D=Kit.build(Kit.plan("实木连接验收",options,"railing"))
@@ -46,39 +46,6 @@ func _run() -> void:
 	scene.focus("joint"); await capture("railing-joint")
 	if review_4k:
 		expect(root.scaling_3d_mode==Viewport.SCALING_3D_MODE_BILINEAR and is_equal_approx(root.scaling_3d_scale,.5),"actual 4K lab is bilinear 1080p, not FSR")
-	if "--measure-relief" in OS.get_cmdline_user_args():
-		# Interleave runs to expose timing drift. Off retains map allocations,
-		# measuring shader cost only; report texture storage separately above.
-		var packed_roughness: Texture2D=timber_materials[0].roughness_texture
-		for enabled: bool in [false,true,false,true]:
-			for material: StandardMaterial3D in timber_materials:
-				material.normal_enabled=enabled
-				material.roughness_texture=packed_roughness if enabled else null
-				material.metallic_texture=packed_roughness if enabled else null
-				material.metallic=1.0 if enabled else 0.0
-				material.roughness=1.0 if enabled else .94
-			await measure(scene,"relief-on" if enabled else "relief-off")
-		var valid: bool=true
-		for sample: Dictionary in measurements:
-			if sample.focused_frames!=sample.frames: valid=false
-		var report := FileAccess.open(output+"/relief-measurements.json",FileAccess.WRITE)
-		report.store_string(JSON.stringify({"valid_foreground_comparison":valid,"shared_texture_bytes":relief_bytes,"runs":measurements},"\t"))
-		report.close()
-	for material: StandardMaterial3D in timber_materials: material.normal_enabled=false
-	await capture("railing-joint-normal-off")
-	for material: StandardMaterial3D in timber_materials: material.normal_enabled=true
-	# Same camera and illumination, neutral colour: relief must survive without
-	# painted highlights or grain colour pretending to be geometric shading.
-	for material: StandardMaterial3D in timber_materials:
-		material.albedo_texture=null
-		material.albedo_color=Color(.48,.48,.48)
-	await capture("railing-relief-grey-on")
-	for material: StandardMaterial3D in timber_materials: material.normal_enabled=false
-	await capture("railing-relief-grey-off")
-	for material: StandardMaterial3D in timber_materials:
-		material.normal_enabled=true
-		material.albedo_texture=rail_texture
-		material.albedo_color=Color.WHITE
 	scene.focus("reverse"); await capture("railing-joint-reverse")
 	scene.compare_check.button_pressed=true
 	while scene.busy: await process_frame

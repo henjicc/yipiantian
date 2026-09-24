@@ -1,7 +1,6 @@
 """Solid railing posts and matching timber: reuse the immutable Tripo colour atlas."""
 from pathlib import Path
 import bpy, bmesh, json, math, importlib.util
-import sys
 
 SOURCE=Path(__file__).resolve().parent
 ROOT=SOURCE.parents[2]
@@ -16,13 +15,50 @@ bsdf.inputs['Specular IOR Level'].default_value=.08
 image=bpy.data.images.load(str(ATLAS))
 tex=wood.node_tree.nodes.new('ShaderNodeTexImage');tex.image=image
 wood.node_tree.links.new(tex.outputs['Color'],bsdf.inputs['Base Color'])
-sys.path.insert(0,str(SOURCE))
-from bake_railing_relief import bake_relief
-relief_images=bake_relief(wood,OUT)
 rope=bpy.data.materials.new('MutedHemp');rope.use_nodes=True
-rope.node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value=(.40,.32,.20,1)
-rope.node_tree.nodes.get('Principled BSDF').inputs['Roughness'].default_value=.98
+rope_shader=rope.node_tree.nodes.get('Principled BSDF')
+rope_shader.inputs['Roughness'].default_value=.98
+rope_shader.inputs['Specular IOR Level'].default_value=.04
+rope_tex=rope.node_tree.nodes.new('ShaderNodeTexImage');rope_tex.image=image
+rope_tint=rope.node_tree.nodes.new('ShaderNodeMixRGB');rope_tint.blend_type='MULTIPLY'
+rope_tint.inputs[0].default_value=1
+rope_tint.inputs[2].default_value=(.45,.38,.28,1)
+rope.node_tree.links.new(rope_tex.outputs['Color'],rope_tint.inputs[1])
+rope.node_tree.links.new(rope_tint.outputs[0],rope_shader.inputs['Base Color'])
 parts={}
+
+def uv_rope(obj,points,z):
+    """Unwrap each straight/corner segment along the original atlas rope strip.
+
+    The UV layer must match the timber before joining the two materials.
+    The original Tripo pixels provide ply/fibre colour; no relief is used.
+    """
+    from mathutils import Vector
+    uv=obj.data.uv_layers.active or obj.data.uv_layers.new(name='WoodGrain')
+    uv.name='WoodGrain'
+    segments=[]
+    for i,a in enumerate(points):
+        start=Vector((a[0],a[1],z));end=Vector((*points[(i+1)%len(points)],z))
+        axis=(end-start).normalized();outward=Vector((axis.y,-axis.x,0))
+        segments.append((start,axis,outward,(end-start).length))
+    for face in obj.data.polygons:
+        def distance(segment):
+            start,axis,outward,length=segment
+            t=max(0,min(length,(face.center-start).dot(axis)))
+            return (face.center-start-axis*t).length_squared
+        start,axis,outward,length=min(segments,key=distance)
+        angles=[]
+        for li in face.loop_indices:
+            point=obj.data.vertices[obj.data.loops[li].vertex_index].co
+            local=point-start
+            angles.append(math.atan2(local.z,local.dot(outward))/(2*math.pi)+.5)
+        if max(angles)-min(angles)>.5:angles=[a+1 if a<.5 else a for a in angles]
+        for li,angle in zip(face.loop_indices,angles):
+            point=obj.data.vertices[obj.data.loops[li].vertex_index].co
+            along=max(0,min(1,(point-start).dot(axis)/length))
+            # Two half-cylinder bands share the photographed face of the cord.
+            across=1-abs((angle%1)*2-1)
+            uv.data[li].uv=(.0135+.0155*across,.755+.08*along)
 
 def uv_wood(obj,long_axis):
     """Use only clean timber in the atlas, never its hole/rope/shadow islands.
@@ -88,7 +124,8 @@ def post(name,far):
             for p,(x,y) in zip(line.points,points):p.co=(x,y,z,1)
             obj=bpy.data.objects.new('HempLashing',curve);bpy.context.collection.objects.link(obj)
             bpy.ops.object.select_all(action='DESELECT');obj.select_set(True);bpy.context.view_layer.objects.active=obj
-            bpy.ops.object.convert(target='MESH');obj.data.materials.append(rope);objects.append(obj)
+            bpy.ops.object.convert(target='MESH');obj.data.materials.append(rope)
+            uv_rope(obj,points,z);objects.append(obj)
     bpy.ops.object.select_all(action='DESELECT')
     for obj in objects:obj.select_set(True)
     bpy.context.view_layer.objects.active=objects[0];bpy.ops.object.join()
@@ -102,10 +139,7 @@ parts['fence_post_low']=post('SolidFencePostFar',True)
 parts['fence_rail']=bevel_box('MatchingWeatheredRail',(.085,1,.085),(0,0,0),1,.008,2)
 bpy.ops.file.pack_all()
 bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/'railing_modules.blend'))
-report={'blender':bpy.app.version_string,'source_task':'18e92ae5-d11c-4987-81d4-babb51731181','new_tripo_calls':0,'new_ai_images':0,'baked_image_count':2,'atlas':str(ATLAS.relative_to(ROOT)).replace('\\','/'),'wood_uv_rectangle':[.709,.462,.855,.580],'parts':{}}
-report['baked_relief']={name:list(image.size) for name,image in relief_images.items()}
-report['relief_method']='Cycles tangent normal from nine-tap prefiltered shallow wood grain, no added fibre noise; packed G roughness .88-.96 / B metallic=0'
-report['normal_strength']=.65
+report={'blender':bpy.app.version_string,'source_task':'18e92ae5-d11c-4987-81d4-babb51731181','new_tripo_calls':0,'new_ai_images':0,'baked_image_count':0,'atlas':str(ATLAS.relative_to(ROOT)).replace('\\','/'),'wood_uv_rectangle':[.709,.462,.855,.580],'rope_uv_rectangle':[.0135,.755,.029,.835],'rope_tint_linear':[.45,.38,.28],'normal_mapping':False,'roughness_mapping':False,'parts':{}}
 for name,obj in parts.items():
     obj.data.calc_loop_triangles()
     report['parts'][name]={'triangles':len(obj.data.loop_triangles),'dimensions_blender':list(obj.dimensions),'materials':len(obj.data.materials)}
@@ -122,10 +156,11 @@ for name in parts:
         obj.data.calc_loop_triangles();triangles+=len(obj.data.loop_triangles)
         assert obj.data.uv_layers and all(math.isfinite(c) for v in obj.data.vertices for c in v.co)
         for face in obj.data.polygons:
-            if not obj.data.materials[face.material_index].name.startswith('SharedWeatheredTimber'):continue
+            is_rope=obj.data.materials[face.material_index].name.startswith('MutedHemp')
             for li in face.loop_indices:
                 u,v=obj.data.uv_layers.active.data[li].uv
-                assert .709-1e-6<=u<=.855+1e-6 and .462-1e-6<=v<=.580+1e-6,(name,'lost timber UV',u,v)
+                rect=report['rope_uv_rectangle'] if is_rope else report['wood_uv_rectangle']
+                assert rect[0]-1e-6<=u<=rect[2]+1e-6 and rect[1]-1e-6<=v<=rect[3]+1e-6,(name,'lost material UV',u,v)
         report['parts'][name]['wood_uv_verified']=True
         bm=bmesh.new();bm.from_mesh(obj.data);bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=1e-6)
         opened=sum(edge.is_boundary for edge in bm.edges);bm.free()
@@ -148,13 +183,17 @@ for name in parts:
     path=OUT/(name+'.glb');doc,binary=shared.read_glb(path);discard=set()
     for img in doc.get('images',[]):
         payload=shared.image_bytes(doc,binary,img)
-        candidates=[ATLAS,OUT/'fence_wood_normal.png',OUT/'fence_wood_orm.png']
+        candidates=[ATLAS]
         matched=next((candidate for candidate in candidates if candidate.read_bytes()==payload),None)
         assert matched is not None,(name,img.get('name'),'unmatched exported texture')
         discard.add(img.pop('bufferView'));img.pop('mimeType',None)
         img['uri']='../procedural_bridge/'+ATLAS.name if matched==ATLAS else matched.name
-    timber=next(material for material in doc['materials'] if material['name']=='SharedWeatheredTimber')
-    assert 'normalTexture' in timber and 'metallicRoughnessTexture' in timber['pbrMetallicRoughness']
+    for material in doc['materials']:
+        assert 'normalTexture' not in material and 'metallicRoughnessTexture' not in material['pbrMetallicRoughness']
+        if material['name']=='MutedHemp':
+            # Preserve the source material's authored colour multiplier in glTF.
+            material['pbrMetallicRoughness']['baseColorFactor']=[.45,.38,.28,1]
+    assert len(doc['images'])==1
     assert all('TANGENT' in primitive['attributes'] for mesh in doc['meshes'] for primitive in mesh['primitives'])
     path.write_bytes(shared.encode_glb(doc,binary,discard))
 (SOURCE/'railing-audit.json').write_text(json.dumps(report,indent=2),encoding='utf-8')

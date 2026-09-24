@@ -43,18 +43,26 @@ blender --background --python-exit-code 1 --python ArtSource/Environment/Paramet
 & scripts/godot.ps1 -Action Run -ExtraArgs '--script','../tests/component_railing_joint_test.gd'
 ```
 
-重建覆盖本目录的 `railing_modules.blend`、`railing-audit.json`、运行目录三份 `fence_*.glb` 和下节两张烘焙贴图，不覆盖旧桥源。无孔修改的历史截图在 `.local/verification/solid-railing/`，用户标注原图与该版证据归档到 `制作留档/03_处理与验证/20260925_木栏杆材质与连接/`。参考来源是既有Tripo木柱纹理和用户反馈，未新增参考图生成；建模由Blender完成，Godot只拼装，未将新柱几何记成Tripo输出。节点基线为 `79223037`；已有截图与源，未另录过程视频。旧2026-09-24组合性能记录属于修改前版本，不代表新版本实测。
+重建覆盖本目录的 `railing_modules.blend`、`railing-audit.json` 和运行目录三份 `fence_*.glb`，不覆盖旧桥源，不再烘焙凹凸贴图。无孔修改的历史截图在 `.local/verification/solid-railing/`，用户标注原图与该版证据归档到 `制作留档/03_处理与验证/20260925_木栏杆材质与连接/`。参考来源是既有Tripo木柱纹理和用户反馈，未新增参考图生成；建模由Blender完成，Godot只拼装，未将新柱几何记成Tripo输出。节点基线为 `79223037`；已有截图与源，未另录过程视频。旧2026-09-24组合性能记录属于修改前版本，不代表新版本实测。
+
+## 麻绳纹理与关闭凹凸（2026-09-25）
+
+用户要求绳圈压暗、增加绳子质感，并明确要求有开销就关闭凹凸。当前木头与麻绳均只使用原Tripo颜色图：木纹UV区域保持不变，绳圈沿每段路径映射原图的绞股绳纹区域 `[.0135,.755]–[.029,.835]`，合并前统一UV层名，避免纹理丢失。麻绳线性色乘数为 `(0.45,0.38,0.28)`、粗糙度常量0.98、反光0.04；木材粗糙度恢复常量0.94。三份GLB没有法线或金属／粗糙度贴图引用，没有新增图片、材质槽或面数（仍为740／116／108）。额外纹理采样和原1.5MiB两图加载从当前栏杆移除；不声称整场景帧率已测得提升。
+
+原凹凸研究脚本和两张图仅保留为历史，当前生成器与运行模型均不引用。`railing_modules.blend` 保存当前无凹凸材质和绳圈UV；`railing-audit.json` 记录两类UV区域、色乘数、零开边及无凹凸引用。定向测试验证所有材质共用同一原图、法线关闭且为空、无额外粗糙度／金属图、绳圈色调变暗及UV跨度保留；已通过实际4K窗口的正反近景、尺寸坡度边界和远近返回检查。
+
+基线 `e2d26410`；截图 `.local/verification/railing-rope/`，留档 `制作留档/03_处理与验证/20260925_麻绳纹理与关闭凹凸/`。既有原图直接复用，未调用图片生成或Tripo、未付费；Blender只调整材质／UV，Godot负责最终检查。已有图片与源，未另录视频。
 
 ## 木纹表面凹凸（2026-09-25）
 
-用户反馈无孔版仍像平面贴色，随后指出首版法线颗粒过强。`prepare_railing.py` 调用 `bake_railing_relief.py`，在Blender 5.2.2 LTS Cycles中对木纹高度做九点加权预滤波，保留宽浅起伏，再烘焙切线空间法线与粗糙度；已移除首版额外叠加的细纤维噪声。预滤波仅发生在离线烘焙中，没有增加运行时九次采样。原颜色图、UV区域、连接和模型轮廓不变；这是假定木纹沟槽的材质塑形，不是从颜色图恢复出的真实扫描几何。
+**以下为已停用的历史研究，当前方案以上节为准；复现需使用提交 `e2d26410` 的生成器、源与测试。** 用户反馈无孔版仍像平面贴色，随后指出首版法线颗粒过强。历史版本的 `prepare_railing.py` 调用 `bake_railing_relief.py`，在Blender 5.2.2 LTS Cycles中对木纹高度做九点加权预滤波，保留宽浅起伏，再烘焙切线空间法线与粗糙度；已移除首版额外叠加的细纤维噪声。预滤波仅发生在离线烘焙中，没有增加运行时九次采样。原颜色图、UV区域、连接和模型轮廓不变；这是假定木纹沟槽的材质塑形，不是从颜色图恢复出的真实扫描几何。
 
 - 共享 `fence_wood_normal.png`（1024²，OpenGL +Y）及 `fence_wood_orm.png`（512²，G粗糙度、B金属度零）。法线强度0.65，粗糙度范围0.88–0.96；三个构件及远近档引用同一份图片，没有逐根复制材质图。两图压缩像素数据含mipmaps共1,572,904字节，约1.5MiB，原2048²／1024²版约6MiB；这不是整个进程／驱动显存测量。没有新增Tripo／图片生成调用或付费，法线由Blender材质烘焙产生。
-- `railing_modules.blend` 保留 `WeatheredTimberReliefSource` 材质节点和打包图片。编辑源保持多边形；仅导出时三角化，确保八边端面的切线可计算，GLB审计检查实际导出了 `TANGENT` 和法线／粗糙度引用。三角数仍为740／116／108。
+- 历史提交的 `railing_modules.blend` 保留 `WeatheredTimberReliefSource` 材质节点和打包图片。编辑源保持多边形；仅导出时三角化，确保八边端面的切线可计算，GLB审计检查实际导出了 `TANGENT` 和法线／粗糙度引用。三角数仍为740／116／108。
 - Godot贴图导入必须显式启用法线模式、显存压缩和mipmaps；这轮首次默认导入在近景产生颗粒状错误，改正后消失。不能只确认 `normal_enabled` 就认定法线显示正确。粗糙度图也保留压缩和mipmaps。
 - 定向检查沿用 `tests/component_railing_joint_test.gd`，增加真实材质法线共享、粗糙度、网格切线和mipmaps检查。固定镜头／光照保存法线开关对照、去掉颜色纹理的灰材质开关对照，以及正反近景、坡度边界和远近返回。已通过，开发侧目视确认灰材质也有木纹光照起伏；未将此当作用户美术验收。
 
-首版证据 `.local/verification/railing-relief/`、留档 `制作留档/03_处理与验证/20260925_木栏杆法线与粗糙度/`（基线 `010b1e68`）保留为历史。当前柔化版证据 `.local/verification/railing-soft/`、留档 `制作留档/03_处理与验证/20260925_木纹颗粒柔化/`，基线 `d4261622`。已有实际Godot截图和源，未另录视频。材质烘焙及方向依据：[Blender Cycles法线烘焙](https://developer.blender.org/docs/release_notes/2.80/cycles/)、[Godot法线材质约定](https://docs.godotengine.org/en/latest/tutorials/3d/standard_material_3d.html#normal-map)；实际导入在Godot 4.7.2 D3D12验证。
+首版证据 `.local/verification/railing-relief/`、留档 `制作留档/03_处理与验证/20260925_木栏杆法线与粗糙度/`（基线 `010b1e68`）保留为历史。上一柔化版证据 `.local/verification/railing-soft/`、留档 `制作留档/03_处理与验证/20260925_木纹颗粒柔化/`，基线 `d4261622`。已有实际Godot截图和源，未另录视频。材质烘焙及方向依据：[Blender Cycles法线烘焙](https://developer.blender.org/docs/release_notes/2.80/cycles/)、[Godot法线材质约定](https://docs.godotengine.org/en/latest/tutorials/3d/standard_material_3d.html#normal-map)；实际导入在Godot 4.7.2 D3D12验证。
 
 4K实际显示复核确认研究室使用 `scaling_mode=0`、`scale=0.5`，即双线性放大1080p，没有启用FSR；不要用主游戏的FSR偏好推断独立研究室。定向测试加 `-- --railing-review-4k` 可复核此条件。可选 `--measure-relief` 开关交错测量必须全部采样帧在前台，报告显式给出 `valid_foreground_comparison`；本轮样本为0/120前台帧且属于调整中版本，归为失焦无效记录，没有用它报告GPU增幅。法线／粗糙度增加材质采样和贴图数据，不增加面数、碰撞或逐帧CPU生成；收益仅确认上述贴图数据缩减，不能声称帧率提升。
 

@@ -3,7 +3,7 @@
   "source_task": "18e92ae5-d11c-4987-81d4-babb51731181",
   "new_tripo_calls": 0,
   "new_ai_images": 0,
-  "baked_image_count": 2,
+  "baked_image_count": 0,
   "atlas": "Game/art/environment/procedural_bridge/post_Color_18e92ae5-d11c-4987-81d4-babb51731181.jpg",
   "wood_uv_rectangle": [
     0.709,
@@ -11,6 +11,19 @@
     0.855,
     0.58
   ],
+  "rope_uv_rectangle": [
+    0.0135,
+    0.755,
+    0.029,
+    0.835
+  ],
+  "rope_tint_linear": [
+    0.45,
+    0.38,
+    0.28
+  ],
+  "normal_mapping": false,
+  "roughness_mapping": false,
   "parts": {
     "fence_post": {
       "triangles": 740,
@@ -50,17 +63,5 @@
       "open_edges": 0,
       "reimport_verified": true
     }
-  },
-  "baked_relief": {
-    "fence_wood_normal": [
-      1024,
-      1024
-    ],
-    "fence_wood_orm": [
-      512,
-      512
-    ]
-  },
-  "relief_method": "Cycles tangent normal from nine-tap prefiltered shallow wood grain, no added fibre noise; packed G roughness .88-.96 / B metallic=0",
-  "normal_strength": 0.65
+  }
 }
