@@ -24,6 +24,7 @@ var cover: Window
 var failures: Array[String] = []
 var visible_only: bool = false
 var visual_only: bool = false
+var no_captures: bool = false
 
 func _ready() -> void:
 	process_mode=Node.PROCESS_MODE_ALWAYS
@@ -38,6 +39,7 @@ func _ready() -> void:
 		elif arg=="--capacity": capacity=true
 		elif arg=="--visible-only": visible_only=true
 		elif arg=="--visual-only": visual_only=true
+		elif arg=="--no-captures": no_captures=true
 	_run.call_deferred()
 
 func _physics_process(delta: float) -> void:
@@ -125,13 +127,15 @@ func _run() -> void:
 		await _visual_comparison()
 		return
 	for repeat: int in repeats: await _case("visible_%d"%repeat,seconds)
-	root.get_texture().get_image().save_png(output.path_join("day.png"))
+	phase="capture_day";_status()
+	if not no_captures: root.get_texture().get_image().save_png(output.path_join("day.png"))
 	if visible_only:
 		_write("results.json",{"cases":samples,"failures":failures})
 		phase="complete";_status();scene._request_exit();return
 	if soak_hours>0:
 		var end: int=Time.get_ticks_msec()+int(soak_hours*3600000)
 		while Time.get_ticks_msec()<end: await _case("soak_%d"%samples.size(),minf(180,(end-Time.get_ticks_msec())/1000.0))
+	phase="actions";_status()
 	await _actions()
 	await _cover(true)
 	await get_tree().create_timer(1).timeout
@@ -158,7 +162,8 @@ func _run() -> void:
 		await _case("restored_%d"%cycle,minf(seconds,15))
 	scene.atmosphere.set_preview_hour(21)
 	await _case("night",minf(seconds,15))
-	root.get_texture().get_image().save_png(output.path_join("night.png"))
+	phase="capture_night";_status()
+	if not no_captures: root.get_texture().get_image().save_png(output.path_join("night.png"))
 	_write("results.json",{"cases":samples,"failures":failures})
 	phase="complete";_status()
 	scene._request_exit()

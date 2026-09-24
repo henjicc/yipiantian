@@ -39,6 +39,9 @@ func _run() -> void:
 	var store = Store.new(save_dir)
 	store.load_state()
 	var data: Dictionary = Farm.new(now).snapshot()
+	# Ambient swimming can unlock this journal mark during camera checks.
+	# Seed it so the full farm snapshot still detects interaction side effects.
+	Farm.Memories.mark(data.memories, "company", now)
 	data.harvested.greens = 10
 	data.harvested.radish = 6
 	for index: int in 6:

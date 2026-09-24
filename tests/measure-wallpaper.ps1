@@ -10,6 +10,7 @@ param(
  [switch]$Native,
  [switch]$Capacity,
  [switch]$VisibleOnly,
+ [switch]$NoCaptures,
  [ValidateRange(5,180)][int]$IdleSeconds=180
 )
 $ErrorActionPreference = 'Stop'
@@ -34,6 +35,7 @@ if ($Executable) {
  Copy-Item -LiteralPath $manifest -Destination (Join-Path $auditRoot 'benchmark.json')
 }
 $hardware = @{commit=(& git -C $auditRepo rev-parse HEAD);cpu=(Get-CimInstance Win32_Processor | Select-Object Name,NumberOfLogicalProcessors);os=(Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version);gpu=(Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion);physical_memory=(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory;power_plan=(& powercfg /GETACTIVESCHEME);runtime=$runtime;policy='Isolated farm, owned nonfocusing cover when Native requested';native=[bool]$Native;capacity=[bool]$Capacity;resolution=$Resolution;quality=$Quality;soak_hours=$SoakHours;started=(Get-Date -Format o);measurement_keepawake='Temporary display/system request covers both idle baselines and game; power plan unchanged'}
+$hardware.no_captures=[bool]$NoCaptures
 $hardware | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $auditRoot 'hardware.json') -Encoding utf8
 if (-not ('WallpaperMeasurementPower' -as [type])) {
  Add-Type -TypeDefinition @'
@@ -81,6 +83,7 @@ if ($Native) {$info.ArgumentList.Add('--native')}
 if ($Capacity) {$info.ArgumentList.Add('--capacity')}
 $info.ArgumentList.Add('--quality='+$Quality)
 if ($VisibleOnly) {$info.ArgumentList.Add('--visible-only')}
+if ($NoCaptures) {$info.ArgumentList.Add('--no-captures')}
 $info.Environment['APPDATA']=Join-Path $auditRoot 'profile/roaming'
 $info.Environment['LOCALAPPDATA']=Join-Path $auditRoot 'profile/local'
 New-Item -ItemType Directory -Path $info.Environment['APPDATA'],$info.Environment['LOCALAPPDATA'] -Force | Out-Null

@@ -63,3 +63,7 @@ courtyard_haze_color={
 "type": "color",
 "value": Color(0.72, 0.72, 0.65, 1)
 }
+
+[threading]
+
+worker_pool/max_threads=8
