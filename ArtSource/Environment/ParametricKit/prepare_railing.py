@@ -1,6 +1,7 @@
 """Solid railing posts and matching timber: reuse the immutable Tripo colour atlas."""
 from pathlib import Path
 import bpy, bmesh, json, math, importlib.util
+import sys
 
 SOURCE=Path(__file__).resolve().parent
 ROOT=SOURCE.parents[2]
@@ -15,6 +16,9 @@ bsdf.inputs['Specular IOR Level'].default_value=.08
 image=bpy.data.images.load(str(ATLAS))
 tex=wood.node_tree.nodes.new('ShaderNodeTexImage');tex.image=image
 wood.node_tree.links.new(tex.outputs['Color'],bsdf.inputs['Base Color'])
+sys.path.insert(0,str(SOURCE))
+from bake_railing_relief import bake_relief
+relief_images=bake_relief(wood,OUT)
 rope=bpy.data.materials.new('MutedHemp');rope.use_nodes=True
 rope.node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value=(.40,.32,.20,1)
 rope.node_tree.nodes.get('Principled BSDF').inputs['Roughness'].default_value=.98
@@ -98,12 +102,18 @@ parts['fence_post_low']=post('SolidFencePostFar',True)
 parts['fence_rail']=bevel_box('MatchingWeatheredRail',(.085,1,.085),(0,0,0),1,.008,2)
 bpy.ops.file.pack_all()
 bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE/'railing_modules.blend'))
-report={'blender':bpy.app.version_string,'source_task':'18e92ae5-d11c-4987-81d4-babb51731181','new_tripo_calls':0,'new_images':0,'atlas':str(ATLAS.relative_to(ROOT)).replace('\\','/'),'wood_uv_rectangle':[.709,.462,.855,.580],'parts':{}}
+report={'blender':bpy.app.version_string,'source_task':'18e92ae5-d11c-4987-81d4-babb51731181','new_tripo_calls':0,'new_ai_images':0,'baked_image_count':2,'atlas':str(ATLAS.relative_to(ROOT)).replace('\\','/'),'wood_uv_rectangle':[.709,.462,.855,.580],'parts':{}}
+report['baked_relief']={name:list(image.size) for name,image in relief_images.items()}
+report['relief_method']='Cycles tangent normal from shallow colour-guided grain and fine stretched fibres; packed G roughness / B metallic=0'
+report['normal_strength']=1.4
 for name,obj in parts.items():
     obj.data.calc_loop_triangles()
     report['parts'][name]={'triangles':len(obj.data.loop_triangles),'dimensions_blender':list(obj.dimensions),'materials':len(obj.data.materials)}
+    # Keep polygon source in the saved blend; triangulate only export copies so
+    # glTF can supply consistent tangents on the shaft's octagonal end caps.
+    bm=bmesh.new();bm.from_mesh(obj.data);bmesh.ops.triangulate(bm,faces=list(bm.faces));bm.to_mesh(obj.data);bm.free()
     bpy.ops.object.select_all(action='DESELECT');obj.select_set(True);bpy.context.view_layer.objects.active=obj
-    bpy.ops.export_scene.gltf(filepath=str(OUT/(name+'.glb')),export_format='GLB',use_selection=True)
+    bpy.ops.export_scene.gltf(filepath=str(OUT/(name+'.glb')),export_format='GLB',use_selection=True,export_tangents=True)
 for name in parts:
     bpy.ops.wm.read_factory_settings(use_empty=True);bpy.ops.import_scene.gltf(filepath=str(OUT/(name+'.glb')))
     meshes=[obj for obj in bpy.context.scene.objects if obj.type=='MESH']
@@ -137,9 +147,15 @@ shared=importlib.util.module_from_spec(spec);spec.loader.exec_module(shared)
 for name in parts:
     path=OUT/(name+'.glb');doc,binary=shared.read_glb(path);discard=set()
     for img in doc.get('images',[]):
-        assert shared.image_bytes(doc,binary,img)==ATLAS.read_bytes()
+        payload=shared.image_bytes(doc,binary,img)
+        candidates=[ATLAS,OUT/'fence_wood_normal.png',OUT/'fence_wood_orm.png']
+        matched=next((candidate for candidate in candidates if candidate.read_bytes()==payload),None)
+        assert matched is not None,(name,img.get('name'),'unmatched exported texture')
         discard.add(img.pop('bufferView'));img.pop('mimeType',None)
-        img['uri']='../procedural_bridge/'+ATLAS.name
+        img['uri']='../procedural_bridge/'+ATLAS.name if matched==ATLAS else matched.name
+    timber=next(material for material in doc['materials'] if material['name']=='SharedWeatheredTimber')
+    assert 'normalTexture' in timber and 'metallicRoughnessTexture' in timber['pbrMetallicRoughness']
+    assert all('TANGENT' in primitive['attributes'] for mesh in doc['meshes'] for primitive in mesh['primitives'])
     path.write_bytes(shared.encode_glb(doc,binary,discard))
 (SOURCE/'railing-audit.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
 print('SOLID_RAILING_VERIFIED',json.dumps(report))

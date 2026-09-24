@@ -3,15 +3,24 @@ const Parts = preload("res://scenes/procedural_lab/kit_parts.gd")
 
 func _run() -> void:
 	root.size=Vector2i(1600,1000)
-	output=ProjectSettings.globalize_path("res://../.local/verification/solid-railing")
+	output=ProjectSettings.globalize_path("res://../.local/verification/railing-relief")
 	DirAccess.make_dir_recursive_absolute(output)
 	var rail_texture: Texture2D=Parts._source("fence_rail")[0].mesh.surface_get_material(0).albedo_texture
-	for part: String in ["fence_post","fence_post_low"]:
+	var rail_normal: Texture2D=Parts._source("fence_rail")[0].mesh.surface_get_material(0).normal_texture
+	var timber_materials: Array[StandardMaterial3D]=[]
+	expect(rail_normal!=null,"railing imports its baked tangent normal texture")
+	if rail_normal:
+		expect(rail_normal.get_image().has_mipmaps(),"normal map filters into the distance instead of producing sparkling grain")
+	for part: String in ["fence_rail","fence_post","fence_post_low"]:
 		for source: Dictionary in Parts._source(part):
 			for surface: int in source.mesh.get_surface_count():
 				var material: StandardMaterial3D=source.mesh.surface_get_material(surface)
 				if material.albedo_texture:
 					expect(material.albedo_texture==rail_texture,"upright and rail share the same authored timber texture")
+					expect(material.normal_enabled and material.normal_texture==rail_normal,"all timber detail tiers use the same active relief map")
+					expect(material.roughness_texture!=null,"timber imports the baked roughness variation")
+					expect(not source.mesh.surface_get_arrays(surface)[Mesh.ARRAY_TANGENT].is_empty(),"normal mapping has imported mesh tangents")
+					if not material in timber_materials: timber_materials.append(material)
 	for path: int in 3:
 		for options: Dictionary in [{"path":path},{"path":path,"length":2.4,"height":.7,"bay":.8,"slope":-.18},{"path":path,"length":8,"height":1.4,"bay":1.8,"slope":.18}]:
 			var model: Node3D=Kit.build(Kit.plan("实木连接验收",options,"railing"))
@@ -32,6 +41,21 @@ func _run() -> void:
 	while scene.current_plan.is_empty() or scene.busy: await process_frame
 	await capture("railing-default")
 	scene.focus("joint"); await capture("railing-joint")
+	for material: StandardMaterial3D in timber_materials: material.normal_enabled=false
+	await capture("railing-joint-normal-off")
+	for material: StandardMaterial3D in timber_materials: material.normal_enabled=true
+	# Same camera and illumination, neutral colour: relief must survive without
+	# painted highlights or grain colour pretending to be geometric shading.
+	for material: StandardMaterial3D in timber_materials:
+		material.albedo_texture=null
+		material.albedo_color=Color(.48,.48,.48)
+	await capture("railing-relief-grey-on")
+	for material: StandardMaterial3D in timber_materials: material.normal_enabled=false
+	await capture("railing-relief-grey-off")
+	for material: StandardMaterial3D in timber_materials:
+		material.normal_enabled=true
+		material.albedo_texture=rail_texture
+		material.albedo_color=Color.WHITE
 	scene.focus("reverse"); await capture("railing-joint-reverse")
 	scene.compare_check.button_pressed=true
 	while scene.busy: await process_frame
