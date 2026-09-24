@@ -29,7 +29,9 @@ float bed_height(vec2 p) {
 float mound(vec2 p) {
 	float r = length(p/root_radius);
 	float irregular = .65+.6*terrain_noise(p*39.0+cell_center*21.0);
-	float shoulder = exp(-pow((r-.95)*1.35,2.0))*.038*irregular;
+	// pow(negative, 2.0) can produce NaN on D3D12, punching out the root pocket.
+	float shoulder_distance = (r-.95)*1.35;
+	float shoulder = exp(-shoulder_distance*shoulder_distance)*.038*irregular;
 	float fade = 1.0-smoothstep(1.5,2.1,r);
 	float height_scale = min(1.0,min(root_radius.x/.075,root_radius.y/.060));
 	return planted*root_size*height_scale*fade*(shoulder-.004*exp(-r*r*3.0));

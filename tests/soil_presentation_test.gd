@@ -102,7 +102,21 @@ func _run() -> void:
 func shot(label: String, delay: float = .3) -> void:
 	if delay > 0: await create_timer(delay).timeout
 	await RenderingServer.frame_post_draw
-	_expect(root.get_texture().get_image().save_png(output.path_join(label+".png")) == OK,"Capture "+label)
+	var image: Image = root.get_texture().get_image()
+	_expect(image.save_png(output.path_join(label+".png")) == OK,"Capture "+label)
+	if label == "01-empty-unselected":
+		# Invalid vertex math can expose the green background at every root pocket
+		# while all planting-state assertions still pass. Inspect the rendered soil.
+		for id: String in scene.farm.cell_ids(0):
+			var point: Vector3 = scene.farm.fields[0].to_global(scene.farm.cell_position(0,id))
+			var pixel: Vector2i = Vector2i(scene.camera.unproject_position(point))
+			var soil_pixels: int = 0
+			for y: int in range(-3,4):
+				for x: int in range(-3,4):
+					var color: Color = image.get_pixelv(pixel+Vector2i(x,y))
+					if color.r > color.g * 1.08 and color.r > color.b * 1.2:
+						soil_pixels += 1
+			_expect(soil_pixels >= 40,"Empty root pocket renders continuous brown soil "+id)
 
 func _expect(value: bool, label: String) -> void:
 	if not value:
