@@ -491,6 +491,28 @@ Godot 4.7.2／Forward+：显示页提供FSR关闭、画质优先、平衡、性�
 
 尝试扩展旧`ui_settings_scene_test.gd`时出现8项田格选择、菜单关闭时机及农场快照等失败；未将该综合集报告为通过，原用例保持不变。FSR新增检查改为上述独立实景入口。短测不等于低端显卡、长时运行或运动拖影已全面验收。
 
+#### FSR进程GPU短测（2026-09-24）
+
+源码`bb98c214`，5900X／RTX4090（Windows驱动32.0.16.1047），Godot 4.7.2开发运行时、D3D12／Forward+。隔离的96格成熟混种、7只动物、固定正午与全景；4K物理输出、标准画质、景深开启。使用现有WindowActivity的可见壁纸30fps策略，不争抢前台焦点，不连接原生桌面宿主，不代表发行模板性能或60fps交互。测试期间关闭已确认归属的开发游戏，其他程序保持原状，完成后恢复开发预览。
+
+五种设置先各预热5秒；按顺序、逆序、交错顺序各测一轮，每次切换等待3秒、采样12秒。采样期间无截图、无新增specialization编译，结束后才取画面；每组约1080个帧计时样本，Windows进程计数器9–10个有效读数。只取实际游戏PID的`GPU Engine/Utilization Percentage`，每次以最忙引擎为该进程GPU比例，不把不同引擎相加；本次最忙引擎为3D。剔除跨档位计数器窗口，未用整卡利用率冒充游戏占用。整卡频率数据仅作干扰背景。
+
+| 设置 | 三维渲染尺寸 | 游戏GPU比例中位数 | GPU每帧耗时中位数 | 三轮各自耗时中位数范围 |
+|---|---|---:|---:|---:|
+| 关闭＋1080p | 1920×1080 | 32.25% | 9.952ms | 8.942–10.545ms |
+| 关闭＋原生 | 3840×2160 | 44.45% | 14.866ms | 10.698–17.431ms |
+| 画质优先 | 2560×1440 | 42.29% | 15.866ms | 11.162–17.179ms |
+| 平衡 | 约2259×1271 | 33.29% | 10.927ms | 9.154–14.212ms |
+| 性能优先 | 1920×1080 | 33.29% | 10.905ms | 9.314–16.762ms |
+
+表中GPU比例与耗时分别取各自全部有效采样的中位数，采样节奏不同，不能相互换算。五组平均约29.84–30.01fps，限帧下不以FPS判断GPU成本。**这些是当时有其他程序运行的观测，不是隔离硬件后的纯FSR加速率。** 进程归属能分开记账，不能隔离同一显卡的频率、调度和共享带宽。已观察到采样区间频率210–2760MHz大幅变化，同一档不同轮的耗时差异明显；不根据这些数字给出精确节省百分比或稳定优劣排名。没有足够证据把FSR当作低占用优化，也没有测整卡功耗归因或最大帧率。
+
+证据在`.local/verification/fsr-gpu-20260924/measured/`：`summary.json`、`results.json`、`process.jsonl`、`whole-gpu-context.csv`、`actual-output.json`与画面；父目录保留`probe.gd`、`run.ps1`、`summarize.ps1`及已作废的首次采样，只有`measured/`用于上表。复测需新建隔离输出目录，沿用五组配置和相同顺序；`viewport_set_measure_render_time`打开后每个绘制帧取`viewport_get_measured_render_time_gpu`，外部Windows计数器必须按游戏实际PID过滤。
+
+本机两个测量陷阱：console启动器会另起GUI绘图进程，必须采用`OS.get_process_id()`／ready文件中的PID或直接启动GUI可执行文件；首次因误取启动器PID缺失进程数据，已丢弃。4K／canvas_items拉伸时`ViewportTexture.get_size()`本次返回9216×5184，但实际读回图像及Windows窗口均为3840×2160；不能单凭该纹理尺寸接口宣称实际输出9K，需用`get_image().get_size()`在计时外核验。
+
+方法参考：[Microsoft进程GPU统计](https://devblogs.microsoft.com/directx/gpus-in-the-task-manager/)、[Godot GPU计时与低频限制](https://docs.godotengine.org/en/4.7/classes/class_renderingserver.html#class-renderingserver-method-viewport-get-measured-render-time-gpu)。
+
 ### 程序化岛屿研究室（2026-09-24）
 
 独立场景位于 `Game/scenes/procedural_lab/procedural_lab.tscn`；直接指定场景启动，主入口和农场存档不变，Windows导出预设排除此研究目录。使用已有开发预览入口确认静音、第二屏独占全屏与窗口就绪：
