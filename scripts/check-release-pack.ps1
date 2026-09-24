@@ -89,7 +89,7 @@ foreach ($resource in $resources) {
     $path = 'res://' + $relative
     if ($path -notin $paths -and ($path+'.import') -notin $paths -and ($path+'.remap') -notin $paths) { $missing.Add($path) }
 }
-foreach ($required in @('res://scenes/main.tscn','res://scenes/environment/courtyard.tscn','res://art/ui/fonts/字体来源.txt','res://legal/GODOT_LICENSE.txt','res://legal/GODOT_COPYRIGHT.txt','res://project.binary')) {
+foreach ($required in @('res://scenes/startup.tscn','res://scenes/main.tscn','res://scenes/environment/courtyard.tscn','res://art/ui/fonts/字体来源.txt','res://legal/GODOT_LICENSE.txt','res://legal/GODOT_COPYRIGHT.txt','res://project.binary')) {
     if ($required -notin $paths -and ($required+'.remap') -notin $paths) { $missing.Add($required) }
 }
 $report = [ordered]@{format=$format; engine=$engine; entries=$entries; texture_bytes=$textureBytes; duplicate_bytes=$duplicateBytes; duplicate_groups=$duplicates; large_textures=$largeTextures; forbidden=$forbidden; missing=$missing; passed=($forbidden.Count -eq 0 -and $missing.Count -eq 0 -and $duplicateBytes -eq 0)}

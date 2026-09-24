@@ -10,8 +10,9 @@ signal developer_requested(action: String)
 signal dismissed
 
 const FarmTheme = preload("res://ui/farm_theme.gd")
-const QUALITY_VALUES: Array[String] = ["standard", "low", "high"]
-const RESOLUTION_VALUES: Array[String] = ["native", "1080", "1440", "2160"]
+const Presets = preload("res://settings/graphics_presets.gd")
+const QUALITY_VALUES: Array[String] = ["high", "standard", "low"]
+const RESOLUTION_VALUES: Array[String] = ["native", "720", "1080", "1440", "2160"]
 const FSR_VALUES: Array[String] = ["off", "quality", "balanced", "performance"]
 static var developer_unlocked: bool = false
 var _about_clicks: int = 0
@@ -23,6 +24,9 @@ var _sliders: Dictionary = {}
 var _volume_labels: Dictionary = {}
 var _window: OptionButton
 var _quality: OptionButton
+var _graphics: Dictionary = {}
+var _wallpaper_active: bool = false
+var _wallpaper_confirmation: PanelContainer
 var _resolution: OptionButton
 var _fsr: OptionButton
 var _sway: Button
@@ -64,8 +68,8 @@ func _ready() -> void:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	panel.offset_left = -310
 	panel.offset_right = 310
-	panel.offset_top = -330
-	panel.offset_bottom = 330
+	panel.offset_top = -270
+	panel.offset_bottom = 270
 	var style: StyleBox = FarmTheme.framed_paper()
 	style.content_margin_left = 26
 	style.content_margin_right = 26
@@ -87,7 +91,7 @@ func _ready() -> void:
 	_tabs[4].visible = developer_enabled()
 	var content := Control.new()
 	content.name = "Pages"
-	content.custom_minimum_size = Vector2(560, 450)
+	content.custom_minimum_size = Vector2(560, 350)
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(content)
 	var settings := VBoxContainer.new()
@@ -114,52 +118,33 @@ func _ready() -> void:
 		slider.value_changed.connect(func(value: float) -> void:
 			number.text = "%d%%" % roundi(value)
 			_change(key, value / 100.0))
+	var scroll := ScrollContainer.new()
+	scroll.name = "DisplayScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	content.add_child(scroll)
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_pages.append(scroll)
 	var display := VBoxContainer.new()
 	display.name = "Display"
-	content.add_child(display)
-	display.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_pages.append(display)
-	_window = OptionButton.new()
-	_window.name = "WindowMode"
-	_window.add_item("窗口")
-	_window.add_item("全屏")
-	FarmTheme.configure_option(_window)
-	_window.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_window.custom_minimum_size.y = 42
-	_row(display, "窗口模式").add_child(_window)
-	_window.item_selected.connect(func(index: int) -> void: _change("fullscreen", index == 1))
-	_resolution = OptionButton.new()
-	_resolution.name = "RenderResolution"
-	for title: String in ["原生（最清晰）", "1080p", "1440p", "2160p（4K）"]:
-		_resolution.add_item(title)
-	FarmTheme.configure_option(_resolution)
-	_resolution.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_resolution.custom_minimum_size.y = 42
-	_row(display, "分辨率").add_child(_resolution)
+	display.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(display)
+	_quality = _option(display, "画质预设", "Quality", ["高画质", "中画质", "低画质", "自定义"])
+	_quality.set_item_disabled(3, true)
+	_quality.item_selected.connect(_choose_preset)
+	_resolution = _option(display, "分辨率", "RenderResolution", ["原生", "720p", "1080p", "1440p", "2160p（4K）"])
 	_resolution.item_selected.connect(func(index: int) -> void: _change("resolution", RESOLUTION_VALUES[index]))
-	_fsr = OptionButton.new()
-	_fsr.name = "FSR"
-	for title: String in ["关闭", "画质优先", "平衡", "性能优先"]:
-		_fsr.add_item(title)
-	FarmTheme.configure_option(_fsr)
-	_fsr.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_fsr.custom_minimum_size.y = 42
-	_row(display, "FSR 超分").add_child(_fsr)
+	_fsr = _option(display, "FSR 超分", "FSR", ["关闭", "画质优先", "平衡", "性能优先"])
 	_fsr.item_selected.connect(func(index: int) -> void:
 		_change("fsr", FSR_VALUES[index])
 		_refresh_fsr())
-	_quality = OptionButton.new()
-	_quality.name = "Quality"
-	_quality.add_item("标准")
-	_quality.add_item("低画质")
-	_quality.add_item("高画质")
-	FarmTheme.configure_option(_quality)
-	_quality.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_quality.custom_minimum_size.y = 42
-	_row(display, "画质").add_child(_quality)
-	_quality.item_selected.connect(func(index: int) -> void:
-		_change("quality", QUALITY_VALUES[index])
-		_refresh_dof())
+	for entry: Array in [["quality", "场景细节"], ["shadows", "阴影质量"], ["lighting", "光照效果"], ["antialiasing", "抗锯齿"]]:
+		var key: String = entry[0]
+		var option_titles: Array = ["关闭", "2×", "4×"] if key == "antialiasing" else ["高", "中", "低"]
+		var choices: Array = ["off", "2x", "4x"] if key == "antialiasing" else QUALITY_VALUES
+		var option: OptionButton = _option(display, entry[1], key.capitalize(), option_titles)
+		_graphics[key] = option
+		option.item_selected.connect(func(index: int) -> void: _change(key, choices[index]))
 	_dof = _button(_row(display, "景深"), "开启")
 	_dof.name = "DepthOfField"
 	_dof.toggle_mode = true
@@ -167,6 +152,8 @@ func _ready() -> void:
 	_dof.toggled.connect(func(enabled: bool) -> void:
 		_change("dof_enabled", enabled)
 		_refresh_dof())
+	_window = _option(display, "窗口模式", "WindowMode", ["窗口", "全屏"])
+	_window.item_selected.connect(func(index: int) -> void: _change("fullscreen", index == 1))
 	_sway = _button(_row(display, "轻微晃动"), "已关闭")
 	_sway.name = "CameraSway"
 	_sway.toggle_mode = true
@@ -193,7 +180,7 @@ func _ready() -> void:
 	_wallpaper.name = "DesktopWallpaper"
 	_wallpaper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_wallpaper.tooltip_text = "在当前屏幕安静展示农场；双击系统托盘图标返回游戏。"
-	_wallpaper.pressed.connect(func() -> void: wallpaper_requested.emit())
+	_wallpaper.pressed.connect(_request_wallpaper)
 	var operations: RichTextLabel = _text_page(content, "操作说明")
 	operations.text = "[b]照料田地[/b]\n空手点击田格展开菜单，选择动作；播种时先选蔬菜拿起种子，再点击土地种植。点空白、右键或 Esc 关闭菜单。门前种子篮、锄头、水壶可拿起对应工具，再点击土地连续操作；底部种植／工具按钮展开横排选择。选菜后鼠标携带种子，点击土地可连续种植；右键、Esc 或取消按钮放下工具。每轮可浇水一次，不同作物节省的生长时间不同；成熟收获一篮。\n\n[b]照料菜架[/b]\n点击架脚的种植位靠近，再点种植位播种丝瓜；也可点藤蔓或果实浇水、收获。扩架增加位置，缩架前先收获会被移除的作物。\n\n[b]观察院落[/b]\n滚轮用于调整镜头，拿着种子时也不会切换菜品。点击田块靠近，向后滚轮返回聚焦前的机位；中键拖动转动视角，Shift＋中键平移。\n\n[b]返回与布置[/b]\n右键或 Esc 先放下工具，再清除选格、返回全景。“建设”内选择土地、建筑或摆件：选装饰、点空位，再确认；旋转适用于地面装饰。\n\n作物按现实时间生长。离开后再次进入，会继续上次的农场。"
 	var sources: RichTextLabel = _text_page(content, "关于")
@@ -236,6 +223,7 @@ func _ready() -> void:
 	_close.custom_minimum_size.x = 180
 	_close.pressed.connect(func() -> void: close_requested.emit())
 	_build_quit_confirmation()
+	_build_wallpaper_confirmation()
 	_show_page(0)
 	hide()
 
@@ -245,6 +233,7 @@ func present(value: Dictionary, message: String = "") -> void:
 	closing = false
 	_root.mouse_filter = Control.MOUSE_FILTER_STOP
 	cancel_quit_confirmation()
+	cancel_wallpaper_confirmation()
 	if _confirmation_motion: _confirmation_motion.kill()
 	_paper.modulate.a = 1.0
 	_quit_confirmation.scale = Vector2.ONE
@@ -255,9 +244,7 @@ func present(value: Dictionary, message: String = "") -> void:
 		_sliders[key].set_value_no_signal(roundf(float(value[key]) * 100.0))
 		_volume_labels[key].text = "%d%%" % roundi(float(value[key]) * 100.0)
 	_window.select(1 if value.fullscreen else 0)
-	_quality.select(QUALITY_VALUES.find(value.quality))
-	_resolution.select(RESOLUTION_VALUES.find(value.resolution))
-	_fsr.select(FSR_VALUES.find(value.get("fsr", "off")))
+	_sync_graphics()
 	_refresh_fsr()
 	_refresh_dof()
 	_refresh_sway()
@@ -295,7 +282,8 @@ func dismiss() -> void:
 	_quality.get_popup().hide()
 	_resolution.get_popup().hide()
 	_fsr.get_popup().hide()
-	var panel: Control = _quit_confirmation if _quit_confirmation.visible else _paper
+	for option: OptionButton in _graphics.values(): option.get_popup().hide()
+	var panel: Control = _quit_confirmation if _quit_confirmation.visible else (_wallpaper_confirmation if _wallpaper_confirmation.visible else _paper)
 	panel.pivot_offset = panel.size * .5
 	_motion = create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	_motion.tween_property(_root, "modulate:a", 0.0, .14)
@@ -324,13 +312,15 @@ func _refresh_fsr() -> void:
 	_fsr.tooltip_text = "用较低清晰度绘制，再重建画面；性能优先可能更模糊。不是补帧。" if supported else "当前显示模式不支持 FSR。"
 	_resolution.disabled = supported and _values.get("fsr", "off") != "off"
 	_resolution.tooltip_text = "已由 FSR 档位控制；关闭 FSR 后恢复此选择。" if _resolution.disabled else ""
+	_graphics.antialiasing.disabled = _resolution.disabled
+	_graphics.antialiasing.tooltip_text = "FSR 已包含抗锯齿；关闭 FSR 后恢复此选择。" if _resolution.disabled else ""
 
 
 func _refresh_dof() -> void:
 	if _values.is_empty():
 		return
 	_dof.set_pressed_no_signal(_values.dof_enabled)
-	_dof.text = ("已开启" if _values.dof_enabled else "已关闭") + (" · 低画质暂不启用" if _values.quality == "low" else "")
+	_dof.text = "已开启" if _values.dof_enabled else "已关闭"
 
 
 func _change(key: String, value: Variant) -> void:
@@ -338,6 +328,7 @@ func _change(key: String, value: Variant) -> void:
 		return
 	if _values.get(key) == value: return
 	_values[key] = value
+	_refresh_preset()
 	settings_changed.emit(_values.duplicate(true))
 
 
@@ -369,6 +360,7 @@ func _show_page(index: int) -> void:
 	_quality.get_popup().hide()
 	_resolution.get_popup().hide()
 	_fsr.get_popup().hide()
+	for option: OptionButton in _graphics.values(): option.get_popup().hide()
 	for page: int in _pages.size():
 		_pages[page].visible = page == index
 		_pages[page].modulate.a = 1.0
@@ -512,5 +504,98 @@ func _animate_confirmation(panel: Control) -> void:
 
 
 func set_wallpaper_mode(active: bool) -> void:
+	_wallpaper_active = active
 	_wallpaper.text = "结束桌面操作" if active else "设为桌面壁纸"
 	_wallpaper.tooltip_text = "收起操作控件，继续展示壁纸。" if active else "悬停农具高亮，点击后直接在桌面照料农场；托盘可返回窗口。"
+
+
+func _option(parent: Control, title: String, node_name: String, items: Array) -> OptionButton:
+	var option := OptionButton.new()
+	option.name = node_name
+	for item: String in items: option.add_item(item)
+	FarmTheme.configure_option(option)
+	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	option.custom_minimum_size.y = 42
+	_row(parent, title).add_child(option)
+	return option
+
+
+func _refresh_preset() -> void:
+	_quality.select(Presets.matching(_values, get_window().size.y, RenderingServer.get_current_rendering_method() == "forward_plus"))
+
+
+func _sync_graphics() -> void:
+	_refresh_preset()
+	_resolution.select(RESOLUTION_VALUES.find(_values.resolution))
+	_fsr.select(FSR_VALUES.find(_values.fsr))
+	for key: String in _graphics:
+		var choices: Array = ["off", "2x", "4x"] if key == "antialiasing" else QUALITY_VALUES
+		_graphics[key].select(choices.find(_values[key]))
+
+
+func _choose_preset(index: int) -> void:
+	if _populating or index >= QUALITY_VALUES.size(): return
+	_values.merge(Presets.values(QUALITY_VALUES[index], get_window().size.y, RenderingServer.get_current_rendering_method() == "forward_plus"), true)
+	_sync_graphics()
+	_refresh_fsr()
+	_refresh_dof()
+	settings_changed.emit(_values.duplicate(true))
+
+
+func _request_wallpaper() -> void:
+	if _wallpaper_active:
+		wallpaper_requested.emit()
+		return
+	_paper.hide()
+	_wallpaper_confirmation.show()
+	_animate_confirmation(_wallpaper_confirmation)
+	_wallpaper_confirmation.get_node("Column/Actions/Cancel").grab_focus()
+
+
+func _build_wallpaper_confirmation() -> void:
+	_wallpaper_confirmation = PanelContainer.new()
+	_wallpaper_confirmation.name = "WallpaperConfirmation"
+	_root.add_child(_wallpaper_confirmation)
+	_wallpaper_confirmation.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_wallpaper_confirmation.offset_left = -280
+	_wallpaper_confirmation.offset_right = 280
+	_wallpaper_confirmation.offset_top = -150
+	_wallpaper_confirmation.offset_bottom = 150
+	var column := VBoxContainer.new()
+	column.name = "Column"
+	_wallpaper_confirmation.add_child(column)
+	var title := Label.new()
+	title.text = "设为桌面壁纸？"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(title)
+	var message := Label.new()
+	message.text = "想在壁纸上操作农场，可以点击门前的椅子。\n\n想回到游戏窗口，请右键点击右下角系统托盘中的游戏图标，选择“返回农场”。"
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(message)
+	var actions := HBoxContainer.new()
+	actions.name = "Actions"
+	column.add_child(actions)
+	var cancel := _button(actions, "取消")
+	cancel.name = "Cancel"
+	cancel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cancel.pressed.connect(cancel_wallpaper_confirmation)
+	var confirm := _button(actions, "设为桌面壁纸")
+	confirm.name = "Confirm"
+	confirm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	confirm.pressed.connect(func() -> void:
+		cancel_wallpaper_confirmation()
+		wallpaper_requested.emit())
+	for pair: Array in [[cancel, confirm], [confirm, cancel]]:
+		for property: String in ["focus_next", "focus_previous", "focus_neighbor_left", "focus_neighbor_right", "focus_neighbor_top", "focus_neighbor_bottom"]:
+			pair[0].set(property, pair[0].get_path_to(pair[1]))
+	_wallpaper_confirmation.hide()
+
+
+func cancel_wallpaper_confirmation() -> bool:
+	if closing or not _wallpaper_confirmation.visible: return false
+	_wallpaper_confirmation.hide()
+	_paper.show()
+	_animate_confirmation(_paper)
+	_wallpaper.grab_focus()
+	return true

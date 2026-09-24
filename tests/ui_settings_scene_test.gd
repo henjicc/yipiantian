@@ -38,8 +38,8 @@ func _run() -> void:
 	_expect(scene.selected_field == 2, "Clicking an uncovered neighbor behind the modal cannot change selection")
 	scene.game_menu._sliders.master.value = 0
 	_expect(scene.farm_audio.get_volumes().master == 0.0, "Actual audio owner receives master mute")
-	scene.game_menu._quality.select(1)
-	scene.game_menu._quality.item_selected.emit(1)
+	scene.game_menu._quality.select(2)
+	scene.game_menu._quality.item_selected.emit(2)
 	_expect(scene.focus_detail.get_settings().quality == "low", "Quality control reaches actual focus controller")
 	scene.game_menu._dof.button_pressed = false
 	_expect(not scene.focus_detail.get_settings().dof_enabled and scene.selected_field == 2, "DOF toggles without losing field selection")

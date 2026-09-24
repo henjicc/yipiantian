@@ -14,6 +14,7 @@ var _previous_low_usage: bool = false
 var _previous_sleep: int = 0
 var _render_size := Vector2i.ZERO
 
+var _benchmark: bool = false
 var _foreground_cap: int = 0
 var _active: bool = true
 var _elapsed: float = 0.0
@@ -123,6 +124,11 @@ func set_foreground_frame_limit(limit: int) -> void:
 	_apply_frame_limit()
 
 
+func set_startup_benchmark(enabled: bool) -> void:
+	_benchmark = enabled
+	_apply_frame_limit()
+
+
 func _refresh() -> void:
 	var active: bool = not _wallpaper and get_window().has_focus() and get_window().mode != Window.MODE_MINIMIZED
 	if active != _active:
@@ -151,7 +157,7 @@ func _apply_frame_limit() -> void:
 		var cap: int = 30
 		Engine.max_fps = mini(_foreground_cap, cap) if _foreground_cap > 0 else cap
 	elif _active:
-		Engine.max_fps = _foreground_cap
+		Engine.max_fps = 0 if _benchmark else _foreground_cap
 	elif visible_preview:
 		Engine.max_fps = mini(_foreground_cap,60) if _foreground_cap > 0 else 60
 	else:

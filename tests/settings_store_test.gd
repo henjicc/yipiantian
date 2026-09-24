@@ -67,7 +67,7 @@ func _run() -> void:
 		var invalid: Dictionary = values.duplicate(true)
 		invalid.master = bad
 		_expect(not store.save(invalid).ok, "Invalid volume is rejected: %s" % str(bad))
-	for key: String in ["quality", "fullscreen", "dof_enabled", "resolution", "fsr"]:
+	for key: String in ["quality", "shadows", "lighting", "antialiasing", "fullscreen", "dof_enabled", "resolution", "fsr"]:
 		var invalid: Dictionary = values.duplicate(true)
 		invalid[key] = "invalid"
 		_expect(not store.save(invalid).ok, "Invalid enum/boolean is rejected: " + key)

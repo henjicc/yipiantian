@@ -1,4 +1,8 @@
 extends Node3D
+
+signal initialization_finished
+var initialized: bool = false
+var startup_progress: Callable
 ## Spatial truth and ambient scenery only; no farm state, unlock rules or saving.
 const DECORATIONS = preload("res://farm/decoration_catalog.gd")
 const PIGMENT = preload("res://scenes/environment/pigment.gdshader")
@@ -113,6 +117,7 @@ func _refresh_shore_obstacles() -> void:
 func _ready() -> void:
 	var started: int = Time.get_ticks_msec()
 	_rng.seed = 32026
+	if startup_progress.is_valid(): await startup_progress.call(48.0, "正在准备岛岸与院落…")
 	_build_ground()
 	_build_architecture()
 	if layout_probe:
@@ -122,6 +127,7 @@ func _ready() -> void:
 		_living=LivingDetails.new();_living.name="LivingDetails";_living.plan=plan;add_child(_living)
 		layout_obstacles=_circulation_obstacles()
 		return
+	if startup_progress.is_valid(): await startup_progress.call(55.0, "正在布置远岛与植物…")
 	var neighbors := NeighborIslets.new()
 	neighbors.name = "NeighborIslets"
 	neighbors.shore_expansion=plan.scenery_expansion.max(plan.shore_expansion)
@@ -134,6 +140,7 @@ func _ready() -> void:
 	_living=LivingDetails.new();_living.name="LivingDetails";_living.plan=plan;add_child(_living)
 	_living.configure_house(get_node("MainHouse"))
 	_living.attach_boat(_boat)
+	if startup_progress.is_valid(): await startup_progress.call(63.0, "正在铺设院落道路…")
 	layout_obstacles = _circulation_obstacles()
 	var route_obstacles: Dictionary=layout_obstacles.duplicate()
 	if not decoration_data.is_empty():
@@ -164,6 +171,7 @@ func _ready() -> void:
 	add_child(cover)
 	cover.build(self)
 	print("STARTUP courtyard_geometry_ms=", Time.get_ticks_msec() - started)
+	if startup_progress.is_valid(): await startup_progress.call(70.0, "正在准备湖面与岸边…")
 	var water_material: ShaderMaterial = _water.material_override
 	var baked: Resource
 	if not bake_static_data and ResourceLoader.exists("res://art/environment/islets/default_water.res"):
@@ -172,6 +180,7 @@ func _ready() -> void:
 	water_material.set_shader_parameter("shore_distance", shore)
 	water_material.set_shader_parameter("shore_contacts_enabled", true)
 	_build_contact_shading()
+	if startup_progress.is_valid(): await startup_progress.call(76.0, "正在安置动物与农具…")
 	var animals := CourtyardAnimals.new()
 	animals.name = "CourtyardAnimals"
 	add_child(animals)
@@ -179,6 +188,8 @@ func _ready() -> void:
 	door_tools.name = "DoorTools"
 	add_child(door_tools)
 	print("STARTUP courtyard_ready_ms=", Time.get_ticks_msec() - started)
+	initialized = true
+	initialization_finished.emit()
 
 func _circulation_obstacles() -> Dictionary:
 	var result: Dictionary = {}

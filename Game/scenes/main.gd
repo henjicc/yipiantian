@@ -1,6 +1,10 @@
 extends Node3D
 
 signal farm_changed(result: Dictionary)
+signal startup_finished
+var startup_progress: Callable
+var startup_preferences: Dictionary = {}
+var startup_complete: bool = false
 
 const Crops = preload("res://farm/crop_catalog.gd")
 const ToolCursor = preload("res://ui/tool_cursor.gd")
@@ -114,6 +118,7 @@ func _enter_tree() -> void:
 			courtyard_plan = CourtyardPlan.from_snapshot(_startup_state.farm.layout)
 			$Environment.decoration_data = _startup_state.decorations
 	# Children build their geometry in _ready; share one plan before that happens.
+	$Environment.startup_progress = startup_progress
 	$Environment.plan = courtyard_plan
 	$Farm.plan = courtyard_plan
 	$Camera3D.configure_layout(courtyard_plan.camera_point, courtyard_plan.camera_distance)
@@ -141,6 +146,9 @@ func _prepare_stores() -> bool:
 
 func _ready() -> void:
 	if not _startup_admitted: return
+	if startup_progress.is_valid():
+		if not $Environment.initialized: await $Environment.initialization_finished
+		await startup_progress.call(80.0, "正在恢复农田与作物…")
 	get_tree().auto_accept_quit = false
 	get_window().min_size = Vector2i(960, 600)
 	hud = HUD.new()
@@ -220,6 +228,7 @@ func _ready() -> void:
 	decoration_layout.change_requested.connect(_change_decoration)
 	decoration_layout.illumination_changed.connect(_refresh_lanterns)
 	decoration_layout.update_life(farm_state.snapshot().kitchen)
+	if startup_progress.is_valid(): await startup_progress.call(88.0, "正在准备光照与声音…")
 	farm_audio = FarmAudio.new()
 	farm_audio.name = "FarmAudio"
 	add_child(farm_audio)
@@ -261,6 +270,8 @@ func _ready() -> void:
 	add_child(focus_detail)
 	focus_detail.configure(camera, farm.fields+[trellis_crops.body], courtyard, decoration_layout)
 	focus_detail.quality_changed.connect(atmosphere.set_quality)
+	focus_detail.shadows_changed.connect(atmosphere.set_shadows)
+	if startup_progress.is_valid(): await startup_progress.call(94.0, "正在应用画面设置…")
 	_setup_settings()
 	desktop_wallpaper = DesktopWallpaper.new()
 	desktop_wallpaper.name = "DesktopWallpaper"
@@ -298,7 +309,7 @@ func _ready() -> void:
 		focus_detail.set_depth_of_field(_presentation_resume.dof_enabled,_presentation_resume.dof_strength)
 		focus_detail.set_fog_strength(_presentation_resume.fog_strength)
 		atmosphere.set_preview_hour(_presentation_resume.hour)
-	if OS.has_feature("editor") and OS.get_cmdline_user_args().has("--dev-preview"):
+	if OS.has_feature("editor") and OS.get_cmdline_user_args().has("--dev-preview") and not startup_progress.is_valid():
 		_report_preview_ready.call_deferred()
 	garden_album=GardenAlbum.new();garden_album.name="GardenAlbum";add_child(garden_album);garden_album.configure(self)
 	var timer := Timer.new()
@@ -314,6 +325,9 @@ func _ready() -> void:
 		recording.session_dir = _record_session
 		recording.farm_scene = self
 		add_child(recording)
+
+	startup_complete = true
+	startup_finished.emit()
 
 
 func _load_game(initial: Dictionary = {}) -> void:
@@ -1748,7 +1762,8 @@ func _remember_overview() -> void:
 func _setup_settings() -> void:
 	if settings_store == null:
 		settings_store = SettingsStore.new()
-	var loaded: Dictionary = settings_store.load_settings()
+	var loaded: Dictionary = settings_store.load_settings() if startup_preferences.is_empty() else startup_preferences
+	startup_preferences = {}
 	settings_values = loaded.settings
 	if OS.has_feature("editor") and OS.get_cmdline_user_args().has("--dev-preview"):
 		# Development startup overrides the old window preference for this session.
@@ -1780,13 +1795,16 @@ func _apply_settings(previous: Dictionary = {}) -> void:
 		camera.configure_sway(settings_values.sway_enabled, settings_values.sway_idle_seconds)
 	if previous.get("master") != settings_values.master or previous.get("music") != settings_values.music or previous.get("effects") != settings_values.effects:
 		farm_audio.set_volumes(settings_values.master, settings_values.music, settings_values.effects)
-	if previous.get("quality") != settings_values.quality:
-		if not previous.is_empty() and settings_values.quality == "high":
+	var graphics_changed: bool = previous.is_empty()
+	for key: String in ["quality", "shadows", "lighting", "antialiasing"]:
+		graphics_changed = graphics_changed or previous.get(key) != settings_values[key]
+	if graphics_changed:
+		if not previous.is_empty() and previous.get("lighting") != "high" and settings_values.lighting == "high":
 			if not _high_quality_pending:
 				_high_quality_pending = true
 				_apply_high_quality.call_deferred()
 		else:
-			focus_detail.set_quality(settings_values.quality)
+			focus_detail.apply_graphics(settings_values)
 	if previous.get("dof_enabled") != settings_values.dof_enabled:
 		focus_detail.set_depth_of_field(settings_values.dof_enabled, focus_detail.get_settings().dof_strength)
 	if previous.get("resolution") != settings_values.resolution or previous.get("fsr") != settings_values.fsr:
@@ -1860,7 +1878,7 @@ func _enter_wallpaper() -> void:
 	_cancel_tool()
 	camera.cancel_free_gesture()
 	camera.cancel_zoom()
-	game_menu.set_status("正在进入桌面壁纸；双击托盘图标即可返回农场。")
+	game_menu.set_status("正在进入桌面壁纸…")
 	desktop_wallpaper.enter()
 
 
@@ -2027,7 +2045,7 @@ func _apply_high_quality() -> void:
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 	if not is_inside_tree(): return
-	focus_detail.set_quality(settings_values.quality)
+	focus_detail.apply_graphics(settings_values)
 	_high_quality_pending = false
 	if _settings_issue.is_empty(): game_menu.set_status("")
 
@@ -2052,6 +2070,7 @@ func _save_settings() -> bool:
 func _request_menu_close() -> void:
 	if game_menu.closing: return
 	if game_menu.cancel_quit_confirmation(): return
+	if game_menu.cancel_wallpaper_confirmation(): return
 	_cancel_input()
 	decoration_layout.cancel_pointer_gesture()
 	if (_settings_dirty or not _settings_issue.is_empty()) and not _allow_leave_settings:

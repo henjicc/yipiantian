@@ -43,6 +43,7 @@ var _night_weight: float = -1.0
 var _window_warmth: float = 0.0
 var _ripple_age: float = 10.0
 var _high_quality: bool = false
+var _high_shadows: bool = false
 
 
 func set_quality(value: String) -> void:
@@ -52,16 +53,20 @@ func set_quality(value: String) -> void:
 		# must survive a quality switch. Both shaders use the same surface code.
 		_water_material.shader = WATER_HIGH_SHADER if _high_quality else WATER_SHADER
 	if _sun != null:
-		_apply_shadow_layout()
 		_apply_clock()
+
+
+func set_shadows(value: String) -> void:
+	_high_shadows = value == "high"
+	if _sun != null: _apply_shadow_layout()
 
 
 func _apply_shadow_layout() -> void:
 	# The default four splits spend two maps within 10 m of the camera: mostly
 	# framing water, while the farm shares the coarse final cascade. Two balanced
 	# splits give the yard more texels and submit fewer overlapping casters.
-	_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if _high_quality else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	_sun.directional_shadow_split_1 = 0.1 if _high_quality else 0.45
+	_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if _high_shadows else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	_sun.directional_shadow_split_1 = 0.1 if _high_shadows else 0.45
 
 
 func get_preview_hour() -> float:

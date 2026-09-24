@@ -2,6 +2,7 @@ extends Node
 ## Derived presentation only. The caller owns selected field, camera and gameplay.
 
 signal quality_changed(value: String)
+signal shadows_changed(value: String)
 
 const FOCUS_BIAS: float = 2.0
 # Zero forces the coarsest generated LOD even at close range. Preserve Godot's
@@ -21,6 +22,9 @@ var _fields: Array = []
 var _environment: Node3D
 var _decorations: Node3D
 var _quality: String = "standard"
+var _shadows: String = "standard"
+var _lighting: String = "standard"
+var _antialiasing: String = "2x"
 var _dof_enabled: bool = true
 var _dof_strength: float = 1.7
 var _fog_strength: float = 0.28
@@ -93,15 +97,23 @@ func replace_fields(fields: Array) -> void:
 		refresh_field(field)
 
 
+func apply_graphics(settings: Dictionary) -> void:
+	var previous: Dictionary = get_settings()
+	var detail_changed: bool = _quality != settings.quality
+	var shadow_changed: bool = _shadows != settings.shadows
+	_quality = settings.quality
+	_shadows = settings.shadows
+	_lighting = settings.lighting
+	_antialiasing = settings.antialiasing
+	if _camera != null: _apply_quality(previous)
+	if detail_changed: quality_changed.emit(_quality)
+	if shadow_changed: shadows_changed.emit(_shadows)
+
+
 func set_quality(value: String) -> bool:
-	if value not in ["standard", "low", "high"]:
-		return false
-	if value == _quality:
-		return true
-	_quality = value
-	if _camera != null:
-		_apply_quality()
-	quality_changed.emit(value)
+	if value not in ["standard", "low", "high"]: return false
+	apply_graphics(preload("res://settings/graphics_presets.gd").values(value, 1080))
+	set_depth_of_field(value != "low", _dof_strength)
 	return true
 
 
@@ -119,34 +131,38 @@ func set_fog_strength(strength: float) -> void:
 
 
 func get_settings() -> Dictionary:
-	return {"quality": _quality, "dof_enabled": _dof_enabled, "dof_strength": _dof_strength, "fog_strength": _fog_strength}
+	return {"quality": _quality, "shadows": _shadows, "lighting": _lighting, "antialiasing": _antialiasing, "dof_enabled": _dof_enabled, "dof_strength": _dof_strength, "fog_strength": _fog_strength}
 
 
 func refresh_antialiasing() -> void:
 	var viewport: Viewport = _camera.get_viewport()
 	# FSR2 already reconstructs antialiased edges; avoid stacking MSAA's cost.
-	viewport.msaa_3d = Viewport.MSAA_DISABLED if viewport.scaling_3d_mode == Viewport.SCALING_3D_MODE_FSR2 else (Viewport.MSAA_4X if _quality == "high" else Viewport.MSAA_2X)
+	viewport.msaa_3d = Viewport.MSAA_DISABLED if viewport.scaling_3d_mode == Viewport.SCALING_3D_MODE_FSR2 else ({"off": Viewport.MSAA_DISABLED, "2x": Viewport.MSAA_2X, "4x": Viewport.MSAA_4X}[_antialiasing])
 
 
-func _apply_quality() -> void:
-	_environment.get_node("PlayerPlants").set_low_detail(_quality=="low")
-	_environment.get_node("NeighborIslets").set_low_detail_enabled(_quality == "low")
-	_environment.get_node("LivingDetails").set_lamp_shadows(_quality != "low")
-	# Preserve the foreground composition. High remains an explicit costlier choice.
-	var high: bool = _quality == "high"
-	var low: bool = _quality == "low"
-	refresh_antialiasing()
-	_camera.get_viewport().positional_shadow_atlas_size = 4096 if high else (1024 if low else 2048)
-	# Keep distant leaf shadows stable; standard spends the atlas on two cascades.
-	RenderingServer.directional_shadow_atlas_set_size(2048 if low else 4096, false)
-	RenderingServer.positional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_LOW)
-	RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM)
-	RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_MEDIUM if high else RenderingServer.ENV_SSAO_QUALITY_LOW, not high, 0.5, 2, 50.0, 300.0)
-	RenderingServer.camera_attributes_set_dof_blur_quality(RenderingServer.DOF_BLUR_QUALITY_HIGH if high else RenderingServer.DOF_BLUR_QUALITY_MEDIUM, false)
-	var world_environment: Environment = _camera.get_world_3d().environment
-	if world_environment != null:
-		world_environment.ssil_enabled = high
-	_indirect_lighting.set_enabled(_quality == "high")
+func _apply_quality(previous: Dictionary = {}) -> void:
+	if previous.get("quality") != _quality:
+		_environment.get_node("PlayerPlants").set_low_detail(_quality == "low")
+		_environment.get_node("NeighborIslets").set_low_detail_enabled(_quality == "low")
+	if previous.get("antialiasing") != _antialiasing:
+		refresh_antialiasing()
+	if previous.get("shadows") != _shadows:
+		_environment.get_node("LivingDetails").set_lamp_shadows(_shadows != "low")
+		var high: bool = _shadows == "high"
+		var low: bool = _shadows == "low"
+		_camera.get_viewport().positional_shadow_atlas_size = 4096 if high else (1024 if low else 2048)
+		RenderingServer.directional_shadow_atlas_set_size(2048 if low else 4096, false)
+		RenderingServer.positional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_LOW)
+		RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM)
+	if previous.get("lighting") != _lighting:
+		var high: bool = _lighting == "high"
+		RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_MEDIUM if high else RenderingServer.ENV_SSAO_QUALITY_LOW, not high, 0.5, 2, 50.0, 300.0)
+		RenderingServer.camera_attributes_set_dof_blur_quality(RenderingServer.DOF_BLUR_QUALITY_HIGH if high else RenderingServer.DOF_BLUR_QUALITY_MEDIUM, false)
+		var world_environment: Environment = _camera.get_world_3d().environment
+		if world_environment != null:
+			world_environment.ssao_enabled = _lighting != "low"
+			world_environment.ssil_enabled = high
+		_indirect_lighting.set_enabled(high)
 
 
 func refresh_field(field: Node3D) -> void:
@@ -242,7 +258,7 @@ func _process(delta: float) -> void:
 	_construction_clear=move_toward(_construction_clear,1.0 if constructing else 0.0,delta/.7)
 	var framing: bool = not inspecting and not constructing and not is_instance_valid(_neighbor) and not is_instance_valid(_target) and not _decorations.active
 	_foreground.set_overview_visible(framing)
-	var allowed: bool = not inspecting and _dof_enabled and _quality != "low" and _dof_strength > 0.0
+	var allowed: bool = not inspecting and _dof_enabled and _dof_strength > 0.0
 	var effect_active: bool = allowed and not _decorations.active
 	var target_amount: float = 0.115 * _dof_strength if effect_active else 0.0
 	_attributes.dof_blur_amount = move_toward(_attributes.dof_blur_amount, target_amount, delta * 0.35)

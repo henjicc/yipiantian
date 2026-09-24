@@ -9,7 +9,7 @@ const DEFAULTS: Dictionary = {
 	"master": 0.8, "music": 0.7, "effects": 0.8,
 	"fullscreen": false, "quality": "standard", "dof_enabled": true,
 	"resolution": "1080", "sway_enabled": false, "sway_idle_seconds": 30.0,
-	"fsr": "off",
+	"fsr": "off", "shadows": "standard", "lighting": "standard", "antialiasing": "2x",
 }
 var directory: String
 var _loaded: bool = false
@@ -95,7 +95,15 @@ func save(settings: Dictionary) -> Dictionary:
 
 
 static func valid_settings(value: Dictionary) -> bool:
-	if value.size() != DEFAULTS.size() - 3 + int(value.has("fsr")) + int(value.has("sway_enabled")) + int(value.has("sway_idle_seconds")) + int(value.has("overview_mdeg")):
+	if value.size() > DEFAULTS.size() + int(value.has("overview_mdeg")):
+		return false
+	for key: String in value:
+		if not DEFAULTS.has(key) and key != "overview_mdeg": return false
+	for key: String in ["master", "music", "effects", "fullscreen", "quality", "dof_enabled", "resolution"]:
+		if not value.has(key): return false
+	if value.get("shadows", DEFAULTS.shadows) not in ["high", "standard", "low"] or value.get("lighting", DEFAULTS.lighting) not in ["high", "standard", "low"]:
+		return false
+	if value.get("antialiasing", DEFAULTS.antialiasing) not in ["off", "2x", "4x"]:
 		return false
 	if value.get("fsr", DEFAULTS.fsr) not in ["off", "quality", "balanced", "performance"]:
 		return false
@@ -115,7 +123,7 @@ static func valid_settings(value: Dictionary) -> bool:
 		return false
 	if not value.get("sway_enabled", DEFAULTS.sway_enabled) is bool:
 		return false
-	return value.get("fullscreen") is bool and value.get("dof_enabled") is bool and value.get("quality") in ["standard", "low", "high"] and value.get("resolution") in ["native", "1080", "1440", "2160"]
+	return value.get("fullscreen") is bool and value.get("dof_enabled") is bool and value.get("quality") in ["standard", "low", "high"] and value.get("resolution") in ["native", "720", "1080", "1440", "2160"]
 
 
 func _read(filename: String) -> Dictionary:

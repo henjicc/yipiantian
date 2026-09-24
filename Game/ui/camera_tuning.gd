@@ -125,8 +125,8 @@ func present(settings: Dictionary) -> void:
 	_dof_slider.set_value_no_signal(settings.dof_strength * 100.0)
 	_fog_slider.set_value_no_signal(settings.fog_strength * 100.0)
 	_fog_value.text = "%d%%" % roundi(_fog_slider.value)
-	_dof_toggle.disabled = settings.quality == "low"
-	_dof_toggle.text = "景深模糊（低画质停用）" if _dof_toggle.disabled else "景深模糊"
+	_dof_toggle.disabled = false
+	_dof_toggle.text = "景深模糊"
 	_sync_dof()
 	_sync()
 	show()

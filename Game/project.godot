@@ -12,7 +12,7 @@ config_version=5
 
 config/name="我有一片田"
 config/version="0.1.8"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/startup.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://art/ui/game-icon.png"
 config/windows_native_icon="res://art/ui/game-icon.ico"

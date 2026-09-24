@@ -28,12 +28,14 @@ func _run() -> void:
 		_expect(is_equal_approx(root.scaling_3d_scale, [0.0, 1.0 / 1.5, 1.0 / 1.7, .5][index]), "Preset uses its output-relative scale")
 	_expect(scene.game_menu._resolution.disabled, "Inactive manual resolution is visibly disabled")
 	await _capture("settings.png")
-	_choose(scene.game_menu._quality, 2)
+	_choose(scene.game_menu._graphics.quality, 0)
+	_choose(scene.game_menu._graphics.lighting, 0)
+	_choose(scene.game_menu._graphics.antialiasing, 2)
 	await create_timer(.5).timeout
 	_expect(scene.focus_detail.get_settings().quality == "high" and root.msaa_3d == Viewport.MSAA_DISABLED, "Deferred high quality keeps FSR antialiasing")
 	_choose(scene.game_menu._fsr, 0)
 	_expect(root.scaling_3d_mode == Viewport.SCALING_3D_MODE_BILINEAR and root.msaa_3d == Viewport.MSAA_4X and not scene.game_menu._resolution.disabled, "Turning FSR off restores high-quality MSAA and manual resolution")
-	_choose(scene.game_menu._quality, 0)
+	_choose(scene.game_menu._quality, 1)
 	_choose(scene.game_menu._fsr, 2)
 	root.size = Vector2i(2560, 1440)
 	await create_timer(.4).timeout
