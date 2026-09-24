@@ -543,6 +543,14 @@ Godot 4.7.2 实测：种子 `边界-0`、小岛／五岛／最大岸线变化组
 24组种子／参数覆盖单岛、五岛、小尺寸、最大岸线变化、最窄水道、最宽桥与密集植被，验证确定性、连通、岸坡不相交、桥头承托、完整道路走廊和物件间距。场景测试通过真实鼠标按钮命中、输入种子／改参数后的重建、空种子拒绝、规划显示、旋转、跨UI释放、失焦取消、小窗口与4K界面／1080三维上限；已观察岛屿和桥梁／接头／竹架相反侧近景，截图在 `.local/verification/procedural-lab/`。细节版三岛样本生成约6秒；仅为本机短测，不代表低配性能或长期稳定性。本原型验证平坦庭院岛与构件组装，不包含内湖、悬崖、多层地形、可行走角色、农场生长或正式岛际交互。
 
 
+### 参数化构件研究室（2026-09-24，进行中）
+
+新增独立入口 `res://scenes/procedural_lab/component_lab.tscn`，用 `scripts/godot.ps1 -Action Run -ExtraArgs 'res://scenes/procedural_lab/component_lab.tscn'` 启动。它沿用研究室相机与主岛日光，当前提供栏杆／竹架参数、结构对比和复制。树与民居、主岛对照及全阶段验收还未完成。源与当前边界见[ParametricKit](../ArtSource/Environment/ParametricKit/README.md)。
+
+验证入口 `tests/component_lab_scene_test.gd`。当前D3D12／RTX4090／1600×1000前台120帧短测：默认栏杆约5.9ms生成、0.43ms CPU渲染、2.34ms GPU；默认竹架约1.1ms生成、0.45ms CPU渲染、1.50ms GPU。场景工作集约501／561MiB，引擎报告显存分配约535／537MiB，包含湖面、界面和已加载资产。原始process监视器另留在JSON，短测未隔离测试脚本与系统调度影响，不用它推算整游戏CPU占用；不宣称背景岛替换收益。
+
+源码重建明确为Z轴杆件、底部原点木柱；以MultiMesh复用网格与贴图，手工远景档不叠加自动减面。Godot4.7的[可视距离淡化](https://docs.godotengine.org/en/4.7/classes/class_geometryinstance3d.html#enum-geometryinstance3d-visibilityrangefademode)在本项目Forward+使用；每组对象独立批次，不能把所有岛共成一批后仍假设逐岛剔除。
+
 ### 首次启动、画质预设与壁纸提示（2026-09-24）
 
 正常入口改为 `Game/scenes/startup.tscn`。加载页沿用淡彩主题与汇文明朝体：资源读取显示活动条，院落、道路、湖面、动物、作物、光照和设置按真实执行阶段推进，农场可绘制后才移交输入；测试与建设场景重建仍可直接使用 `main.tscn`。显示开发中试玩提示。设置默认打开显示页，底部“设为壁纸”与“退出游戏”“返回农场”同级并排，点击后进行二次确认，提示点击门前椅子在桌面操作、托盘右键“返回农场”；取消不挂接桌面，结束桌面操作直接执行。

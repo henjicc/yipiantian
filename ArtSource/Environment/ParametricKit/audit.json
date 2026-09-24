@@ -1,0 +1,57 @@
+{
+  "blender": "5.2.2 LTS",
+  "parts": {
+    "bamboo": {
+      "triangles": 192,
+      "dimensions_blender": [
+        0.0860000029206276,
+        1.0,
+        0.08384379744529724
+      ],
+      "uv": true,
+      "reimport_verified": true
+    },
+    "bamboo_low": {
+      "triangles": 44,
+      "dimensions_blender": [
+        0.08399999886751175,
+        1.0,
+        0.08399999886751175
+      ],
+      "uv": true,
+      "reimport_verified": true
+    },
+    "node": {
+      "triangles": 156,
+      "dimensions_blender": [
+        0.09200000017881393,
+        0.024000000208616257,
+        0.09200000017881393
+      ],
+      "uv": true,
+      "reimport_verified": true
+    },
+    "binding": {
+      "triangles": 1060,
+      "dimensions_blender": [
+        0.1599999964237213,
+        0.07566027343273163,
+        0.16899999976158142
+      ],
+      "uv": true,
+      "reimport_verified": true
+    },
+    "post_low": {
+      "triangles": 553,
+      "dimensions_blender": [
+        0.20631800591945648,
+        0.2168341875076294,
+        0.9004191756248474
+      ],
+      "uv": true,
+      "reimport_verified": true
+    }
+  },
+  "new_tripo_calls": 0,
+  "texture_source": "ArtSource/Environment/ProceduralBridge/20260924/painted_elm.png"
+}

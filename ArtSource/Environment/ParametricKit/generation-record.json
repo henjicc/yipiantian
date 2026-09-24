@@ -1,0 +1,54 @@
+{
+  "date": "2026-09-24",
+  "purpose": "参数化构件研究室，独立场景，不替换主岛",
+  "image": {
+    "tool": "image_gen.imagegen",
+    "model": "工具未返回",
+    "seed": null,
+    "price": "工具未返回",
+    "references_in_order": [
+      "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ],
+    "prompt": "Create one complete single-object concept for a 3D Jiangnan miniature farm game. Input 1 is the approved close-up style reference: rounded broad forms, selective fine tea-brown and moss-green brush contours, layered pale colour washes, controlled pigment variation, softly shaded matte solid volume. Input 2 is the approved world reference: warm restrained Jiangnan courtyard materials, not its composition or baked sunlight. Exactly one isolated small Osmanthus fragrans leafy branch cluster, a usable modular tree crown component, NOT an entire tree. One continuous gently curved woody branch starts at an exposed cut attachment at the lower left, forks into three slender twigs, each twig visibly carries several pairs of broad oval pointed leathery olive/sage green leaves. Around 20-28 leaves total, each leaf has readable thick curved three-dimensional volume, selective thin darker leaf perimeter and one simple midrib, layered pale muted pigment washes. Three-dimensional roughly rounded cluster, with clearly visible gaps and different leaf orientations, fuller depth not a flat fan. Small sparse pale cream flower buds near two leaf axils, no large flowers. Exposed 20% of branch at attachment, coherent continuous branch joints. Tea-brown bark with sparse authored fine contour lines. Solid dimensional forms with gongbi light-colour painted surfaces, not flat illustration, no photographic microtexture, no plastic, no uniform black outline. Weak-perspective three-quarter view slightly above centre, complete silhouette, clean margins, neutral light grey background, neutral soft illumination, minimal contact shadow. No scene, trunk, planter, ground, pedestal, text, border, collage or other object. Leaf cluster fills 75% of square composition.",
+    "selected": "osmanthus-branch-reference.png",
+    "decision": "一簇连续三叉木枝，叶片有厚度与可见空隙；采用为三维候选输入，背面厚度待模型检查。",
+    "attempts": [
+      {
+        "result": "network error",
+        "output": null
+      },
+      {
+        "result": "success",
+        "output": "osmanthus-branch-reference.png"
+      }
+    ]
+  },
+  "tripo": {
+    "status": "success; raw downloaded, not yet prepared or adopted",
+    "geometry": "P2-20260801",
+    "texture": "v3.5-20260815",
+    "seed": 9242601,
+    "request": {
+      "face_limit": 5000,
+      "texture": true,
+      "pbr": false,
+      "texture_quality": "detailed",
+      "delight": false,
+      "texture_alignment": "original_image"
+    },
+    "reason": "生成一簇可复用的立体枝叶，保留淡彩色斑与结构勾线；尺寸和连接位置由Blender整理。",
+    "credits_consumed": 120,
+    "task_id": "67c5df09-8c45-404e-9689-5125cd47da95",
+    "output": "raw/tripo-out/parametric-osmanthus-branch-67c5df09/model.glb",
+    "download_note": "Initial artifact download terminated; fetched same successful task again without regenerating or spending credits.",
+    "raw_triangles": 4131,
+    "raw_materials": 1,
+    "service_input_note": "CLI uploaded the PNG reference as JPEG, reported by service."
+  },
+  "existing_parts": {
+    "post": "复用 ProceduralBridge 的 Tripo 木柱，原任务18e92ae5-d11c-4987-81d4-babb51731181，不产生新费用",
+    "bamboo": "Blender 5.2.2 LTS 精确竹杆、竹节与绑绳；复用原有手绘木纹，非Tripo新增产物",
+    "post_low": "Blender同源焊合几何接缝后减面30%；原高档不修改"
+  }
+}
