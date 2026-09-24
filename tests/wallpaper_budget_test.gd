@@ -122,7 +122,7 @@ func _run() -> void:
 	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(),true)
 	await RenderingServer.frame_post_draw
 	_write("startup-pipelines.json",_pipeline_counts())
-	_write("ready.json",{"startup_ms":Time.get_ticks_msec()-started,"engine":Engine.get_version_info(),"exported":not OS.has_feature("editor"),"native_host":native,"adapter":RenderingServer.get_video_adapter_name(),"resolution":resolution,"output_size":root.size,"crop_count":index,"animals":scene.get_node("Environment/CourtyardAnimals").birds.size()})
+	_write("ready.json",{"startup_ms":Time.get_ticks_msec()-started,"engine":Engine.get_version_info(),"exported":not OS.has_feature("editor"),"native_host":native,"rendering_method":RenderingServer.get_current_rendering_method(),"rendering_driver":RenderingServer.get_current_rendering_driver_name(),"adapter":RenderingServer.get_video_adapter_name(),"resolution":resolution,"output_size":root.size,"crop_count":index,"animals":scene.get_node("Environment/CourtyardAnimals").birds.size()})
 	if visual_only:
 		await _visual_comparison()
 		return

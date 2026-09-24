@@ -454,6 +454,33 @@ RTX4090、Godot 4.7.2 Forward+、4K UI／1080三维、96格成熟混种、7只�
 
 参数语义见[Godot 4.7 ProjectSettings](https://docs.godotengine.org/en/4.7/classes/class_projectsettings.html)，线程创建行为以[4.7.2 WorkerThreadPool源码](https://github.com/godotengine/godot/blob/4.7.2-stable/core/object/worker_thread_pool.cpp)为准。不能把线程设置描述成消除了内存泄漏；本轮没有这样的证据。
 
+### 绘图后端内存对比（2026-09-24）
+
+在上一阶段8工作线程基础上，只比较三种配置：Forward+／Vulkan、Forward+／Direct3D 12、Compatibility／OpenGL。保留**操作后稳定常驻下降至少20%，并通过相关画面与功能检查**的候选，不扩展到第四种配置。Windows现采用`rendering/rendering_device/driver.windows="d3d12"`；Forward+、模型、LOD、贴图、画质和宿主行为不变。引擎已有的Vulkan回退配置保持默认；本次显式Vulkan对照不等于模拟了不支持D3D12的硬件自动回退。
+
+同一发行包、Godot 4.7.2、5900X／RTX4090、标准画质、4K界面／1080三维、96格成熟混种／7只动物，真实宿主及新隔离存档。每组可见阶段3×15秒，再执行48次农事调用、两次遮挡／深度空闲／恢复及夜景。下表为游戏＋宿主工作集中位数，单位MiB；恢复栏取第二次恢复，另一次恢复和夜景也保持相近结果。
+
+| 应用着色器缓存 | Vulkan初始 | D3D12初始 | Vulkan恢复后 | D3D12恢复后 | 恢复后降幅 |
+|---|---:|---:|---:|---:|---:|
+| 新隔离缓存 | 1253.9 | 956.9 | 1239.0 | 968.3 | 21.8% |
+| 复用对应缓存 | 1129.5 | 794.9 | 1129.6 | 801.6 | 29.0% |
+
+第二次恢复后的私有提交分别为2161.9→1841.4MiB、2064.1→1704.5MiB。系统记录的专用显存约1088→978MiB、共享显存约218→134–135MiB，分别报告，不与工作集相加。场景对象及资源数量一致，初始引擎缓冲计数同为133688482字节；D3D12的纹理计数反而约多8.2MiB，收益不能归因为降低了贴图清晰度。CPU驻留下降与绘图后端选择相关，但尚未逐笔确定是哪些驱动或分配器内部结构释放。
+
+收益有代价：新应用缓存的主场景加载约9.77→15.97秒，暖缓存约9.43→9.84秒（均不包含全部进程初始化）；新缓存农事调用最长38.73→66.23ms，暖缓存最长24.27→22.20ms。30帧观赏的帧间隔p95均约33.37ms，深度空闲恢复首帧Vulkan约54–55ms，D3D12约71–77ms。未据此宣称帧率或功耗提升。
+
+OpenGL加载时出现669条实例着色器参数容量错误，报告硬件上限4096；测量入口按运行错误中止，无有效完成样本。该候选不采用，不通过删场景、忽略错误或大改着色器来获得低内存数字。D3D12的`focus_detail_test.gd --functional-only`通过53项检查；总览、近景与原Vulkan截图对照未见明显模型／材质变化，动态动物与风动不作逐像素比较。
+
+内存来源诊断边界：WPR堆快照能力探测返回`0xd0000061`，本会话未提权，也没有启动WPR记录。Godot的`--extra-gpu-memory-tracking`在场景启动前以`0xc0000374`退出；关闭此开关的独立诊断正常推进，不能把诊断开关崩溃当作正常发行程序崩溃。安全诊断中，引擎跟踪的分配量从加载场景前约70.9MiB到可见阶段约441.9MiB；操作后页面分类约1214.7MiB私有驻留、136.0MiB映像、9.6MiB映射。前者不是物理工作集，不能直接相减把差额全算作驱动。驱动分项接口在未启用额外追踪时返回0，表示没有可用数据，不能解释为零占用。完整分配调用栈仍未取得。
+
+复核：先运行`build-desktop.ps1`及`build-wallpaper-benchmark.ps1`，再用`tests/measure-wallpaper.ps1 -Native -Seconds 15 -Repeats 3 -IdleSeconds 5 -NoCaptures`和独立输出目录。新增`-RenderingMethod forward_plus -RenderingDriver vulkan|d3d12`用于对照；OpenGL使用`-RenderingMethod gl_compatibility -RenderingDriver opengl3`。`ready.json`记录实际方法与驱动；指定配置后若发生回退，入口拒绝将其当作成功对照。暖缓存只复制对应隔离用户目录的`shader_cache`／`vulkan`等实际存在的管线缓存，保持农场与偏好全新；不清理系统或驱动全局缓存，因此“新缓存”不是整机彻底冷启动。
+
+原始证据在`.local/verification/renderer-memory-20260924/`：四组发行对照为`vulkan-cold`、`d3d12-cold`、`vulkan-warm`、`d3d12-warm`，均正常退出、功能检查零失败；`opengl-cold`是失败证据，`focus-d3d12`为场景回归，`diagnostic`／`diagnostic-safe`为单独的调试运行，不混入发行收益表。采样间隔约1.5秒，无法保证捕获瞬时峰值；每组连续三段不是三次独立启动，后台五分钟门槛仍为加速验证。未完成其他显卡／低核数／长期稳定性认证，尚未发布新包，600MiB目标仍未达到。
+
+最终重新导出后，`default-d3d12`不传任何渲染器／驱动覆盖参数，复用D3D12缓存再次跑完整流程，实际启用Direct3D 12，初始约795.9MiB、两次恢复约800.4MiB、夜景约801.7MiB，正常退出且无功能失败。测量入口的实际回退校验用隔离元数据检查：匹配配置通过，驱动不符及渲染器不符均拒绝；这只验证校验逻辑，不冒充硬件自动回退实测。证据为`renderer-guard-check.json`。
+
+参数及限制见[Windows驱动设置](https://docs.godotengine.org/en/4.7/classes/class_projectsettings.html#class-projectsettings-property-rendering-rendering-device-driver-windows)、[驱动内存报告](https://docs.godotengine.org/en/4.7/classes/class_renderingdevice.html#class-renderingdevice-method-get-driver-and-device-memory-report)、[WPR堆快照](https://learn.microsoft.com/en-us/windows-hardware/test/wpt/record-heap-snapshot)。
+
 ### 程序化岛屿研究室（2026-09-24）
 
 独立场景位于 `Game/scenes/procedural_lab/procedural_lab.tscn`；直接指定场景启动，主入口和农场存档不变，Windows导出预设排除此研究目录。使用已有开发预览入口确认静音、第二屏独占全屏与窗口就绪：

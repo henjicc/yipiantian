@@ -11,6 +11,8 @@ param(
  [switch]$Capacity,
  [switch]$VisibleOnly,
  [switch]$NoCaptures,
+ [ValidateSet('','forward_plus','mobile','gl_compatibility')][string]$RenderingMethod='',
+ [ValidateSet('','vulkan','d3d12','opengl3')][string]$RenderingDriver='',
  [ValidateRange(5,180)][int]$IdleSeconds=180
 )
 $ErrorActionPreference = 'Stop'
@@ -36,6 +38,8 @@ if ($Executable) {
 }
 $hardware = @{commit=(& git -C $auditRepo rev-parse HEAD);cpu=(Get-CimInstance Win32_Processor | Select-Object Name,NumberOfLogicalProcessors);os=(Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version);gpu=(Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion);physical_memory=(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory;power_plan=(& powercfg /GETACTIVESCHEME);runtime=$runtime;policy='Isolated farm, owned nonfocusing cover when Native requested';native=[bool]$Native;capacity=[bool]$Capacity;resolution=$Resolution;quality=$Quality;soak_hours=$SoakHours;started=(Get-Date -Format o);measurement_keepawake='Temporary display/system request covers both idle baselines and game; power plan unchanged'}
 $hardware.no_captures=[bool]$NoCaptures
+$hardware.requested_rendering_method=$RenderingMethod
+$hardware.requested_rendering_driver=$RenderingDriver
 $hardware | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $auditRoot 'hardware.json') -Encoding utf8
 if (-not ('WallpaperMeasurementPower' -as [type])) {
  Add-Type -TypeDefinition @'
@@ -78,6 +82,8 @@ $info.WorkingDirectory=Split-Path -Parent $auditEngine
 if ($Executable -and -not (Test-Path -LiteralPath (Join-Path (Split-Path -Parent $auditEngine) 'benchmark.json'))) {throw 'Release measurement requires the isolated benchmark export, not a normal package.'}
 if (-not $Executable) {$info.ArgumentList.Add($probeScene)}
 if (-not $Executable) {foreach($arg in @('--path',(Join-Path $auditRepo 'Game'))) {$info.ArgumentList.Add($arg)}}
+if ($RenderingMethod) {foreach($arg in @('--rendering-method',$RenderingMethod)) {$info.ArgumentList.Add($arg)}}
+if ($RenderingDriver) {foreach($arg in @('--rendering-driver',$RenderingDriver)) {$info.ArgumentList.Add($arg)}}
 foreach($arg in @('--screen','0','--audio-driver','Dummy','--log-file',(Join-Path $auditRoot 'engine.log'),'--',('--output='+$auditRoot),('--seconds='+$Seconds),('--repeats='+$Repeats),('--soak-hours='+$SoakHours.ToString([Globalization.CultureInfo]::InvariantCulture)),('--resolution='+$Resolution))) {$info.ArgumentList.Add($arg)}
 if ($Native) {$info.ArgumentList.Add('--native')}
 if ($Capacity) {$info.ArgumentList.Add('--capacity')}
@@ -145,6 +151,8 @@ try {
 Write-Output "AUDIT_EXIT $($process.ExitCode) seconds=$([int]$watch.Elapsed.TotalSeconds)"
 if ($process.ExitCode -ne 0) {throw 'Benchmark process failed.'}
 if (-not (Test-Path -LiteralPath (Join-Path $auditRoot 'results.json'))) {throw 'Benchmark exited without final evidence.'}
+$ready=Get-Content -LiteralPath (Join-Path $auditRoot 'ready.json') -Raw | ConvertFrom-Json
+if (($RenderingMethod -and $ready.rendering_method -ne $RenderingMethod) -or ($RenderingDriver -and $ready.rendering_driver -ne $RenderingDriver)) {throw 'Actual renderer differs from requested configuration; fallback is not valid comparison evidence.'}
 $result=Get-Content -LiteralPath (Join-Path $auditRoot 'results.json') -Raw | ConvertFrom-Json
 if ($result.failures.Count -gt 0) {throw 'Benchmark functional checks failed.'}
 } finally {
