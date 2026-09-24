@@ -4,12 +4,15 @@ const Batch = preload("res://layout/construction_mesh.gd")
 const Poles = preload("res://layout/fence_geometry.gd")
 const Wind = preload("res://presentation/plant_wind.gd")
 const PIGMENT = preload("res://scenes/environment/pigment.gdshader")
+const Dressing = preload("res://scenes/procedural_lab/island_dressing.gd")
+const Soil = preload("res://presentation/tilled_soil.gd")
 var plan: Dictionary
 var markers := Node3D.new()
 var bridge_targets: Array[Vector3] = []
 var rack_targets: Array[Vector3] = []
 var counts: Dictionary = {}
 var _assets: Dictionary = {}
+var _bridge_parts: Dictionary = {}
 var _wind := Wind.new()
 var _box: Array = BoxMesh.new().get_mesh_arrays()
 
@@ -26,13 +29,8 @@ func build(data: Dictionary) -> void:
 		bank.mesh = Generator.Bank.build(island.knots)
 		bank.material_override = pigment(Color("827452"),true)
 		root.add_child(bank)
-		var paths := Batch.new()
 		var road_rng := RandomNumberGenerator.new()
 		road_rng.seed = (str(data.seed)+str(island.center)).hash()
-		var stone_shape := CylinderMesh.new()
-		stone_shape.top_radius = 1.0; stone_shape.bottom_radius = 1.0
-		stone_shape.height = 1.0; stone_shape.radial_segments = 7
-		var stone_arrays: Array = stone_shape.get_mesh_arrays()
 		var placed: Array[Vector2] = []
 		for path: PackedVector2Array in island.paths:
 			var travelled: float = 0
@@ -47,16 +45,14 @@ func build(data: Dictionary) -> void:
 					if clear:
 						var tangent: Vector2 = (path[i+1]-path[i]).normalized()
 						var basis := Basis(Vector3.UP,-tangent.angle()+road_rng.randf_range(-.12,.12))
-						paths.append(stone_arrays,Transform3D(basis*Basis.from_scale(Vector3(.23,.055,road_rng.randf_range(.36,.43))),v3(point,.157)))
+						Dressing.stone(root,road_rng.randi_range(1,2),Transform3D(basis.scaled(Vector3(.44,.30,road_rng.randf_range(.45,.56))),v3(point,.137)),Color("93907e"))
 						placed.append(point)
 					next_step += .46
 				travelled += segment
-		finish(root,paths,Color("858875"))
-		var plaza := CylinderMesh.new()
-		plaza.top_radius = 1.05; plaza.bottom_radius = 1.05; plaza.height = .028
-		var hub := MeshInstance3D.new()
-		hub.mesh = plaza; hub.position.y = .147; hub.material_override = pigment(Color("92917a"))
-		root.add_child(hub)
+		for x: int in range(-1,2):
+			for z: int in range(-1,2):
+				Dressing.stone(root,road_rng.randi_range(1,2),Transform3D(Basis(Vector3.UP,road_rng.randf()*TAU).scaled(Vector3(.46,.30,.48)),Vector3(x*.45,.135,z*.45)),Color("93907e"))
+		Dressing.build(root,island,road_rng.randi())
 		for obj: Dictionary in island.objects:
 			counts[obj.kind] = counts.get(obj.kind,0)+1
 			var holder := Node3D.new()
@@ -64,7 +60,7 @@ func build(data: Dictionary) -> void:
 			holder.rotation.y = obj.yaw
 			root.add_child(holder)
 			match obj.kind:
-				"house": asset(holder,"res://art/environment/house/house_high.glb",4.25)
+				"house": asset(holder,"res://art/environment/house/house_high.glb",6.1)
 				"tree", "bamboo", "flowers":
 					asset(holder,"res://art/environment/%s/%s_high.glb"%[obj.kind,obj.kind],obj.radius*1.85,obj.kind)
 				"field": field(holder)
@@ -122,14 +118,33 @@ static func bounds_of(node: Node3D, parent_pose: Transform3D) -> AABB:
 	return result
 
 func field(parent: Node3D) -> void:
-	var soil := Batch.new()
-	for row: int in 3:
-		block(soil,Vector3((row-1)*.62,.065,0),Vector3(.5,.13,2.5))
-	finish(parent,soil,Color("675039"))
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://scenes/environment/soil.gdshader")
+	material.set_shader_parameter("loam_albedo",preload("res://art/environment/soil/loam_baked_albedo.png"))
+	material.set_shader_parameter("loam_normal",preload("res://art/environment/soil/loam_baked_normal.png"))
+	material.set_shader_parameter("loam_surface",preload("res://art/environment/soil/loam_baked_surface.png"))
+	for edge: int in 4:
+		var corners: Array[Vector2] = [Vector2(-1,-1.24),Vector2(1,-1.24),Vector2(1,1.24),Vector2(-1,1.24)]
+		var a: Vector2 = corners[edge]
+		var b: Vector2 = corners[(edge+1)%4]
+		var pieces: int = ceili(a.distance_to(b)/.32)
+		for i: int in pieces:
+			var p: Vector2 = a.lerp(b,(i+.5)/pieces)
+			Dressing.stone(parent,(edge+i)%5,Transform3D(Basis(Vector3.UP,i*2.4+edge).scaled(Vector3(.30,.40,.28)),v3(p,-.015)),Color("969480"))
 	for row: int in 3:
 		for col: int in 4:
+			var at := Vector3((row-1)*.62,.025,(col-1.5)*.59)
+			var patch := MeshInstance3D.new()
+			patch.mesh = Soil.patch(at,Vector2(.62,.59),71,Vector2(.93,1.18),false)
+			patch.position = at
+			patch.material_override = material
+			patch.set_instance_shader_parameter("cell_center",Vector2(at.x,at.z))
+			patch.set_instance_shader_parameter("cell_half_span",Vector2(.31,.295))
+			patch.set_instance_shader_parameter("field_half_extent",Vector2(.93,1.18))
+			patch.set_instance_shader_parameter("planted",1.0)
+			parent.add_child(patch)
 			var plant := Node3D.new()
-			plant.position = Vector3((row-1)*.62,.13,(col-1.5)*.59)
+			plant.position = at
 			parent.add_child(plant)
 			asset(plant,"res://art/crops/tatsoi/tatsoi_mature.glb",.47,"tatsoi")
 
@@ -161,29 +176,48 @@ func bridge(link: Dictionary, settings: Dictionary) -> void:
 	var b: Vector3 = v3(link.end,Generator.GROUND)
 	var length: float = a.distance_to(b)
 	var side: Vector3 = Vector3.UP.cross((b-a).normalized())
-	var deck := Batch.new()
-	var rails := Batch.new()
-	var piles := Batch.new()
 	var n: int = ceili(length/.25)
 	for i: int in n:
 		var p: Vector3 = bridge_point(a,b,i/float(n),settings.arch)
 		var q: Vector3 = bridge_point(a,b,(i+1)/float(n),settings.arch)
-		beam(deck,p-Vector3.UP*.045,q-Vector3.UP*.045,settings.bridge_width,.09)
-	var bays: int = ceili(length/.95)
+		part_between("plank",p-Vector3.UP*.045,q-Vector3.UP*.045,Vector3(settings.bridge_width/1.5,1,maxf(.01,p.distance_to(q)-.008)/.25))
+	var bays: int = ceili(length/1.45)
 	for edge: float in [-1.0,1.0]:
 		for i: int in bays+1:
-			var p: Vector3 = bridge_point(a,b,i/float(bays),settings.arch)+side*(edge*(settings.bridge_width*.5-.055))
-			block(rails,p+Vector3.UP*.39,Vector3(.10,.78,.10))
+			var p: Vector3 = bridge_point(a,b,i/float(bays),settings.arch)+side*(edge*(settings.bridge_width*.5-.11))
+			var post: Node3D = bridge_part("post")
+			post.position = p
+			post.rotation.y = atan2(side.x,side.z)
 			if i < bays:
-				var q: Vector3 = bridge_point(a,b,(i+1)/float(bays),settings.arch)+side*(edge*(settings.bridge_width*.5-.055))
-				for h: float in [.36,.76]: beam(rails,p+Vector3.UP*h,q+Vector3.UP*h,.065,.065)
+				var q: Vector3 = bridge_point(a,b,(i+1)/float(bays),settings.arch)+side*(edge*(settings.bridge_width*.5-.11))
+				for h: float in [.32,.70]:
+					part_between("rail",p+Vector3.UP*h,q+Vector3.UP*h,Vector3(1,1,p.distance_to(q)))
+				part_between("beam",p-Vector3.UP*.18,q-Vector3.UP*.18,Vector3(1,1,p.distance_to(q)))
 		var supports: int = maxi(1,ceili(length/3.0))
 		for i: int in supports+1:
 			var p: Vector3 = bridge_point(a,b,i/float(supports),settings.arch)+side*(edge*(settings.bridge_width*.5-.16))
-			Poles._pole(piles,Vector3(p.x,-1.1,p.z),p-Vector3.UP*.045,.105)
-	finish(self,deck,Color("a59878"))
-	finish(self,rails,Color("786548"))
-	finish(self,piles,Color("635740"))
+			part_between("beam",Vector3(p.x,-1.1,p.z),p-Vector3.UP*.08,Vector3(1.25,1.05,p.y+1.02))
+			if i<supports:
+				var q: Vector3 = bridge_point(a,b,(i+1)/float(supports),settings.arch)+side*(edge*(settings.bridge_width*.5-.16))
+				var foot := Vector3(p.x,-.72,p.z)
+				part_between("beam",foot,q-Vector3.UP*.20,Vector3(.62,.65,foot.distance_to(q-Vector3.UP*.20)))
+	for i: int in bays+1:
+		var p: Vector3 = bridge_point(a,b,i/float(bays),settings.arch)-Vector3.UP*.20
+		part_between("beam",p-side*settings.bridge_width*.5,p+side*settings.bridge_width*.5,Vector3(1,1,settings.bridge_width))
+
+func bridge_part(id: String) -> Node3D:
+	if not _bridge_parts.has(id): _bridge_parts[id] = load("res://art/environment/procedural_bridge/"+id+".glb")
+	var node: Node3D = _bridge_parts[id].instantiate()
+	node.name = "Bridge_"+id
+	add_child(node)
+	return node
+
+func part_between(id: String,a: Vector3,b: Vector3,size: Vector3) -> void:
+	var forward: Vector3 = (b-a).normalized()
+	var reference: Vector3 = Vector3.RIGHT if absf(forward.dot(Vector3.UP))>.95 else Vector3.UP
+	var side: Vector3 = reference.cross(forward).normalized()
+	var node: Node3D = bridge_part(id)
+	node.transform = Transform3D(Basis(side,forward.cross(side),forward)*Basis.from_scale(size),(a+b)*.5)
 
 static func bridge_point(a: Vector3,b: Vector3,t: float,rise: float) -> Vector3:
 	# Zero slope at both ends: the first plank meets the path without a step.

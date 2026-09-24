@@ -1,0 +1,116 @@
+{
+  "date": "2026-09-24",
+  "purpose": "独立程序化岛屿研究室木桥构件；未进入主游戏",
+  "image": {
+    "tool": "image_gen.imagegen",
+    "model": "工具未返回",
+    "seed": null,
+    "price": "工具未返回",
+    "references_in_order": [
+      "docs/design-baseline/images/approved/greens-gongbi-v1.png",
+      "docs/design-baseline/images/approved/farm-gongbi-v1.png"
+    ],
+    "prompt": "Create one single-object 3D modeling concept for a Jiangnan miniature farm game. Input 1 and input 2 are STYLE REFERENCES ONLY: rounded solid forms, restrained gongbi fine tea-brown structural brush lines, muted pale colour washes and matte natural material. Object: exactly ONE upright short stout ancient Chinese rural timber footbridge handrail post, roughly 0.9 metre tall and 0.18 metre wide, continuous square-section weathered elm timber, rounded worn corners, simple square beveled cap at top (not ornate, no pagoda ornament), a clear rectangular mortise socket on its near side 15 centimetres below the cap for a horizontal handrail, subtle visible wooden joinery peg, a small thick hemp-rope binding just below that socket with distinct rope strands. Flat wood bottom, no stone footing, no ground or base. The post is straight, substantial and functional. Warm desaturated grey umber and aged honey wood, visible long hand-painted woodgrain lines and a few broad knots, selective strong drawn edge lines that remain legible as a small 3D game prop, NO photoreal scratches, NO green tint, NO smooth toy plastic. Three-quarter view showing front, side and top, soft neutral illumination, plain cool grey background, no cast shadow except tiny contact, centered entire post with generous margins, no other posts, no rails, no text, no dimension labels, no landscape. This is an isolated component to repeat along a bridge. Save the image and return its local file path.",
+    "selected": "post-reference.png",
+    "decision": "主体完整、哑光木纹、方柱榫孔与绳结清楚，采用。"
+  },
+  "tripo": {
+    "task_id": "18e92ae5-d11c-4987-81d4-babb51731181",
+    "type": "image_to_model",
+    "input": "post-reference.png",
+    "geometry": "P2-20260801",
+    "texture_model": "v3.5-20260815",
+    "reason": "P2保留柱帽、榫孔及绳结的实体轮廓；v3.5 detailed保留参考图木纹，原图纹理对齐，不去除绘画明暗。",
+    "request": {
+      "face_limit": 1800,
+      "texture": true,
+      "pbr": false,
+      "texture_version": "v3.5-20260815",
+      "texture_quality": "detailed",
+      "delight": false,
+      "texture_alignment": "original_image"
+    },
+    "service_defaults": {
+      "export_uv": true,
+      "enable_image_autofix": false
+    },
+    "seed": "未指定，服务未回显",
+    "credits_consumed": 120,
+    "status": "success",
+    "output": "raw/tripo-out/lab-bridge-post-18e92ae5/model.glb"
+  },
+  "processing": {
+    "blender": "5.2.2 LTS",
+    "order": [
+      "保留参考图及 Tripo 原模",
+      "将木柱等比缩放到0.9米高，XZ居中、底面为零，材质粗糙度0.91",
+      "新建精确木板、扶手、承重梁，倒角3段，木纹1024²程序绘制",
+      "保存可编辑blend，分件GLB导出",
+      "空场景重导入核对UV、三角数、纹理、有限坐标",
+      "Godot关闭自动LOD，按跨度与宽度拼装，检查正反侧接触"
+    ],
+    "script": "prepare.py",
+    "source": "bridge_modules.blend",
+    "audit": "audit.json",
+    "not_used": [
+      "云端分割",
+      "云端重拓扑",
+      "云端重贴图",
+      "减面",
+      "骨骼或动画"
+    ],
+    "nonuniform_post_scaling": false
+  },
+  "runtime": {
+    "path": "Game/art/environment/procedural_bridge",
+    "scene": "Game/scenes/procedural_lab/procedural_lab.tscn",
+    "builder": "Game/scenes/procedural_lab/island_view.gd",
+    "post": {
+      "triangles": 1847,
+      "size_godot": [
+        0.2044455,
+        0.9,
+        0.2193942
+      ],
+      "texture": [
+        4096,
+        4096
+      ]
+    },
+    "plank": {
+      "triangles": 188,
+      "size_godot": [
+        1.5,
+        0.09,
+        0.25
+      ]
+    },
+    "rail": {
+      "triangles": 188,
+      "size_godot": [
+        0.09,
+        0.085,
+        1
+      ]
+    },
+    "beam": {
+      "triangles": 188,
+      "size_godot": [
+        0.14,
+        0.19,
+        1
+      ]
+    },
+    "timber_texture": [
+      1024,
+      1024
+    ],
+    "automatic_lod": false
+  },
+  "validation": {
+    "layout": "24组种子与边界参数通过",
+    "scene": "真实按钮、种子重建、规划显示、相机输入、小窗口及4K上限通过；桥梁正反近景及接头实景检查",
+    "evidence": ".local/verification/procedural-lab",
+    "user_approved": false
+  }
+}

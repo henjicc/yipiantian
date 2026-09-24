@@ -18,7 +18,10 @@ func _run() -> void:
 	await create_timer(2).timeout
 	expect(scene.world.counts.get("rack",0)>0,"default offers a rack to inspect")
 	expect(scene.world.bridge_targets.size()==2,"default offers connected bridges")
+	scene.focus("all")
 	await capture("overview")
+	scene.focus("island")
+	await capture("island-close")
 	await click_button(scene.focus_bridge)
 	expect(scene.inspect_mode=="bridge","bridge button responds to real pointer input")
 	await create_timer(.3).timeout
@@ -26,6 +29,14 @@ func _run() -> void:
 	scene.yaw += PI
 	scene._update_camera()
 	await capture("bridge-reverse")
+	scene.yaw -= PI
+	var joint: Dictionary = scene.current_plan.links[0]
+	scene.target = Vector3(joint.start.x,.6,joint.start.y).lerp(Vector3(joint.end.x,.6,joint.end.y),.15)
+	scene.distance = 7; scene.desired_distance = 7; scene.pitch = .32
+	scene._update_camera()
+	await capture("bridge-joint")
+	scene.yaw += PI; scene._update_camera()
+	await capture("bridge-joint-reverse")
 	scene.yaw -= PI
 	await click_button(scene.focus_rack)
 	expect(scene.inspect_mode=="rack","rack button responds to real pointer input")

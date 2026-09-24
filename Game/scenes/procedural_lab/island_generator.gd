@@ -1,7 +1,7 @@
 extends RefCounted
 ## A disposable layout, independent of FarmState. All distances are metres.
 const Bank = preload("res://layout/bank_geometry.gd")
-const DEFAULTS := {"count": 3, "radius": 7.5, "coast": .65, "gap": 3.0, "density": 14,
+const DEFAULTS := {"count": 3, "radius": 8.5, "coast": .65, "gap": 3.0, "density": 14,
 	"bridge_width": 1.5, "arch": .65, "rack_length": 3.0, "rack_height": 2.1}
 const GROUND := .13
 
@@ -23,11 +23,11 @@ static func generate(seed_text: String, options: Dictionary) -> Dictionary:
 	for i: int in int(settings.count):
 		var phase := Vector3(rng.randf()*TAU, rng.randf()*TAU, rng.randf()*TAU)
 		var knots := PackedVector2Array()
-		# Positive, low-frequency radial harmonics make a simple, star-shaped coast.
-		# The central area stays broad enough for usable land; no needle peninsulas.
-		for k: int in 24:
-			var a: float = k*TAU/24.0
-			var r: float = settings.radius * (1 + settings.coast * (.13*sin(a*2+phase.x)+.09*sin(a*3+phase.y)+.045*sin(a*5+phase.z)))
+		# Broad asymmetrical bays plus smaller erosion scallops; positive radii
+		# preserve a usable connected interior without copying the main island outline.
+		for k: int in 48:
+			var a: float = k*TAU/48.0
+			var r: float = settings.radius * (1 + settings.coast * (.19*sin(a*2+phase.x)+.13*sin(a*3+phase.y)+.075*sin(a*5+phase.z)+.032*sin(a*9+phase.x)+.018*sin(a*13+phase.y)))
 			knots.append(Vector2(cos(a),sin(a))*r)
 		var outline: PackedVector2Array = Bank.contour(knots)
 		var land := PackedVector2Array()
@@ -87,12 +87,14 @@ static func generate(seed_text: String, options: Dictionary) -> Dictionary:
 	for i: int in islands.size():
 		var island: Dictionary = islands[i]
 		# Reserve paths first, then place the full footprints. Later vegetation cannot block them.
-		place_object(island, "house", 2.25, rng, true)
+		place_object(island, "house", 3.15, rng, true)
 		place_object(island, "field", 1.85, rng, true)
 		place_object(island, "field", 1.85, rng, true)
+		# Reserve a canopy before small decoration consumes every useful patch.
+		if settings.density>0: place_object(island,"tree",1.65,rng,false)
 		place_object(island, "rack", sqrt(pow(settings.rack_length*.5+.15,2)+.75*.75), rng, true)
-		for j: int in int(settings.density):
-			place_object(island, "tree" if j%3==0 else ("bamboo" if j%3==1 else "flowers"), 1.05 if j%3==0 else .65, rng, false)
+		for j: int in range(1,int(settings.density)):
+			place_object(island, "tree" if j%3==0 else ("bamboo" if j%3==1 else "flowers"), 1.65 if j%3==0 else (1.0 if j%3==1 else .65), rng, false)
 	return {"seed":seed_text.strip_edges(),"settings":settings,"islands":islands,"links":links,"error":""}
 
 static func fits_disk(point: Vector2, radius: float, land: PackedVector2Array) -> bool:

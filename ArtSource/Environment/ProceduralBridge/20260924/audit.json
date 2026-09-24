@@ -1,0 +1,50 @@
+{
+  "blender": "5.2.2 LTS",
+  "source_task": "18e92ae5-d11c-4987-81d4-babb51731181",
+  "parts": {
+    "post": {
+      "triangles": 1847,
+      "dimensions_blender": [
+        0.20444552600383759,
+        0.2193942368030548,
+        0.9000000357627869
+      ],
+      "uv": true,
+      "reimport_triangles": 1847,
+      "reimport_ok": true
+    },
+    "plank": {
+      "triangles": 188,
+      "dimensions_blender": [
+        1.5,
+        0.25,
+        0.09000000357627869
+      ],
+      "uv": true,
+      "reimport_triangles": 188,
+      "reimport_ok": true
+    },
+    "rail": {
+      "triangles": 188,
+      "dimensions_blender": [
+        0.09000000357627869,
+        1.0,
+        0.08500000089406967
+      ],
+      "uv": true,
+      "reimport_triangles": 188,
+      "reimport_ok": true
+    },
+    "beam": {
+      "triangles": 188,
+      "dimensions_blender": [
+        0.14000000059604645,
+        1.0,
+        0.1899999976158142
+      ],
+      "uv": true,
+      "reimport_triangles": 188,
+      "reimport_ok": true
+    }
+  }
+}

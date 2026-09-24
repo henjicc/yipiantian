@@ -21,7 +21,7 @@ var yaw: float = .45
 var pitch: float = .72
 var dragging: int = 0
 var busy: bool = false
-var inspect_mode: String = "all"
+var inspect_mode: String = "island"
 var panel: PanelContainer
 
 func _ready() -> void:
@@ -44,36 +44,26 @@ func _ready() -> void:
 func _setup_environment() -> void:
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_COLOR
-	environment.background_color = Color("b5c5bd")
-	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("d2decf")
-	environment.ambient_light_energy = .7
-	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	environment.ssao_enabled = true
-	environment.ssao_radius = 1.2
-	environment.ssao_intensity = 1.3
 	var sky := WorldEnvironment.new()
 	sky.environment = environment
 	add_child(sky)
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-48,-32,0)
-	sun.light_color = Color("fff0cf")
-	sun.light_energy = 1.5
 	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 140
 	add_child(sun)
 	var water := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(1000,1000)
 	water.mesh = plane
 	water.position.y = -.25
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://atmosphere/quiet_water.gdshader")
-	mat.set_shader_parameter("painted_water",load("res://art/environment/backdrop/river-distance.png"))
-	mat.set_shader_parameter("water_color",Color("93b3a6"))
-	mat.set_shader_parameter("wave_strength",.5)
-	water.material_override = mat
 	add_child(water)
+	var daylight := preload("res://atmosphere/day_night.gd").new()
+	add_child(daylight)
+	daylight.set_preview_hour(10.5)
+	daylight.configure(sun,sky,water)
+	daylight.set_process(false)
+	water.material_override.set_shader_parameter("wave_strength",.45)
+	sun.directional_shadow_max_distance = 140
+	RenderingServer.global_shader_parameter_set("courtyard_haze_strength",0.0)
 	camera.fov = 42
 	camera.far = 1500
 	add_child(camera)
@@ -121,7 +111,7 @@ func _setup_ui() -> void:
 	seed_input.text_changed.connect(func(_text: String) -> void: _dirty())
 	seed_input.text_submitted.connect(func(_text: String) -> void: regenerate())
 	_slider(column,"count","岛屿数量",1,5,1,3)
-	_slider(column,"radius","岛屿尺度",6.5,10,.5,7.5," 米")
+	_slider(column,"radius","岛屿尺度",6.5,10,.5,Generator.DEFAULTS.radius," 米")
 	_slider(column,"coast","岸线变化",0,1,.05,.65)
 	_slider(column,"gap","岛间留水",2,7,.5,3," 米")
 	_slider(column,"density","植被数量上限",0,28,1,14)
@@ -159,7 +149,7 @@ func _setup_ui() -> void:
 		status.text = "已复制当前画面的种子与参数")
 	column.add_child(copy_button)
 	var footer := Label.new()
-	footer.text = "岛形 / 桥 / 路 / 竹架：程序生成\n房屋 / 植物：复用主岛资产\n空间不足时少放设施，优先留通路\n本场景不读写农场存档"
+	footer.text = "地表 / 岸石 / 植物：沿用主岛质感\n木桥：Tripo 构件 + 程序拼装\n空间不足时少放设施，优先留通路\n本场景不读写农场存档"
 	footer.add_theme_font_size_override("font_size",14)
 	column.add_child(footer)
 	var top := HBoxContainer.new()
@@ -168,6 +158,9 @@ func _setup_ui() -> void:
 	var all := Button.new()
 	all.text = "群岛全景"; all.pressed.connect(func() -> void: focus("all"))
 	top.add_child(all)
+	var island_button := Button.new()
+	island_button.text = "近看岛屿"; island_button.pressed.connect(func() -> void: focus("island"))
+	top.add_child(island_button)
 	focus_bridge.text = "近看桥梁"; focus_bridge.pressed.connect(func() -> void: focus("bridge"))
 	top.add_child(focus_bridge)
 	focus_rack.text = "近看竹架"; focus_rack.pressed.connect(func() -> void: focus("rack"))
@@ -247,7 +240,11 @@ func regenerate() -> void:
 
 func focus(mode: String) -> void:
 	inspect_mode = mode
-	if mode == "bridge" and not world.bridge_targets.is_empty():
+	if mode == "island":
+		target = IslandView.v3(current_plan.islands[0].center,.35)
+		desired_distance = current_plan.islands[0].bound*2.5
+		pitch = .50
+	elif mode == "bridge" and not world.bridge_targets.is_empty():
 		target = world.bridge_targets[0]
 		var link: Dictionary = current_plan.links[0]
 		desired_distance = maxf(12,link.start.distance_to(link.end)*2.2)
