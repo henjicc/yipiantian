@@ -68,41 +68,43 @@ func _run() -> void:
 	await capture("01-live-curve")
 	await mouse_button(false,screen_point(scene,curve[-1]))
 	while scene.busy: await process_frame
-	expect(not scene.drawn_stroke.is_empty() and not scene.current_plan.closed,"release commits an open curve")
+	expect(not scene.drawn_paths.is_empty() and not scene.current_plan.closed,"release commits an open curve")
 	expect(scene.camera.transform.is_equal_approx(camera_before),"drawing does not rotate or reframe the camera")
 	await capture("02-curve")
+	await reset_drawing(scene)
 	await draw(scene,loop)
 	while scene.busy: await process_frame
 	expect(scene.current_plan.closed,"mouse-drawn loop closes in the actual scene")
 	await capture("03-closed")
-	var saved: Array = scene.drawn_stroke.duplicate(true)
+	var saved: Array = scene.drawn_paths.duplicate(true)
 	await draw(scene,straight,false)
 	var escape := InputEventKey.new()
 	escape.keycode=KEY_ESCAPE; escape.pressed=true
 	root.push_input(escape,true); await process_frame
-	expect(not scene.brush.active and scene.drawn_stroke==saved,"Esc cancels only the pending stroke")
+	expect(not scene.brush.active and scene.drawn_paths==saved,"Esc cancels only the pending stroke")
 	await draw(scene,straight,false)
 	scene.notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT)
-	expect(not scene.brush.active and scene.drawn_stroke==saved,"focus loss preserves accepted fence and cancels preview")
+	expect(not scene.brush.active and scene.drawn_paths==saved,"focus loss preserves accepted fence and cancels preview")
 	await mouse_button(false,screen_point(scene,straight[-1]))
 	await draw(scene,straight,false)
 	await mouse_motion(Vector2(160,180))
 	await mouse_button(false,Vector2(160,180))
-	expect(not scene.brush.active and scene.drawn_stroke==saved,"entering panel cancels stroke without replacing fence")
+	expect(not scene.brush.active and scene.drawn_paths==saved,"entering panel cancels stroke without replacing fence")
 	await draw(scene,[[0,0],[1,0]],false)
 	await mouse_motion(screen_point(scene,[8,0]))
 	await mouse_button(false,screen_point(scene,[8,0]))
-	expect(not scene.brush.active and scene.drawn_stroke==saved,"leaving the ground cancels instead of bridging across water")
+	expect(not scene.brush.active and scene.drawn_paths==saved,"leaving the ground cancels instead of bridging across water")
 	await draw(scene,[[0,0],[.1,0]])
-	expect(scene.drawn_stroke==saved and "太短" in scene.status.text,"invalid stroke keeps the last valid model")
+	expect(scene.drawn_paths==saved and "太短" in scene.status.text,"invalid stroke keeps the last valid model")
 	scene.controls.slope.value=.18; scene.controls.bay.value=.8
 	await click(scene.generate_button)
 	while scene.busy: await process_frame
-	expect(scene.drawn_stroke==saved and scene.current_plan.closed,"changing terrain and spacing preserves the drawn loop")
+	expect(scene.drawn_paths==saved and scene.current_plan.closed,"changing terrain and spacing preserves the drawn loop")
 	await click(scene.export_button)
 	var exported: Dictionary = JSON.parse_string(DisplayServer.clipboard_get())
-	expect(exported.parameters.get("stroke",[]).size()==saved.size() and not saved.is_empty(),"copied parameters include reproducible ground-space stroke")
+	expect(exported.parameters.get("paths",[]).size()==saved.size() and not saved.is_empty(),"copied parameters include reproducible ground-space stroke")
 	await capture("04-slope")
+	await reset_drawing(scene)
 	await draw(scene,straight)
 	while scene.busy: await process_frame
 	expect(not scene.current_plan.closed and absf(scene.current_plan.points[0].x+4)<.02,"ray-to-ground painting respects the sloped surface")
@@ -112,9 +114,8 @@ func _run() -> void:
 	while scene.busy: await process_frame
 	scene._select_kind(0)
 	while scene.busy: await process_frame
-	expect(scene.world.get_child_count()==1 and not scene.drawn_stroke.is_empty(),"returning from another kit preserves custom path without applying preset comparison")
-	await click(scene.draw_button)
-	while scene.busy: await process_frame
+	expect(scene.world.get_child_count()==1 and not scene.drawn_paths.is_empty(),"returning from another kit preserves custom path without applying preset comparison")
+	await reset_drawing(scene)
 	await draw(scene,loop)
 	while scene.busy: await process_frame
 	await click(scene.draw_button)
@@ -122,7 +123,7 @@ func _run() -> void:
 	scene.focus("joint"); await capture("05-closed-joint")
 	await click(scene.preset_button)
 	while scene.busy: await process_frame
-	expect(scene.drawn_stroke.is_empty() and not scene.brush.enabled and not scene.compare_check.disabled,"restore preset restores camera controls and comparison")
+	expect(scene.drawn_paths.is_empty() and not scene.brush.enabled and not scene.compare_check.disabled,"restore preset restores camera controls and comparison")
 	scene.compare_check.button_pressed=true
 	while scene.busy: await process_frame
 	expect(scene.world.get_child_count()==3,"existing three-preset comparison still works")
@@ -134,6 +135,12 @@ func _run() -> void:
 func screen_point(scene: Node3D,point: Array) -> Vector2:
 	var p: Dictionary = scene.current_plan.settings
 	return scene.camera.unproject_position(Vector3(point[0],scene._stage_height(p)+Kit.ground(point[0],p.slope),point[1]))
+
+func reset_drawing(scene: Node3D) -> void:
+	await click(scene.preset_button)
+	while scene.busy: await process_frame
+	await click(scene.draw_button)
+	while scene.busy: await process_frame
 
 func mouse_motion(at: Vector2) -> void:
 	var event := InputEventMouseMotion.new()

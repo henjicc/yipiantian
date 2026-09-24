@@ -30,7 +30,11 @@ static func fit(stroke: Array, bay: float) -> Dictionary:
 				corners.remove_at(i if next == corners.size()-1 or next == 0 else next)
 				changed = true
 				break
+	return layout(corners,closed,bay)
+
+static func layout(corners: Array[Vector2],closed: bool,bay: float) -> Dictionary:
 	var edges: int = corners.size() if closed else corners.size()-1
+	if corners.size() < 2: return {"error":"线太短，请画长一些"}
 	if closed and corners.size() < 3: return {"error":"围栏范围太小，请画大一些"}
 	for i: int in edges:
 		var a: Vector2 = corners[i]
@@ -46,7 +50,7 @@ static func fit(stroke: Array, bay: float) -> Dictionary:
 			var d: Vector2 = corners[(j+1)%corners.size()]
 			if _segments_near(a,b,c,d): return {"error":"路径交叉或靠得太近，请重新画线"}
 	var points: Array[Vector2] = []
-	length = 0
+	var length: float = 0
 	for i: int in edges:
 		var a: Vector2 = corners[i]
 		var b: Vector2 = corners[(i+1)%corners.size()]
