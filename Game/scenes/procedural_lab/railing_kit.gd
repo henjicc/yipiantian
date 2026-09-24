@@ -1,5 +1,6 @@
 extends RefCounted
 const Parts = preload("res://scenes/procedural_lab/kit_parts.gd")
+const DrawPath = preload("res://scenes/procedural_lab/railing_path.gd")
 const DEFAULTS := {"length":5.4,"height":1.05,"bay":1.35,"path":1,"slope":0.0,"width":1.8}
 
 static func plan(seed_text: String, options: Dictionary, kind: String) -> Dictionary:
@@ -12,7 +13,14 @@ static func plan(seed_text: String, options: Dictionary, kind: String) -> Dictio
 	p.slope = clampf(p.slope,-.18,.18)
 	p.width = clampf(p.width,1.0,3.0)
 	var points: Array[Vector3] = []
-	if kind == "railing":
+	var closed: bool = false
+	if kind == "railing" and not options.get("stroke",[]).is_empty():
+		p.stroke = options.stroke.duplicate(true)
+		var fitted: Dictionary = DrawPath.fit(p.stroke,p.bay)
+		if fitted.has("error"): return fitted
+		closed = fitted.closed
+		for point: Vector2 in fitted.points: points.append(Vector3(point.x,0,point.y))
+	elif kind == "railing":
 		var corners: Array[Vector3] = []
 		match int(p.path):
 			0: corners = [Vector3(-p.length*.5,0,0),Vector3(p.length*.5,0,0)]
@@ -30,7 +38,7 @@ static func plan(seed_text: String, options: Dictionary, kind: String) -> Dictio
 		for i: int in range(count+1):
 			points.append(Vector3(lerpf(-p.length*.5,p.length*.5,float(i)/count),0,0))
 	for i: int in points.size(): points[i].y = ground(points[i].x,p.slope)
-	return {"seed":seed_text.strip_edges(),"settings":p,"kind":kind,"points":points}
+	return {"seed":seed_text.strip_edges(),"settings":p,"kind":kind,"points":points,"closed":closed}
 
 static func ground(x: float,slope: float) -> float:
 	return .13+x*slope
@@ -42,17 +50,20 @@ static func build(data: Dictionary) -> Node3D:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = data.seed.hash()
 	if data.kind == "railing":
+		var closed: bool = data.get("closed",false)
 		for i: int in points.size():
-			var along: Vector3=points[mini(i+1,points.size()-1)]-points[maxi(0,i-1)]
+			var before: int = posmod(i-1,points.size()) if closed else maxi(0,i-1)
+			var after: int = (i+1)%points.size() if closed else mini(i+1,points.size()-1)
+			var along: Vector3=points[after]-points[before]
 			along.y=0
 			var basis := Basis(Quaternion(Vector3.BACK,along.normalized())).scaled_local(Vector3(1,p.height/.9,1))
 			# A half turn only changes grain/edge wear on the symmetric solid post.
 			basis=basis*Basis(Vector3.UP,rng.randi_range(0,1)*PI)
 			parts.add("fence_post",Transform3D(basis,points[i]),"near")
 			parts.add("fence_post_low",Transform3D(basis,points[i]),"far")
-		for i: int in range(points.size()-1):
+		for i: int in range(points.size() if closed else points.size()-1):
 			var a: Vector3 = points[i]
-			var b: Vector3 = points[i+1]
+			var b: Vector3 = points[(i+1)%points.size()]
 			for h: float in [.29,.79]:
 				_fence_member(parts,a+Vector3.UP*p.height*h,b+Vector3.UP*p.height*h)
 			# Braces sit between the rails, on the same centre plane. Their ends

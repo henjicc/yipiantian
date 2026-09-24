@@ -2,6 +2,7 @@ extends "res://scenes/procedural_lab/procedural_lab.gd"
 const RailingKit = preload("res://scenes/procedural_lab/railing_kit.gd")
 const TreeKit = preload("res://scenes/procedural_lab/tree_kit.gd")
 const HouseKit = preload("res://scenes/procedural_lab/house_kit.gd")
+const RailingBrush = preload("res://scenes/procedural_lab/railing_brush.gd")
 var kind: String = "railing"
 var kind_picker := OptionButton.new()
 var parameter_box: VBoxContainer
@@ -10,6 +11,11 @@ var export_button := Button.new()
 var generation_ms: float = 0
 var wind_check := CheckButton.new()
 var joint_view: bool = false
+var draw_button := Button.new()
+var preset_button := Button.new()
+var help := Label.new()
+var brush: Node3D
+var drawn_stroke: Array = []
 
 func _ready() -> void:
 	# Island-only controls are constructed by the inherited script, but never used
@@ -24,6 +30,7 @@ func _ready() -> void:
 	_resize()
 	_setup_environment()
 	_setup_ui()
+	brush=RailingBrush.new(); brush.lab=self; add_child(brush)
 	await regenerate()
 	await RenderingServer.frame_post_draw
 	print("COMPONENT_LAB_READY kind=%s seed=%s"%[kind,current_plan.seed])
@@ -105,7 +112,15 @@ func _setup_ui() -> void:
 		button.text=item[0]
 		button.pressed.connect(focus.bind(item[1]))
 		top.add_child(button)
-	var help := Label.new()
+	draw_button.text="画栏杆"; draw_button.toggle_mode=true
+	draw_button.toggled.connect(_set_drawing)
+	top.add_child(draw_button)
+	preset_button.text="恢复预设"
+	preset_button.pressed.connect(func() -> void:
+		brush.cancel(); drawn_stroke.clear()
+		draw_button.set_pressed_no_signal(false); brush.enabled=false
+		_update_drawing_controls(); regenerate())
+	top.add_child(preset_button)
 	help.text="左键旋转  ·  右键 / 中键平移  ·  滚轮缩放  ·  Esc 退出"
 	help.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
 	help.offset_left=356; help.offset_top=-42; help.offset_bottom=-12
@@ -144,11 +159,59 @@ func _populate_parameters() -> void:
 	_slider(parameter_box,"slope","地面坡度",-.18,.18,.02,0)
 
 func _select_kind(index: int) -> void:
+	brush.cancel(); brush.enabled=false
+	draw_button.set_pressed_no_signal(false)
 	kind=["railing","rack","tree","house"][index]
 	kind_picker.select(index)
 	wind_check.visible=kind=="tree"
 	_populate_parameters()
+	_update_drawing_controls()
 	regenerate()
+
+func _set_drawing(enabled: bool) -> void:
+	brush.cancel(); brush.enabled=enabled; dragging=0
+	if enabled: compare_check.set_pressed_no_signal(false)
+	_update_drawing_controls()
+	await regenerate()
+	if enabled: status.text="画笔已启用"
+
+func _update_drawing_controls() -> void:
+	var custom: bool = kind=="railing" and (brush.enabled or not drawn_stroke.is_empty())
+	draw_button.visible=kind=="railing"; preset_button.visible=kind=="railing"
+	draw_button.text="结束画线" if brush.enabled else "画栏杆"
+	preset_button.disabled=not custom
+	compare_check.disabled=custom
+	if custom: compare_check.set_pressed_no_signal(false)
+	for key: String in ["length","path"]:
+		if controls.has(key): controls[key].get_parent().visible=not custom
+	help.text="左键画线  ·  右键 / 中键平移  ·  滚轮缩放  ·  Esc 取消画笔" if brush.enabled else "左键旋转  ·  右键 / 中键平移  ·  滚轮缩放  ·  Esc 退出"
+
+func accept_stroke(stroke: Array) -> void:
+	drawn_stroke=stroke
+	_update_drawing_controls()
+	await regenerate(false)
+	status.text="已生成%s栏杆 · %d 根立柱"%["闭合" if current_plan.closed else "路径",current_plan.points.size()]
+
+func _input(event: InputEvent) -> void:
+	if is_instance_valid(brush) and brush.handle_input(event):
+		get_viewport().set_input_as_handled()
+		return
+	super._input(event)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if is_instance_valid(brush) and brush.handle_unhandled(event):
+		get_viewport().set_input_as_handled()
+		return
+	super._unhandled_input(event)
+
+func _notification(what: int) -> void:
+	super._notification(what)
+	if what in [NOTIFICATION_WM_WINDOW_FOCUS_OUT,NOTIFICATION_WM_MOUSE_EXIT] and is_instance_valid(brush):
+		brush.cancel()
+
+func _resize() -> void:
+	if is_instance_valid(brush): brush.cancel()
+	super._resize()
 
 func _named_choice(key: String,title: String,choices: Array[String]) -> void:
 	var slider: HSlider=controls[key]
@@ -160,18 +223,23 @@ func _named_choice(key: String,title: String,choices: Array[String]) -> void:
 func _dirty() -> void:
 	status.text="调整后点击「重新生成」"
 
-func regenerate() -> void:
+func regenerate(reset_camera: bool=true) -> void:
 	if busy: return
 	if seed_input.text.strip_edges().is_empty():
 		status.text="请输入文字或数字种子"
 		return
+	brush.cancel()
 	busy=true; dragging=0; generate_button.disabled=true
 	status.text="正在组合构件…"
 	await get_tree().process_frame
 	var start: int=Time.get_ticks_usec()
 	var options: Dictionary={}
 	for key: String in controls: options[key]=controls[key].value
+	if kind=="railing" and not drawn_stroke.is_empty(): options.stroke=drawn_stroke
 	var data: Dictionary=_plan(options)
+	if data.has("error"):
+		status.text=data.error; busy=false; generate_button.disabled=false
+		return
 	data.comparison=[]
 	var next := Node3D.new()
 	var count: int=3 if compare_check.button_pressed else 1
@@ -213,9 +281,9 @@ func regenerate() -> void:
 		remove_child(world); world.queue_free()
 	world=next; current_plan=data
 	generation_ms=(Time.get_ticks_usec()-start)/1000.0
-	focus("all")
+	if reset_camera: focus("all")
 	status.text="已生成 · %.0f 毫秒 · 种子 %s"%[generation_ms,data.seed]
-	statistics.text="%d 组结构"%count
+	statistics.text="%d 根立柱 · %s"%[data.points.size(),"闭合围栏" if data.closed else "开放路径"] if kind=="railing" and options.has("stroke") else "%d 组结构"%count
 	_set_wind(wind_check.button_pressed)
 	busy=false; generate_button.disabled=false
 
@@ -237,7 +305,8 @@ func _set_wind(enabled: bool) -> void:
 
 func _ground(p: Dictionary) -> MeshInstance3D:
 	var mesh := PlaneMesh.new()
-	if kind=="tree": mesh.size=Vector2.ONE*(p.spread+1)
+	if _drawing_stage(): mesh.size=Vector2.ONE*RailingBrush.EXTENT*2
+	elif kind=="tree": mesh.size=Vector2.ONE*(p.spread+1)
 	elif kind=="house": mesh.size=Vector2(p.bays*HouseKit.BAY+2,p.depth+p.porch+2.4)
 	else: mesh.size=Vector2(p.length+1.4,maxf(p.width+1.2,p.length*.7))
 	var node := MeshInstance3D.new()
@@ -253,7 +322,11 @@ func _ground(p: Dictionary) -> MeshInstance3D:
 	return node
 
 func _stage_height(p: Dictionary) -> float:
+	if _drawing_stage(): return absf(p.slope)*RailingBrush.EXTENT
 	return 0.0 if kind in ["tree","house"] else absf(p.slope)*(p.length+1.4)*.5
+
+func _drawing_stage() -> bool:
+	return kind=="railing" and is_instance_valid(brush) and (brush.enabled or not drawn_stroke.is_empty())
 
 func focus(mode: String) -> void:
 	if current_plan.is_empty(): return
@@ -286,5 +359,7 @@ func focus(mode: String) -> void:
 			pitch=.28 if kind in ["tree","house"] and compare_check.button_pressed else .55
 			if kind=="house" and not compare_check.button_pressed: pitch=.43
 			yaw=PI*.5 if kind in ["tree","house"] and compare_check.button_pressed else .65
+			if _drawing_stage():
+				desired_distance=25; pitch=1.08; yaw=0
 		distance=desired_distance
 	_update_camera()
