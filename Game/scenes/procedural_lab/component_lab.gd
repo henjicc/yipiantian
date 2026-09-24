@@ -1,11 +1,13 @@
 extends "res://scenes/procedural_lab/procedural_lab.gd"
 const RailingKit = preload("res://scenes/procedural_lab/railing_kit.gd")
+const TreeKit = preload("res://scenes/procedural_lab/tree_kit.gd")
 var kind: String = "railing"
 var kind_picker := OptionButton.new()
 var parameter_box: VBoxContainer
 var compare_check := CheckButton.new()
 var export_button := Button.new()
 var generation_ms: float = 0
+var wind_check := CheckButton.new()
 
 func _ready() -> void:
 	# Island-only controls are constructed by the inherited script, but never used
@@ -48,7 +50,7 @@ func _setup_ui() -> void:
 	title.text="构件生成研究室"
 	title.add_theme_font_size_override("font_size",28)
 	column.add_child(title)
-	for text: String in ["木栏杆","竹架"]: kind_picker.add_item(text)
+	for text: String in ["木栏杆","竹架","桂花树"]: kind_picker.add_item(text)
 	column.add_child(kind_picker)
 	FarmTheme.configure_option(kind_picker)
 	kind_picker.item_selected.connect(_select_kind)
@@ -79,6 +81,10 @@ func _setup_ui() -> void:
 	compare_check.text="并排对比三种结构"
 	compare_check.toggled.connect(func(_value: bool) -> void: regenerate())
 	column.add_child(compare_check)
+	wind_check.text="枝叶随风轻动"; wind_check.button_pressed=true
+	wind_check.visible=false
+	wind_check.toggled.connect(_set_wind)
+	column.add_child(wind_check)
 	export_button.text="复制当前生成参数"
 	export_button.pressed.connect(func() -> void:
 		DisplayServer.clipboard_set(JSON.stringify({"version":1,"kind":kind,"seed":current_plan.seed,"parameters":current_plan.settings,"comparison":current_plan.comparison}))
@@ -88,10 +94,6 @@ func _setup_ui() -> void:
 		label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 		label.add_theme_font_size_override("font_size",16)
 		column.add_child(label)
-	var provenance := Label.new()
-	provenance.text="木柱：复用 Tripo 成果\n竹节与绑绳：Blender 构件\n主岛日光 · 本地生成"
-	provenance.add_theme_font_size_override("font_size",15)
-	column.add_child(provenance)
 	var top := HBoxContainer.new()
 	top.position=Vector2(356,22)
 	screen.add_child(top)
@@ -112,6 +114,12 @@ func _populate_parameters() -> void:
 	for child: Node in parameter_box.get_children():
 		parameter_box.remove_child(child); child.queue_free()
 	controls.clear()
+	if kind == "tree":
+		_slider(parameter_box,"height","树高",3,5.8,.2,4.2," 米")
+		_slider(parameter_box,"spread","冠幅",2.8,6,.2,4.4," 米")
+		_slider(parameter_box,"density","树冠疏密",0,1,.05,.55)
+		_slider(parameter_box,"bias","偏冠程度",0,.7,.05,.25)
+		return
 	_slider(parameter_box,"length","长度",2.4,8,.2,5.4," 米")
 	if kind == "railing":
 		_slider(parameter_box,"height","栏高",.7,1.4,.05,1.05," 米")
@@ -123,8 +131,9 @@ func _populate_parameters() -> void:
 	_slider(parameter_box,"slope","地面坡度",-.18,.18,.02,0)
 
 func _select_kind(index: int) -> void:
-	kind=["railing","rack"][index]
+	kind=["railing","rack","tree"][index]
 	kind_picker.select(index)
+	wind_check.visible=kind=="tree"
 	_populate_parameters()
 	regenerate()
 
@@ -142,7 +151,7 @@ func regenerate() -> void:
 	var start: int=Time.get_ticks_usec()
 	var options: Dictionary={}
 	for key: String in controls: options[key]=controls[key].value
-	var data: Dictionary=RailingKit.plan(seed_input.text,options,kind)
+	var data: Dictionary=_plan(options)
 	data.comparison=[]
 	var next := Node3D.new()
 	var count: int=3 if compare_check.button_pressed else 1
@@ -151,19 +160,22 @@ func regenerate() -> void:
 		if count == 3:
 			var variant: Dictionary=options.duplicate()
 			if kind == "railing": variant.path=i
-			else:
+			elif kind == "rack":
 				variant.length=[2.8,4.6,6.8][i]; variant.width=[1.2,1.8,2.6][i]
-			sample=RailingKit.plan(seed_input.text,variant,kind)
+			else:
+				variant.height=[5.4,3.2,4.2][i]; variant.spread=[3.0,4.6,5.8][i]
+				variant.density=[.25,.8,.55][i]; variant.bias=[0,.15,.7][i]
+			sample=_plan(variant)
 			data.comparison.append(sample.settings)
 		var holder := Node3D.new()
-		holder.position.z=(i-1)*6.0 if count == 3 else 0.0
+		holder.position.z=(i-1)*(8.0 if kind=="tree" else 6.0) if count == 3 else 0.0
 		holder.position.y=_stage_height(sample.settings)
-		holder.add_child(RailingKit.build(sample))
+		holder.add_child(TreeKit.build(sample) if kind=="tree" else RailingKit.build(sample))
 		holder.add_child(_ground(sample.settings))
 		if count == 3:
 			var label := Label3D.new()
 			label.font=preload("res://art/ui/fonts/汇文明朝体.ttf")
-			label.text=["直线","转角","折线"][i] if kind == "railing" else ["短窄架","标准架","宽长架"][i]
+			label.text={"railing":["直线","转角","折线"],"rack":["短窄架","标准架","宽长架"],"tree":["高窄冠","低圆冠","偏冠"]}[kind][i]
 			label.font_size=48; label.pixel_size=.007
 			label.position=Vector3(0,sample.settings.height+.55,0)
 			label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
@@ -177,16 +189,26 @@ func regenerate() -> void:
 	generation_ms=(Time.get_ticks_usec()-start)/1000.0
 	focus("all")
 	status.text="已生成 · %.0f 毫秒 · 种子 %s"%[generation_ms,data.seed]
-	statistics.text="%d 组结构\n相同部件共享网格与贴图\n远处省略竹节与绑绳细节"%count
+	statistics.text="%d 组结构"%count
+	_set_wind(wind_check.button_pressed)
 	busy=false; generate_button.disabled=false
+
+func _plan(options: Dictionary) -> Dictionary:
+	return TreeKit.plan(seed_input.text,options) if kind=="tree" else RailingKit.plan(seed_input.text,options,kind)
+
+func _set_wind(enabled: bool) -> void:
+	if not is_instance_valid(world): return
+	for node: Node in world.find_children("tree_cluster*","MultiMeshInstance3D",true,false):
+		node.set_instance_shader_parameter("wind_motion",Vector4(.035,.18,0,.006) if enabled else Vector4.ZERO)
+		node.set_instance_shader_parameter("wind_authored_bend",.018 if enabled else 0.0)
 
 func _ground(p: Dictionary) -> MeshInstance3D:
 	var mesh := PlaneMesh.new()
-	mesh.size=Vector2(p.length+1.4,maxf(p.width+1.2,p.length*.7))
+	mesh.size=Vector2.ONE*(p.spread+1) if kind=="tree" else Vector2(p.length+1.4,maxf(p.width+1.2,p.length*.7))
 	var node := MeshInstance3D.new()
 	node.mesh=mesh
 	# Shear the stage to the exact same height function used by the feet.
-	node.basis=Basis(Vector3(1,p.slope,0),Vector3.UP,Vector3.BACK)
+	node.basis=Basis(Vector3(1,p.get("slope",0),0),Vector3.UP,Vector3.BACK)
 	node.position.y=.13
 	var material := ShaderMaterial.new()
 	material.shader=preload("res://scenes/environment/pigment.gdshader")
@@ -196,7 +218,7 @@ func _ground(p: Dictionary) -> MeshInstance3D:
 	return node
 
 func _stage_height(p: Dictionary) -> float:
-	return absf(p.slope)*(p.length+1.4)*.5
+	return 0.0 if kind=="tree" else absf(p.slope)*(p.length+1.4)*.5
 
 func focus(mode: String) -> void:
 	if current_plan.is_empty(): return
@@ -205,12 +227,18 @@ func focus(mode: String) -> void:
 	else:
 		var p: Dictionary=current_plan.settings
 		if mode == "joint":
-			var at: Vector3=current_plan.points[mini(1,current_plan.points.size()-1)]
-			target=at+Vector3(0,_stage_height(p)+p.height*.75,p.width*.41 if kind == "rack" else 0)
-			desired_distance=3.5; pitch=.30
+			if kind=="tree":
+				target=current_plan.joint+Vector3.UP*.5
+				desired_distance=5
+			else:
+				var at: Vector3=current_plan.points[mini(1,current_plan.points.size()-1)]
+				target=at+Vector3(0,_stage_height(p)+p.height*.75,p.width*.41 if kind == "rack" else 0)
+				desired_distance=3.5
+			pitch=.30
 		else:
 			target=Vector3(0,_stage_height(p)+p.height*.4,0)
-			desired_distance=26 if compare_check.button_pressed else maxf(9,p.length*1.75)
-			pitch=.55; yaw=.65
+			desired_distance=(29 if kind=="tree" else 26) if compare_check.button_pressed else maxf(9,p.height*2.2 if kind=="tree" else p.length*1.75)
+			pitch=.28 if kind=="tree" and compare_check.button_pressed else .55
+			yaw=PI*.5 if kind=="tree" and compare_check.button_pressed else .65
 		distance=desired_distance
 	_update_camera()

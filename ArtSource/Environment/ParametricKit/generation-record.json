@@ -25,7 +25,7 @@
     ]
   },
   "tripo": {
-    "status": "success; raw downloaded, not yet prepared or adopted",
+    "status": "success; adopted as shared near/far leaf cluster, corrected cut axis and tapered fixed attachment; component_tree_test passed",
     "geometry": "P2-20260801",
     "texture": "v3.5-20260815",
     "seed": 9242601,

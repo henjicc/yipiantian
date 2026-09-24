@@ -1,0 +1,30 @@
+{
+  "date": "2026-09-24",
+  "purpose": "Replace visibly crude runtime tubes with one continuous naturally branched framework, add structured reusable crown clusters.",
+  "image": {
+    "tool": "image_gen.imagegen",
+    "model": "not returned",
+    "seed": null,
+    "prompt": "Use reference 1 as the art direction and mature trunk anatomy; use reference 2 as the bark palette and fine painted grain detail. Create exactly one isolated leafless living osmanthus tree framework for a modular 3D Jiangnan game asset. Preserve the mature rounded twisting rooted base, naturally grown continuous branch junctions, warm grey taupe bark with selective fine brown contour strokes and pale layered pigment shading. Entire tree WITHOUT ANY leaves, flowers or foliage. A short stocky trunk with five gracefully curved main boughs forks into about twelve stout small terminal branches. Compact bowl-shaped spreading framework, roughly 2.6m tall and 2.5m wide and 2m deep in implied real scale, trunk begins forks at about 1m. Asymmetric three dimensional crown branching, several boughs visibly extend toward and away from viewer, not a flat fan. All terminal branches end at clean small slightly blunt rounded tips where leafy clusters can later attach. Taper smoothly from sturdy main trunk through medium branches to narrow ends. No thin tangled twig web. No geometric cylinders, no faceted tubes, no right angle joints, no huge sawcut stump. Weathered bark has readable long natural grooves and knots, matte painted sculpted volume consistent with reference. Clean neutral pale grey background, complete isolated object with clear margins, full roots visible on common flat ground plane but no ground mesh. Weak perspective three-quarter view, soft neutral light, no text, no borders, no collage, no accessories.",
+    "references": [
+      "ArtSource/Environment/Trees/20260917/osmanthus/concept.png",
+      "ArtSource/Environment/ParametricKit/osmanthus-branch-reference.png"
+    ],
+    "selected": "osmanthus-framework-reference.png"
+  },
+  "tripo": {
+    "status": "success; adopted as continuous high/low framework with 29 leaf sockets; component_tree_test passed",
+    "model": "P2-20260801",
+    "texture": "v3.5-20260815",
+    "seed": 9242602,
+    "face_limit": 12000,
+    "texture_quality": "detailed",
+    "pbr": false,
+    "delight": false,
+    "estimated_credits": 120,
+    "task_id": "4ff9958f-7347-47ba-aa4e-d79f4d008d27",
+    "credits_consumed": 120,
+    "output": "raw/tripo-out/parametric-osmanthus-framework-4ff9958f/model.glb",
+    "raw_triangles": 12403
+  }
+}

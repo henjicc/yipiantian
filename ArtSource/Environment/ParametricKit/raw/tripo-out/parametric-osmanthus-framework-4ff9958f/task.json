@@ -1,0 +1,28 @@
+{
+  "task_id": "4ff9958f-7347-47ba-aa4e-d79f4d008d27",
+  "type": "image_to_model",
+  "status": "success",
+  "input": {
+    "pbr": false,
+    "file": "osmanthus-framework-reference.png (uploaded by CLI; temporary cloud identifier removed)",
+    "delight": false,
+    "texture": true,
+    "export_uv": true,
+    "face_limit": 12000,
+    "model_seed": 9242602,
+    "model_version": "P2-20260801",
+    "texture_quality": "detailed",
+    "texture_version": "v3.5-20260815",
+    "texture_alignment": "original_image",
+    "enable_image_autofix": false
+  },
+  "output_fields": "model.glb, rendered_image.webp; downloaded locally, signed URLs removed",
+  "credits_consumed": 120,
+  "created_at": "2026-09-24T14:33:04.581071Z",
+  "completed_at": "2026-09-24T14:34:13.700259Z",
+  "files": [
+    "model.glb",
+    "preview.png",
+    "rendered_image.webp"
+  ]
+}

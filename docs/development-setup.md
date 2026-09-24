@@ -545,9 +545,11 @@ Godot 4.7.2 实测：种子 `边界-0`、小岛／五岛／最大岸线变化组
 
 ### 参数化构件研究室（2026-09-24，进行中）
 
-新增独立入口 `res://scenes/procedural_lab/component_lab.tscn`，用 `scripts/godot.ps1 -Action Run -ExtraArgs 'res://scenes/procedural_lab/component_lab.tscn'` 启动。它沿用研究室相机与主岛日光，当前提供栏杆／竹架参数、结构对比和复制。树与民居、主岛对照及全阶段验收还未完成。源与当前边界见[ParametricKit](../ArtSource/Environment/ParametricKit/README.md)。
+新增独立入口 `res://scenes/procedural_lab/component_lab.tscn`，用 `scripts/godot.ps1 -Action Run -ExtraArgs 'res://scenes/procedural_lab/component_lab.tscn'` 启动。它沿用研究室相机与主岛日光，当前提供栏杆／竹架／桂花参数、结构对比和复制。桂花使用连续Tripo树干与共享枝叶簇，已保存主岛同光照对照；民居、栏杆竹架的主岛对照及全阶段验收还未完成。源与当前边界见[ParametricKit](../ArtSource/Environment/ParametricKit/README.md)。
 
 验证入口 `tests/component_lab_scene_test.gd`。当前D3D12／RTX4090／1600×1000前台120帧短测：默认栏杆约5.9ms生成、0.43ms CPU渲染、2.34ms GPU；默认竹架约1.1ms生成、0.45ms CPU渲染、1.50ms GPU。场景工作集约501／561MiB，引擎报告显存分配约535／537MiB，包含湖面、界面和已加载资产。原始process监视器另留在JSON，短测未隔离测试脚本与系统调度影响，不用它推算整游戏CPU占用；不宣称背景岛替换收益。
+
+桂花专项 `tests/component_tree_test.gd` 检查默认及参数四种边界组合的真实高度／冠幅／根部接地、枝头连接、固定风动根权重、种子与交互；同光照对照取现役 `osmanthus_high.glb` 和原风动材质，分别正反看轮廓和质感。默认39簇暖生成约206ms，CPU渲染0.38ms、GPU3.15ms，完整研究室工作集541MiB、引擎video约650MiB；近景几何更多，不能推断比原整树节省。原始P2枝叶底部不是模型最低点，必须以实际切口对齐；程序粗圆管无法匹配自然主枝，当前保留连续框架并同步变形连接点。详见资产源及重建入口。
 
 源码重建明确为Z轴杆件、底部原点木柱；以MultiMesh复用网格与贴图，手工远景档不叠加自动减面。Godot4.7的[可视距离淡化](https://docs.godotengine.org/en/4.7/classes/class_geometryinstance3d.html#enum-geometryinstance3d-visibilityrangefademode)在本项目Forward+使用；每组对象独立批次，不能把所有岛共成一批后仍假设逐岛剔除。
 
